@@ -1,189 +1,161 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { MapPin, Pickaxe, Store, Backpack, ArrowLeft, Zap, Heart, Users, Map, MessageCircle } from 'lucide-react'
 import './App.css'
 
-// Mock data for MVP
-const mockCharacter = {
-  id: "1",
-  name: "Wojak #1337",
-  gender: "MALE",
-  currentLocation: "Mining Plains",
-  energy: 85,
-  health: 100,
-  currentImageUrl: "/wojak.png"
-}
-
-// Enhanced mock data with nested locations
-const mockLocations = [
-  {
-    id: "1",
-    name: "Mining Plains",
-    description: "Rich in basic materials",
-    locationType: "REGION",
-    biome: "plains",
-    difficulty: 1,
-    playerCount: 12,
-    lastActive: "2 minutes ago",
-    hasMarket: true,
-    hasMining: true,
-    welcomeMessage: "The wind carries the sound of pickaxes striking stone.",
-    lore: "Once a vast battlefield, these plains now serve as the primary mining grounds for new arrivals to Earth.",
-    subLocations: [
-      {
-        id: "1a",
-        name: "Rusty Pickaxe Inn",
-        description: "A cozy tavern for weary miners",
-        locationType: "BUILDING",
-        playerCount: 4,
-        hasMarket: true,
-        hasMining: false,
-        welcomeMessage: "The smell of ale and roasted meat fills the air.",
-        parentLocationId: "1"
-      },
-      {
-        id: "1b",
-        name: "Crystal Caves",
-        description: "Deep mining shafts with rare crystals",
-        locationType: "BUILDING",
-        playerCount: 8,
-        hasMarket: false,
-        hasMining: true,
-        welcomeMessage: "Crystalline formations sparkle in your torchlight.",
-        parentLocationId: "1"
-      }
-    ]
-  },
-  {
-    id: "2",
-    name: "Desert Outpost",
-    description: "Harsh but rewarding terrain",
-    locationType: "REGION",
-    biome: "desert",
-    difficulty: 3,
-    playerCount: 5,
-    lastActive: "12 minutes ago",
-    hasMarket: true,
-    hasMining: true,
-    welcomeMessage: "The scorching sun beats down mercilessly.",
-    lore: "A remote trading post built around an ancient oasis. Only the hardiest wojaks venture here.",
-    subLocations: [
-      {
-        id: "2a",
-        name: "Oasis Trading Post",
-        description: "The heart of desert commerce",
-        locationType: "BUILDING",
-        playerCount: 3,
-        hasMarket: true,
-        hasMining: false,
-        welcomeMessage: "Cool shade and fresh water provide relief from the heat.",
-        parentLocationId: "2"
-      }
-    ]
-  },
-  {
-    id: "3",
-    name: "Cyber City",
-    description: "High-tech trading hub",
-    locationType: "CITY",
-    biome: "urban",
-    difficulty: 2,
-    playerCount: 28,
-    lastActive: "just now",
-    hasMarket: true,
-    hasMining: false,
-    welcomeMessage: "Neon lights flicker in the perpetual twilight.",
-    lore: "The beating heart of wojak civilization. Technology and commerce thrive in the endless cityscape.",
-    subLocations: [
-      {
-        id: "3a",
-        name: "Central Exchange",
-        description: "The main trading floor",
-        locationType: "BUILDING",
-        playerCount: 15,
-        hasMarket: true,
-        hasMining: false,
-        welcomeMessage: "Holographic displays show market prices from across the world.",
-        parentLocationId: "3"
-      },
-      {
-        id: "3b",
-        name: "The Glitch Club",
-        description: "Underground social hub for hackers",
-        locationType: "BUILDING",
-        playerCount: 8,
-        hasMarket: false,
-        hasMining: false,
-        welcomeMessage: "Bass-heavy music thumps through the smoky atmosphere.",
-        parentLocationId: "3"
-      },
-      {
-        id: "3c",
-        name: "Tech Lab",
-        description: "Research and development center",
-        locationType: "BUILDING",
-        playerCount: 5,
-        hasMarket: false,
-        hasMining: true, // mining data/components
-        welcomeMessage: "Banks of servers hum quietly in the sterile environment.",
-        parentLocationId: "3"
-      }
-    ]
-  }
-]
-
-const mockResources = [
-  { name: "Dirty Coal", rarity: "COMMON", chance: 0.6 },
-  { name: "Iron Scraps", rarity: "COMMON", chance: 0.4 },
-  { name: "Rusty Gear", rarity: "UNCOMMON", chance: 0.15 },
-  { name: "Ancient Coin", rarity: "RARE", chance: 0.05 }
-]
-
-const mockMarketItems = [
-  { name: "Miners Hat", price: 50, seller: "System" },
-  { name: "Work Gloves", price: 25, seller: "System" },
-  { name: "Lucky Charm", price: 200, seller: "Wojak #420" },
-  { name: "Energy Drink", price: 10, seller: "System" }
-]
-
-// Mock players at current location
-const mockPlayersAtLocation = [
-  { name: "Wojak #420", level: 15, status: "Mining" },
-  { name: "Wojak #69", level: 8, status: "Browsing Market" },
-  { name: "Wojak #1337", level: 12, status: "Idle" },
-  { name: "Wojak #888", level: 22, status: "Just Arrived" },
-  { name: "Wojak #2077", level: 3, status: "Mining" }
-]
+// API base URL - will be your Netlify functions URL
+const API_BASE = '/.netlify/functions'
 
 type GameView = 'main' | 'map' | 'location' | 'mine' | 'market' | 'inventory' | 'chat'
 
+interface Character {
+  id: string
+  name: string
+  gender: string
+  energy: number
+  health: number
+  currentImageUrl: string
+  currentLocation: {
+    id: string
+    name: string
+    description: string
+    locationType: string
+    biome?: string
+    welcomeMessage?: string
+  }
+  inventory: Array<{
+    id: string
+    quantity: number
+    isEquipped: boolean
+    item: {
+      id: string
+      name: string
+      description: string
+      category: string
+      rarity: string
+      imageUrl?: string
+    }
+  }>
+  recentActivity: Array<{
+    id: string
+    type: string
+    description: string
+    item?: {
+      name: string
+      rarity: string
+    }
+  }>
+}
+
+interface Location {
+  id: string
+  name: string
+  description: string
+  locationType: string
+  biome?: string
+  difficulty: number
+  playerCount: number
+  lastActive?: string
+  hasMarket: boolean
+  hasMining: boolean
+  hasChat: boolean
+  welcomeMessage?: string
+  lore?: string
+  subLocations?: Location[]
+}
+
 function App() {
   const [currentView, setCurrentView] = useState<GameView>('main')
-  const [selectedLocation, setSelectedLocation] = useState<typeof mockLocations[0] | null>(null)
-  const [gameLog, setGameLog] = useState<string[]>([
-    `Welcome to Earth, ${mockCharacter.name}!`,
-    `You find yourself in ${mockCharacter.currentLocation}.`
-  ])
+  const [selectedLocation, setSelectedLocation] = useState<Location | null>(null)
+  const [gameLog, setGameLog] = useState<string[]>([])
+
+  // State for API data
+  const [character, setCharacter] = useState<Character | null>(null)
+  const [locations, setLocations] = useState<Location[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  // Load initial data
+  useEffect(() => {
+    loadGameData()
+  }, [])
+
+  const loadGameData = async () => {
+    try {
+      setLoading(true)
+
+      // Load character data
+      const characterResponse = await fetch(`${API_BASE}/get-character?characterId=hardcoded-demo`)
+      if (!characterResponse.ok) throw new Error('Failed to load character')
+      const characterData = await characterResponse.json()
+      setCharacter(characterData)
+
+      // Load locations data
+      const locationsResponse = await fetch(`${API_BASE}/get-locations`)
+      if (!locationsResponse.ok) throw new Error('Failed to load locations')
+      const locationsData = await locationsResponse.json()
+      setLocations(locationsData.locations)
+
+      // Set initial game log
+      setGameLog([
+        `Welcome to Earth, ${characterData.name}!`,
+        `You find yourself in ${characterData.currentLocation.name}.`,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ...characterData.recentActivity.slice(0, 3).map((activity: any) =>
+          `${activity.description}${activity.item ? ` - ${activity.item.name}` : ''}`
+        )
+      ])
+
+      setError(null)
+    } catch (err) {
+      console.error('Failed to load game data:', err)
+      setError('Failed to load game data. Please refresh the page.')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const addToLog = (message: string) => {
     setGameLog(prev => [...prev.slice(-4), message]) // Keep last 5 messages
   }
 
-  const handleMining = () => {
-    const roll = Math.random()
-    let found = null
+  const handleMining = async () => {
+    if (!character) return
 
-    for (const resource of mockResources) {
-      if (roll < resource.chance) {
-        found = resource
-        break
+    try {
+      const response = await fetch(`${API_BASE}/mine-action`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          characterId: 'hardcoded-demo',
+          locationId: selectedLocation?.id || character.currentLocation.id
+        })
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        addToLog(result.message || result.error)
+        return
       }
-    }
 
-    if (found) {
-      addToLog(`You found: ${found.name} (${found.rarity})!`)
-    } else {
-      addToLog(`You dig around but find nothing useful...`)
+      // Update character energy
+      setCharacter(prev => prev ? ({
+        ...prev,
+        energy: result.newEnergyLevel
+      }) : null)
+
+      // Show result in log
+      addToLog(result.message)
+
+      // Refresh character data to get updated inventory
+      loadGameData()
+
+    } catch (error) {
+      console.error('Mining failed:', error)
+      addToLog('Mining attempt failed. Please try again.')
     }
   }
 
@@ -192,7 +164,7 @@ function App() {
     setCurrentView('main')
   }
 
-  const handleLocationSelect = (location: typeof mockLocations[0]) => {
+  const handleLocationSelect = (location: Location) => {
     setSelectedLocation(location)
     setCurrentView('location')
   }
@@ -201,13 +173,50 @@ function App() {
     addToLog(`You bought ${itemName} for ${price} coins`)
   }
 
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background p-4 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-2xl mb-4">🌍</div>
+          <div>Loading Wojak Earth...</div>
+        </div>
+      </div>
+    )
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background p-4 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-2xl mb-4">❌</div>
+          <div className="text-red-500 mb-4">{error}</div>
+          <Button onClick={loadGameData}>Retry</Button>
+        </div>
+      </div>
+    )
+  }
+
+  // No character data
+  if (!character) {
+    return (
+      <div className="min-h-screen bg-background p-4 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-2xl mb-4">🤔</div>
+          <div>No character data found</div>
+        </div>
+      </div>
+    )
+  }
+
   const renderMainView = () => (
     <div className="space-y-6">
       <div className="text-center">
         <div className="w-32 h-32 mx-auto bg-gray-200 rounded-lg flex items-center justify-center mb-4 overflow-hidden">
           <img
-            src="/wojak.png"
-            alt={mockCharacter.name}
+            src={character.currentImageUrl || "/wojak.png"}
+            alt={character.name}
             className="w-full h-full object-cover"
             onError={(e) => {
               e.currentTarget.style.display = 'none';
@@ -215,14 +224,14 @@ function App() {
             }}
           />
         </div>
-        <h2 className="text-xl font-bold">{mockCharacter.name}</h2>
-        <p className="text-muted-foreground">Currently in {mockCharacter.currentLocation}</p>
+        <h2 className="text-xl font-bold">{character.name}</h2>
+        <p className="text-muted-foreground">Currently in {character.currentLocation.name}</p>
         <div className="flex justify-center gap-4 mt-2">
           <span className="text-sm flex items-center gap-1">
-            <Zap className="w-3 h-3" /> {mockCharacter.energy}/100
+            <Zap className="w-3 h-3" /> {character.energy}/100
           </span>
           <span className="text-sm flex items-center gap-1">
-            <Heart className="w-3 h-3" /> {mockCharacter.health}/100
+            <Heart className="w-3 h-3" /> {character.health}/100
           </span>
         </div>
       </div>
@@ -249,7 +258,7 @@ function App() {
       <div className="mt-4">
         <Button onClick={() => setCurrentView('chat')} variant="ghost" className="w-full">
           <MessageCircle className="w-4 h-4 mr-2" />
-          Local Chat ({mockPlayersAtLocation.length} online)
+          Local Chat (5 online)
         </Button>
       </div>
     </div>
@@ -263,7 +272,7 @@ function App() {
       </p>
 
       <div className="space-y-3">
-        {mockLocations.map(location => (
+        {locations.map(location => (
           <div
             key={location.id}
             className="border rounded-lg p-4 hover:bg-muted/50 transition-colors cursor-pointer"
@@ -291,7 +300,7 @@ function App() {
                 <span className="capitalize">{location.biome}</span>
               </div>
               <span className="text-muted-foreground">
-                Active {location.lastActive}
+                {location.lastActive ? new Date(location.lastActive).toLocaleString() : 'Active recently'}
               </span>
             </div>
           </div>
@@ -350,8 +359,7 @@ function App() {
           <div>
             <h4 className="font-medium mb-2">Places to Visit</h4>
             <div className="space-y-2">
-              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-              {selectedLocation.subLocations.map((subLocation: any) => (
+              {selectedLocation.subLocations.map((subLocation) => (
                 <div
                   key={subLocation.id}
                   className="flex items-center justify-between p-2 bg-muted/30 rounded cursor-pointer hover:bg-muted/50 transition-colors"
@@ -374,10 +382,15 @@ function App() {
         <div>
           <h4 className="font-medium mb-2 flex items-center gap-2">
             <Users className="w-4 h-4" />
-            Players Here ({mockPlayersAtLocation.length})
+            Players Here (5)
           </h4>
           <div className="space-y-2 max-h-32 overflow-y-auto">
-            {mockPlayersAtLocation.map((player, i) => (
+            {/* Mock players for now - will be replaced with API data */}
+            {[
+              { name: "Wojak #420", level: 15, status: "Mining" },
+              { name: "Wojak #69", level: 8, status: "Browsing Market" },
+              { name: "Wojak #888", level: 22, status: "Just Arrived" },
+            ].map((player, i) => (
               <div key={i} className="flex items-center justify-between text-sm bg-muted/30 p-2 rounded">
                 <div>
                   <span className="font-medium">{player.name}</span>
@@ -390,7 +403,7 @@ function App() {
         </div>
 
         <div className="grid grid-cols-2 gap-2">
-          {selectedLocation.name !== mockCharacter.currentLocation && (
+          {selectedLocation.name !== character.currentLocation.name && (
             <Button onClick={() => handleTravel(selectedLocation.name)} variant="outline">
               <MapPin className="w-4 h-4 mr-2" />
               Travel Here
@@ -419,26 +432,19 @@ function App() {
 
   const renderMineView = () => (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold">Mining in {mockCharacter.currentLocation}</h3>
+      <h3 className="text-lg font-semibold">Mining in {character.currentLocation.name}</h3>
       <p className="text-sm text-muted-foreground">
         Search for resources. Each attempt costs 10 energy.
       </p>
 
       <div className="bg-muted/50 p-4 rounded-lg">
         <h4 className="font-medium mb-2">Available Resources:</h4>
-        <div className="space-y-1 text-sm">
-          {mockResources.map((resource, i) => (
-            <div key={i} className="flex justify-between">
-              <span>{resource.name}</span>
-              <span className="text-muted-foreground">
-                {resource.rarity} ({Math.round(resource.chance * 100)}%)
-              </span>
-            </div>
-          ))}
+        <div className="text-sm text-muted-foreground">
+          Resources vary by location. Try your luck!
         </div>
       </div>
 
-      <Button onClick={handleMining} className="w-full" disabled={mockCharacter.energy < 10}>
+      <Button onClick={handleMining} className="w-full" disabled={character.energy < 10}>
         <Pickaxe className="w-4 h-4 mr-2" />
         Mine for Resources
       </Button>
@@ -452,10 +458,15 @@ function App() {
 
   const renderMarketView = () => (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold">Market - {mockCharacter.currentLocation}</h3>
+      <h3 className="text-lg font-semibold">Market - {character.currentLocation.name}</h3>
 
       <div className="space-y-2">
-        {mockMarketItems.map((item, i) => (
+        {/* Mock market items for now - will be replaced with API data */}
+        {[
+          { name: "Miners Hat", price: 50, seller: "System" },
+          { name: "Work Gloves", price: 25, seller: "System" },
+          { name: "Energy Drink", price: 10, seller: "System" }
+        ].map((item, i) => (
           <div key={i} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
             <div>
               <div className="font-medium">{item.name}</div>
@@ -485,11 +496,37 @@ function App() {
     <div className="space-y-4">
       <h3 className="text-lg font-semibold">Inventory</h3>
 
-      <div className="bg-muted/50 p-8 rounded-lg text-center text-muted-foreground">
-        <Backpack className="w-12 h-12 mx-auto mb-2" />
-        Your bag is empty.<br />
-        Start mining or visit the market!
-      </div>
+      {character.inventory && character.inventory.length > 0 ? (
+        <div className="space-y-2">
+          {character.inventory.map((inv) => (
+            <div key={inv.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-muted rounded flex items-center justify-center text-xs">
+                  {inv.item.category === 'HAT' ? '🎩' :
+                    inv.item.category === 'MATERIAL' ? '⚡' : '📦'}
+                </div>
+                <div>
+                  <div className="font-medium">{inv.item.name}</div>
+                  <div className="text-sm text-muted-foreground">{inv.item.description}</div>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="font-bold">x{inv.quantity}</div>
+                <div className="text-xs text-muted-foreground capitalize">{inv.item.rarity}</div>
+                {inv.isEquipped && (
+                  <div className="text-xs text-green-600">Equipped</div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="bg-muted/50 p-8 rounded-lg text-center text-muted-foreground">
+          <Backpack className="w-12 h-12 mx-auto mb-2" />
+          Your bag is empty.<br />
+          Start mining or visit the market!
+        </div>
+      )}
 
       <Button onClick={() => setCurrentView('main')} variant="ghost">
         <ArrowLeft className="w-4 h-4 mr-2" />
@@ -512,10 +549,10 @@ function App() {
         <div className="text-center">
           <h3 className="text-lg font-semibold flex items-center justify-center gap-2">
             <MessageCircle className="w-5 h-5" />
-            {selectedLocation ? selectedLocation.name : mockCharacter.currentLocation}
+            {selectedLocation ? selectedLocation.name : character.currentLocation.name}
           </h3>
           <p className="text-sm text-muted-foreground">
-            Local chat • {mockPlayersAtLocation.length} players online
+            Local chat • 5 players online
           </p>
         </div>
 
