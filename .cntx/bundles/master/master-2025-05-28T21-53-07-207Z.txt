@@ -1,0 +1,1070 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bundle id="master-2025-05-28T21-53-07-207Z" created="2025-05-28T21:53:07.207Z" fileCount="19">
+  
+  <metadata>
+    <projectName>project</projectName>
+    <totalFiles>19</totalFiles>
+    <bundleType>master</bundleType>
+    <ignorePatterns>
+      <pattern>node_modules</pattern>
+      <pattern>.git</pattern>
+      <pattern>dist</pattern>
+      <pattern>build</pattern>
+      <pattern>coverage</pattern>
+      <pattern>.next</pattern>
+      <pattern>.cache</pattern>
+      <pattern>.netlify</pattern>
+      <pattern>package-lock.json</pattern>
+      <pattern>yarn.lock</pattern>
+      <pattern>.DS_Store</pattern>
+      <pattern>Thumbs.db</pattern>
+      <pattern>*.mp3</pattern>
+      <pattern>*.mp4</pattern>
+      <pattern>*.wav</pattern>
+      <pattern>*.ogg</pattern>
+      <pattern>*.m4a</pattern>
+      <pattern>*.flac</pattern>
+      <pattern>*.jpg</pattern>
+      <pattern>*.jpeg</pattern>
+      <pattern>*.png</pattern>
+      <pattern>*.gif</pattern>
+      <pattern>*.webp</pattern>
+      <pattern>*.svg</pattern>
+      <pattern>*.ico</pattern>
+      <pattern>*.pxd</pattern>
+      <pattern>*.pdf</pattern>
+      <pattern>*.doc</pattern>
+      <pattern>*.docx</pattern>
+      <pattern>*.zip</pattern>
+      <pattern>*.tar</pattern>
+      <pattern>*.gz</pattern>
+      <pattern>*.rar</pattern>
+      <pattern>example-project</pattern>
+      <pattern>issues</pattern>
+    </ignorePatterns>
+  </metadata>
+
+  <directoryTree>
+  <directory name="prisma" path="prisma">
+    <file name="schema.prisma" path="prisma/schema.prisma" size="0" lastModified="2025-05-28T21:52:24.319Z">
+      <tags></tags>
+    </file>
+  </directory>
+  <directory name="src" path="src">
+    <directory name="components" path="src/components">
+      <directory name="ui" path="src/components/ui">
+        <file name="button.tsx" path="src/components/ui/button.tsx" size="0" lastModified="2025-05-28T21:47:16.145Z">
+          <tags></tags>
+        </file>
+      </directory>
+    </directory>
+    <directory name="lib" path="src/lib">
+      <file name="utils.ts" path="src/lib/utils.ts" size="0" lastModified="2025-05-28T21:46:49.754Z">
+        <tags></tags>
+      </file>
+    </directory>
+    <file name="App.css" path="src/App.css" size="0" lastModified="2025-05-28T21:44:35.041Z">
+      <tags></tags>
+    </file>
+    <file name="App.tsx" path="src/App.tsx" size="0" lastModified="2025-05-28T21:48:14.284Z">
+      <tags></tags>
+    </file>
+    <file name="index.css" path="src/index.css" size="0" lastModified="2025-05-28T21:46:42.653Z">
+      <tags></tags>
+    </file>
+    <file name="main.tsx" path="src/main.tsx" size="0" lastModified="2025-05-28T21:44:35.044Z">
+      <tags></tags>
+    </file>
+    <file name="vite-env.d.ts" path="src/vite-env.d.ts" size="0" lastModified="2025-05-28T21:44:35.044Z">
+      <tags></tags>
+    </file>
+  </directory>
+  <file name=".env" path=".env" size="0" lastModified="2025-05-28T21:52:13.504Z">
+    <tags></tags>
+  </file>
+  <file name=".gitignore" path=".gitignore" size="0" lastModified="2025-05-28T21:44:35.037Z">
+    <tags></tags>
+  </file>
+  <file name="components.json" path="components.json" size="0" lastModified="2025-05-28T21:46:42.115Z">
+    <tags></tags>
+  </file>
+  <file name="eslint.config.js" path="eslint.config.js" size="0" lastModified="2025-05-28T21:44:35.037Z">
+    <tags></tags>
+  </file>
+  <file name="index.html" path="index.html" size="0" lastModified="2025-05-28T21:48:47.451Z">
+    <tags></tags>
+  </file>
+  <file name="package.json" path="package.json" size="0" lastModified="2025-05-28T21:50:09.046Z">
+    <tags></tags>
+  </file>
+  <file name="README.md" path="README.md" size="0" lastModified="2025-05-28T21:49:18.650Z">
+    <tags></tags>
+  </file>
+  <file name="tsconfig.app.json" path="tsconfig.app.json" size="0" lastModified="2025-05-28T21:48:18.933Z">
+    <tags></tags>
+  </file>
+  <file name="tsconfig.json" path="tsconfig.json" size="0" lastModified="2025-05-28T21:45:45.831Z">
+    <tags></tags>
+  </file>
+  <file name="tsconfig.node.json" path="tsconfig.node.json" size="0" lastModified="2025-05-28T21:46:21.462Z">
+    <tags></tags>
+  </file>
+  <file name="vite.config.ts" path="vite.config.ts" size="0" lastModified="2025-05-28T21:46:16.230Z">
+    <tags></tags>
+  </file>
+</directoryTree>
+
+  <asciiTree>
+project/
+├── prisma/
+│   └── schema.prisma
+├── src/
+│   ├── components/
+│   │   └── ui/
+│   │       └── button.tsx
+│   ├── lib/
+│   │   └── utils.ts
+│   ├── App.css
+│   ├── App.tsx
+│   ├── index.css
+│   ├── main.tsx
+│   └── vite-env.d.ts
+├── .env
+├── .gitignore
+├── components.json
+├── eslint.config.js
+├── index.html
+├── package.json
+├── README.md
+├── tsconfig.app.json
+├── tsconfig.json
+├── tsconfig.node.json
+└── vite.config.ts
+
+19 files, 5 directories
+  </asciiTree>
+
+  <documents>
+    
+    <document>
+      <source>prisma/schema.prisma</source>
+      <tags></tags>
+      <metadata>
+        <size>4906</size>
+        <lastModified>2025-05-28T21:52:24.319Z</lastModified>
+        <extension>prisma</extension>
+        <directory>prisma</directory>
+      </metadata>
+      <content>generator client {
+  provider = &quot;prisma-client-js&quot;
+}
+
+datasource db {
+  provider = &quot;postgresql&quot;
+  url      = env(&quot;DATABASE_URL&quot;)
+}
+
+model Character {
+  id            String @id @default(cuid())
+  nftAddress    String @unique // Solana NFT address
+  tokenId       String @unique // Token ID or mint address
+  walletAddress String // Owner&#39;s wallet
+
+  // Character basics
+  name          String
+  gender        Gender
+  characterType CharacterType @default(HUMAN)
+
+  // Current state
+  currentLocationId String
+  currentLocation   Location @relation(fields: [currentLocationId], references: [id])
+
+  // NFT versioning
+  currentVersion  Int     @default(1)
+  currentImageUrl String?
+
+  // Game stats
+  energy Int @default(100)
+  health Int @default(100)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  inventory      CharacterInventory[]
+  imageHistory   CharacterImage[]
+  transactions   Transaction[]
+  marketListings MarketListing[]
+
+  @@map(&quot;characters&quot;)
+}
+
+model Location {
+  id          String  @id @default(cuid())
+  name        String  @unique
+  description String
+  imageUrl    String?
+
+  // Location properties
+  biome      String // desert, forest, city, etc.
+  difficulty Int    @default(1)
+
+  // Available resources for mining
+  resources LocationResource[]
+
+  // Characters currently here
+  characters Character[]
+
+  // Market items available here
+  marketListings MarketListing[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map(&quot;locations&quot;)
+}
+
+model Item {
+  id          String       @id @default(cuid())
+  name        String       @unique
+  description String
+  category    ItemCategory
+
+  // Visual properties
+  layerType LayerType? // which layer this item affects
+  imageUrl  String? // item&#39;s image for layering
+
+  // Game properties
+  rarity     Rarity @default(COMMON)
+  durability Int? // for equipment that degrades
+
+  // Stats effects (optional for MVP)
+  energyEffect Int?
+  healthEffect Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  characterInventory CharacterInventory[]
+  locationResources  LocationResource[]
+  marketListings     MarketListing[]
+
+  @@map(&quot;items&quot;)
+}
+
+model CharacterInventory {
+  id          String  @id @default(cuid())
+  characterId String
+  itemId      String
+  quantity    Int     @default(1)
+  isEquipped  Boolean @default(false)
+
+  character Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  item      Item      @relation(fields: [itemId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([characterId, itemId])
+  @@map(&quot;character_inventory&quot;)
+}
+
+model LocationResource {
+  id         String @id @default(cuid())
+  locationId String
+  itemId     String
+
+  // Mining properties
+  spawnRate  Float @default(0.1) // chance per mining attempt
+  maxPerDay  Int? // daily limit per character
+  difficulty Int   @default(1)
+
+  location Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  item     Item     @relation(fields: [itemId], references: [id])
+
+  @@unique([locationId, itemId])
+  @@map(&quot;location_resources&quot;)
+}
+
+model CharacterImage {
+  id          String  @id @default(cuid())
+  characterId String
+  version     Int
+  imageUrl    String
+  description String? // what changed in this version
+
+  character Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([characterId, version])
+  @@map(&quot;character_images&quot;)
+}
+
+model MarketListing {
+  id         String  @id @default(cuid())
+  sellerId   String? // null for system items
+  locationId String
+  itemId     String
+
+  price        Int // in game currency or SOL lamports
+  quantity     Int     @default(1)
+  isSystemItem Boolean @default(false) // true for NPC shop items
+
+  seller   Character? @relation(fields: [sellerId], references: [id])
+  location Location   @relation(fields: [locationId], references: [id])
+  item     Item       @relation(fields: [itemId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map(&quot;market_listings&quot;)
+}
+
+model Transaction {
+  id          String          @id @default(cuid())
+  characterId String
+  type        TransactionType
+  itemId      String?
+  quantity    Int?
+  description String
+
+  character Character @relation(fields: [characterId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@map(&quot;transactions&quot;)
+}
+
+// Enums
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum CharacterType {
+  HUMAN
+  CREATURE
+}
+
+enum ItemCategory {
+  CLOTHING
+  HAT
+  ACCESSORY
+  TOOL
+  CONSUMABLE
+  MATERIAL
+}
+
+enum LayerType {
+  BACKGROUND
+  BASE
+  CLOTHING
+  HAT
+  FACE_COVERING
+  ACCESSORY
+}
+
+enum Rarity {
+  COMMON
+  UNCOMMON
+  RARE
+  EPIC
+  LEGENDARY
+}
+
+enum TransactionType {
+  MINT
+  MINE
+  BUY
+  SELL
+  TRAVEL
+  EQUIP
+  UNEQUIP
+}
+</content>
+    </document>
+
+    <document>
+      <source>src/components/ui/button.tsx</source>
+      <tags></tags>
+      <metadata>
+        <size>2123</size>
+        <lastModified>2025-05-28T21:47:16.145Z</lastModified>
+        <extension>tsx</extension>
+        <directory>src/components/ui</directory>
+      </metadata>
+      <content>import * as React from &quot;react&quot;
+import { Slot } from &quot;@radix-ui/react-slot&quot;
+import { cva, type VariantProps } from &quot;class-variance-authority&quot;
+
+import { cn } from &quot;@/lib/utils&quot;
+
+const buttonVariants = cva(
+  &quot;inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg:not([class*=&#39;size-&#39;])]:size-4 shrink-0 [&amp;_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive&quot;,
+  {
+    variants: {
+      variant: {
+        default:
+          &quot;bg-primary text-primary-foreground shadow-xs hover:bg-primary/90&quot;,
+        destructive:
+          &quot;bg-destructive text-white shadow-xs hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60&quot;,
+        outline:
+          &quot;border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50&quot;,
+        secondary:
+          &quot;bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80&quot;,
+        ghost:
+          &quot;hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50&quot;,
+        link: &quot;text-primary underline-offset-4 hover:underline&quot;,
+      },
+      size: {
+        default: &quot;h-9 px-4 py-2 has-[&gt;svg]:px-3&quot;,
+        sm: &quot;h-8 rounded-md gap-1.5 px-3 has-[&gt;svg]:px-2.5&quot;,
+        lg: &quot;h-10 rounded-md px-6 has-[&gt;svg]:px-4&quot;,
+        icon: &quot;size-9&quot;,
+      },
+    },
+    defaultVariants: {
+      variant: &quot;default&quot;,
+      size: &quot;default&quot;,
+    },
+  }
+)
+
+function Button({
+  className,
+  variant,
+  size,
+  asChild = false,
+  ...props
+}: React.ComponentProps&lt;&quot;button&quot;&gt; &amp;
+  VariantProps&lt;typeof buttonVariants&gt; &amp; {
+    asChild?: boolean
+  }) {
+  const Comp = asChild ? Slot : &quot;button&quot;
+
+  return (
+    &lt;Comp
+      data-slot=&quot;button&quot;
+      className={cn(buttonVariants({ variant, size, className }))}
+      {...props}
+    /&gt;
+  )
+}
+
+export { Button, buttonVariants }
+</content>
+    </document>
+
+    <document>
+      <source>src/lib/utils.ts</source>
+      <tags></tags>
+      <metadata>
+        <size>166</size>
+        <lastModified>2025-05-28T21:46:49.754Z</lastModified>
+        <extension>ts</extension>
+        <directory>src/lib</directory>
+      </metadata>
+      <content>import { clsx, type ClassValue } from &quot;clsx&quot;
+import { twMerge } from &quot;tailwind-merge&quot;
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs))
+}
+</content>
+    </document>
+
+    <document>
+      <source>src/App.css</source>
+      <tags></tags>
+      <metadata>
+        <size>606</size>
+        <lastModified>2025-05-28T21:44:35.041Z</lastModified>
+        <extension>css</extension>
+        <directory>src</directory>
+      </metadata>
+      <content>#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}
+</content>
+    </document>
+
+    <document>
+      <source>src/index.css</source>
+      <tags></tags>
+      <metadata>
+        <size>4484</size>
+        <lastModified>2025-05-28T21:46:42.653Z</lastModified>
+        <extension>css</extension>
+        <directory>src</directory>
+      </metadata>
+      <content>@import &quot;tailwindcss&quot;;
+@import &quot;tw-animate-css&quot;;
+
+@custom-variant dark (&amp;:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+:root {
+  --radius: 0.625rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.147 0.004 49.25);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.147 0.004 49.25);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.147 0.004 49.25);
+  --primary: oklch(0.216 0.006 56.043);
+  --primary-foreground: oklch(0.985 0.001 106.423);
+  --secondary: oklch(0.97 0.001 106.424);
+  --secondary-foreground: oklch(0.216 0.006 56.043);
+  --muted: oklch(0.97 0.001 106.424);
+  --muted-foreground: oklch(0.553 0.013 58.071);
+  --accent: oklch(0.97 0.001 106.424);
+  --accent-foreground: oklch(0.216 0.006 56.043);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.923 0.003 48.717);
+  --input: oklch(0.923 0.003 48.717);
+  --ring: oklch(0.709 0.01 56.259);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: oklch(0.985 0.001 106.423);
+  --sidebar-foreground: oklch(0.147 0.004 49.25);
+  --sidebar-primary: oklch(0.216 0.006 56.043);
+  --sidebar-primary-foreground: oklch(0.985 0.001 106.423);
+  --sidebar-accent: oklch(0.97 0.001 106.424);
+  --sidebar-accent-foreground: oklch(0.216 0.006 56.043);
+  --sidebar-border: oklch(0.923 0.003 48.717);
+  --sidebar-ring: oklch(0.709 0.01 56.259);
+}
+
+.dark {
+  --background: oklch(0.147 0.004 49.25);
+  --foreground: oklch(0.985 0.001 106.423);
+  --card: oklch(0.216 0.006 56.043);
+  --card-foreground: oklch(0.985 0.001 106.423);
+  --popover: oklch(0.216 0.006 56.043);
+  --popover-foreground: oklch(0.985 0.001 106.423);
+  --primary: oklch(0.923 0.003 48.717);
+  --primary-foreground: oklch(0.216 0.006 56.043);
+  --secondary: oklch(0.268 0.007 34.298);
+  --secondary-foreground: oklch(0.985 0.001 106.423);
+  --muted: oklch(0.268 0.007 34.298);
+  --muted-foreground: oklch(0.709 0.01 56.259);
+  --accent: oklch(0.268 0.007 34.298);
+  --accent-foreground: oklch(0.985 0.001 106.423);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.553 0.013 58.071);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.216 0.006 56.043);
+  --sidebar-foreground: oklch(0.985 0.001 106.423);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0.001 106.423);
+  --sidebar-accent: oklch(0.268 0.007 34.298);
+  --sidebar-accent-foreground: oklch(0.985 0.001 106.423);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.553 0.013 58.071);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+</content>
+    </document>
+
+    <document>
+      <source>src/main.tsx</source>
+      <tags></tags>
+      <metadata>
+        <size>230</size>
+        <lastModified>2025-05-28T21:44:35.044Z</lastModified>
+        <extension>tsx</extension>
+        <directory>src</directory>
+      </metadata>
+      <content>import { StrictMode } from &#39;react&#39;
+import { createRoot } from &#39;react-dom/client&#39;
+import &#39;./index.css&#39;
+import App from &#39;./App.tsx&#39;
+
+createRoot(document.getElementById(&#39;root&#39;)!).render(
+  &lt;StrictMode&gt;
+    &lt;App /&gt;
+  &lt;/StrictMode&gt;,
+)
+</content>
+    </document>
+
+    <document>
+      <source>src/App.tsx</source>
+      <tags></tags>
+      <metadata>
+        <size>107</size>
+        <lastModified>2025-05-28T21:48:14.284Z</lastModified>
+        <extension>tsx</extension>
+        <directory>src</directory>
+      </metadata>
+      <content>import &#39;./App.css&#39;
+
+function App() {
+
+  return (
+    &lt;&gt;
+      wojak-earth    &lt;/&gt;
+  )
+}
+
+export default App
+</content>
+    </document>
+
+    <document>
+      <source>src/vite-env.d.ts</source>
+      <tags></tags>
+      <metadata>
+        <size>38</size>
+        <lastModified>2025-05-28T21:44:35.044Z</lastModified>
+        <extension>ts</extension>
+        <directory>src</directory>
+      </metadata>
+      <content>/// &lt;reference types=&quot;vite/client&quot; /&gt;
+</content>
+    </document>
+
+    <document>
+      <source>tsconfig.node.json</source>
+      <tags></tags>
+      <metadata>
+        <size>598</size>
+        <lastModified>2025-05-28T21:46:21.462Z</lastModified>
+        <extension>json</extension>
+        <directory>Root</directory>
+      </metadata>
+      <content>{
+  &quot;compilerOptions&quot;: {
+    &quot;tsBuildInfoFile&quot;: &quot;./node_modules/.tmp/tsconfig.node.tsbuildinfo&quot;,
+    &quot;target&quot;: &quot;ES2022&quot;,
+    &quot;lib&quot;: [&quot;ES2023&quot;],
+    &quot;module&quot;: &quot;ESNext&quot;,
+    &quot;skipLibCheck&quot;: true,
+
+    /* Bundler mode */
+    &quot;moduleResolution&quot;: &quot;bundler&quot;,
+    &quot;allowImportingTsExtensions&quot;: true,
+    &quot;verbatimModuleSyntax&quot;: true,
+    &quot;moduleDetection&quot;: &quot;force&quot;,
+    &quot;noEmit&quot;: true,
+
+    /* Linting */
+    &quot;strict&quot;: true,
+    &quot;noUnusedLocals&quot;: true,
+    &quot;noUnusedParameters&quot;: true,
+    &quot;noFallthroughCasesInSwitch&quot;: true,
+    &quot;noUncheckedSideEffectImports&quot;: true
+  },
+  &quot;include&quot;: [&quot;vite.config.ts&quot;]
+}
+</content>
+    </document>
+
+    <document>
+      <source>README.md</source>
+      <tags></tags>
+      <metadata>
+        <size>14</size>
+        <lastModified>2025-05-28T21:49:18.650Z</lastModified>
+        <extension>md</extension>
+        <directory>Root</directory>
+      </metadata>
+      <content># wojak-earth
+</content>
+    </document>
+
+    <document>
+      <source>.gitignore</source>
+      <tags></tags>
+      <metadata>
+        <size>253</size>
+        <lastModified>2025-05-28T21:44:35.037Z</lastModified>
+        <extension>gitignore</extension>
+        <directory>Root</directory>
+      </metadata>
+      <content># Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+</content>
+    </document>
+
+    <document>
+      <source>.env</source>
+      <tags></tags>
+      <metadata>
+        <size>135</size>
+        <lastModified>2025-05-28T21:52:13.504Z</lastModified>
+        <extension>env</extension>
+        <directory>Root</directory>
+      </metadata>
+      <content>DATABASE_URL=postgresql://neondb_owner:npg_su0rywczKEv9@ep-lively-river-a6lm0x4f-pooler.us-west-2.aws.neon.tech/neondb?sslmode=require
+</content>
+    </document>
+
+    <document>
+      <source>vite.config.ts</source>
+      <tags></tags>
+      <metadata>
+        <size>327</size>
+        <lastModified>2025-05-28T21:46:16.230Z</lastModified>
+        <extension>ts</extension>
+        <directory>Root</directory>
+      </metadata>
+      <content>import path from &#39;path&#39;
+import tailwindcss from &#39;@tailwindcss/vite&#39;
+import react from &#39;@vitejs/plugin-react&#39;
+import { defineConfig } from &#39;vite&#39;
+
+// https://vite.dev/config/
+export default defineConfig({
+  plugins: [react(), tailwindcss()],
+  resolve: {
+    alias: {
+      &#39;@&#39;: path.resolve(__dirname, &#39;./src&#39;),
+    },
+  },
+})
+</content>
+    </document>
+
+    <document>
+      <source>index.html</source>
+      <tags></tags>
+      <metadata>
+        <size>367</size>
+        <lastModified>2025-05-28T21:48:47.451Z</lastModified>
+        <extension>html</extension>
+        <directory>Root</directory>
+      </metadata>
+      <content>&lt;!doctype html&gt;
+&lt;html lang=&quot;en&quot;&gt;
+  &lt;head&gt;
+    &lt;meta charset=&quot;UTF-8&quot; /&gt;
+    &lt;link rel=&quot;icon&quot; type=&quot;image/svg+xml&quot; href=&quot;/wojak-earth.svg&quot; /&gt;
+    &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot; /&gt;
+    &lt;title&gt;wojak-earth&lt;/title&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;div id=&quot;root&quot;&gt;&lt;/div&gt;
+    &lt;script type=&quot;module&quot; src=&quot;/src/main.tsx&quot;&gt;&lt;/script&gt;
+  &lt;/body&gt;
+&lt;/html&gt;
+</content>
+    </document>
+
+    <document>
+      <source>components.json</source>
+      <tags></tags>
+      <metadata>
+        <size>423</size>
+        <lastModified>2025-05-28T21:46:42.115Z</lastModified>
+        <extension>json</extension>
+        <directory>Root</directory>
+      </metadata>
+      <content>{
+  &quot;$schema&quot;: &quot;https://ui.shadcn.com/schema.json&quot;,
+  &quot;style&quot;: &quot;new-york&quot;,
+  &quot;rsc&quot;: false,
+  &quot;tsx&quot;: true,
+  &quot;tailwind&quot;: {
+    &quot;config&quot;: &quot;&quot;,
+    &quot;css&quot;: &quot;src/index.css&quot;,
+    &quot;baseColor&quot;: &quot;stone&quot;,
+    &quot;cssVariables&quot;: true,
+    &quot;prefix&quot;: &quot;&quot;
+  },
+  &quot;aliases&quot;: {
+    &quot;components&quot;: &quot;@/components&quot;,
+    &quot;utils&quot;: &quot;@/lib/utils&quot;,
+    &quot;ui&quot;: &quot;@/components/ui&quot;,
+    &quot;lib&quot;: &quot;@/lib&quot;,
+    &quot;hooks&quot;: &quot;@/hooks&quot;
+  },
+  &quot;iconLibrary&quot;: &quot;lucide&quot;
+}</content>
+    </document>
+
+    <document>
+      <source>tsconfig.app.json</source>
+      <tags></tags>
+      <metadata>
+        <size>755</size>
+        <lastModified>2025-05-28T21:48:18.933Z</lastModified>
+        <extension>json</extension>
+        <directory>Root</directory>
+      </metadata>
+      <content>{
+  &quot;compilerOptions&quot;: {
+      &quot;baseUrl&quot;: &quot;.&quot;,
+    &quot;paths&quot;: {
+      &quot;@/*&quot;: [
+        &quot;./src/*&quot;
+      ]
+    },
+    &quot;tsBuildInfoFile&quot;: &quot;./node_modules/.tmp/tsconfig.app.tsbuildinfo&quot;,
+    &quot;target&quot;: &quot;ES2020&quot;,
+    &quot;useDefineForClassFields&quot;: true,
+    &quot;lib&quot;: [&quot;ES2020&quot;, &quot;DOM&quot;, &quot;DOM.Iterable&quot;],
+    &quot;module&quot;: &quot;ESNext&quot;,
+    &quot;skipLibCheck&quot;: true,
+
+    /* Bundler mode */
+    &quot;moduleResolution&quot;: &quot;bundler&quot;,
+    &quot;allowImportingTsExtensions&quot;: true,
+    &quot;verbatimModuleSyntax&quot;: true,
+    &quot;moduleDetection&quot;: &quot;force&quot;,
+    &quot;noEmit&quot;: true,
+    &quot;jsx&quot;: &quot;react-jsx&quot;,
+
+    /* Linting */
+    &quot;strict&quot;: true,
+    &quot;noUnusedLocals&quot;: true,
+    &quot;noUnusedParameters&quot;: true,
+    &quot;noFallthroughCasesInSwitch&quot;: true,
+    &quot;noUncheckedSideEffectImports&quot;: true
+  },
+  &quot;include&quot;: [&quot;src&quot;]
+}
+</content>
+    </document>
+
+    <document>
+      <source>eslint.config.js</source>
+      <tags></tags>
+      <metadata>
+        <size>734</size>
+        <lastModified>2025-05-28T21:44:35.037Z</lastModified>
+        <extension>js</extension>
+        <directory>Root</directory>
+      </metadata>
+      <content>import js from &#39;@eslint/js&#39;
+import globals from &#39;globals&#39;
+import reactHooks from &#39;eslint-plugin-react-hooks&#39;
+import reactRefresh from &#39;eslint-plugin-react-refresh&#39;
+import tseslint from &#39;typescript-eslint&#39;
+
+export default tseslint.config(
+  { ignores: [&#39;dist&#39;] },
+  {
+    extends: [js.configs.recommended, ...tseslint.configs.recommended],
+    files: [&#39;**/*.{ts,tsx}&#39;],
+    languageOptions: {
+      ecmaVersion: 2020,
+      globals: globals.browser,
+    },
+    plugins: {
+      &#39;react-hooks&#39;: reactHooks,
+      &#39;react-refresh&#39;: reactRefresh,
+    },
+    rules: {
+      ...reactHooks.configs.recommended.rules,
+      &#39;react-refresh/only-export-components&#39;: [
+        &#39;warn&#39;,
+        { allowConstantExport: true },
+      ],
+    },
+  },
+)
+</content>
+    </document>
+
+    <document>
+      <source>package.json</source>
+      <tags></tags>
+      <metadata>
+        <size>1031</size>
+        <lastModified>2025-05-28T21:50:09.046Z</lastModified>
+        <extension>json</extension>
+        <directory>Root</directory>
+      </metadata>
+      <content>{
+  &quot;name&quot;: &quot;wojak-earth&quot;,
+  &quot;private&quot;: true,
+  &quot;version&quot;: &quot;0.0.0&quot;,
+  &quot;type&quot;: &quot;module&quot;,
+  &quot;scripts&quot;: {
+    &quot;dev&quot;: &quot;vite&quot;,
+    &quot;build&quot;: &quot;tsc -b &amp;&amp; vite build&quot;,
+    &quot;lint&quot;: &quot;eslint .&quot;,
+    &quot;preview&quot;: &quot;vite preview&quot;
+  },
+  &quot;dependencies&quot;: {
+    &quot;@prisma/client&quot;: &quot;^6.8.2&quot;,
+    &quot;@radix-ui/react-slot&quot;: &quot;^1.2.3&quot;,
+    &quot;@tailwindcss/vite&quot;: &quot;^4.1.8&quot;,
+    &quot;class-variance-authority&quot;: &quot;^0.7.1&quot;,
+    &quot;clsx&quot;: &quot;^2.1.1&quot;,
+    &quot;lucide-react&quot;: &quot;^0.511.0&quot;,
+    &quot;prisma&quot;: &quot;^6.8.2&quot;,
+    &quot;react&quot;: &quot;^19.1.0&quot;,
+    &quot;react-dom&quot;: &quot;^19.1.0&quot;,
+    &quot;tailwind-merge&quot;: &quot;^3.3.0&quot;,
+    &quot;tailwindcss&quot;: &quot;^4.1.8&quot;
+  },
+  &quot;devDependencies&quot;: {
+    &quot;@eslint/js&quot;: &quot;^9.25.0&quot;,
+    &quot;@types/node&quot;: &quot;^22.15.24&quot;,
+    &quot;@types/react&quot;: &quot;^19.1.2&quot;,
+    &quot;@types/react-dom&quot;: &quot;^19.1.2&quot;,
+    &quot;@vitejs/plugin-react&quot;: &quot;^4.4.1&quot;,
+    &quot;eslint&quot;: &quot;^9.25.0&quot;,
+    &quot;eslint-plugin-react-hooks&quot;: &quot;^5.2.0&quot;,
+    &quot;eslint-plugin-react-refresh&quot;: &quot;^0.4.19&quot;,
+    &quot;globals&quot;: &quot;^16.0.0&quot;,
+    &quot;tw-animate-css&quot;: &quot;^1.3.0&quot;,
+    &quot;typescript&quot;: &quot;~5.8.3&quot;,
+    &quot;typescript-eslint&quot;: &quot;^8.30.1&quot;,
+    &quot;vite&quot;: &quot;^6.3.5&quot;
+  }
+}
+</content>
+    </document>
+
+    <document>
+      <source>tsconfig.json</source>
+      <tags></tags>
+      <metadata>
+        <size>233</size>
+        <lastModified>2025-05-28T21:45:45.831Z</lastModified>
+        <extension>json</extension>
+        <directory>Root</directory>
+      </metadata>
+      <content>{
+  &quot;files&quot;: [],
+  &quot;references&quot;: [
+    {
+      &quot;path&quot;: &quot;./tsconfig.app.json&quot;
+    },
+    {
+      &quot;path&quot;: &quot;./tsconfig.node.json&quot;
+    }
+  ],
+  &quot;compilerOptions&quot;: {
+    &quot;baseUrl&quot;: &quot;.&quot;,
+    &quot;paths&quot;: {
+      &quot;@/*&quot;: [&quot;./src/*&quot;]
+    }
+  }
+}
+</content>
+    </document>
+    
+  </documents>
+
+</bundle>
