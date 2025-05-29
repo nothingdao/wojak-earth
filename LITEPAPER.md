@@ -155,7 +155,7 @@ _Wojak Earth - Where community builds the economy, not the other way around._
 
 ## Quick Links
 
-- **Play the Game:** [wojak-earth.com](https://earth.ndao.computer.com)
+- **Play the Game:** [earth.ndao.computer](https://earth.ndao.computer)
 - **Community:** Join our community channels for updates
 - **Documentation:** [Full Technical Details](./WHITEPAPER.md)
 - **Investment Deck:** [Detailed Investor Presentation](./PITCHDECK.md)
