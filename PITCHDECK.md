@@ -2,6 +2,8 @@
 
 _Investor Pitch: Building Engagement Before Economics_
 
+**🎮 [Play Now](https://earth.ndao.computer) | 🐦 [@nothingdao](https://twitter.com/nothingdao) | 📚 [All Docs](./INDEX.md)**
+
 ---
 
 ## 🌍 **Slide 1: Vision**
@@ -21,6 +23,8 @@ _The MMO that activates tokenomics when the community is ready_
 - Real-time social features and community building
 - Economic infrastructure ready for staged activation
 - **Fun-first design** with tokenomics that activate based on engagement
+
+> 📄 **New to the concept?** Start with our [Litepaper](./LITEPAPER.md) for the full context and approach.
 
 ---
 
@@ -44,6 +48,8 @@ _The MMO that activates tokenomics when the community is ready_
 - Player-owned economy and governance
 - **Success Metric:** Sustainable economic ecosystem
 
+> 🔧 **Want technical validation?** See our [development status](./TODO.md) for detailed capabilities and infrastructure readiness.
+
 ---
 
 ## 🛠 **Slide 4: Technical Readiness**
@@ -60,6 +66,8 @@ _The MMO that activates tokenomics when the community is ready_
 - Prove product-market fit before monetization
 - Build genuine community before introducing economics
 - Technical capability demonstrated, timeline driven by engagement
+
+> 📊 **Deep dive on economics:** Our [Token Economics Whitepaper](./WHITEPAPER.md) details the complete $EARTH infrastructure.
 
 ---
 
@@ -78,6 +86,8 @@ _The MMO that activates tokenomics when the community is ready_
 - Off-chain ↔ On-chain $EARTH conversion
 - Real value extraction for engaged players
 - Player-owned marketplace with actual ownership
+
+> 🎨 **Innovation spotlight:** Our [Dynamic NFT System](./NFT.md) creates character NFTs that evolve with gameplay in real-time.
 
 ---
 
@@ -152,6 +162,15 @@ _The MMO that activates tokenomics when the community is ready_
 - **Stage 3:** Demonstrate sustainable player-owned economies
 
 **This isn't just a game or just a token - it's a new model for community-driven entertainment.**
+
+---
+
+## 🎮 **Experience It Now**
+
+**[Play Wojak Earth](https://earth.ndao.computer)** - _Try the game yourself_  
+**[Follow Updates](https://twitter.com/nothingdao)** - _Real-time development_  
+**[Technical Deep Dive](./WHITEPAPER.md)** - _Complete tokenomics_  
+**[All Documentation](./INDEX.md)** - _Full context_
 
 ---
 

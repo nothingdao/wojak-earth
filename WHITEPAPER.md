@@ -2,6 +2,8 @@
 
 _Economic Foundation for Community-Driven Gaming_
 
+**🎮 [Play Now](https://earth.ndao.computer) | 🐦 [@nothingdao](https://twitter.com/nothingdao) | 📚 [All Docs](./INDEX.md)**
+
 ---
 
 ## Executive Summary
@@ -9,6 +11,8 @@ _Economic Foundation for Community-Driven Gaming_
 $EARTH is the **planned economic infrastructure** for Wojak Earth, a social exploration MMO that prioritizes community engagement over premature monetization.
 
 Unlike traditional crypto games that launch with tokenomics first, $EARTH is designed as **staged economic infrastructure** that activates only when the community demonstrates sustained engagement and explicitly requests ownership features.
+
+> 📄 **New to Wojak Earth?** Start with our [Litepaper](./LITEPAPER.md) for context on our community-first approach.
 
 ---
 
@@ -27,6 +31,8 @@ Unlike traditional crypto games that launch with tokenomics first, $EARTH is des
 - Economic models proven in off-chain environment
 - Bridge contracts designed but not deployed
 - **Capability demonstrated, timeline community-driven**
+
+> 📋 **Want proof of technical readiness?** Check our [development status](./TODO.md) for detailed infrastructure capabilities.
 
 ---
 
@@ -54,6 +60,8 @@ Unlike traditional crypto games that launch with tokenomics first, $EARTH is des
 - **Sources:** SPL token purchases, in-game rewards for sustained engagement
 - **Sinks:** Premium features, cosmetics, marketplace fees, travel costs
 - **Balance:** Designed for sustainability, not speculation
+
+> 🎨 **NFT Innovation:** Our [Dynamic NFT System](./NFT.md) creates character NFTs that evolve in real-time with your gaming journey.
 
 ### Stage 3: Value Bridge _(Stability-Dependent)_
 
@@ -131,6 +139,8 @@ Unlike traditional crypto games that launch with tokenomics first, $EARTH is des
 - Cross-game interoperability partnerships
 
 **Focus:** Sustainable revenue from engaged players, not speculative trading
+
+> 💰 **Investment perspective:** See our [Pitch Deck](./PITCHDECK.md) for market opportunity and competitive positioning.
 
 ---
 
@@ -226,6 +236,15 @@ By building exceptional gameplay first and introducing economics only when the c
 - **Analytics:** Economic health monitoring and community sentiment tracking
 
 **Status:** All technical infrastructure complete and tested. Activation timeline dependent entirely on community engagement and explicit request for these features.
+
+---
+
+## 🎮 **Next Steps**
+
+**[Experience the Game](https://earth.ndao.computer)** - _See the foundation we're building_  
+**[Follow Development](https://twitter.com/nothingdao)** - _Real-time updates_  
+**[Investment Overview](./PITCHDECK.md)** - _Market opportunity_  
+**[All Documentation](./INDEX.md)** - _Complete context_
 
 ---
 

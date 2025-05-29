@@ -2,6 +2,8 @@
 
 _Community-First MMO with Crypto-Ready Infrastructure_
 
+**🎮 [Play Now](https://earth.ndao.computer) | 🐦 [@nothingdao](https://twitter.com/nothingdao) | 📚 [All Docs](./INDEX.md)**
+
 ---
 
 ## The Problem
@@ -20,6 +22,8 @@ Wojak Earth is a social exploration MMO where players mine, trade, craft, and bu
 
 Instead, we're focused entirely on what matters: **creating engaging social experiences that make players want to log in every day.**
 
+> 💡 **Want the investment details?** See our [Pitch Deck](./PITCHDECK.md) for market opportunity and competitive advantages.
+
 ---
 
 ## Why This Works
@@ -32,6 +36,8 @@ Free gameplay removes financial pressure and speculation. Players join for fun, 
 
 We've built production-ready crypto infrastructure alongside exceptional gameplay systems. Investors can see we're technically capable without the risk of premature monetization.
 
+> 🔧 **See the technical depth:** Our [Token Economics](./WHITEPAPER.md) whitepaper details the complete $EARTH infrastructure.
+
 ### 3. **Market Timing Control**
 
 We activate economic features when the community demonstrates sustained engagement, not when we need revenue. This creates sustainable growth rather than speculative bubbles.
@@ -39,6 +45,8 @@ We activate economic features when the community demonstrates sustained engageme
 ### 4. **Authentic Player Demand**
 
 When players start asking "Can I own my character?" and "Can I trade items for real value?", we know they're genuinely engaged, not just speculating.
+
+> 🎨 **Character ownership innovation:** Our [Dynamic NFT System](./NFT.md) creates living visual representations that evolve with your gaming journey.
 
 ---
 
@@ -61,6 +69,8 @@ When players start asking "Can I own my character?" and "Can I trade items for r
 - Payment processing and wallet integration
 - Bridge contracts designed for future deployment
 - Community governance frameworks
+
+> 📋 **Current development status:** See our [detailed roadmap](./TODO.md) for specific capabilities and next milestones.
 
 ---
 
@@ -137,6 +147,8 @@ We're seeking partners who understand that **sustainable crypto gaming requires 
 - A project that prioritizes tokenomics over player experience
 - A team that will compromise game quality for faster monetization
 
+> 💰 **Ready to dive deeper?** Our [Pitch Deck](./PITCHDECK.md) covers the investment thesis in detail.
+
 ---
 
 ## Next Steps
@@ -149,17 +161,12 @@ When you're ready to own your character, trade items for real value, and partici
 
 ---
 
+## 🎮 Experience It Yourself
+
+**[Play Wojak Earth](https://earth.ndao.computer)** - _No wallet required_  
+**[Follow Development](https://twitter.com/nothingdao)** - _Real-time updates_  
+**[Read More](./INDEX.md)** - _Complete documentation_
+
+---
+
 _Wojak Earth - Where community builds the economy, not the other way around._
-
----
-
-## Quick Links
-
-- **Play the Game:** [earth.ndao.computer](https://earth.ndao.computer)
-- **Community:** Join our community channels for updates
-- **Documentation:** [Full Technical Details](./WHITEPAPER.md)
-- **Investment Deck:** [Detailed Investor Presentation](./PITCHDECK.md)
-
----
-
-_This litepaper serves as an introduction to our approach. For detailed tokenomics, technical specifications, and investment opportunities, see our complete documentation suite._
