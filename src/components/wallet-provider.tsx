@@ -7,8 +7,6 @@ import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
 import {
   PhantomWalletAdapter,
   SolflareWalletAdapter,
-  BackpackWalletAdapter,
-  GlowWalletAdapter,
 } from '@solana/wallet-adapter-wallets';
 
 interface SolanaWalletProviderProps {
@@ -28,8 +26,6 @@ export function SolanaWalletProvider({
     () => [
       new PhantomWalletAdapter(),
       new SolflareWalletAdapter(),
-      new BackpackWalletAdapter(),
-      new GlowWalletAdapter(),
     ],
     []
   );

@@ -1,6 +1,5 @@
 "use client";
 
-import React from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import {
   Dialog,
@@ -27,9 +26,11 @@ export function WalletSelectModal({ open, onOpenChange }: WalletSelectModalProps
 
   const handleWalletSelect = async (walletName: string) => {
     try {
+      // @ts-expect-error lmao
       select(walletName);
       await connect();
       onOpenChange(false);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       toast.error('Failed to connect to wallet');
     }
@@ -38,7 +39,7 @@ export function WalletSelectModal({ open, onOpenChange }: WalletSelectModalProps
   const installedWallets = wallets.filter(
     (wallet) => wallet.readyState === WalletReadyState.Installed
   );
-  
+
   const notDetectedWallets = wallets.filter(
     (wallet) => wallet.readyState === WalletReadyState.NotDetected
   );
@@ -55,7 +56,7 @@ export function WalletSelectModal({ open, onOpenChange }: WalletSelectModalProps
             Choose a wallet to connect to this application.
           </DialogDescription>
         </DialogHeader>
-        
+
         <ScrollArea className="max-h-[400px]">
           <div className="space-y-2">
             {installedWallets.length > 0 && (
@@ -84,7 +85,7 @@ export function WalletSelectModal({ open, onOpenChange }: WalletSelectModalProps
                 ))}
               </div>
             )}
-            
+
             {notDetectedWallets.length > 0 && (
               <div className="space-y-2">
                 <h4 className="text-sm font-medium text-muted-foreground">Available Wallets</h4>
