@@ -2,7 +2,7 @@
 
 _The MMO that builds community before economics_
 
-**🎮 [Play Now](https://earth.ndao.computer) | 🐦 [@nothingdao](https://twitter.com/nothingdao)**
+**🎮 [Play Now](https://earth.ndao.computer) | 🐦 [@nothingdao](https://x.com/nothingdao)**
 
 ---
 
@@ -43,7 +43,7 @@ _The MMO that builds community before economics_
 1. [Litepaper](./LITEPAPER.md) - Understand our approach
 2. [Play the Game](https://earth.ndao.computer) - Experience it yourself
 3. [NFT System](./NFT.md) - See the innovation
-4. [Follow Updates](https://twitter.com/nothingdao) - Stay connected
+4. [Follow Updates](https://x.com/nothingdao) - Stay connected
 
 ### **Considering Investment?**
 
@@ -82,7 +82,7 @@ Production-ready systems across both gaming and blockchain infrastructure - capa
 **[🎮 Play Now](https://earth.ndao.computer)**  
 _No wallet required - just jump in and explore_
 
-**[🐦 Follow Development](https://twitter.com/nothingdao)**  
+**[🐦 Follow Development](https://x.com/nothingdao)**  
 _Real-time updates and community building_
 
 **[📧 Get Involved](mailto:hello@ndao.computer)**  

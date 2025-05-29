@@ -2,7 +2,15 @@
 
 _Economic Foundation for Community-Driven Gaming_
 
-**🎮 [Play Now](https://earth.ndao.computer) | 🐦 [@nothingdao](https://twitter.com/nothingdao) | 📚 [All Docs](./INDEX.md)**
+**🎮 [Play Now](https://earth.ndao.computer) | 🐦 [@nothingdao](https://x.com/nothingdao) | 📚 [All Docs](./INDEX.md)**
+
+---
+
+**📖 Documentation Navigation**
+
+- [📋 Master Index](./INDEX.md) | [🌍 Overview](./LITEPAPER.md) | [🎯 Pitch](./PITCHDECK.md) | [💰 Economics](./WHITEPAPER.md) | [🎨 NFTs](./NFT.md) | [🛠 Status](./TODO.md)
+
+**🔗 Connect**: [@nothingdao](https://x.com/nothingdao) | [earth.ndao.computer](https://earth.ndao.computer)
 
 ---
 
@@ -242,7 +250,7 @@ By building exceptional gameplay first and introducing economics only when the c
 ## 🎮 **Next Steps**
 
 **[Experience the Game](https://earth.ndao.computer)** - _See the foundation we're building_  
-**[Follow Development](https://twitter.com/nothingdao)** - _Real-time updates_  
+**[Follow Development](https://x.com/nothingdao)** - _Real-time updates_  
 **[Investment Overview](./PITCHDECK.md)** - _Market opportunity_  
 **[All Documentation](./INDEX.md)** - _Complete context_
 

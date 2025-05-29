@@ -909,6 +909,10 @@ function App() {
 
   const renderMapView = () => (
     <div className="space-y-4">
+      <Button onClick={() => setCurrentView("main")} variant="ghost">
+        <ArrowLeft className="w-4 h-4 mr-2" />
+        Back
+      </Button>
       <h3 className="text-lg font-semibold">World Map</h3>
       <p className="text-sm text-muted-foreground">
         Explore different locations across Wojak Earth
@@ -968,10 +972,7 @@ function App() {
         </TabsContent>
       </Tabs>
 
-      <Button onClick={() => setCurrentView("main")} variant="ghost">
-        <ArrowLeft className="w-4 h-4 mr-2" />
-        Back
-      </Button>
+
     </div>
   )
 
@@ -1223,9 +1224,9 @@ function App() {
           className: '',
         }}
       />
-      <div className="min-h-screen bg-background p-4">
+      <div className="min-h-screen bg-background-4">
         <div className="max-w-md mx-auto">
-          <div className="bg-card border rounded-lg p-6 shadow-sm">
+          <div className="rounded-lg-6 shadow-sm">
             <h1 className="text-2xl font-bold text-center mb-6 flex items-center justify-center gap-2">
               <MapPin className="w-6 h-6" />
               Wojak Earth

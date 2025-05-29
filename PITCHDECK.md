@@ -2,7 +2,7 @@
 
 _Investor Pitch: Building Engagement Before Economics_
 
-**🎮 [Play Now](https://earth.ndao.computer) | 🐦 [@nothingdao](https://twitter.com/nothingdao) | 📚 [All Docs](./INDEX.md)**
+**🎮 [Play Now](https://earth.ndao.computer) | 🐦 [@nothingdao](https://x.com/nothingdao) | 📚 [All Docs](./INDEX.md)**
 
 ---
 
@@ -168,9 +168,13 @@ _The MMO that activates tokenomics when the community is ready_
 ## 🎮 **Experience It Now**
 
 **[Play Wojak Earth](https://earth.ndao.computer)** - _Try the game yourself_  
-**[Follow Updates](https://twitter.com/nothingdao)** - _Real-time development_  
+**[Follow Updates](https://x.com/nothingdao)** - _Real-time development_  
 **[Technical Deep Dive](./WHITEPAPER.md)** - _Complete tokenomics_  
 **[All Documentation](./INDEX.md)** - _Full context_
+
+---
+
+**🔗 Connect**: [@nothingdao](https://x.com/nothingdao) | [earth.ndao.computer](https://earth.ndao.computer)
 
 ---
 

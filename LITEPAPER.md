@@ -2,7 +2,15 @@
 
 _Community-First MMO with Crypto-Ready Infrastructure_
 
-**🎮 [Play Now](https://earth.ndao.computer) | 🐦 [@nothingdao](https://twitter.com/nothingdao) | 📚 [All Docs](./INDEX.md)**
+**🎮 [Play Now](https://earth.ndao.computer) | 🐦 [@nothingdao](https://x.com/nothingdao) | 📚 [All Docs](./INDEX.md)**
+
+---
+
+**📖 Documentation Navigation**
+
+- [📋 Master Index](./INDEX.md) | [🌍 Overview](./LITEPAPER.md) | [🎯 Pitch](./PITCHDECK.md) | [💰 Economics](./WHITEPAPER.md) | [🎨 NFTs](./NFT.md) | [🛠 Status](./TODO.md)
+
+**🔗 Connect**: [@nothingdao](https://x.com/nothingdao) | [earth.ndao.computer](https://earth.ndao.computer)
 
 ---
 
@@ -164,7 +172,7 @@ When you're ready to own your character, trade items for real value, and partici
 ## 🎮 Experience It Yourself
 
 **[Play Wojak Earth](https://earth.ndao.computer)** - _No wallet required_  
-**[Follow Development](https://twitter.com/nothingdao)** - _Real-time updates_  
+**[Follow Development](https://x.com/nothingdao)** - _Real-time updates_  
 **[Read More](./INDEX.md)** - _Complete documentation_
 
 ---
