@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -35,6 +35,7 @@ export function WalletConnectButton({ className }: WalletConnectButtonProps) {
     if (wallet) {
       try {
         await connect();
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (error) {
         toast.error('Failed to connect wallet');
       }
@@ -46,7 +47,7 @@ export function WalletConnectButton({ className }: WalletConnectButtonProps) {
   if (!connected && !connecting) {
     return (
       <>
-        <Button 
+        <Button
           onClick={handleConnect}
           disabled={connecting}
           className={className}
@@ -54,8 +55,8 @@ export function WalletConnectButton({ className }: WalletConnectButtonProps) {
           <Wallet className="w-4 h-4 mr-2" />
           {wallet ? 'Connect' : 'Select Wallet'}
         </Button>
-        <WalletSelectModal 
-          open={showWalletSelect} 
+        <WalletSelectModal
+          open={showWalletSelect}
           onOpenChange={setShowWalletSelect}
         />
       </>
