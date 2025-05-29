@@ -21,6 +21,9 @@ import type {
   Player
 } from '@/types'
 
+// Define a type for the rarity
+type Rarity = 'COMMON' | 'UNCOMMON' | 'RARE' | 'EPIC' | 'LEGENDARY';
+
 function App() {
   const [currentView, setCurrentView] = useState<GameView>('main')
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null)
@@ -283,14 +286,15 @@ function App() {
 
       // Show appropriate toast based on what was found
       if (result.foundItem) {
-        // Success toast with item details
+        // Ensure result.foundItem.rarity is of type Rarity
+        const rarity: Rarity = result.foundItem.rarity as Rarity; // Type assertion
         const rarityEmoji = {
           'COMMON': '⚪',
           'UNCOMMON': '🟢',
           'RARE': '🔵',
           'EPIC': '🟣',
           'LEGENDARY': '🟡'
-        }[result.foundItem.rarity] || '⚪'
+        }[rarity] || '⚪'
 
         toast.success(
           `Found ${result.foundItem.name}! ${rarityEmoji}`,
@@ -759,7 +763,7 @@ function App() {
     const [imageLoading, setImageLoading] = useState(true)
 
     // Generate the rendered character URL
-    const characterImageUrl = `/.netlify/functions/render-character/${character.id}.png`
+    // const characterImageUrl = `/.netlify/functions/render-character/${character.id}.png`
 
     const handleImageLoad = () => {
       setImageLoading(false)
