@@ -66,7 +66,8 @@ export function InventoryView({
     <div className="bg-muted/30 p-4 rounded-lg mb-4">
       <h4 className="font-medium mb-3 text-sm">Equipment Slots</h4>
       <div className="grid grid-cols-2 gap-3">
-        {Object.entries(EQUIPMENT_SLOTS).map(([category, config]) => {
+        {/* @typescript-eslint/no-unused-vars */}
+        {Object.entries(EQUIPMENT_SLOTS).map(([, config]) => {
           const equippedItem = getEquippedBySlot(config.slot)
           const IconComponent = config.icon
 
