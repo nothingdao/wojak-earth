@@ -1,3 +1,4 @@
+// netlify/functions/equip-item.js - Fixed version
 import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
@@ -90,29 +91,59 @@ export const handler = async (event, context) => {
 
     // Perform equipment action within transaction
     const result = await prisma.$transaction(async (tx) => {
+      let replacedItems = []
+
       if (equip) {
-        // If equipping, first unequip any other items of the same layer type
-        if (inventoryItem.item.layerType) {
+        // Find conflicting items in the same category to auto-unequip
+        const conflictingItems = await tx.characterInventory.findMany({
+          where: {
+            characterId: character.id,
+            isEquipped: true,
+            item: {
+              category: inventoryItem.item.category
+            },
+            id: { not: inventoryId } // Don't include the item we're trying to equip
+          },
+          include: { item: true }
+        })
+
+        // Unequip conflicting items
+        if (conflictingItems.length > 0) {
           await tx.characterInventory.updateMany({
             where: {
               characterId: character.id,
               isEquipped: true,
               item: {
-                layerType: inventoryItem.item.layerType
-              }
+                category: inventoryItem.item.category
+              },
+              id: { not: inventoryId }
             },
             data: { isEquipped: false }
           })
+
+          // Log unequip transactions for replaced items
+          for (const item of conflictingItems) {
+            await tx.transaction.create({
+              data: {
+                characterId: character.id,
+                type: 'UNEQUIP',
+                itemId: item.itemId,
+                description: `Auto-unequipped ${item.item.name} (replaced by ${inventoryItem.item.name})`
+              }
+            })
+          }
+
+          replacedItems = conflictingItems.map(item => item.item.name)
         }
 
-        // Equip the item
+        // Equip the new item
         const updatedItem = await tx.characterInventory.update({
           where: { id: inventoryId },
           data: { isEquipped: true },
           include: { item: true }
         })
 
-        // Log the transaction
+        // Log the equip transaction
         await tx.transaction.create({
           data: {
             characterId: character.id,
@@ -122,7 +153,11 @@ export const handler = async (event, context) => {
           }
         })
 
-        return { action: 'equipped', item: updatedItem }
+        return {
+          action: 'equipped',
+          item: updatedItem,
+          replacedItems: replacedItems
+        }
 
       } else {
         // Unequip the item
@@ -142,7 +177,7 @@ export const handler = async (event, context) => {
           }
         })
 
-        return { action: 'unequipped', item: updatedItem }
+        return { action: 'unequipped', item: updatedItem, replacedItems: [] }
       }
     })
 
@@ -152,10 +187,15 @@ export const handler = async (event, context) => {
       health: inventoryItem.item.healthEffect || 0
     }
 
-    // Prepare response
+    // Prepare response with replacement info
+    let message = `${inventoryItem.item.name} ${result.action} successfully!`
+    if (result.replacedItems.length > 0) {
+      message += ` (Replaced: ${result.replacedItems.join(', ')})`
+    }
+
     const responseData = {
       success: true,
-      message: `${inventoryItem.item.name} ${result.action} successfully!`,
+      message: message,
       item: {
         id: result.item.id,
         name: result.item.item.name,
@@ -165,6 +205,7 @@ export const handler = async (event, context) => {
         layerType: result.item.item.layerType
       },
       action: result.action,
+      replacedItems: result.replacedItems,
       statEffects: equip ? statEffects : { energy: -statEffects.energy, health: -statEffects.health }
     }
 
@@ -182,7 +223,8 @@ export const handler = async (event, context) => {
       headers,
       body: JSON.stringify({
         error: 'Internal server error',
-        message: 'Equipment action failed'
+        message: 'Equipment action failed',
+        details: error.message // Added for debugging
       })
     }
   } finally {

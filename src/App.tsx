@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { MapPin, Pickaxe, Store, Backpack, ArrowLeft, Zap, Heart, Users, Map, MessageCircle, Send, Coins, Loader2 } from 'lucide-react'
+import { MapPin, Pickaxe, Store, Backpack, ArrowLeft, Zap, Heart, Users, Map, MessageCircle, Send, Earth } from 'lucide-react'
 import './App.css'
 import { ModeToggle } from './components/mode-toggle'
 // import { resolveVisibleLayers, generateCharacterLayers, generateNFTMetadata } from '@/lib/layerResolver'
 import { toast, Toaster } from 'sonner'
+import { InventoryView, MarketView, MiningView, WorldMapView } from '@/components/views'
+
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 
 // API base URL - will be your Netlify functions URL
 const API_BASE = '/.netlify/functions'
@@ -24,9 +27,6 @@ function App() {
   const [gameLog, setGameLog] = useState<string[]>([])
   const [chatInput, setChatInput] = useState('')
   const [loadingItems, setLoadingItems] = useState<Set<string>>(new Set())
-
-  // market tabs
-  const [activeMarketTab, setActiveMarketTab] = useState<'local' | 'global'>('local')
 
   // State for API data
   const [character, setCharacter] = useState<Character | null>(null)
@@ -252,6 +252,9 @@ function App() {
   const handleMining = async () => {
     if (!character) return
 
+    // Set loading state for mining button
+    setLoadingItems(prev => new Set(prev).add('mining-action'))
+
     try {
       const response = await fetch(`${API_BASE}/mine-action`, {
         method: 'POST',
@@ -267,25 +270,71 @@ function App() {
       const result = await response.json()
 
       if (!response.ok) {
-        addToLog(result.message || result.error)
+        // Show error toast
+        toast.error(result.message || result.error)
         return
       }
 
-      // Update character energy
+      // Update character energy immediately (optimistic update)
       setCharacter(prev => prev ? ({
         ...prev,
         energy: result.newEnergyLevel
       }) : null)
 
-      // Show result in log
-      addToLog(result.message)
+      // Show appropriate toast based on what was found
+      if (result.foundItem) {
+        // Success toast with item details
+        const rarityEmoji = {
+          'COMMON': '⚪',
+          'UNCOMMON': '🟢',
+          'RARE': '🔵',
+          'EPIC': '🟣',
+          'LEGENDARY': '🟡'
+        }[result.foundItem.rarity] || '⚪'
 
-      // Refresh character data to get updated inventory
-      loadGameData()
+        toast.success(
+          `Found ${result.foundItem.name}! ${rarityEmoji}`,
+          {
+            description: `${result.foundItem.description} • Energy: ${result.newEnergyLevel}/100`,
+            duration: 4000
+          }
+        )
+
+        // Add to game log
+        addToLog(`⛏️ ${result.message}`)
+      } else {
+        // Nothing found toast
+        toast.info(
+          "Nothing found this time...",
+          {
+            description: `Keep trying! Energy: ${result.newEnergyLevel}/100`,
+            duration: 2000
+          }
+        )
+
+        // Add to game log  
+        addToLog(`⛏️ ${result.message}`)
+      }
+
+      // Only refresh character data (not full page reload)
+      // This updates inventory with new items
+      const characterResponse = await fetch(`${API_BASE}/get-character?characterId=hardcoded-demo`)
+      if (characterResponse.ok) {
+        const characterData = await characterResponse.json()
+        setCharacter(characterData)
+      }
 
     } catch (error) {
       console.error('Mining failed:', error)
-      addToLog('Mining attempt failed. Please try again.')
+      toast.error('Mining attempt failed. Please try again.')
+      addToLog('⛏️ Mining attempt failed due to connection issues.')
+    } finally {
+      // Remove loading state
+      setLoadingItems(prev => {
+        const newSet = new Set(prev)
+        newSet.delete('mining-action')
+        return newSet
+      })
     }
   }
 
@@ -494,19 +543,50 @@ function App() {
         })
       })
 
-      if (response.ok) {
-        // Optimistic update
-        setCharacter(prev => prev ? ({
-          ...prev,
-          inventory: prev.inventory.map(inv =>
-            inv.id === inventoryId ? { ...inv, isEquipped: !isEquipped } : inv
-          )
-        }) : null)
+      const result = await response.json()
 
-        toast.success(isEquipped ? 'Item unequipped' : 'Item equipped')
-      } else {
-        toast.error('Failed to update equipment')
+      if (!response.ok) {
+        toast.error(result.message || result.error)
+        return
       }
+
+      // Optimistic update for ALL inventory items in the same category
+      setCharacter(prev => prev ? ({
+        ...prev,
+        inventory: prev.inventory.map(inv => {
+          // Unequip items in the same category (auto-replace logic)
+          if (inv.item.category === prev.inventory.find(i => i.id === inventoryId)?.item.category &&
+            inv.id !== inventoryId &&
+            !isEquipped) {
+            return { ...inv, isEquipped: false }
+          }
+          // Update the target item
+          if (inv.id === inventoryId) {
+            return { ...inv, isEquipped: !isEquipped }
+          }
+          return inv
+        })
+      }) : null)
+
+      // Enhanced toast with replacement info
+      if (result.replacedItems && result.replacedItems.length > 0) {
+        toast.success(
+          `${result.item.name} equipped!`,
+          {
+            description: `Replaced ${result.replacedItems.join(', ')}`,
+            duration: 4000
+          }
+        )
+      } else {
+        toast.success(
+          isEquipped ? `${result.item.name} unequipped` : `${result.item.name} equipped!`,
+          {
+            description: `${result.item.category.toLowerCase()} • ${result.item.rarity.toLowerCase()}`,
+            duration: 3000
+          }
+        )
+      }
+
     } catch (error) {
       console.error('Failed to equip item:', error)
       toast.error('Failed to update equipment')
@@ -597,7 +677,8 @@ function App() {
     return (
       <div className="min-h-screen bg-background p-4 flex items-center justify-center">
         <div className="text-center">
-          <div className="text-2xl mb-4">🌍</div>
+          {/* <div className="text-2xl mb-4">🌍</div> */}
+          <Earth className="w-12 h-12 mb-4 animate-spin" />
           <div>Loading Wojak Earth...</div>
         </div>
       </div>
@@ -700,7 +781,8 @@ function App() {
 
         {!imageError ? (
           <img
-            src={characterImageUrl}
+            src="/wojak.png"
+            // src={characterImageUrl}
             alt={character.name}
             className="w-full h-full object-cover"
             onLoad={handleImageLoad}
@@ -828,48 +910,67 @@ function App() {
         Explore different locations across Wojak Earth
       </p>
 
-      <div className="space-y-3">
-        {locations.map(location => (
-          <div
-            key={location.id}
-            className="border rounded-lg p-4 hover:bg-muted/50 transition-colors cursor-pointer"
-            onClick={() => handleLocationSelect(location)}
-          >
-            <div className="flex items-start justify-between mb-2">
-              <div>
-                <h4 className="font-medium">{location.name}</h4>
-                <p className="text-sm text-muted-foreground">{location.description}</p>
-              </div>
-              <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                <Users className="w-3 h-3" />
-                {location.playerCount}
-              </div>
-            </div>
+      <Tabs defaultValue="list" className="w-full">
+        <TabsList className="mb-4">
+          <TabsTrigger value="list">List</TabsTrigger>
+          <TabsTrigger value="map">Map</TabsTrigger>
+        </TabsList>
 
-            <div className="flex items-center justify-between text-xs">
-              <div className="flex gap-3">
-                <span className="flex items-center gap-1">
-                  <span className={`w-2 h-2 rounded-full ${location.difficulty <= 2 ? 'bg-green-500' :
-                    location.difficulty <= 4 ? 'bg-yellow-500' : 'bg-red-500'
-                    }`} />
-                  Level {location.difficulty}
-                </span>
-                <span className="capitalize">{location.biome}</span>
+        <TabsContent value="list">
+          <div className="space-y-3">
+            {locations.map(location => (
+              <div
+                key={location.id}
+                className="border rounded-lg p-4 hover:bg-muted/50 transition-colors cursor-pointer"
+                onClick={() => handleLocationSelect(location)}
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <h4 className="font-medium">{location.name}</h4>
+                    <p className="text-sm text-muted-foreground">{location.description}</p>
+                  </div>
+                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                    <Users className="w-3 h-3" />
+                    {location.playerCount}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between text-xs">
+                  <div className="flex gap-3">
+                    <span className="flex items-center gap-1">
+                      <span className={`w-2 h-2 rounded-full ${location.difficulty <= 2
+                        ? 'bg-green-500'
+                        : location.difficulty <= 4
+                          ? 'bg-yellow-500'
+                          : 'bg-red-500'
+                        }`} />
+                      Level {location.difficulty}
+                    </span>
+                    <span className="capitalize">{location.biome}</span>
+                  </div>
+                  <span className="text-muted-foreground">
+                    {location.lastActive
+                      ? new Date(location.lastActive).toLocaleString()
+                      : 'Active recently'}
+                  </span>
+                </div>
               </div>
-              <span className="text-muted-foreground">
-                {location.lastActive ? new Date(location.lastActive).toLocaleString() : 'Active recently'}
-              </span>
-            </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </TabsContent>
 
-      <Button onClick={() => setCurrentView('main')} variant="ghost">
+        <TabsContent value="map">
+          <WorldMapView locations={locations} />
+        </TabsContent>
+      </Tabs>
+
+      <Button onClick={() => setCurrentView("main")} variant="ghost">
         <ArrowLeft className="w-4 h-4 mr-2" />
         Back
       </Button>
     </div>
   )
+
 
   const renderLocationView = () => {
     if (!selectedLocation) return null
@@ -995,269 +1096,34 @@ function App() {
   }
 
   const renderMineView = () => (
-    <div className="space-y-4">
-      <h3 className="text-lg font-semibold">Mining in {character.currentLocation.name}</h3>
-      <p className="text-sm text-muted-foreground">
-        Search for resources. Each attempt costs 10 energy.
-      </p>
-
-      <div className="bg-muted/50 p-4 rounded-lg">
-        <h4 className="font-medium mb-2">Available Resources:</h4>
-        <div className="text-sm text-muted-foreground">
-          Resources vary by location. Try your luck!
-        </div>
-      </div>
-
-      <Button onClick={handleMining} className="w-full" disabled={character.energy < 10}>
-        <Pickaxe className="w-4 h-4 mr-2" />
-        Mine for Resources
-      </Button>
-
-      <Button onClick={() => setCurrentView('main')} variant="ghost">
-        <ArrowLeft className="w-4 h-4 mr-2" />
-        Back
-      </Button>
-    </div>
+    <MiningView
+      character={character}
+      loadingItems={loadingItems}
+      onBack={() => setCurrentView('main')}
+      onMine={handleMining}
+    />
   )
 
-  const renderMarketView = () => {
-    // Determine if we're at a child location (has parent location)
-    const currentLoc = selectedLocation || character?.currentLocation
-    const isChildLocation = currentLoc && locations.find(loc =>
-      loc.subLocations?.some(sub => sub.id === currentLoc.id)
-    )
-
-    // Filter market items by tab
-    const localItems = marketItems.filter(item => item.isLocalSpecialty || false)
-    const globalItems = marketItems.filter(item => !item.isLocalSpecialty)
-
-    const activeItems = activeMarketTab === 'local' ? localItems : globalItems
-
-    return (
-      <div className="space-y-4">
-        <div className="text-center">
-          <h3 className="text-lg font-semibold">Market - {currentLoc?.name}</h3>
-          {isChildLocation && (
-            <p className="text-xs text-muted-foreground">
-              Unique local items + supplies from the main settlement
-            </p>
-          )}
-        </div>
-
-        {/* Tab Navigation - only show if child location */}
-        {isChildLocation && (
-          <div className="flex border-b">
-            <button
-              className={`flex-1 py-2 px-4 text-sm font-medium border-b-2 transition-colors ${activeMarketTab === 'local'
-                ? 'border-primary text-primary bg-primary/5'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
-                }`}
-              onClick={() => setActiveMarketTab('local')}
-            >
-              Local Specialties
-              {localItems.length > 0 && (
-                <span className="ml-1 text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded-full">
-                  {localItems.length}
-                </span>
-              )}
-            </button>
-            <button
-              className={`flex-1 py-2 px-4 text-sm font-medium border-b-2 transition-colors ${activeMarketTab === 'global'
-                ? 'border-primary text-primary bg-primary/5'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
-                }`}
-              onClick={() => setActiveMarketTab('global')}
-            >
-              Global Market
-              {globalItems.length > 0 && (
-                <span className="ml-1 text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">
-                  {globalItems.length}
-                </span>
-              )}
-            </button>
-          </div>
-        )}
-
-        {/* Market Items */}
-        <div className="space-y-2">
-          {activeItems.length > 0 ? (
-            activeItems.map((marketItem) => (
-              <div key={marketItem.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-muted rounded flex items-center justify-center text-xs">
-                    {marketItem.item.category === 'HAT' ? '🎩' :
-                      marketItem.item.category === 'CONSUMABLE' ? '🥤' :
-                        marketItem.isLocalSpecialty ? '✨' : '📦'}
-                  </div>
-                  <div>
-                    <div className="font-medium flex items-center gap-2">
-                      {marketItem.item.name}
-                      {marketItem.isLocalSpecialty && (
-                        <span className="text-xs bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded-full">
-                          Local
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-sm text-muted-foreground">{marketItem.item.description}</div>
-                    <div className="text-xs text-muted-foreground capitalize">
-                      {marketItem.item.rarity} • Sold by {marketItem.isSystemItem ? 'System' : marketItem.seller?.name}
-                    </div>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="font-bold flex items-center gap-1">
-                    <Coins className="w-3 h-3" />
-                    {marketItem.price}
-                  </div>
-                  <div className="text-xs text-muted-foreground mb-1">
-                    Qty: {marketItem.quantity > 0 ? marketItem.quantity : 'Out of Stock'}
-                  </div>
-                  <Button
-                    size="sm"
-                    onClick={() => handlePurchase(marketItem.id, marketItem.price, marketItem.item.name)}
-                    disabled={marketItem.quantity === 0}
-                  >
-                    {marketItem.quantity > 0 ? 'Buy' : 'Sold Out'}
-                  </Button>
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="bg-muted/30 p-8 rounded-lg text-center text-muted-foreground">
-              <Store className="w-12 h-12 mx-auto mb-2" />
-              {activeMarketTab === 'local' ? (
-                <>
-                  No local specialties available.<br />
-                  Check back later or try the global market.
-                </>
-              ) : (
-                <>
-                  No items available in the global market.<br />
-                  The merchants might be restocking.
-                </>
-              )}
-            </div>
-          )}
-        </div>
-
-        <Button onClick={() => setCurrentView('main')} variant="ghost">
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back
-        </Button>
-      </div>
-    )
-  }
+  const renderMarketView = () => (
+    <MarketView
+      character={character}
+      selectedLocation={selectedLocation}
+      locations={locations}
+      marketItems={marketItems}
+      loadingItems={loadingItems}
+      onBack={() => setCurrentView('main')}
+      onPurchase={handlePurchase}
+    />
+  )
 
   const renderInventoryView = () => (
-    <div className="space-y-4">
-      <h3 className="text-lg font-semibold">Inventory</h3>
-
-      {character.inventory && character.inventory.length > 0 ? (
-        <div className="space-y-2">
-          {character.inventory.map((inv) => {
-            // Check if consumable effects would be wasted
-            const isConsumable = inv.item.category === 'CONSUMABLE'
-            const energyEffect = inv.item.energyEffect || 0
-            const healthEffect = inv.item.healthEffect || 0
-
-            const wouldWasteEnergy = energyEffect > 0 && character.energy >= 100
-            const wouldWasteHealth = healthEffect > 0 && character.health >= 100
-            const wouldBeWasted = isConsumable && (
-              (energyEffect > 0 && wouldWasteEnergy) ||
-              (healthEffect > 0 && wouldWasteHealth)
-            )
-
-            const isLoading = loadingItems.has(inv.id)
-
-            return (
-              <div key={inv.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-muted rounded flex items-center justify-center text-xs">
-                    {inv.item.category === 'HAT' ? '🎩' :
-                      inv.item.category === 'MATERIAL' ? '⚡' :
-                        inv.item.category === 'CONSUMABLE' ? '🥤' : '📦'}
-                  </div>
-                  <div>
-                    <div className="font-medium">{inv.item.name}</div>
-                    <div className="text-sm text-muted-foreground">{inv.item.description}</div>
-
-                    {/* Show consumable effects */}
-                    {isConsumable && (energyEffect > 0 || healthEffect > 0) && (
-                      <div className="text-xs text-green-600 mt-1">
-                        Effects: {[
-                          energyEffect > 0 ? `+${energyEffect} energy` : null,
-                          healthEffect > 0 ? `+${healthEffect} health` : null
-                        ].filter(Boolean).join(', ')}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="font-bold">x{inv.quantity}</div>
-                  <div className="text-xs text-muted-foreground capitalize">{inv.item.rarity}</div>
-
-                  {/* Equipment Button */}
-                  {inv.item.category !== 'MATERIAL' && inv.item.category !== 'CONSUMABLE' && (
-                    <Button
-                      size="sm"
-                      variant={inv.isEquipped ? "default" : "outline"}
-                      onClick={() => handleEquipItem(inv.id, inv.isEquipped)}
-                      className="mt-1"
-                      disabled={isLoading}
-                    >
-                      {isLoading ? (
-                        <Loader2 className="w-3 h-3 animate-spin" />
-                      ) : (
-                        inv.isEquipped ? 'Unequip' : 'Equip'
-                      )}
-                    </Button>
-                  )}
-
-                  {/* Use Button for Consumables */}
-                  {isConsumable && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleUseItem(
-                        inv.id,
-                        inv.item.name,
-                        inv.item.energyEffect,
-                        inv.item.healthEffect
-                      )}
-                      className="mt-1"
-                      disabled={wouldBeWasted || isLoading}
-                      title={wouldBeWasted ?
-                        `Already at full ${wouldWasteEnergy ? 'energy' : 'health'}` :
-                        `Use ${inv.item.name}`
-                      }
-                    >
-                      {isLoading ? (
-                        <Loader2 className="w-3 h-3 animate-spin" />
-                      ) : wouldBeWasted ? 'Full' : 'Use'}
-                    </Button>
-                  )}
-
-                  {inv.isEquipped && (
-                    <div className="text-xs text-green-600">Equipped</div>
-                  )}
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      ) : (
-        <div className="bg-muted/50 p-8 rounded-lg text-center text-muted-foreground">
-          <Backpack className="w-12 h-12 mx-auto mb-2" />
-          Your bag is empty.<br />
-          Start mining or visit the market!
-        </div>
-      )}
-
-      <Button onClick={() => setCurrentView('main')} variant="ghost">
-        <ArrowLeft className="w-4 h-4 mr-2" />
-        Back
-      </Button>
-    </div>
+    <InventoryView
+      character={character}
+      loadingItems={loadingItems}
+      onBack={() => setCurrentView('main')}
+      onUseItem={handleUseItem}
+      onEquipItem={handleEquipItem}
+    />
   )
 
   const renderChatView = () => {
@@ -1331,46 +1197,59 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-4">
+    <>
       <Toaster
-        position="top-center"
+        position="top-right"
+        expand={false}
+        richColors={true}
+        closeButton={false}
+        offset={16}
         toastOptions={{
+          duration: 7000,
           style: {
-            background: 'hsl(var(--background))',
-            color: 'hsl(var(--foreground))',
+            background: 'hsl(var(--card))',
+            color: 'hsl(var(--card-foreground))',
             border: '1px solid hsl(var(--border))',
+            borderRadius: '8px',
+            fontSize: '14px',
+            padding: '12px 16px',
+            zIndex: 99999,
+            position: 'relative',
           },
+          className: '',
         }}
       />
-      <div className="max-w-md mx-auto">
-        <div className="bg-card border rounded-lg p-6 shadow-sm">
-          <h1 className="text-2xl font-bold text-center mb-6 flex items-center justify-center gap-2">
-            <MapPin className="w-6 h-6" />
-            Wojak Earth
-          </h1>
+      <div className="min-h-screen bg-background p-4">
+        <div className="max-w-md mx-auto">
+          <div className="bg-card border rounded-lg p-6 shadow-sm">
+            <h1 className="text-2xl font-bold text-center mb-6 flex items-center justify-center gap-2">
+              <MapPin className="w-6 h-6" />
+              Wojak Earth
+            </h1>
 
-          {currentView === 'main' && renderMainView()}
-          {currentView === 'map' && renderMapView()}
-          {currentView === 'location' && renderLocationView()}
-          {currentView === 'mine' && renderMineView()}
-          {currentView === 'market' && renderMarketView()}
-          {currentView === 'inventory' && renderInventoryView()}
-          {currentView === 'chat' && renderChatView()}
-        </div>
+            {currentView === 'main' && renderMainView()}
+            {currentView === 'map' && renderMapView()}
+            {currentView === 'location' && renderLocationView()}
+            {currentView === 'mine' && renderMineView()}
+            {currentView === 'market' && renderMarketView()}
+            {currentView === 'inventory' && renderInventoryView()}
+            {currentView === 'chat' && renderChatView()}
+          </div>
 
-        {/* Game Log */}
-        <div className="mt-4 bg-card border rounded-lg p-4">
-          <h4 className="font-medium mb-2">Recent Activity</h4>
-          <div className="space-y-1 text-sm">
-            {gameLog.map((log, i) => (
-              <div key={i} className="text-muted-foreground">
-                {log}
-              </div>
-            ))}
+          {/* Game Log */}
+          <div className="mt-4 bg-card border rounded-lg p-4">
+            <h4 className="font-medium mb-2">Recent Activity</h4>
+            <div className="space-y-1 text-sm">
+              {gameLog.map((log, i) => (
+                <div key={i} className="text-muted-foreground">
+                  {log}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   )
 }
 

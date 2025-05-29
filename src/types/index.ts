@@ -7,6 +7,7 @@ export type GameView =
   | 'market'
   | 'inventory'
   | 'chat'
+  | 'gamemaster'
 
 export interface Character {
   id: string
@@ -121,4 +122,44 @@ export interface Player {
     category: string
     rarity: string
   }>
+}
+
+export type EquipmentSlot = 'head' | 'body' | 'accessory' | 'tool'
+
+export interface EquipmentSlotInfo {
+  name: string
+  slot: EquipmentSlot
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  icon: any // Lucide icon component
+  equipped?: {
+    id: string
+    name: string
+    rarity: string
+  }
+}
+
+export interface EnhancedCharacter extends Character {
+  equipmentSlots?: {
+    [K in EquipmentSlot]?: {
+      itemId: string
+      itemName: string
+      rarity: string
+    }
+  }
+}
+
+// Equipment slot conflicts - for future slot-specific logic
+export const SLOT_CONFLICTS: Record<string, EquipmentSlot[]> = {
+  HAT: ['head'],
+  CLOTHING: ['body'],
+  ACCESSORY: ['accessory'],
+  TOOL: ['tool'],
+}
+
+// Equipment bonuses by slot - for future enhancement
+export interface SlotBonuses {
+  energyBonus: number
+  healthBonus: number
+  miningBonus: number
+  luckBonus: number
 }

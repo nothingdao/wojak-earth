@@ -1,5 +1,5 @@
 {
-  "lastAccessed": "2025-05-29T04:37:45.393Z",
+  "lastAccessed": "2025-05-29T12:38:37.109Z",
   "files": {
     "prisma/schema.prisma": {
       "name": "schema.prisma",
@@ -7,7 +7,7 @@
       "lastModified": "2025-05-28T22:31:59.236Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T04-25-21-857Z",
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
       "tags": []
     },
     "prisma/seed.ts": {
@@ -16,7 +16,7 @@
       "lastModified": "2025-05-28T23:49:37.575Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T04-25-21-857Z",
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
       "tags": []
     },
     "netlify/functions/get-market.js": {
@@ -25,7 +25,7 @@
       "lastModified": "2025-05-29T03:47:50.500Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T04-25-21-857Z",
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
       "tags": []
     },
     "netlify/functions/send-message.js": {
@@ -34,7 +34,7 @@
       "lastModified": "2025-05-29T00:06:10.082Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T04-25-21-857Z",
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
       "tags": []
     },
     "netlify/functions/get-chat.js": {
@@ -43,7 +43,7 @@
       "lastModified": "2025-05-28T23:51:59.175Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T04-25-21-857Z",
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
       "tags": []
     },
     "netlify/functions/buy-item.js": {
@@ -52,7 +52,7 @@
       "lastModified": "2025-05-29T03:25:43.591Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T04-25-21-857Z",
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
       "tags": []
     },
     "netlify/functions/get-locations.js": {
@@ -61,7 +61,7 @@
       "lastModified": "2025-05-29T00:12:36.034Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T04-25-21-857Z",
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
       "tags": []
     },
     "netlify/functions/get-character.js": {
@@ -70,7 +70,7 @@
       "lastModified": "2025-05-28T23:17:38.002Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T04-25-21-857Z",
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
       "tags": []
     },
     "netlify/functions/get-players-at-location.js": {
@@ -79,7 +79,7 @@
       "lastModified": "2025-05-28T23:55:02.361Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T04-25-21-857Z",
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
       "tags": []
     },
     "netlify/functions/travel-action.js": {
@@ -88,25 +88,25 @@
       "lastModified": "2025-05-28T23:30:33.914Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T04-25-21-857Z",
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
       "tags": []
     },
     "netlify/functions/mine-action.js": {
       "name": "mine-action.js",
       "directory": "netlify/functions",
-      "lastModified": "2025-05-28T23:18:10.417Z",
+      "lastModified": "2025-05-29T07:11:55.499Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T04-25-21-857Z",
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
       "tags": []
     },
     "netlify/functions/equip-item.js": {
       "name": "equip-item.js",
       "directory": "netlify/functions",
-      "lastModified": "2025-05-29T00:03:21.365Z",
+      "lastModified": "2025-05-29T05:38:49.985Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T04-25-21-857Z",
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
       "tags": []
     },
     "src/components/ui/button.tsx": {
@@ -115,7 +115,7 @@
       "lastModified": "2025-05-28T21:47:16.145Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T04-25-21-857Z",
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
       "tags": []
     },
     "src/components/ui/dropdown-menu.tsx": {
@@ -124,7 +124,7 @@
       "lastModified": "2025-05-29T00:35:27.082Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T04-25-21-857Z",
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
       "tags": []
     },
     "src/components/theme-provider.tsx": {
@@ -133,7 +133,7 @@
       "lastModified": "2025-05-29T00:31:34.688Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T04-25-21-857Z",
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
       "tags": []
     },
     "src/components/mode-toggle.tsx": {
@@ -142,7 +142,7 @@
       "lastModified": "2025-05-29T00:32:40.806Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T04-25-21-857Z",
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
       "tags": []
     },
     "src/lib/utils.ts": {
@@ -151,16 +151,16 @@
       "lastModified": "2025-05-28T21:46:49.754Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T04-25-21-857Z",
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
       "tags": []
     },
     "src/main.tsx": {
       "name": "main.tsx",
       "directory": "src",
-      "lastModified": "2025-05-29T00:32:11.986Z",
+      "lastModified": "2025-05-29T07:59:24.953Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T04-25-21-857Z",
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
       "tags": []
     },
     "src/App.css": {
@@ -169,16 +169,16 @@
       "lastModified": "2025-05-28T21:44:35.041Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T04-25-21-857Z",
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
       "tags": []
     },
     "src/App.tsx": {
       "name": "App.tsx",
       "directory": "src",
-      "lastModified": "2025-05-29T04:20:16.379Z",
+      "lastModified": "2025-05-29T12:22:54.002Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T04-25-21-857Z",
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
       "tags": []
     },
     "src/index.css": {
@@ -187,7 +187,7 @@
       "lastModified": "2025-05-28T21:46:42.653Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T04-25-21-857Z",
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
       "tags": []
     },
     "src/vite-env.d.ts": {
@@ -196,7 +196,7 @@
       "lastModified": "2025-05-28T21:44:35.044Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T04-25-21-857Z",
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
       "tags": []
     },
     "tsconfig.app.json": {
@@ -205,7 +205,7 @@
       "lastModified": "2025-05-28T21:48:18.933Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T04-25-21-857Z",
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
       "tags": []
     },
     "README.md": {
@@ -214,25 +214,25 @@
       "lastModified": "2025-05-28T21:49:18.650Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T04-25-21-857Z",
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
       "tags": []
     },
     "TODO.md": {
       "name": "TODO.md",
       "directory": "Root",
-      "lastModified": "2025-05-29T04:23:56.038Z",
+      "lastModified": "2025-05-29T08:06:26.586Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T04-25-21-857Z",
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
       "tags": []
     },
     "package.json": {
       "name": "package.json",
       "directory": "Root",
-      "lastModified": "2025-05-29T04:37:37.329Z",
-      "isChanged": true,
+      "lastModified": "2025-05-29T11:14:27.449Z",
+      "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T04-25-21-857Z",
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
       "tags": []
     },
     "tsconfig.node.json": {
@@ -241,7 +241,7 @@
       "lastModified": "2025-05-28T21:46:21.462Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T04-25-21-857Z",
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
       "tags": []
     },
     ".gitignore": {
@@ -250,7 +250,7 @@
       "lastModified": "2025-05-28T23:07:21.376Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T04-25-21-857Z",
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
       "tags": []
     },
     "components.json": {
@@ -259,7 +259,7 @@
       "lastModified": "2025-05-28T21:46:42.115Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T04-25-21-857Z",
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
       "tags": []
     },
     "vite.config.ts": {
@@ -268,7 +268,7 @@
       "lastModified": "2025-05-28T21:46:16.230Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T04-25-21-857Z",
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
       "tags": []
     },
     "tsconfig.json": {
@@ -277,7 +277,7 @@
       "lastModified": "2025-05-28T21:45:45.831Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T04-25-21-857Z",
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
       "tags": []
     },
     "eslint.config.js": {
@@ -286,7 +286,7 @@
       "lastModified": "2025-05-28T21:44:35.037Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T04-25-21-857Z",
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
       "tags": []
     },
     "index.html": {
@@ -295,7 +295,7 @@
       "lastModified": "2025-05-28T21:48:47.451Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T04-25-21-857Z",
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
       "tags": []
     },
     ".env": {
@@ -304,7 +304,7 @@
       "lastModified": "2025-05-28T21:52:13.504Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T04-25-21-857Z",
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
       "tags": []
     },
     "public/layers/accessories/sunglasses.png": {
@@ -466,7 +466,7 @@
       "lastModified": "2025-05-29T02:46:20.676Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T04-25-21-857Z",
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
       "tags": []
     },
     "netlify/functions/metadata.js": {
@@ -475,7 +475,7 @@
       "lastModified": "2025-05-29T02:46:06.495Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T04-25-21-857Z",
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
       "tags": []
     },
     "src/lib/layerResolver.ts": {
@@ -484,16 +484,16 @@
       "lastModified": "2025-05-29T02:27:27.011Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T04-25-21-857Z",
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
       "tags": []
     },
     "scripts/seed-markets.ts": {
       "name": "seed-markets.ts",
       "directory": "scripts",
-      "lastModified": "2025-05-29T03:26:59.031Z",
+      "lastModified": "2025-05-29T06:22:57.295Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T04-25-21-857Z",
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
       "tags": []
     },
     "netlify/functions/use-item.js": {
@@ -502,31 +502,328 @@
       "lastModified": "2025-05-29T04:02:05.691Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T04-25-21-857Z",
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
       "tags": []
     },
     "src/components/ui/sonner.tsx": {
       "name": "sonner.tsx",
       "directory": "src/components/ui",
       "lastModified": "2025-05-29T04:28:51.400Z",
-      "isChanged": true,
+      "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T04-25-21-857Z",
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
       "tags": []
     },
     "src/types/index.ts": {
       "name": "index.ts",
       "directory": "src/types",
-      "lastModified": "2025-05-29T04:19:34.818Z",
+      "lastModified": "2025-05-29T07:19:18.019Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T04-25-21-857Z",
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
+      "tags": []
+    },
+    "src/components/views/MarketView.tsx": {
+      "name": "MarketView.tsx",
+      "directory": "src/components/views",
+      "lastModified": "2025-05-29T04:43:00.072Z",
+      "isChanged": false,
+      "isStaged": false,
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
+      "tags": []
+    },
+    "src/components/views/InventoryView.tsx": {
+      "name": "InventoryView.tsx",
+      "directory": "src/components/views",
+      "lastModified": "2025-05-29T11:14:50.302Z",
+      "isChanged": false,
+      "isStaged": false,
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
+      "tags": []
+    },
+    "src/components/views/index.ts": {
+      "name": "index.ts",
+      "directory": "src/components/views",
+      "lastModified": "2025-05-29T11:12:15.786Z",
+      "isChanged": false,
+      "isStaged": false,
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
+      "tags": []
+    },
+    "src/components/views/MiningView.tsx": {
+      "name": "MiningView.tsx",
+      "directory": "src/components/views",
+      "lastModified": "2025-05-29T05:11:37.300Z",
+      "isChanged": false,
+      "isStaged": false,
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
+      "tags": []
+    },
+    "scripts/seed-mining-resources.ts": {
+      "name": "seed-mining-resources.ts",
+      "directory": "scripts",
+      "lastModified": "2025-05-29T04:58:00.336Z",
+      "isChanged": false,
+      "isStaged": false,
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
+      "tags": []
+    },
+    "scripts/add-themed-items.ts": {
+      "name": "add-themed-items.ts",
+      "directory": "scripts",
+      "lastModified": "2025-05-29T05:47:45.577Z",
+      "isChanged": false,
+      "isStaged": false,
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
+      "tags": []
+    },
+    "scripts/update-mining-resources.ts": {
+      "name": "update-mining-resources.ts",
+      "directory": "scripts",
+      "lastModified": "2025-05-29T05:45:07.659Z",
+      "isChanged": true,
+      "isStaged": false,
+      "masterBundleId": "master-2025-05-29T04-51-18-774Z",
+      "tags": []
+    },
+    "scripts/seed-enhanced-markets.ts": {
+      "name": "seed-enhanced-markets.ts",
+      "directory": "scripts",
+      "lastModified": "2025-05-29T06:25:23.751Z",
+      "isChanged": false,
+      "isStaged": false,
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
+      "tags": []
+    },
+    "scripts/debug-market-locations.ts": {
+      "name": "debug-market-locations.ts",
+      "directory": "scripts",
+      "lastModified": "2025-05-29T06:00:54.267Z",
+      "isChanged": false,
+      "isStaged": false,
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
+      "tags": []
+    },
+    "scripts/fix-market-locations.ts": {
+      "name": "fix-market-locations.ts",
+      "directory": "scripts",
+      "lastModified": "2025-05-29T06:07:56.390Z",
+      "isChanged": false,
+      "isStaged": false,
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
+      "tags": []
+    },
+    "scripts/update-mining-with-tools.ts": {
+      "name": "update-mining-with-tools.ts",
+      "directory": "scripts",
+      "lastModified": "2025-05-29T06:21:32.931Z",
+      "isChanged": false,
+      "isStaged": false,
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
+      "tags": []
+    },
+    "scripts/add-proper-tools.ts": {
+      "name": "add-proper-tools.ts",
+      "directory": "scripts",
+      "lastModified": "2025-05-29T06:21:08.021Z",
+      "isChanged": false,
+      "isStaged": false,
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
+      "tags": []
+    },
+    "scripts/setup-complete-game.ts": {
+      "name": "setup-complete-game.ts",
+      "directory": "scripts",
+      "lastModified": "2025-05-29T06:32:31.722Z",
+      "isChanged": false,
+      "isStaged": false,
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
+      "tags": []
+    },
+    "netlify/functions/get-gamemaster-stats.js": {
+      "name": "get-gamemaster-stats.js",
+      "directory": "netlify/functions",
+      "lastModified": "2025-05-29T07:09:47.174Z",
+      "isChanged": false,
+      "isStaged": false,
+      "masterBundleId": "master-2025-05-29T07-13-37-897Z",
+      "tags": []
+    },
+    "src/components/views/GameMasterStats.tsx": {
+      "name": "GameMasterStats.tsx",
+      "directory": "src/components/views",
+      "lastModified": "2025-05-29T07:31:00.553Z",
+      "isChanged": true,
+      "isStaged": false,
+      "masterBundleId": "master-2025-05-29T07-13-37-897Z",
+      "tags": []
+    },
+    "src/components/GameMasterDashboard.tsx": {
+      "name": "GameMasterDashboard.tsx",
+      "directory": "src/components",
+      "lastModified": "2025-05-29T07:58:44.683Z",
+      "isChanged": true,
+      "isStaged": false,
+      "masterBundleId": "master-2025-05-29T07-13-37-897Z",
+      "tags": []
+    },
+    "src/pages/GameMasterPage.tsx": {
+      "name": "GameMasterPage.tsx",
+      "directory": "src/pages",
+      "lastModified": "2025-05-29T07:50:06.945Z",
+      "isChanged": true,
+      "isStaged": false,
+      "masterBundleId": "master-2025-05-29T07-13-37-897Z",
+      "tags": []
+    },
+    "src/components/ui/scroll-area.tsx": {
+      "name": "scroll-area.tsx",
+      "directory": "src/components/ui",
+      "lastModified": "2025-05-29T08:13:25.435Z",
+      "isChanged": false,
+      "isStaged": false,
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
+      "tags": []
+    },
+    "src/components/ui/avatar.tsx": {
+      "name": "avatar.tsx",
+      "directory": "src/components/ui",
+      "lastModified": "2025-05-29T08:13:25.444Z",
+      "isChanged": false,
+      "isStaged": false,
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
+      "tags": []
+    },
+    "src/components/ui/badge.tsx": {
+      "name": "badge.tsx",
+      "directory": "src/components/ui",
+      "lastModified": "2025-05-29T08:13:25.456Z",
+      "isChanged": false,
+      "isStaged": false,
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
+      "tags": []
+    },
+    "src/components/ui/dialog.tsx": {
+      "name": "dialog.tsx",
+      "directory": "src/components/ui",
+      "lastModified": "2025-05-29T08:13:25.281Z",
+      "isChanged": false,
+      "isStaged": false,
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
+      "tags": []
+    },
+    "src/components/wallet-select-modal.tsx": {
+      "name": "wallet-select-modal.tsx",
+      "directory": "src/components",
+      "lastModified": "2025-05-29T08:13:25.130Z",
+      "isChanged": false,
+      "isStaged": false,
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
+      "tags": []
+    },
+    "src/components/wallet-connect-button.tsx": {
+      "name": "wallet-connect-button.tsx",
+      "directory": "src/components",
+      "lastModified": "2025-05-29T08:13:24.988Z",
+      "isChanged": false,
+      "isStaged": false,
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
+      "tags": []
+    },
+    "src/components/wallet-provider.tsx": {
+      "name": "wallet-provider.tsx",
+      "directory": "src/components",
+      "lastModified": "2025-05-29T08:13:24.629Z",
+      "isChanged": false,
+      "isStaged": false,
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
+      "tags": []
+    },
+    "netlify/functions/mint-character.js": {
+      "name": "mint-character.js",
+      "directory": "netlify/functions",
+      "lastModified": "2025-05-29T08:19:03.861Z",
+      "isChanged": true,
+      "isStaged": false,
+      "masterBundleId": "master-2025-05-29T08-00-15-966Z",
+      "tags": []
+    },
+    "scripts/add-new-regions.ts": {
+      "name": "add-new-regions.ts",
+      "directory": "scripts",
+      "lastModified": "2025-05-29T08:48:57.681Z",
+      "isChanged": false,
+      "isStaged": false,
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
+      "tags": []
+    },
+    "scripts/setup-new-regions-content.ts": {
+      "name": "setup-new-regions-content.ts",
+      "directory": "scripts",
+      "lastModified": "2025-05-29T10:04:14.004Z",
+      "isChanged": false,
+      "isStaged": false,
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
+      "tags": []
+    },
+    "scripts/ultimate-world-setup.ts": {
+      "name": "ultimate-world-setup.ts",
+      "directory": "scripts",
+      "lastModified": "2025-05-29T10:08:28.693Z",
+      "isChanged": false,
+      "isStaged": false,
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
+      "tags": []
+    },
+    "src/components/views/WorldMapView.tsx": {
+      "name": "WorldMapView.tsx",
+      "directory": "src/components/views",
+      "lastModified": "2025-05-29T12:27:30.500Z",
+      "isChanged": false,
+      "isStaged": false,
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
+      "tags": []
+    },
+    "src/components/ui/tooltip.tsx": {
+      "name": "tooltip.tsx",
+      "directory": "src/components/ui",
+      "lastModified": "2025-05-29T11:09:24.963Z",
+      "isChanged": false,
+      "isStaged": false,
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
+      "tags": []
+    },
+    "src/components/ui/tabs.tsx": {
+      "name": "tabs.tsx",
+      "directory": "src/components/ui",
+      "lastModified": "2025-05-29T11:14:29.295Z",
+      "isChanged": false,
+      "isStaged": false,
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
+      "tags": []
+    },
+    "WHITEPAPER.md": {
+      "name": "WHITEPAPER.md",
+      "directory": "Root",
+      "lastModified": "2025-05-29T11:49:06.630Z",
+      "isChanged": false,
+      "isStaged": false,
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
+      "tags": []
+    },
+    "PITCHDECK.md": {
+      "name": "PITCHDECK.md",
+      "directory": "Root",
+      "lastModified": "2025-05-29T11:51:02.775Z",
+      "isChanged": false,
+      "isStaged": false,
+      "masterBundleId": "master-2025-05-29T12-38-36-405Z",
       "tags": []
     }
   },
   "masterBundle": {
-    "id": "master-2025-05-29T04-25-21-857Z",
-    "created": "2025-05-29T04:25:21.857Z",
-    "fileCount": 41
+    "id": "master-2025-05-29T12-38-36-405Z",
+    "created": "2025-05-29T12:38:36.405Z",
+    "fileCount": 68
   }
 }

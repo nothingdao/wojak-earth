@@ -1,0 +1,1727 @@
+<document>
+<source>scripts/add-proper-tools.ts</source>
+<tags></tags>
+<content>// scripts/add-proper-tools.ts - Add more diverse tool items
+import { PrismaClient, ItemCategory, LayerType, Rarity } from '@prisma/client'
+
+const prisma = new PrismaClient()
+
+const TOOL_ITEMS = [
+  // === MINING TOOLS ===
+  {
+    name: 'Basic Pickaxe',
+    description: 'Standard mining tool for beginners',
+    category: ItemCategory.TOOL,
+    layerType: LayerType.ACCESSORY, // Tools render as accessories for now
+    rarity: Rarity.COMMON,
+    durability: 50,
+    imageUrl: '/items/basic-pickaxe.png',
+  },
+  {
+    name: 'Drill Hammer',
+    description: 'Pneumatic drilling tool for tough rocks',
+    category: ItemCategory.TOOL,
+    layerType: LayerType.ACCESSORY,
+    rarity: Rarity.UNCOMMON,
+    durability: 120,
+    energyEffect: -5, // Tools can cost energy to use
+    imageUrl: '/items/drill-hammer.png',
+  },
+  {
+    name: 'Laser Cutter',
+    description: 'High-tech precision cutting tool',
+    category: ItemCategory.TOOL,
+    layerType: LayerType.ACCESSORY,
+    rarity: Rarity.RARE,
+    durability: 80,
+    energyEffect: -10, // High energy cost
+    imageUrl: '/items/laser-cutter.png',
+  },
+
+  // === UTILITY TOOLS ===
+  {
+    name: 'Multi-Tool',
+    description: 'Swiss army knife of the digital age',
+    category: ItemCategory.TOOL,
+    layerType: LayerType.ACCESSORY,
+    rarity: Rarity.COMMON,
+    durability: 100,
+    imageUrl: '/items/multi-tool.png',
+  },
+  {
+    name: 'Repair Kit',
+    description: 'Essential tool for fixing equipment on the go',
+    category: ItemCategory.TOOL,
+    layerType: LayerType.ACCESSORY,
+    rarity: Rarity.UNCOMMON,
+    durability: 25, // Limited uses
+    imageUrl: '/items/repair-kit.png',
+  },
+  {
+    name: 'Scanning Device',
+    description: 'Detects rare materials and hidden resources',
+    category: ItemCategory.TOOL,
+    layerType: LayerType.ACCESSORY,
+    rarity: Rarity.RARE,
+    durability: 200,
+    energyEffect: -3, // Small energy cost per scan
+    imageUrl: '/items/scanning-device.png',
+  },
+
+  // === CYBER TOOLS ===
+  {
+    name: 'Hacking Toolkit',
+    description: 'Portable device for digital infiltration',
+    category: ItemCategory.TOOL,
+    layerType: LayerType.ACCESSORY,
+    rarity: Rarity.RARE,
+    durability: 150,
+    imageUrl: '/items/hacking-toolkit.png',
+  },
+  {
+    name: 'Signal Booster',
+    description: 'Amplifies wireless connections and data transfers',
+    category: ItemCategory.TOOL,
+    layerType: LayerType.ACCESSORY,
+    rarity: Rarity.UNCOMMON,
+    durability: 300,
+    energyEffect: 5, // Boosts energy regeneration
+    imageUrl: '/items/signal-booster.png',
+  },
+  {
+    name: 'Quantum Processor',
+    description: 'Cutting-edge computing tool for complex calculations',
+    category: ItemCategory.TOOL,
+    layerType: LayerType.ACCESSORY,
+    rarity: Rarity.EPIC,
+    durability: 100,
+    energyEffect: 15, // Major energy boost
+    imageUrl: '/items/quantum-processor.png',
+  },
+
+  // === SURVIVAL TOOLS ===
+  {
+    name: 'Survival Knife',
+    description: 'Multipurpose blade for harsh environments',
+    category: ItemCategory.TOOL,
+    layerType: LayerType.ACCESSORY,
+    rarity: Rarity.COMMON,
+    durability: 200,
+    healthEffect: 5, // Provides some protection
+    imageUrl: '/items/survival-knife.png',
+  },
+  {
+    name: 'Fire Starter',
+    description: 'Reliable ignition tool for cold nights',
+    category: ItemCategory.TOOL,
+    layerType: LayerType.ACCESSORY,
+    rarity: Rarity.COMMON,
+    durability: 50,
+    imageUrl: '/items/fire-starter.png',
+  },
+  {
+    name: 'GPS Tracker',
+    description: 'Never get lost in the wilderness again',
+    category: ItemCategory.TOOL,
+    layerType: LayerType.ACCESSORY,
+    rarity: Rarity.UNCOMMON,
+    durability: 500, // Long-lasting
+    imageUrl: '/items/gps-tracker.png',
+  },
+
+  // === LEGENDARY TOOLS ===
+  {
+    name: 'Omni-Tool',
+    description: 'Legendary device that adapts to any situation',
+    category: ItemCategory.TOOL,
+    layerType: LayerType.ACCESSORY,
+    rarity: Rarity.LEGENDARY,
+    durability: 1000,
+    energyEffect: 20,
+    healthEffect: 10,
+    imageUrl: '/items/omni-tool.png',
+  },
+  {
+    name: 'Reality Wrench',
+    description: 'Tool so advanced it seems to bend the laws of physics',
+    category: ItemCategory.TOOL,
+    layerType: LayerType.ACCESSORY,
+    rarity: Rarity.LEGENDARY,
+    durability: 777,
+    energyEffect: 25,
+    imageUrl: '/items/reality-wrench.png',
+  },
+]
+
+async function addProperTools() {
+  console.log('🔧 Adding proper tool items to Wojak Earth...')
+
+  try {
+    let toolsAdded = 0
+
+    for (const toolData of TOOL_ITEMS) {
+      // Check if tool already exists
+      const existingTool = await prisma.item.findUnique({
+        where: { name: toolData.name },
+      })
+
+      if (existingTool) {
+        console.log(`  ⚠️  Tool '${toolData.name}' already exists, skipping...`)
+        continue
+      }
+
+      // Create new tool
+      await prisma.item.create({
+        data: toolData,
+      })
+
+      console.log(`  🔧 Added ${toolData.name} (${toolData.rarity})`)
+      toolsAdded++
+    }
+
+    console.log('\n🎉 Tool items added successfully!')
+    console.log(`📊 Added ${toolsAdded} new tools`)
+
+    // Show summary by rarity
+    const toolsByRarity = TOOL_ITEMS.reduce((acc, tool) => {
+      const rarity = tool.rarity.toString()
+      acc[rarity] = (acc[rarity] || 0) + 1
+      return acc
+    }, {} as Record<string, number>)
+
+    console.log('\n🌟 Tools Added by Rarity:')
+    Object.entries(toolsByRarity).forEach(([rarity, count]) => {
+      console.log(`  ${rarity}: ${count} tools`)
+    })
+
+    // Show tool categories
+    console.log('\n🔧 Tool Categories:')
+    console.log('  ⛏️  Mining Tools: Basic Pickaxe, Drill Hammer, Laser Cutter')
+    console.log('  🛠️  Utility Tools: Multi-Tool, Repair Kit, Scanning Device')
+    console.log(
+      '  💻 Cyber Tools: Hacking Toolkit, Signal Booster, Quantum Processor'
+    )
+    console.log(
+      '  🏕️  Survival Tools: Survival Knife, Fire Starter, GPS Tracker'
+    )
+    console.log('  ⭐ Legendary: Omni-Tool, Reality Wrench')
+
+    console.log('\n💡 Next Steps:')
+    console.log(
+      '  1. Run npm run update:mining to add tools to mining locations'
+    )
+    console.log(
+      '  2. Run npm run seed:enhanced-markets to add tools to markets'
+    )
+    console.log('  3. Tools will appear in the TOOL equipment slot!')
+  } catch (error) {
+    console.error('❌ Failed to add tool items:', error)
+    process.exit(1)
+  } finally {
+    await prisma.$disconnect()
+  }
+}
+
+addProperTools()
+</content>
+</document>
+
+<document>
+<source>scripts/fix-market-locations.ts</source>
+<tags></tags>
+<content>// scripts/fix-market-locations.ts - Fix market settings
+import { PrismaClient } from '@prisma/client'
+
+const prisma = new PrismaClient()
+
+async function fixMarketLocations() {
+  console.log('🔧 Fixing market location settings...\n')
+
+  try {
+    // Enable markets for locations that should have them
+    const locationsToEnableMarkets = [
+      'Crystal Caves', // Should have a market
+      'The Glitch Club', // Should have a market
+      'Cyber City',
+    ]
+
+    // Disable markets for locations that shouldn't have them
+    const locationsToDisableMarkets = [
+      // 'Cyber City', // Parent location - markets are in sub-locations
+    ]
+
+    console.log('✅ ENABLING MARKETS:')
+    for (const locationName of locationsToEnableMarkets) {
+      const result = await prisma.location.updateMany({
+        where: { name: locationName },
+        data: { hasMarket: true },
+      })
+
+      if (result.count > 0) {
+        console.log(`  🏪 ${locationName} - market enabled`)
+      } else {
+        console.log(`  ❌ ${locationName} - location not found`)
+      }
+    }
+
+    console.log('\n❌ DISABLING MARKETS:')
+    for (const locationName of locationsToDisableMarkets) {
+      const result = await prisma.location.updateMany({
+        where: { name: locationName },
+        data: { hasMarket: false },
+      })
+
+      if (result.count > 0) {
+        console.log(
+          `  🚫 ${locationName} - market disabled (use sub-locations instead)`
+        )
+      } else {
+        console.log(`  ❌ ${locationName} - location not found`)
+      }
+    }
+
+    console.log('\n🔍 UPDATED MARKET LOCATIONS:')
+    const marketLocations = await prisma.location.findMany({
+      where: { hasMarket: true },
+      orderBy: [{ parentLocationId: 'asc' }, { name: 'asc' }],
+    })
+
+    marketLocations.forEach((location) => {
+      const isParent = !location.parentLocationId
+      const parentIcon = isParent ? '🏛️' : '  └─'
+      console.log(`${parentIcon} ${location.name} (${location.locationType})`)
+    })
+
+    console.log(`\n📊 Total market locations: ${marketLocations.length}`)
+
+    // Check if we have configs for all market locations
+    const MARKET_CONFIG_NAMES = [
+      'Mining Plains',
+      'Central Exchange',
+      'Desert Outpost',
+      'The Glitch Club',
+      'Rusty Pickaxe Inn',
+      'Crystal Caves',
+      'Cyber City', // Added parent location config
+    ]
+
+    console.log('\n🎯 MARKET CONFIG COVERAGE:')
+    marketLocations.forEach((location) => {
+      const hasConfig = MARKET_CONFIG_NAMES.includes(location.name)
+      const configIcon = hasConfig ? '✅' : '❌'
+      console.log(`  ${configIcon} ${location.name}`)
+    })
+
+    console.log('\n✨ Market location settings fixed!')
+  } catch (error) {
+    console.error('❌ Fix failed:', error)
+  } finally {
+    await prisma.$disconnect()
+  }
+}
+
+fixMarketLocations()
+</content>
+</document>
+
+<document>
+<source>scripts/debug-market-locations.ts</source>
+<tags></tags>
+<content>// scripts/debug-market-locations.ts - Check which locations have markets
+import { PrismaClient } from '@prisma/client'
+
+const prisma = new PrismaClient()
+
+async function debugMarketLocations() {
+  console.log('🔍 Debugging market locations...\n')
+
+  try {
+    const allLocations = await prisma.location.findMany({
+      orderBy: [{ parentLocationId: 'asc' }, { name: 'asc' }],
+    })
+
+    const marketLocations = await prisma.location.findMany({
+      where: { hasMarket: true },
+      orderBy: [{ parentLocationId: 'asc' }, { name: 'asc' }],
+    })
+
+    console.log('📍 ALL LOCATIONS:')
+    allLocations.forEach((location) => {
+      const isParent = !location.parentLocationId
+      const hasMarket = location.hasMarket
+      const marketIcon = hasMarket ? '🏪' : '❌'
+      const parentIcon = isParent ? '🏛️' : '  └─'
+
+      console.log(
+        `${parentIcon} ${marketIcon} ${location.name} (${location.locationType})`
+      )
+    })
+
+    console.log('\n🏪 MARKET LOCATIONS ONLY:')
+    marketLocations.forEach((location) => {
+      const isParent = !location.parentLocationId
+      const parentIcon = isParent ? '🏛️' : '  └─'
+      console.log(`${parentIcon} ${location.name} (${location.locationType})`)
+    })
+
+    console.log('\n📊 SUMMARY:')
+    console.log(`Total locations: ${allLocations.length}`)
+    console.log(`Market locations: ${marketLocations.length}`)
+
+    const parentMarkets = marketLocations.filter((loc) => !loc.parentLocationId)
+    const childMarkets = marketLocations.filter((loc) => loc.parentLocationId)
+
+    console.log(`  └─ Parent locations with markets: ${parentMarkets.length}`)
+    console.log(`  └─ Sub-locations with markets: ${childMarkets.length}`)
+
+    // Check existing market listings
+    const existingListings = await prisma.marketListing.count({
+      where: { isSystemItem: true },
+    })
+
+    console.log(`\n💰 EXISTING MARKET DATA:`)
+    console.log(`System market listings: ${existingListings}`)
+
+    if (existingListings > 0) {
+      const listingsByLocation = await prisma.marketListing.groupBy({
+        by: ['locationId'],
+        where: { isSystemItem: true },
+        _count: { id: true },
+      })
+
+      for (const group of listingsByLocation) {
+        const location = await prisma.location.findUnique({
+          where: { id: group.locationId },
+        })
+        console.log(`  └─ ${location?.name}: ${group._count.id} items`)
+      }
+    }
+  } catch (error) {
+    console.error('❌ Debug failed:', error)
+  } finally {
+    await prisma.$disconnect()
+  }
+}
+
+debugMarketLocations()
+</content>
+</document>
+
+<document>
+<source>scripts/update-mining-with-tools.ts</source>
+<tags></tags>
+<content>// scripts/update-mining-with-tools.ts - Add new tools to mining locations
+import { PrismaClient } from '@prisma/client'
+
+const prisma = new PrismaClient()
+
+// Additional mining resources with new tools
+const TOOL_MINING_CONFIGS = {
+  'Mining Plains': [
+    { name: 'Basic Pickaxe', spawnRate: 0.08, maxPerDay: 3, difficulty: 1 },
+    { name: 'Multi-Tool', spawnRate: 0.05, maxPerDay: 2, difficulty: 1 },
+    { name: 'Repair Kit', spawnRate: 0.04, maxPerDay: 2, difficulty: 1 },
+  ],
+
+  'Crystal Caves': [
+    { name: 'Drill Hammer', spawnRate: 0.03, maxPerDay: 1, difficulty: 3 },
+    { name: 'Scanning Device', spawnRate: 0.02, maxPerDay: 1, difficulty: 3 },
+    { name: 'Laser Cutter', spawnRate: 0.015, maxPerDay: 1, difficulty: 4 },
+    { name: 'Omni-Tool', spawnRate: 0.002, maxPerDay: 1, difficulty: 5 }, // Ultra rare
+  ],
+
+  'Desert Outpost': [
+    { name: 'Survival Knife', spawnRate: 0.06, maxPerDay: 2, difficulty: 2 },
+    { name: 'Fire Starter', spawnRate: 0.05, maxPerDay: 3, difficulty: 1 },
+    { name: 'GPS Tracker', spawnRate: 0.03, maxPerDay: 1, difficulty: 2 },
+  ],
+
+  'Central Exchange': [
+    { name: 'Hacking Toolkit', spawnRate: 0.02, maxPerDay: 1, difficulty: 4 },
+    { name: 'Signal Booster', spawnRate: 0.04, maxPerDay: 2, difficulty: 3 },
+    {
+      name: 'Quantum Processor',
+      spawnRate: 0.008,
+      maxPerDay: 1,
+      difficulty: 4,
+    },
+  ],
+
+  'The Glitch Club': [
+    { name: 'Hacking Toolkit', spawnRate: 0.035, maxPerDay: 2, difficulty: 3 }, // Better in underground
+    { name: 'Reality Wrench', spawnRate: 0.001, maxPerDay: 1, difficulty: 5 }, // Legendary find
+  ],
+}
+
+async function updateMiningWithTools() {
+  console.log('🔧 Adding new tools to mining locations...')
+
+  try {
+    const locations = await prisma.location.findMany({
+      where: { hasMining: true },
+    })
+
+    const items = await prisma.item.findMany()
+    const itemMap = new Map(items.map((item) => [item.name, item]))
+
+    let totalResourcesAdded = 0
+
+    for (const location of locations) {
+      const toolConfigs =
+        TOOL_MINING_CONFIGS[location.name as keyof typeof TOOL_MINING_CONFIGS]
+
+      if (!toolConfigs) {
+        continue // Skip locations without tool configs
+      }
+
+      console.log(`\n🔧 Adding tools to ${location.name}...`)
+
+      for (const toolConfig of toolConfigs) {
+        const item = itemMap.get(toolConfig.name)
+
+        if (!item) {
+          console.log(`  ❌ Tool '${toolConfig.name}' not found in database`)
+          continue
+        }
+
+        // Check if resource already exists
+        const existingResource = await prisma.locationResource.findUnique({
+          where: {
+            locationId_itemId: {
+              locationId: location.id,
+              itemId: item.id,
+            },
+          },
+        })
+
+        if (existingResource) {
+          console.log(
+            `  ⚠️  ${toolConfig.name} already configured for this location`
+          )
+          continue
+        }
+
+        // Create new resource
+        await prisma.locationResource.create({
+          data: {
+            locationId: location.id,
+            itemId: item.id,
+            spawnRate: toolConfig.spawnRate,
+            maxPerDay: toolConfig.maxPerDay,
+            difficulty: toolConfig.difficulty,
+          },
+        })
+
+        console.log(
+          `  ✨ Added ${toolConfig.name}: ${(
+            toolConfig.spawnRate * 100
+          ).toFixed(1)}% spawn`
+        )
+        totalResourcesAdded++
+      }
+    }
+
+    console.log(
+      `\n🎉 Tool mining resources added! Added ${totalResourcesAdded} new tool nodes`
+    )
+
+    // Show ultra-rare tool finds
+    console.log('\n⭐ Ultra-Rare Tool Finds:')
+    const rareToolResources = await prisma.locationResource.findMany({
+      where: {
+        spawnRate: { lt: 0.01 },
+        item: { category: 'TOOL' },
+      },
+      include: {
+        item: true,
+        location: true,
+      },
+      orderBy: { spawnRate: 'asc' },
+    })
+
+    rareToolResources.forEach((resource) => {
+      console.log(
+        `  🔧 ${resource.item.name} in ${resource.location.name}: ${(
+          resource.spawnRate * 100
+        ).toFixed(2)}% chance`
+      )
+    })
+
+    // Show total tool mining nodes
+    const totalToolNodes = await prisma.locationResource.count({
+      where: {
+        item: { category: 'TOOL' },
+      },
+    })
+
+    console.log(`\n📊 Total tool mining nodes: ${totalToolNodes}`)
+  } catch (error) {
+    console.error('❌ Failed to update mining with tools:', error)
+    process.exit(1)
+  } finally {
+    await prisma.$disconnect()
+  }
+}
+
+updateMiningWithTools()
+</content>
+</document>
+
+<document>
+<source>scripts/add-themed-items.ts</source>
+<tags></tags>
+<content>// scripts/add-themed-items.ts - New items for different locations
+import { PrismaClient, ItemCategory, LayerType, Rarity } from '@prisma/client'
+
+const prisma = new PrismaClient()
+
+const NEW_ITEMS = [
+  // === CYBER CITY / GLITCH CLUB HACKER ITEMS ===
+  {
+    name: 'Rare Floppy Disk',
+    description: 'Contains legendary source code from the early net',
+    category: ItemCategory.MATERIAL,
+    rarity: Rarity.LEGENDARY,
+    imageUrl: '/items/rare-floppy-disk.png',
+  },
+  {
+    name: 'Cyberpunk Shades',
+    description: 'AR-enhanced sunglasses with data overlay',
+    category: ItemCategory.ACCESSORY,
+    layerType: LayerType.ACCESSORY,
+    rarity: Rarity.RARE,
+    energyEffect: 10,
+    imageUrl: '/items/cyberpunk-shades.png',
+  },
+  {
+    name: 'Neon Visor',
+    description: 'Glowing headgear that screams "I hack the planet"',
+    category: ItemCategory.HAT,
+    layerType: LayerType.HAT,
+    rarity: Rarity.EPIC,
+    energyEffect: 15,
+    imageUrl: '/items/neon-visor.png',
+  },
+  {
+    name: 'Data Spike',
+    description: 'Neural interface tool for direct data access',
+    category: ItemCategory.TOOL,
+    layerType: LayerType.ACCESSORY,
+    rarity: Rarity.RARE,
+    imageUrl: '/items/data-spike.png',
+  },
+  {
+    name: 'Code Energy Drink',
+    description: 'Caffeinated fuel for all-night coding sessions',
+    category: ItemCategory.CONSUMABLE,
+    rarity: Rarity.COMMON,
+    energyEffect: 35,
+    imageUrl: '/items/code-energy-drink.png',
+  },
+  {
+    name: 'Bitcoin Fragment',
+    description: 'Corrupted cryptocurrency data from the old web',
+    category: ItemCategory.MATERIAL,
+    rarity: Rarity.EPIC,
+    imageUrl: '/items/bitcoin-fragment.png',
+  },
+
+  // === MINING PLAINS INDUSTRIAL ITEMS ===
+  {
+    name: 'Heavy Duty Boots',
+    description: 'Steel-toed boots for serious mining work',
+    category: ItemCategory.CLOTHING,
+    layerType: LayerType.CLOTHING,
+    rarity: Rarity.UNCOMMON,
+    healthEffect: 10,
+    imageUrl: '/items/heavy-duty-boots.png',
+  },
+  {
+    name: 'Reinforced Pickaxe',
+    description: 'Professional mining tool with titanium edge',
+    category: ItemCategory.TOOL,
+    layerType: LayerType.ACCESSORY,
+    rarity: Rarity.RARE,
+    durability: 200,
+    imageUrl: '/items/reinforced-pickaxe.png',
+  },
+  {
+    name: 'Safety Goggles',
+    description: 'Protects eyes from flying debris and dust',
+    category: ItemCategory.ACCESSORY,
+    layerType: LayerType.ACCESSORY,
+    rarity: Rarity.COMMON,
+    healthEffect: 5,
+    imageUrl: '/items/safety-goggles.png',
+  },
+  {
+    name: 'Protein Bar',
+    description: 'High-energy snack for hardworking miners',
+    category: ItemCategory.CONSUMABLE,
+    rarity: Rarity.COMMON,
+    energyEffect: 15,
+    healthEffect: 5,
+    imageUrl: '/items/protein-bar.png',
+  },
+  {
+    name: 'Rare Earth Metal',
+    description: 'Valuable minerals used in advanced technology',
+    category: ItemCategory.MATERIAL,
+    rarity: Rarity.RARE,
+    imageUrl: '/items/rare-earth-metal.png',
+  },
+
+  // === DESERT OUTPOST SURVIVAL ITEMS ===
+  {
+    name: 'Desert Wrap',
+    description: 'Traditional headwrap that protects from sandstorms',
+    category: ItemCategory.HAT,
+    layerType: LayerType.HAT,
+    rarity: Rarity.UNCOMMON,
+    healthEffect: 8,
+    imageUrl: '/items/desert-wrap.png',
+  },
+  {
+    name: 'Survival Cloak',
+    description: 'Weather-resistant cloak for harsh desert conditions',
+    category: ItemCategory.CLOTHING,
+    layerType: LayerType.CLOTHING,
+    rarity: Rarity.RARE,
+    healthEffect: 15,
+    energyEffect: 5,
+    imageUrl: '/items/survival-cloak.png',
+  },
+  {
+    name: 'Water Purifier',
+    description: 'Portable device that makes any water safe to drink',
+    category: ItemCategory.TOOL,
+    layerType: LayerType.ACCESSORY,
+    rarity: Rarity.UNCOMMON,
+    imageUrl: '/items/water-purifier.png',
+  },
+  {
+    name: 'Cactus Juice',
+    description: 'Refreshing desert drink with healing properties',
+    category: ItemCategory.CONSUMABLE,
+    rarity: Rarity.UNCOMMON,
+    healthEffect: 25,
+    energyEffect: 10,
+    imageUrl: '/items/cactus-juice.png',
+  },
+  {
+    name: 'Ancient Artifact',
+    description: 'Mysterious relic from a lost desert civilization',
+    category: ItemCategory.MATERIAL,
+    rarity: Rarity.LEGENDARY,
+    imageUrl: '/items/ancient-artifact.png',
+  },
+
+  // === UNIVERSAL RARE ITEMS ===
+  {
+    name: 'Golden Pickaxe',
+    description: 'Legendary mining tool said to find impossible treasures',
+    category: ItemCategory.TOOL,
+    layerType: LayerType.ACCESSORY,
+    rarity: Rarity.LEGENDARY,
+    durability: 500,
+    imageUrl: '/items/golden-pickaxe.png',
+  },
+  {
+    name: 'Wojak Mask',
+    description: 'Iconic meme face mask - the ultimate flex',
+    category: ItemCategory.ACCESSORY,
+    layerType: LayerType.FACE_COVERING,
+    rarity: Rarity.EPIC,
+    imageUrl: '/items/wojak-mask.png',
+  },
+  {
+    name: 'Rainbow Hoodie',
+    description: 'Psychedelic hoodie that shifts colors in the light',
+    category: ItemCategory.CLOTHING,
+    layerType: LayerType.CLOTHING,
+    rarity: Rarity.EPIC,
+    energyEffect: 20,
+    imageUrl: '/items/rainbow-hoodie.png',
+  },
+  {
+    name: 'Pepe Charm',
+    description: 'Rare companion charm - brings good luck in mining',
+    category: ItemCategory.ACCESSORY,
+    layerType: LayerType.ACCESSORY,
+    rarity: Rarity.RARE,
+    imageUrl: '/items/pepe-charm.png',
+  },
+  {
+    name: 'Super Energy Potion',
+    description: 'Ultimate energy restoration - fully charged!',
+    category: ItemCategory.CONSUMABLE,
+    rarity: Rarity.EPIC,
+    energyEffect: 100, // Full restore
+    imageUrl: '/items/super-energy-potion.png',
+  },
+]
+
+async function addThemedItems() {
+  console.log('🎮 Adding themed items to Wojak Earth...')
+
+  try {
+    for (const itemData of NEW_ITEMS) {
+      // Check if item already exists
+      const existingItem = await prisma.item.findUnique({
+        where: { name: itemData.name },
+      })
+
+      if (existingItem) {
+        console.log(`  ⚠️  Item '${itemData.name}' already exists, skipping...`)
+        continue
+      }
+
+      // Create new item
+      await prisma.item.create({
+        data: itemData,
+      })
+
+      console.log(`  ✨ Added ${itemData.name} (${itemData.rarity})`)
+    }
+
+    console.log('\n🎉 Themed items added successfully!')
+
+    // Show summary by category
+    const itemsByCategory = NEW_ITEMS.reduce((acc, item) => {
+      acc[item.category] = (acc[item.category] || 0) + 1
+      return acc
+    }, {} as Record<string, number>)
+
+    console.log('\n📊 Items Added by Category:')
+    Object.entries(itemsByCategory).forEach(([category, count]) => {
+      console.log(`  ${category}: ${count} items`)
+    })
+
+    // Show summary by rarity
+    const itemsByRarity = NEW_ITEMS.reduce((acc, item) => {
+      acc[item.rarity] = (acc[item.rarity] || 0) + 1
+      return acc
+    }, {} as Record<string, number>)
+
+    console.log('\n🌟 Items Added by Rarity:')
+    Object.entries(itemsByRarity).forEach(([rarity, count]) => {
+      console.log(`  ${rarity}: ${count} items`)
+    })
+  } catch (error) {
+    console.error('❌ Failed to add themed items:', error)
+    process.exit(1)
+  } finally {
+    await prisma.$disconnect()
+  }
+}
+
+addThemedItems()
+</content>
+</document>
+
+<document>
+<source>scripts/seed-markets.ts</source>
+<tags></tags>
+<content>// scripts/seed-markets.ts
+import { PrismaClient } from '@prisma/client'
+
+const prisma = new PrismaClient()
+
+// Market configurations per location
+const MARKET_CONFIGS = {
+  'Mining Plains': {
+    items: [
+      { name: 'Miners Hat', quantity: 10, price: 15 },
+      { name: 'Work Gloves', quantity: 8, price: 12 },
+      { name: 'Energy Drink', quantity: 20, price: 8 },
+      { name: 'Dirty Coal', quantity: 50, price: 2 },
+      { name: 'Iron Scraps', quantity: 25, price: 5 },
+      { name: 'Basic Pickaxe', quantity: 5, price: 20 },
+      { name: 'Multi-Tool', quantity: 3, price: 35 },
+      { name: 'Repair Kit', quantity: 4, price: 25 },
+    ],
+  },
+  'Central Exchange': {
+    items: [
+      { name: 'Cyber Jacket', quantity: 3, price: 75 },
+      { name: 'Lucky Charm', quantity: 5, price: 30 },
+      { name: 'Health Potion', quantity: 15, price: 25 },
+      { name: 'Energy Drink', quantity: 25, price: 10 },
+      { name: 'Ancient Coin', quantity: 8, price: 100 },
+      { name: 'Hacking Toolkit', quantity: 2, price: 120 },
+      { name: 'Signal Booster', quantity: 3, price: 80 },
+      { name: 'Quantum Processor', quantity: 1, price: 300 },
+      { name: 'Scanning Device', quantity: 2, price: 95 },
+    ],
+  },
+  'Desert Outpost': {
+    items: [
+      { name: 'Work Gloves', quantity: 6, price: 18 },
+      { name: 'Energy Drink', quantity: 12, price: 15 }, // Higher prices in remote areas
+      { name: 'Health Potion', quantity: 8, price: 35 },
+      { name: 'Crystal Shard', quantity: 2, price: 200 },
+      { name: 'Survival Knife', quantity: 4, price: 30 },
+      { name: 'Fire Starter', quantity: 6, price: 15 },
+      { name: 'GPS Tracker', quantity: 2, price: 65 },
+    ],
+  },
+}
+
+async function seedMarkets() {
+  console.log('🏪 Starting market seed...')
+
+  try {
+    // Get all locations and items for reference
+    const locations = await prisma.location.findMany({
+      where: { hasMarket: true },
+    })
+
+    const items = await prisma.item.findMany()
+    const itemMap = new Map(items.map((item) => [item.name, item]))
+
+    for (const location of locations) {
+      const config =
+        MARKET_CONFIGS[location.name as keyof typeof MARKET_CONFIGS]
+
+      if (!config) {
+        console.log(`⚠️  No market config for ${location.name}, skipping...`)
+        continue
+      }
+
+      console.log(`\n🏪 Restocking ${location.name}...`)
+
+      for (const itemConfig of config.items) {
+        const item = itemMap.get(itemConfig.name)
+
+        if (!item) {
+          console.log(`  ❌ Item '${itemConfig.name}' not found in database`)
+          continue
+        }
+
+        // Check if listing already exists
+        const existingListing = await prisma.marketListing.findFirst({
+          where: {
+            locationId: location.id,
+            itemId: item.id,
+            isSystemItem: true,
+          },
+        })
+
+        if (existingListing) {
+          // Update existing listing
+          await prisma.marketListing.update({
+            where: { id: existingListing.id },
+            data: {
+              quantity: itemConfig.quantity,
+              price: itemConfig.price,
+            },
+          })
+          console.log(
+            `  🔄 Updated ${itemConfig.name}: ${itemConfig.quantity} @ ${itemConfig.price} coins`
+          )
+        } else {
+          // Create new listing
+          await prisma.marketListing.create({
+            data: {
+              locationId: location.id,
+              itemId: item.id,
+              quantity: itemConfig.quantity,
+              price: itemConfig.price,
+              isSystemItem: true,
+            },
+          })
+          console.log(
+            `  ✨ Added ${itemConfig.name}: ${itemConfig.quantity} @ ${itemConfig.price} coins`
+          )
+        }
+      }
+    }
+
+    console.log('\n🎉 Market seed completed successfully!')
+
+    // Show summary
+    const totalListings = await prisma.marketListing.count({
+      where: { isSystemItem: true },
+    })
+    console.log(`📊 Total system market listings: ${totalListings}`)
+  } catch (error) {
+    console.error('❌ Market seed failed:', error)
+    process.exit(1)
+  } finally {
+    await prisma.$disconnect()
+  }
+}
+
+// Command line options
+const args = process.argv.slice(2)
+
+if (args.includes('--help') || args.includes('-h')) {
+  console.log(`
+🏪 Market Listing Seed Script
+
+Usage:
+  npm run seed:markets              # Restock all markets
+  npm run seed:markets --clear      # Clear all system listings first
+  npm run seed:markets --location "Central Exchange"  # Restock specific location
+
+Options:
+  --clear                           Clear all system listings before restocking
+  --location <name>                 Only restock specific location
+  --help, -h                        Show this help message
+`)
+  process.exit(0)
+}
+
+// Handle clear option
+if (args.includes('--clear')) {
+  console.log('🧹 Clearing existing system market listings...')
+  await prisma.marketListing.deleteMany({
+    where: { isSystemItem: true },
+  })
+  console.log('✅ Cleared all system listings')
+}
+
+// Handle specific location
+const locationArg = args.indexOf('--location')
+if (locationArg !== -1 && args[locationArg + 1]) {
+  const targetLocation = args[locationArg + 1]
+  console.log(`🎯 Targeting specific location: ${targetLocation}`)
+
+  // Filter MARKET_CONFIGS to only include the target location
+  const filteredConfig = {
+    [targetLocation]:
+      MARKET_CONFIGS[targetLocation as keyof typeof MARKET_CONFIGS],
+  }
+  Object.assign(MARKET_CONFIGS, filteredConfig)
+
+  // Clear all other configs
+  for (const key in MARKET_CONFIGS) {
+    if (key !== targetLocation) {
+      delete MARKET_CONFIGS[key as keyof typeof MARKET_CONFIGS]
+    }
+  }
+}
+
+// Run the seed
+seedMarkets()
+</content>
+</document>
+
+<document>
+<source>scripts/seed-mining-resources.ts</source>
+<tags></tags>
+<content>// scripts/seed-mining-resources.ts
+import { PrismaClient } from '@prisma/client'
+
+const prisma = new PrismaClient()
+
+// Mining resource configurations per location
+const MINING_CONFIGS = {
+  'Mining Plains': {
+    resources: [
+      { name: 'Dirty Coal', spawnRate: 0.6, maxPerDay: 25, difficulty: 1 },
+      { name: 'Iron Scraps', spawnRate: 0.4, maxPerDay: 15, difficulty: 1 },
+      { name: 'Ancient Coin', spawnRate: 0.05, maxPerDay: 2, difficulty: 1 }, // Rare find
+    ],
+  },
+  'Crystal Caves': {
+    resources: [
+      { name: 'Crystal Shard', spawnRate: 0.15, maxPerDay: 5, difficulty: 3 },
+      { name: 'Iron Scraps', spawnRate: 0.3, maxPerDay: 8, difficulty: 2 },
+      { name: 'Ancient Coin', spawnRate: 0.08, maxPerDay: 3, difficulty: 2 },
+    ],
+  },
+  'Desert Outpost': {
+    resources: [
+      { name: 'Ancient Coin', spawnRate: 0.2, maxPerDay: 8, difficulty: 3 }, // Desert specialty
+      { name: 'Crystal Shard', spawnRate: 0.08, maxPerDay: 2, difficulty: 4 }, // Very rare
+      { name: 'Iron Scraps', spawnRate: 0.25, maxPerDay: 6, difficulty: 3 },
+    ],
+  },
+  // Sub-locations get their own resources too
+  'Rusty Pickaxe Inn': {
+    resources: [
+      { name: 'Dirty Coal', spawnRate: 0.3, maxPerDay: 5, difficulty: 1 }, // Limited indoor mining
+    ],
+  },
+}
+
+async function seedMiningResources() {
+  console.log('⛏️  Starting mining resources seed...')
+
+  try {
+    // Get all locations and items for reference
+    const locations = await prisma.location.findMany({
+      where: { hasMining: true },
+    })
+
+    const items = await prisma.item.findMany()
+    const itemMap = new Map(items.map((item) => [item.name, item]))
+
+    console.log(`📍 Found ${locations.length} minable locations`)
+    console.log(`📦 Found ${items.length} items in database`)
+
+    for (const location of locations) {
+      const config =
+        MINING_CONFIGS[location.name as keyof typeof MINING_CONFIGS]
+
+      if (!config) {
+        console.log(`⚠️  No mining config for ${location.name}, skipping...`)
+        continue
+      }
+
+      console.log(`\n⛏️  Setting up mining resources for ${location.name}...`)
+
+      for (const resourceConfig of config.resources) {
+        const item = itemMap.get(resourceConfig.name)
+
+        if (!item) {
+          console.log(
+            `  ❌ Item '${resourceConfig.name}' not found in database`
+          )
+          continue
+        }
+
+        // Check if resource already exists
+        const existingResource = await prisma.locationResource.findUnique({
+          where: {
+            locationId_itemId: {
+              locationId: location.id,
+              itemId: item.id,
+            },
+          },
+        })
+
+        if (existingResource) {
+          // Update existing resource
+          await prisma.locationResource.update({
+            where: { id: existingResource.id },
+            data: {
+              spawnRate: resourceConfig.spawnRate,
+              maxPerDay: resourceConfig.maxPerDay,
+              difficulty: resourceConfig.difficulty,
+            },
+          })
+          console.log(
+            `  🔄 Updated ${resourceConfig.name}: ${(
+              resourceConfig.spawnRate * 100
+            ).toFixed(1)}% spawn rate, max ${resourceConfig.maxPerDay}/day`
+          )
+        } else {
+          // Create new resource
+          await prisma.locationResource.create({
+            data: {
+              locationId: location.id,
+              itemId: item.id,
+              spawnRate: resourceConfig.spawnRate,
+              maxPerDay: resourceConfig.maxPerDay,
+              difficulty: resourceConfig.difficulty,
+            },
+          })
+          console.log(
+            `  ✨ Added ${resourceConfig.name}: ${(
+              resourceConfig.spawnRate * 100
+            ).toFixed(1)}% spawn rate, max ${resourceConfig.maxPerDay}/day`
+          )
+        }
+      }
+    }
+
+    console.log('\n🎉 Mining resources seed completed successfully!')
+
+    // Show summary
+    const totalResources = await prisma.locationResource.count()
+    console.log(`📊 Total mining resources available: ${totalResources}`)
+
+    // Show resource breakdown by location
+    console.log('\n📋 Resource Summary:')
+    for (const location of locations) {
+      const locationResources = await prisma.locationResource.findMany({
+        where: { locationId: location.id },
+        include: { item: true },
+      })
+
+      if (locationResources.length > 0) {
+        console.log(`\n  ${location.name}:`)
+        locationResources.forEach((resource) => {
+          console.log(
+            `    • ${resource.item.name} (${(resource.spawnRate * 100).toFixed(
+              1
+            )}% chance, ${resource.maxPerDay}/day max)`
+          )
+        })
+      }
+    }
+  } catch (error) {
+    console.error('❌ Mining resources seed failed:', error)
+    process.exit(1)
+  } finally {
+    await prisma.$disconnect()
+  }
+}
+
+// Command line options
+const args = process.argv.slice(2)
+
+if (args.includes('--help') || args.includes('-h')) {
+  console.log(`
+⛏️  Mining Resources Seed Script
+
+Usage:
+  npm run seed:mining                    # Setup all mining resources
+  npm run seed:mining --clear            # Clear all resources first
+  npm run seed:mining --location "Mining Plains"  # Setup specific location
+
+Options:
+  --clear                               Clear all location resources first
+  --location <name>                     Only setup specific location
+  --dry-run                            Show what would be changed without making changes
+  --help, -h                           Show this help message
+
+Resource Spawn Rates:
+  0.6 = 60% chance (very common)
+  0.4 = 40% chance (common)  
+  0.2 = 20% chance (uncommon)
+  0.1 = 10% chance (rare)
+  0.05 = 5% chance (very rare)
+`)
+  process.exit(0)
+}
+
+// Handle clear option
+if (args.includes('--clear')) {
+  console.log('🧹 Clearing existing mining resources...')
+  await prisma.locationResource.deleteMany({})
+  console.log('✅ Cleared all mining resources')
+}
+
+// Handle dry run
+if (args.includes('--dry-run')) {
+  console.log('🔍 DRY RUN MODE - No changes will be made')
+  // You'd implement dry run logic here
+}
+
+// Handle specific location
+const locationArg = args.indexOf('--location')
+if (locationArg !== -1 && args[locationArg + 1]) {
+  const targetLocation = args[locationArg + 1]
+  console.log(`🎯 Targeting specific location: ${targetLocation}`)
+
+  // Filter MINING_CONFIGS to only include the target location
+  const filteredConfig = {
+    [targetLocation]:
+      MINING_CONFIGS[targetLocation as keyof typeof MINING_CONFIGS],
+  }
+
+  if (!filteredConfig[targetLocation]) {
+    console.error(`❌ No mining config found for location: ${targetLocation}`)
+    console.log('Available locations:', Object.keys(MINING_CONFIGS).join(', '))
+    process.exit(1)
+  }
+
+  // Replace the configs with filtered version
+  Object.keys(MINING_CONFIGS).forEach((key) => {
+    if (key !== targetLocation) {
+      delete MINING_CONFIGS[key as keyof typeof MINING_CONFIGS]
+    }
+  })
+}
+
+// Run the seed
+seedMiningResources()
+</content>
+</document>
+
+<document>
+<source>scripts/seed-enhanced-markets.ts</source>
+<tags></tags>
+<content>// scripts/seed-enhanced-markets.ts - Complete version with ALL locations
+import { PrismaClient } from '@prisma/client'
+
+const prisma = new PrismaClient()
+
+// Enhanced market configurations with new themed items - ALL LOCATIONS COVERED
+const ENHANCED_MARKET_CONFIGS = {
+  'Mining Plains': {
+    items: [
+      // Basic mining gear (cheap and common)
+      { name: 'Miners Hat', quantity: 8, price: 15 },
+      { name: 'Work Gloves', quantity: 6, price: 12 },
+      { name: 'Safety Goggles', quantity: 5, price: 8 },
+      { name: 'Heavy Duty Boots', quantity: 3, price: 25 },
+
+      // Consumables
+      { name: 'Energy Drink', quantity: 15, price: 8 },
+      { name: 'Protein Bar', quantity: 12, price: 6 },
+
+      // Materials (system buys these from players too)
+      { name: 'Dirty Coal', quantity: 30, price: 2 },
+      { name: 'Iron Scraps', quantity: 20, price: 4 },
+      { name: 'Rare Earth Metal', quantity: 5, price: 15 },
+
+      // Rare equipment occasionally available
+      { name: 'Reinforced Pickaxe', quantity: 1, price: 120 },
+
+      { name: 'Basic Pickaxe', quantity: 5, price: 20 },
+      { name: 'Multi-Tool', quantity: 3, price: 35 },
+      { name: 'Repair Kit', quantity: 4, price: 25 },
+    ],
+  },
+
+  'Central Exchange': {
+    items: [
+      // High-tech gear
+      { name: 'Cyber Jacket', quantity: 2, price: 85 },
+      { name: 'Cyberpunk Shades', quantity: 3, price: 65 },
+      { name: 'Neon Visor', quantity: 1, price: 150 },
+      { name: 'Data Spike', quantity: 2, price: 95 },
+
+      // Premium consumables
+      { name: 'Health Potion', quantity: 10, price: 25 },
+      { name: 'Code Energy Drink', quantity: 8, price: 18 },
+      { name: 'Super Energy Potion', quantity: 2, price: 180 }, // Epic consumable
+
+      // Digital materials
+      { name: 'Bitcoin Fragment', quantity: 4, price: 45 },
+      { name: 'Ancient Coin', quantity: 6, price: 35 },
+
+      // Ultra rare items (very limited stock)
+      { name: 'Rare Floppy Disk', quantity: 1, price: 500 }, // Legendary item
+      { name: 'Rainbow Hoodie', quantity: 1, price: 200 },
+
+      { name: 'Hacking Toolkit', quantity: 2, price: 120 },
+      { name: 'Signal Booster', quantity: 3, price: 80 },
+      { name: 'Quantum Processor', quantity: 1, price: 300 },
+      { name: 'Scanning Device', quantity: 2, price: 95 },
+    ],
+  },
+
+  'Desert Outpost': {
+    items: [
+      // Survival gear (higher prices due to remote location)
+      { name: 'Desert Wrap', quantity: 4, price: 35 },
+      { name: 'Survival Cloak', quantity: 2, price: 120 },
+      { name: 'Water Purifier', quantity: 3, price: 55 },
+
+      // Desert consumables
+      { name: 'Cactus Juice', quantity: 8, price: 20 },
+      { name: 'Energy Drink', quantity: 6, price: 15 }, // More expensive here
+      { name: 'Health Potion', quantity: 4, price: 35 },
+
+      // Desert specialties
+      { name: 'Ancient Coin', quantity: 12, price: 25 }, // Cheaper here (local specialty)
+      { name: 'Crystal Shard', quantity: 3, price: 80 },
+
+      // Ultra rare desert find
+      { name: 'Ancient Artifact', quantity: 1, price: 1000 }, // Legendary desert item
+
+      { name: 'Survival Knife', quantity: 4, price: 30 },
+      { name: 'Fire Starter', quantity: 6, price: 15 },
+      { name: 'GPS Tracker', quantity: 2, price: 65 },
+    ],
+  },
+
+  'The Glitch Club': {
+    items: [
+      // Underground hacker gear
+      { name: 'Cyberpunk Shades', quantity: 4, price: 55 }, // Cheaper in underground
+      { name: 'Neon Visor', quantity: 2, price: 130 },
+      { name: 'Data Spike', quantity: 3, price: 85 },
+
+      // Meme culture items
+      { name: 'Wojak Mask', quantity: 1, price: 250 }, // Epic meme item
+      { name: 'Pepe Charm', quantity: 2, price: 75 },
+      { name: 'Rainbow Hoodie', quantity: 1, price: 180 },
+
+      // Hacker consumables
+      { name: 'Code Energy Drink', quantity: 12, price: 15 }, // Club specialty
+      { name: 'Super Energy Potion', quantity: 1, price: 160 },
+
+      // Digital contraband
+      { name: 'Bitcoin Fragment', quantity: 6, price: 40 }, // Better price underground
+      { name: 'Rare Floppy Disk', quantity: 1, price: 450 }, // Slightly cheaper than exchange
+
+      // Lucky charms
+      { name: 'Lucky Charm', quantity: 3, price: 30 },
+
+      { name: 'Hacking Toolkit', quantity: 3, price: 100 }, // Cheaper underground
+      { name: 'Multi-Tool', quantity: 4, price: 30 },
+
+      { name: 'Reality Wrench', quantity: 1, price: 4000 },
+    ],
+  },
+
+  'Rusty Pickaxe Inn': {
+    items: [
+      // Tavern basics
+      { name: 'Energy Drink', quantity: 20, price: 10 },
+      { name: 'Health Potion', quantity: 15, price: 22 },
+      { name: 'Protein Bar', quantity: 25, price: 5 },
+
+      // Basic gear for newbies
+      { name: 'Miners Hat', quantity: 10, price: 12 }, // Cheaper at the inn
+      { name: 'Work Gloves', quantity: 8, price: 10 },
+      { name: 'Safety Goggles', quantity: 6, price: 6 },
+
+      // Tavern specials
+      { name: 'Lucky Charm', quantity: 4, price: 28 },
+      { name: 'Pepe Charm', quantity: 1, price: 65 }, // Rare tavern find
+
+      // Materials (inn keeper buys from miners)
+      { name: 'Dirty Coal', quantity: 50, price: 1 }, // Cheap bulk buy
+      { name: 'Iron Scraps', quantity: 30, price: 3 },
+
+      { name: 'Basic Pickaxe', quantity: 8, price: 18 }, // Slightly cheaper
+      { name: 'Multi-Tool', quantity: 5, price: 32 },
+      { name: 'Repair Kit', quantity: 6, price: 22 },
+    ],
+  },
+
+  'Crystal Caves': {
+    items: [
+      // Specialized mining equipment
+      { name: 'Reinforced Pickaxe', quantity: 2, price: 100 }, // Better price in caves
+      { name: 'Safety Goggles', quantity: 8, price: 10 },
+      { name: 'Heavy Duty Boots', quantity: 3, price: 22 },
+
+      // Cave-specific consumables
+      { name: 'Energy Drink', quantity: 12, price: 12 },
+      { name: 'Health Potion', quantity: 8, price: 28 },
+
+      // Crystal trade
+      { name: 'Crystal Shard', quantity: 8, price: 50 }, // Cave specialty
+      { name: 'Ancient Coin', quantity: 4, price: 40 },
+
+      // Ultra rare mining tool
+      { name: 'Golden Pickaxe', quantity: 1, price: 2500 }, // Legendary mining tool
+
+      { name: 'Drill Hammer', quantity: 2, price: 90 },
+      { name: 'Laser Cutter', quantity: 1, price: 180 },
+      { name: 'Scanning Device', quantity: 3, price: 85 }, // Better price in caves
+
+      { name: 'Omni-Tool', quantity: 1, price: 3500 },
+    ],
+  },
+
+  // Parent location config (basic urban supplies)
+  'Cyber City': {
+    items: [
+      // Basic urban supplies - encourage users to visit specialized sub-locations
+      { name: 'Energy Drink', quantity: 10, price: 15 },
+      { name: 'Health Potion', quantity: 8, price: 30 },
+      { name: 'Code Energy Drink', quantity: 5, price: 20 },
+      { name: 'Lucky Charm', quantity: 2, price: 35 },
+
+      // Note: Best items are in Central Exchange and Glitch Club
+    ],
+  },
+}
+
+async function seedEnhancedMarkets() {
+  console.log('🏪 Starting enhanced market seed with new themed items...')
+
+  try {
+    // Get all locations that have markets (including sub-locations)
+    const locations = await prisma.location.findMany({
+      where: { hasMarket: true },
+    })
+
+    const items = await prisma.item.findMany()
+    const itemMap = new Map(items.map((item) => [item.name, item]))
+
+    console.log(`📍 Found ${locations.length} market locations`)
+    console.log(`📦 Found ${items.length} items available`)
+
+    // Filter locations to only those we have configs for
+    const configuredLocations = locations.filter((location) =>
+      ENHANCED_MARKET_CONFIGS.hasOwnProperty(location.name)
+    )
+
+    console.log(
+      `🎯 Processing ${configuredLocations.length} configured market locations:`
+    )
+    configuredLocations.forEach((loc) => console.log(`   • ${loc.name}`))
+
+    if (configuredLocations.length !== locations.length) {
+      const unconfiguredLocations = locations.filter(
+        (location) => !ENHANCED_MARKET_CONFIGS.hasOwnProperty(location.name)
+      )
+      console.log(
+        `⚠️  Skipping ${unconfiguredLocations.length} unconfigured locations:`
+      )
+      unconfiguredLocations.forEach((loc) =>
+        console.log(`   • ${loc.name} (no market config)`)
+      )
+    }
+
+    let totalListingsCreated = 0
+    let totalListingsUpdated = 0
+
+    for (const location of configuredLocations) {
+      const config =
+        ENHANCED_MARKET_CONFIGS[
+          location.name as keyof typeof ENHANCED_MARKET_CONFIGS
+        ]
+
+      console.log(`\n🏪 Restocking ${location.name}...`)
+
+      for (const itemConfig of config.items) {
+        const item = itemMap.get(itemConfig.name)
+
+        if (!item) {
+          console.log(`  ❌ Item '${itemConfig.name}' not found in database`)
+          continue
+        }
+
+        // Check if listing already exists
+        const existingListing = await prisma.marketListing.findFirst({
+          where: {
+            locationId: location.id,
+            itemId: item.id,
+            isSystemItem: true,
+          },
+        })
+
+        if (existingListing) {
+          // Update existing listing
+          await prisma.marketListing.update({
+            where: { id: existingListing.id },
+            data: {
+              quantity: itemConfig.quantity,
+              price: itemConfig.price,
+            },
+          })
+          console.log(
+            `  🔄 Updated ${itemConfig.name}: ${itemConfig.quantity} @ ${itemConfig.price} coins`
+          )
+          totalListingsUpdated++
+        } else {
+          // Create new listing
+          await prisma.marketListing.create({
+            data: {
+              locationId: location.id,
+              itemId: item.id,
+              quantity: itemConfig.quantity,
+              price: itemConfig.price,
+              isSystemItem: true,
+            },
+          })
+          console.log(
+            `  ✨ Added ${itemConfig.name}: ${itemConfig.quantity} @ ${itemConfig.price} coins`
+          )
+          totalListingsCreated++
+        }
+      }
+    }
+
+    console.log('\n🎉 Enhanced market seed completed successfully!')
+    console.log(
+      `📊 Created ${totalListingsCreated} new listings, updated ${totalListingsUpdated} existing`
+    )
+
+    // Show summary by location
+    console.log('\n🏪 Market Summary by Location:')
+    for (const location of configuredLocations) {
+      const locationListings = await prisma.marketListing.count({
+        where: {
+          locationId: location.id,
+          isSystemItem: true,
+        },
+      })
+
+      if (locationListings > 0) {
+        console.log(`  ${location.name}: ${locationListings} items available`)
+      }
+    }
+
+    // Show legendary/epic items available
+    console.log('\n⭐ Premium Items Available:')
+    const premiumListings = await prisma.marketListing.findMany({
+      where: {
+        isSystemItem: true,
+        item: {
+          rarity: {
+            in: ['EPIC', 'LEGENDARY'],
+          },
+        },
+      },
+      include: {
+        item: true,
+        location: true,
+      },
+      orderBy: { price: 'desc' },
+    })
+
+    premiumListings.forEach((listing) => {
+      console.log(
+        `  ${listing.item.name} (${listing.item.rarity}) - ${listing.price} coins at ${listing.location.name}`
+      )
+    })
+
+    // Show total market value
+    const totalMarketValue = await prisma.marketListing.aggregate({
+      where: { isSystemItem: true },
+      _sum: {
+        price: true,
+      },
+    })
+
+    console.log(
+      `\n💰 Total Market Value: ${totalMarketValue._sum.price || 0} coins`
+    )
+  } catch (error) {
+    console.error('❌ Enhanced market seed failed:', error)
+    process.exit(1)
+  } finally {
+    await prisma.$disconnect()
+  }
+}
+
+// Command line options
+const args = process.argv.slice(2)
+
+if (args.includes('--help') || args.includes('-h')) {
+  console.log(`
+🏪 Enhanced Market Seeding Script
+
+Usage:
+  npm run seed:enhanced-markets          # Restock all markets with new items
+  npm run seed:enhanced-markets --clear  # Clear all system listings first
+  npm run seed:enhanced-markets --location "Central Exchange"  # Specific location
+
+Features:
+  ✨ All 7 locations covered with themed items
+  💰 Location-appropriate pricing strategy
+  🎯 Rarity-based availability system
+  🏪 Each location has unique specialties
+
+Locations Covered:
+  🏭 Mining Plains - Industrial mining gear
+  🏢 Central Exchange - High-tech cyber gear + legendaries
+  🏜️ Desert Outpost - Survival gear + ancient artifacts
+  🎮 The Glitch Club - Underground hacker gear + memes
+  🍺 Rusty Pickaxe Inn - Newbie basics + tavern specials
+  💎 Crystal Caves - Professional mining tools
+  🏙️ Cyber City - Basic urban supplies
+
+Premium Items:
+  🔥 Golden Pickaxe (2500 coins at Crystal Caves)
+  💾 Rare Floppy Disk (500 coins at Central Exchange)
+  🏺 Ancient Artifact (1000 coins at Desert Outpost)
+  🌈 Rainbow Hoodie (200 coins at Central Exchange)
+  🎭 Wojak Mask (250 coins at The Glitch Club)
+`)
+  process.exit(0)
+}
+
+// Handle clear option
+if (args.includes('--clear')) {
+  console.log('🧹 Clearing existing system market listings...')
+  await prisma.marketListing.deleteMany({
+    where: { isSystemItem: true },
+  })
+  console.log('✅ Cleared all system listings')
+}
+
+// Handle specific location
+const locationArg = args.indexOf('--location')
+if (locationArg !== -1 && args[locationArg + 1]) {
+  const targetLocation = args[locationArg + 1]
+  console.log(`🎯 Targeting specific location: ${targetLocation}`)
+
+  // Filter configs to only include the target location
+  const filteredConfig = {
+    [targetLocation]:
+      ENHANCED_MARKET_CONFIGS[
+        targetLocation as keyof typeof ENHANCED_MARKET_CONFIGS
+      ],
+  }
+
+  if (!filteredConfig[targetLocation]) {
+    console.error(`❌ No market config found for location: ${targetLocation}`)
+    console.log(
+      'Available locations:',
+      Object.keys(ENHANCED_MARKET_CONFIGS).join(', ')
+    )
+    process.exit(1)
+  }
+
+  // Clear all other configs
+  Object.keys(ENHANCED_MARKET_CONFIGS).forEach((key) => {
+    if (key !== targetLocation) {
+      delete ENHANCED_MARKET_CONFIGS[
+        key as keyof typeof ENHANCED_MARKET_CONFIGS
+      ]
+    }
+  })
+}
+
+// Run the seed
+seedEnhancedMarkets()
+</content>
+</document>
+
+<document>
+<source>package.json</source>
+<tags></tags>
+<content>{
+  "name": "wojak-earth",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "prisma generate && tsc -b && vite build",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "db:seed": "tsx prisma/seed.ts",
+    "seed:markets": "tsx scripts/seed-markets.ts",
+    "seed:mining": "tsx scripts/seed-mining-resources.ts",
+    "add:items": "tsx scripts/add-themed-items.ts",
+    "update:mining": "tsx scripts/update-mining-resources.ts",
+    "seed:enhanced-markets": "tsx scripts/seed-enhanced-markets.ts",
+    "debug:markets": "tsx scripts/debug-market-locations.ts",
+    "fix:markets": "tsx scripts/fix-market-locations.ts",
+    "setup:all": "npm run add:items && npm run add:tools && npm run update:mining && npm run update:mining-tools && npm run fix:markets && npm run seed:enhanced-markets",
+    "functions:dev": "netlify dev",
+    "functions:build": "netlify build",
+    "postinstall": "prisma generate"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.8.2",
+    "@radix-ui/react-dropdown-menu": "^2.1.15",
+    "@radix-ui/react-slot": "^1.2.3",
+    "@tailwindcss/vite": "^4.1.8",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.511.0",
+    "next-themes": "^0.4.6",
+    "prisma": "^6.8.2",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "sonner": "^2.0.3",
+    "tailwind-merge": "^3.3.0",
+    "tailwindcss": "^4.1.8"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.25.0",
+    "@types/node": "^22.15.24",
+    "@types/react": "^19.1.2",
+    "@types/react-dom": "^19.1.2",
+    "@vitejs/plugin-react": "^4.4.1",
+    "eslint": "^9.25.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.19",
+    "globals": "^16.0.0",
+    "tsx": "^4.19.4",
+    "tw-animate-css": "^1.3.0",
+    "typescript": "~5.8.3",
+    "typescript-eslint": "^8.30.1",
+    "vite": "^6.3.5"
+  }
+}
+</content>
+</document>

@@ -1,0 +1,52 @@
+{
+  "id": "bundle-2025-05-29T06-28-35-466Z-4kozc",
+  "created": "2025-05-29T06:28:35.466Z",
+  "fileCount": 9,
+  "files": [
+    {
+      "path": "scripts/add-proper-tools.ts",
+      "lastModified": "2025-05-29T06:21:08.021Z",
+      "tags": []
+    },
+    {
+      "path": "scripts/fix-market-locations.ts",
+      "lastModified": "2025-05-29T06:07:56.390Z",
+      "tags": []
+    },
+    {
+      "path": "scripts/debug-market-locations.ts",
+      "lastModified": "2025-05-29T06:00:54.267Z",
+      "tags": []
+    },
+    {
+      "path": "scripts/update-mining-with-tools.ts",
+      "lastModified": "2025-05-29T06:21:32.931Z",
+      "tags": []
+    },
+    {
+      "path": "scripts/add-themed-items.ts",
+      "lastModified": "2025-05-29T05:47:45.577Z",
+      "tags": []
+    },
+    {
+      "path": "scripts/seed-markets.ts",
+      "lastModified": "2025-05-29T06:22:57.295Z",
+      "tags": []
+    },
+    {
+      "path": "scripts/seed-mining-resources.ts",
+      "lastModified": "2025-05-29T04:58:00.336Z",
+      "tags": []
+    },
+    {
+      "path": "scripts/seed-enhanced-markets.ts",
+      "lastModified": "2025-05-29T06:25:23.751Z",
+      "tags": []
+    },
+    {
+      "path": "package.json",
+      "lastModified": "2025-05-29T06:27:23.534Z",
+      "tags": []
+    }
+  ]
+}

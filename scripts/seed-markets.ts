@@ -12,6 +12,9 @@ const MARKET_CONFIGS = {
       { name: 'Energy Drink', quantity: 20, price: 8 },
       { name: 'Dirty Coal', quantity: 50, price: 2 },
       { name: 'Iron Scraps', quantity: 25, price: 5 },
+      { name: 'Basic Pickaxe', quantity: 5, price: 20 },
+      { name: 'Multi-Tool', quantity: 3, price: 35 },
+      { name: 'Repair Kit', quantity: 4, price: 25 },
     ],
   },
   'Central Exchange': {
@@ -21,6 +24,10 @@ const MARKET_CONFIGS = {
       { name: 'Health Potion', quantity: 15, price: 25 },
       { name: 'Energy Drink', quantity: 25, price: 10 },
       { name: 'Ancient Coin', quantity: 8, price: 100 },
+      { name: 'Hacking Toolkit', quantity: 2, price: 120 },
+      { name: 'Signal Booster', quantity: 3, price: 80 },
+      { name: 'Quantum Processor', quantity: 1, price: 300 },
+      { name: 'Scanning Device', quantity: 2, price: 95 },
     ],
   },
   'Desert Outpost': {
@@ -29,6 +36,9 @@ const MARKET_CONFIGS = {
       { name: 'Energy Drink', quantity: 12, price: 15 }, // Higher prices in remote areas
       { name: 'Health Potion', quantity: 8, price: 35 },
       { name: 'Crystal Shard', quantity: 2, price: 200 },
+      { name: 'Survival Knife', quantity: 4, price: 30 },
+      { name: 'Fire Starter', quantity: 6, price: 15 },
+      { name: 'GPS Tracker', quantity: 2, price: 65 },
     ],
   },
 }
