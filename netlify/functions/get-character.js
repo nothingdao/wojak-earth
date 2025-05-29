@@ -3,25 +3,18 @@ import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
 
 export const handler = async (event, context) => {
-  // Enable CORS
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
   }
 
-  // Handle preflight requests
   if (event.httpMethod === 'OPTIONS') {
-    return {
-      statusCode: 200,
-      headers,
-      body: ''
-    }
+    return { statusCode: 200, headers, body: '' }
   }
 
   try {
     // For MVP, we'll use hardcoded character ID
-    // In production, this would come from wallet authentication
     const characterId = event.queryStringParameters?.characterId || 'hardcoded-demo'
 
     let character
@@ -43,25 +36,20 @@ export const handler = async (event, context) => {
             orderBy: {
               version: 'desc'
             },
-            take: 5 // Last 5 versions
+            take: 5
           },
           transactions: {
             orderBy: {
               createdAt: 'desc'
             },
-            take: 10, // Last 10 transactions
-            include: {
-              item: true
-            }
+            take: 10
+            // Remove the item include since Transaction doesn't have a direct relation
           }
         }
       })
     } else {
-      // In the future, look up by actual wallet address or NFT address
       character = await prisma.character.findUnique({
-        where: {
-          id: characterId
-        },
+        where: { id: characterId },
         include: {
           currentLocation: true,
           inventory: {
@@ -79,10 +67,7 @@ export const handler = async (event, context) => {
             orderBy: {
               createdAt: 'desc'
             },
-            take: 10,
-            include: {
-              item: true
-            }
+            take: 10
           }
         }
       })
@@ -96,6 +81,22 @@ export const handler = async (event, context) => {
           error: 'Character not found',
           message: 'No character exists with the provided ID'
         })
+      }
+    }
+
+    // For transactions with itemId, we'll fetch the item separately if needed
+    const transactionsWithItems = []
+    for (const tx of character.transactions) {
+      if (tx.itemId) {
+        const item = await prisma.item.findUnique({
+          where: { id: tx.itemId }
+        })
+        transactionsWithItems.push({
+          ...tx,
+          item: item ? { name: item.name, rarity: item.rarity } : null
+        })
+      } else {
+        transactionsWithItems.push({ ...tx, item: null })
       }
     }
 
@@ -143,16 +144,13 @@ export const handler = async (event, context) => {
         createdAt: img.createdAt
       })),
 
-      recentActivity: character.transactions.map(tx => ({
+      recentActivity: transactionsWithItems.map(tx => ({
         id: tx.id,
         type: tx.type,
         description: tx.description,
         quantity: tx.quantity,
         createdAt: tx.createdAt,
-        item: tx.item ? {
-          name: tx.item.name,
-          rarity: tx.item.rarity
-        } : null
+        item: tx.item
       }))
     }
 

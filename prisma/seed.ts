@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
 
 async function main() {
-  console.log('🌱 Starting database seed...')
+  console.log('🌱 Starting expanded database seed...')
 
   // Clean existing data (optional - remove in production)
   await prisma.chatMessage.deleteMany()
@@ -18,7 +18,7 @@ async function main() {
 
   console.log('🧹 Cleaned existing data')
 
-  // Create Items first
+  // Create Items first (same as before)
   const items = await Promise.all([
     // Mining Materials
     prisma.item.create({
@@ -129,7 +129,7 @@ async function main() {
 
   console.log(`✨ Created ${items.length} items`)
 
-  // Create top-level locations (regions)
+  // Create top-level locations (same as before)
   const miningPlains = await prisma.location.create({
     data: {
       name: 'Mining Plains',
@@ -137,14 +137,14 @@ async function main() {
       locationType: 'REGION',
       biome: 'plains',
       difficulty: 1,
-      playerCount: 12,
-      lastActive: new Date(Date.now() - 2 * 60 * 1000), // 2 minutes ago
+      playerCount: 8, // Will be updated by actual characters
+      lastActive: new Date(Date.now() - 2 * 60 * 1000),
       hasMarket: true,
       hasMining: true,
       hasChat: true,
       chatScope: 'REGIONAL',
       welcomeMessage: 'The wind carries the sound of pickaxes striking stone.',
-      lore: 'Once a vast battlefield, these plains now serve as the primary mining grounds for new arrivals to Earth. The soil is rich with metals and coal, making it an ideal starting point for wojaks beginning their journey.',
+      lore: 'Once a vast battlefield, these plains now serve as the primary mining grounds for new arrivals to Earth.',
       mapX: 100,
       mapY: 200,
     },
@@ -157,14 +157,14 @@ async function main() {
       locationType: 'REGION',
       biome: 'desert',
       difficulty: 3,
-      playerCount: 5,
-      lastActive: new Date(Date.now() - 12 * 60 * 1000), // 12 minutes ago
+      playerCount: 3,
+      lastActive: new Date(Date.now() - 12 * 60 * 1000),
       hasMarket: true,
       hasMining: true,
       hasChat: true,
       chatScope: 'REGIONAL',
       welcomeMessage: 'The scorching sun beats down mercilessly.',
-      lore: 'A remote trading post built around an ancient oasis. Only the hardiest wojaks venture here, seeking rare materials that can only be found in the unforgiving desert sands.',
+      lore: 'A remote trading post built around an ancient oasis.',
       mapX: 400,
       mapY: 100,
     },
@@ -177,140 +177,502 @@ async function main() {
       locationType: 'CITY',
       biome: 'urban',
       difficulty: 2,
-      playerCount: 28,
-      lastActive: new Date(Date.now() - 30 * 1000), // 30 seconds ago
+      playerCount: 12,
+      lastActive: new Date(Date.now() - 30 * 1000),
       hasMarket: true,
       hasMining: false,
       hasChat: true,
       chatScope: 'LOCAL',
       welcomeMessage: 'Neon lights flicker in the perpetual twilight.',
-      lore: 'The beating heart of wojak civilization. Technology and commerce thrive in the endless cityscape where digital and physical reality blur together.',
+      lore: 'The beating heart of wojak civilization.',
       mapX: 300,
       mapY: 300,
     },
   })
 
-  console.log('🏘️ Created 3 main regions')
-
   // Create sub-locations
-  const subLocations = await Promise.all([
-    // Mining Plains sub-locations
-    prisma.location.create({
+  const rustyPickaxeInn = await prisma.location.create({
+    data: {
+      name: 'Rusty Pickaxe Inn',
+      description: 'A cozy tavern where miners share stories and ale',
+      locationType: 'BUILDING',
+      parentLocationId: miningPlains.id,
+      difficulty: 1,
+      playerCount: 4,
+      lastActive: new Date(Date.now() - 5 * 60 * 1000),
+      hasMarket: true,
+      hasMining: false,
+      hasChat: true,
+      chatScope: 'LOCAL',
+      welcomeMessage: 'The smell of ale and roasted meat fills the air.',
+    },
+  })
+
+  const crystalCaves = await prisma.location.create({
+    data: {
+      name: 'Crystal Caves',
+      description: 'Deep underground shafts where rare crystals grow',
+      locationType: 'BUILDING',
+      parentLocationId: miningPlains.id,
+      difficulty: 2,
+      playerCount: 4,
+      lastActive: new Date(Date.now() - 1 * 60 * 1000),
+      hasMarket: false,
+      hasMining: true,
+      hasChat: true,
+      chatScope: 'LOCAL',
+      welcomeMessage: 'Crystalline formations sparkle in your torchlight.',
+    },
+  })
+
+  const centralExchange = await prisma.location.create({
+    data: {
+      name: 'Central Exchange',
+      description: 'The main financial district and trading hub',
+      locationType: 'BUILDING',
+      parentLocationId: cyberCity.id,
+      difficulty: 2,
+      playerCount: 8,
+      lastActive: new Date(Date.now() - 2 * 60 * 1000),
+      hasMarket: true,
+      hasMining: false,
+      hasChat: true,
+      chatScope: 'LOCAL',
+      welcomeMessage:
+        'Holographic displays show market prices from across the world.',
+    },
+  })
+
+  const glitchClub = await prisma.location.create({
+    data: {
+      name: 'The Glitch Club',
+      description: 'Underground social hub for hackers and rebels',
+      locationType: 'BUILDING',
+      parentLocationId: cyberCity.id,
+      difficulty: 2,
+      playerCount: 4,
+      lastActive: new Date(Date.now() - 15 * 60 * 1000),
+      hasMarket: false,
+      hasMining: false,
+      hasChat: true,
+      chatScope: 'LOCAL',
+      welcomeMessage: 'Bass-heavy music thumps through the smoky atmosphere.',
+    },
+  })
+
+  console.log('🏘️ Created locations')
+
+  // 🆕 CREATE DIVERSE CHARACTERS (Our Test Players)
+  const characters = await Promise.all([
+    // Our main test character
+    prisma.character.create({
       data: {
-        name: 'Rusty Pickaxe Inn',
-        description: 'A cozy tavern where miners share stories and ale',
-        locationType: 'BUILDING',
-        parentLocationId: miningPlains.id,
-        difficulty: 1,
-        playerCount: 4,
-        lastActive: new Date(Date.now() - 5 * 60 * 1000),
-        hasMarket: true,
-        hasMining: false,
-        hasChat: true,
-        chatScope: 'LOCAL',
-        welcomeMessage: 'The smell of ale and roasted meat fills the air.',
-        lore: 'The social hub of the Mining Plains. Here, experienced miners mentor newcomers while sharing tales of their greatest discoveries.',
-      },
-    }),
-    prisma.location.create({
-      data: {
-        name: 'Crystal Caves',
-        description: 'Deep underground shafts where rare crystals grow',
-        locationType: 'BUILDING',
-        parentLocationId: miningPlains.id,
-        difficulty: 2,
-        playerCount: 8,
-        lastActive: new Date(Date.now() - 1 * 60 * 1000),
-        hasMarket: false,
-        hasMining: true,
-        hasChat: true,
-        chatScope: 'LOCAL',
-        welcomeMessage: 'Crystalline formations sparkle in your torchlight.',
-        lore: 'The deepest mines in the Plains, where rare crystals form over centuries. Only brave wojaks venture into these echoing caverns.',
+        nftAddress: 'DemoNFT123456789',
+        tokenId: '1337',
+        walletAddress: 'DemoWallet123456789',
+        name: 'Wojak #1337',
+        gender: 'MALE',
+        characterType: 'HUMAN',
+        currentLocationId: miningPlains.id,
+        currentVersion: 1,
+        currentImageUrl: '/wojak.png',
+        energy: 85,
+        health: 100,
       },
     }),
 
-    // Desert Outpost sub-locations
-    prisma.location.create({
+    // Mining Plains characters
+    prisma.character.create({
       data: {
-        name: 'Oasis Trading Post',
-        description: 'The commercial heart of the desert',
-        locationType: 'BUILDING',
-        parentLocationId: desertOutpost.id,
-        difficulty: 3,
-        playerCount: 3,
-        lastActive: new Date(Date.now() - 20 * 60 * 1000),
-        hasMarket: true,
-        hasMining: false,
-        hasChat: true,
-        chatScope: 'LOCAL',
-        welcomeMessage:
-          'Cool shade and fresh water provide relief from the heat.',
-        lore: 'Built around the only reliable water source for miles, this trading post serves as a lifeline for desert travelers.',
+        nftAddress: 'NFT420420420',
+        tokenId: '420',
+        walletAddress: 'Wallet420',
+        name: 'Wojak #420',
+        gender: 'MALE',
+        characterType: 'HUMAN',
+        currentLocationId: miningPlains.id,
+        currentVersion: 1,
+        currentImageUrl: '/wojak-420.png',
+        energy: 95,
+        health: 100,
+      },
+    }),
+    prisma.character.create({
+      data: {
+        nftAddress: 'NFT69696969',
+        tokenId: '69',
+        walletAddress: 'Wallet69',
+        name: 'Wojak #69',
+        gender: 'FEMALE',
+        characterType: 'HUMAN',
+        currentLocationId: rustyPickaxeInn.id,
+        currentVersion: 1,
+        currentImageUrl: '/wojak-69.png',
+        energy: 70,
+        health: 100,
+      },
+    }),
+    prisma.character.create({
+      data: {
+        nftAddress: 'NFT888888',
+        tokenId: '888',
+        walletAddress: 'Wallet888',
+        name: 'Wojak #888',
+        gender: 'MALE',
+        characterType: 'HUMAN',
+        currentLocationId: crystalCaves.id,
+        currentVersion: 1,
+        currentImageUrl: '/wojak-888.png',
+        energy: 45,
+        health: 90,
+      },
+    }),
+    prisma.character.create({
+      data: {
+        nftAddress: 'NFT2077777',
+        tokenId: '2077',
+        walletAddress: 'Wallet2077',
+        name: 'Wojak #2077',
+        gender: 'FEMALE',
+        characterType: 'HUMAN',
+        currentLocationId: crystalCaves.id,
+        currentVersion: 1,
+        currentImageUrl: '/wojak-2077.png',
+        energy: 60,
+        health: 85,
       },
     }),
 
-    // Cyber City sub-locations
-    prisma.location.create({
+    // Cyber City characters
+    prisma.character.create({
       data: {
-        name: 'Central Exchange',
-        description: 'The main financial district and trading hub',
-        locationType: 'BUILDING',
-        parentLocationId: cyberCity.id,
-        difficulty: 2,
-        playerCount: 15,
-        lastActive: new Date(Date.now() - 2 * 60 * 1000),
-        hasMarket: true,
-        hasMining: false,
-        hasChat: true,
-        chatScope: 'LOCAL',
-        welcomeMessage:
-          'Holographic displays show market prices from across the world.',
-        lore: 'The nerve center of wojak economy, where fortunes are made and lost in digital microseconds.',
+        nftAddress: 'NFT1001001',
+        tokenId: '100',
+        walletAddress: 'Wallet100',
+        name: 'Wojak #100',
+        gender: 'MALE',
+        characterType: 'HUMAN',
+        currentLocationId: centralExchange.id,
+        currentVersion: 1,
+        currentImageUrl: '/wojak-100.png',
+        energy: 80,
+        health: 100,
       },
     }),
-    prisma.location.create({
+    prisma.character.create({
       data: {
-        name: 'The Glitch Club',
-        description: 'Underground social hub for hackers and rebels',
-        locationType: 'BUILDING',
-        parentLocationId: cyberCity.id,
-        difficulty: 2,
-        playerCount: 8,
-        lastActive: new Date(Date.now() - 45 * 60 * 1000),
-        hasMarket: false,
-        hasMining: false,
-        hasChat: true,
-        chatScope: 'LOCAL',
-        welcomeMessage: 'Bass-heavy music thumps through the smoky atmosphere.',
-        lore: 'Hidden beneath the city streets, this club serves as a meeting place for those who operate outside the system.',
+        nftAddress: 'NFT7777777',
+        tokenId: '777',
+        walletAddress: 'Wallet777',
+        name: 'Wojak #777',
+        gender: 'FEMALE',
+        characterType: 'HUMAN',
+        currentLocationId: centralExchange.id,
+        currentVersion: 1,
+        currentImageUrl: '/wojak-777.png',
+        energy: 90,
+        health: 95,
       },
     }),
-    prisma.location.create({
+    prisma.character.create({
       data: {
-        name: 'Tech Lab',
-        description: 'Advanced research facility for digital archaeology',
-        locationType: 'BUILDING',
-        parentLocationId: cyberCity.id,
-        difficulty: 3,
-        playerCount: 5,
-        lastActive: new Date(Date.now() - 15 * 60 * 1000),
-        hasMarket: false,
-        hasMining: true, // mining data/components
-        hasChat: true,
-        chatScope: 'LOCAL',
-        welcomeMessage:
-          'Banks of servers hum quietly in the sterile environment.',
-        lore: 'Where wojak scientists attempt to understand the digital artifacts scattered throughout cyberspace.',
+        nftAddress: 'NFT3333333',
+        tokenId: '333',
+        walletAddress: 'Wallet333',
+        name: 'Wojak #333',
+        gender: 'MALE',
+        characterType: 'HUMAN',
+        currentLocationId: glitchClub.id,
+        currentVersion: 1,
+        currentImageUrl: '/wojak-333.png',
+        energy: 55,
+        health: 80,
+      },
+    }),
+
+    // Desert characters
+    prisma.character.create({
+      data: {
+        nftAddress: 'NFT5555555',
+        tokenId: '555',
+        walletAddress: 'Wallet555',
+        name: 'Wojak #555',
+        gender: 'FEMALE',
+        characterType: 'HUMAN',
+        currentLocationId: desertOutpost.id,
+        currentVersion: 1,
+        currentImageUrl: '/wojak-555.png',
+        energy: 40,
+        health: 75,
+      },
+    }),
+    prisma.character.create({
+      data: {
+        nftAddress: 'NFT9999999',
+        tokenId: '999',
+        walletAddress: 'Wallet999',
+        name: 'Wojak #999',
+        gender: 'MALE',
+        characterType: 'CREATURE',
+        currentLocationId: desertOutpost.id,
+        currentVersion: 1,
+        currentImageUrl: '/wojak-999.png',
+        energy: 85,
+        health: 100,
       },
     }),
   ])
 
-  console.log(`🏢 Created ${subLocations.length} sub-locations`)
+  console.log(`👥 Created ${characters.length} characters`)
 
-  // Create location resources (what can be mined where)
-  const locationResources = await Promise.all([
-    // Mining Plains - basic materials
+  // 🆕 CREATE REALISTIC CHAT MESSAGES
+  const chatMessages = await Promise.all([
+    // Mining Plains chat (regional - shows in main area and sub-locations)
+    prisma.chatMessage.create({
+      data: {
+        locationId: miningPlains.id,
+        characterId: characters.find((c) => c.name === 'Wojak #420')!.id,
+        message: 'Anyone know where the best iron deposits are?',
+        messageType: 'CHAT',
+        createdAt: new Date(Date.now() - 3 * 60 * 1000),
+      },
+    }),
+    prisma.chatMessage.create({
+      data: {
+        locationId: miningPlains.id,
+        characterId: characters.find((c) => c.name === 'Wojak #1337')!.id,
+        message:
+          'Try the eastern slopes, found some good scraps there yesterday',
+        messageType: 'CHAT',
+        createdAt: new Date(Date.now() - 2 * 60 * 1000),
+      },
+    }),
+    prisma.chatMessage.create({
+      data: {
+        locationId: miningPlains.id,
+        characterId: characters.find((c) => c.name === 'Wojak #420')!.id,
+        message: 'Thanks! Heading there now',
+        messageType: 'CHAT',
+        createdAt: new Date(Date.now() - 90 * 1000),
+      },
+    }),
+
+    // Rusty Pickaxe Inn chat (local - cozy tavern conversation)
+    prisma.chatMessage.create({
+      data: {
+        locationId: rustyPickaxeInn.id,
+        characterId: characters.find((c) => c.name === 'Wojak #69')!.id,
+        message: 'This ale tastes like it was brewed in a boot 😂',
+        messageType: 'CHAT',
+        createdAt: new Date(Date.now() - 8 * 60 * 1000),
+      },
+    }),
+    prisma.chatMessage.create({
+      data: {
+        locationId: rustyPickaxeInn.id,
+        characterId: characters.find((c) => c.name === 'Wojak #420')!.id,
+        message: 'Hey, at least it gets you drunk!',
+        messageType: 'CHAT',
+        createdAt: new Date(Date.now() - 7 * 60 * 1000),
+      },
+    }),
+    prisma.chatMessage.create({
+      data: {
+        locationId: rustyPickaxeInn.id,
+        characterId: characters.find((c) => c.name === 'Wojak #69')!.id,
+        message: 'True! Anyone up for some mining stories?',
+        messageType: 'CHAT',
+        createdAt: new Date(Date.now() - 6 * 60 * 1000),
+      },
+    }),
+
+    // Crystal Caves chat (focused on mining)
+    prisma.chatMessage.create({
+      data: {
+        locationId: crystalCaves.id,
+        characterId: characters.find((c) => c.name === 'Wojak #888')!.id,
+        message: 'Whoa! Just found a crystal shard in the deep tunnel!',
+        messageType: 'CHAT',
+        createdAt: new Date(Date.now() - 5 * 60 * 1000),
+      },
+    }),
+    prisma.chatMessage.create({
+      data: {
+        locationId: crystalCaves.id,
+        characterId: characters.find((c) => c.name === 'Wojak #2077')!.id,
+        message: 'Nice! What rarity?',
+        messageType: 'CHAT',
+        createdAt: new Date(Date.now() - 4 * 60 * 1000),
+      },
+    }),
+    prisma.chatMessage.create({
+      data: {
+        locationId: crystalCaves.id,
+        characterId: characters.find((c) => c.name === 'Wojak #888')!.id,
+        message: "Epic! First one I've ever seen",
+        messageType: 'CHAT',
+        createdAt: new Date(Date.now() - 3 * 60 * 1000),
+      },
+    }),
+    prisma.chatMessage.create({
+      data: {
+        locationId: crystalCaves.id,
+        characterId: characters.find((c) => c.name === 'Wojak #2077')!.id,
+        message: "Damn, I've been mining here for weeks with no luck",
+        messageType: 'CHAT',
+        createdAt: new Date(Date.now() - 2 * 60 * 1000),
+      },
+    }),
+
+    // Central Exchange chat (trading focused)
+    prisma.chatMessage.create({
+      data: {
+        locationId: centralExchange.id,
+        characterId: characters.find((c) => c.name === 'Wojak #100')!.id,
+        message: 'WTS: Cyber Jacket, rare quality. Looking for ancient coins',
+        messageType: 'CHAT',
+        createdAt: new Date(Date.now() - 15 * 60 * 1000),
+      },
+    }),
+    prisma.chatMessage.create({
+      data: {
+        locationId: centralExchange.id,
+        characterId: characters.find((c) => c.name === 'Wojak #777')!.id,
+        message: 'How many coins?',
+        messageType: 'CHAT',
+        createdAt: new Date(Date.now() - 14 * 60 * 1000),
+      },
+    }),
+    prisma.chatMessage.create({
+      data: {
+        locationId: centralExchange.id,
+        characterId: characters.find((c) => c.name === 'Wojak #100')!.id,
+        message: '15 coins, firm price',
+        messageType: 'CHAT',
+        createdAt: new Date(Date.now() - 13 * 60 * 1000),
+      },
+    }),
+    prisma.chatMessage.create({
+      data: {
+        locationId: centralExchange.id,
+        characterId: characters.find((c) => c.name === 'Wojak #777')!.id,
+        message: 'Deal! Meet me at the trade terminal',
+        messageType: 'CHAT',
+        createdAt: new Date(Date.now() - 12 * 60 * 1000),
+      },
+    }),
+
+    // Glitch Club chat (underground vibe)
+    prisma.chatMessage.create({
+      data: {
+        locationId: glitchClub.id,
+        characterId: characters.find((c) => c.name === 'Wojak #333')!.id,
+        message: '*nods to the beat* This track is fire 🔥',
+        messageType: 'EMOTE',
+        createdAt: new Date(Date.now() - 20 * 60 * 1000),
+      },
+    }),
+    prisma.chatMessage.create({
+      data: {
+        locationId: glitchClub.id,
+        characterId: characters.find((c) => c.name === 'Wojak #777')!.id,
+        message: 'Anyone know who the DJ is tonight?',
+        messageType: 'CHAT',
+        createdAt: new Date(Date.now() - 18 * 60 * 1000),
+      },
+    }),
+    prisma.chatMessage.create({
+      data: {
+        locationId: glitchClub.id,
+        characterId: characters.find((c) => c.name === 'Wojak #333')!.id,
+        message: 'DJ CyberWojak, they drop the sickest beats in the city',
+        messageType: 'CHAT',
+        createdAt: new Date(Date.now() - 16 * 60 * 1000),
+      },
+    }),
+
+    // Desert Outpost chat (survival focused)
+    prisma.chatMessage.create({
+      data: {
+        locationId: desertOutpost.id,
+        characterId: characters.find((c) => c.name === 'Wojak #555')!.id,
+        message: 'Water supplies running low... need to find the oasis',
+        messageType: 'CHAT',
+        createdAt: new Date(Date.now() - 25 * 60 * 1000),
+      },
+    }),
+    prisma.chatMessage.create({
+      data: {
+        locationId: desertOutpost.id,
+        characterId: characters.find((c) => c.name === 'Wojak #999')!.id,
+        message: 'Follow the ancient stone markers, they lead to water',
+        messageType: 'CHAT',
+        createdAt: new Date(Date.now() - 23 * 60 * 1000),
+      },
+    }),
+    prisma.chatMessage.create({
+      data: {
+        locationId: desertOutpost.id,
+        characterId: characters.find((c) => c.name === 'Wojak #555')!.id,
+        message: 'Thanks creature-wojak, you know this desert well',
+        messageType: 'CHAT',
+        createdAt: new Date(Date.now() - 22 * 60 * 1000),
+      },
+    }),
+
+    // System messages
+    prisma.chatMessage.create({
+      data: {
+        locationId: miningPlains.id,
+        characterId: characters.find((c) => c.name === 'Wojak #420')!.id,
+        message: 'Wojak #420 found: Iron Scraps (COMMON)',
+        messageType: 'SYSTEM',
+        isSystem: true,
+        createdAt: new Date(Date.now() - 10 * 60 * 1000),
+      },
+    }),
+    prisma.chatMessage.create({
+      data: {
+        locationId: crystalCaves.id,
+        characterId: characters.find((c) => c.name === 'Wojak #888')!.id,
+        message: 'Wojak #888 found: Crystal Shard (EPIC)',
+        messageType: 'SYSTEM',
+        isSystem: true,
+        createdAt: new Date(Date.now() - 4 * 60 * 1000),
+      },
+    }),
+  ])
+
+  console.log(`💬 Created ${chatMessages.length} chat messages`)
+
+  // Create some sample inventory items
+  await Promise.all([
+    prisma.characterInventory.create({
+      data: {
+        characterId: characters.find((c) => c.name === 'Wojak #1337')!.id,
+        itemId: items.find((i) => i.name === 'Dirty Coal')!.id,
+        quantity: 3,
+      },
+    }),
+    prisma.characterInventory.create({
+      data: {
+        characterId: characters.find((c) => c.name === 'Wojak #1337')!.id,
+        itemId: items.find((i) => i.name === 'Miners Hat')!.id,
+        quantity: 1,
+        isEquipped: true,
+      },
+    }),
+    prisma.characterInventory.create({
+      data: {
+        characterId: characters.find((c) => c.name === 'Wojak #888')!.id,
+        itemId: items.find((i) => i.name === 'Crystal Shard')!.id,
+        quantity: 1,
+      },
+    }),
+  ])
+
+  // Create some location resources
+  await Promise.all([
     prisma.locationResource.create({
       data: {
         locationId: miningPlains.id,
@@ -322,168 +684,21 @@ async function main() {
     }),
     prisma.locationResource.create({
       data: {
-        locationId: miningPlains.id,
-        itemId: items.find((i) => i.name === 'Iron Scraps')!.id,
-        spawnRate: 0.4,
-        maxPerDay: 15,
-        difficulty: 1,
-      },
-    }),
-
-    // Crystal Caves - rare materials
-    prisma.locationResource.create({
-      data: {
-        locationId: subLocations.find((l) => l.name === 'Crystal Caves')!.id,
+        locationId: crystalCaves.id,
         itemId: items.find((i) => i.name === 'Crystal Shard')!.id,
         spawnRate: 0.1,
         maxPerDay: 3,
         difficulty: 3,
       },
     }),
-
-    // Desert - ancient materials
-    prisma.locationResource.create({
-      data: {
-        locationId: desertOutpost.id,
-        itemId: items.find((i) => i.name === 'Ancient Coin')!.id,
-        spawnRate: 0.15,
-        maxPerDay: 5,
-        difficulty: 2,
-      },
-    }),
-
-    // Tech Lab - digital components
-    prisma.locationResource.create({
-      data: {
-        locationId: subLocations.find((l) => l.name === 'Tech Lab')!.id,
-        itemId: items.find((i) => i.name === 'Cyber Jacket')!.id,
-        spawnRate: 0.05,
-        maxPerDay: 1,
-        difficulty: 4,
-      },
-    }),
   ])
 
-  console.log(`⛏️ Created ${locationResources.length} location resources`)
-
-  // Create market listings
-  const marketListings = await Promise.all([
-    // System items in Mining Plains
-    prisma.marketListing.create({
-      data: {
-        locationId: miningPlains.id,
-        itemId: items.find((i) => i.name === 'Miners Hat')!.id,
-        price: 50,
-        quantity: 10,
-        isSystemItem: true,
-      },
-    }),
-    prisma.marketListing.create({
-      data: {
-        locationId: miningPlains.id,
-        itemId: items.find((i) => i.name === 'Work Gloves')!.id,
-        price: 25,
-        quantity: 15,
-        isSystemItem: true,
-      },
-    }),
-    prisma.marketListing.create({
-      data: {
-        locationId: miningPlains.id,
-        itemId: items.find((i) => i.name === 'Energy Drink')!.id,
-        price: 10,
-        quantity: 50,
-        isSystemItem: true,
-      },
-    }),
-
-    // Premium items in Cyber City
-    prisma.marketListing.create({
-      data: {
-        locationId: cyberCity.id,
-        itemId: items.find((i) => i.name === 'Health Potion')!.id,
-        price: 75,
-        quantity: 20,
-        isSystemItem: true,
-      },
-    }),
-    prisma.marketListing.create({
-      data: {
-        locationId: cyberCity.id,
-        itemId: items.find((i) => i.name === 'Lucky Charm')!.id,
-        price: 200,
-        quantity: 5,
-        isSystemItem: true,
-      },
-    }),
-  ])
-
-  console.log(`🏪 Created ${marketListings.length} market listings`)
-
-  // Create a test character (our hardcoded player)
-  const testCharacter = await prisma.character.create({
-    data: {
-      nftAddress: 'DemoNFT123456789',
-      tokenId: '1337',
-      walletAddress: 'DemoWallet123456789',
-      name: 'Wojak #1337',
-      gender: 'MALE',
-      characterType: 'HUMAN',
-      currentLocationId: miningPlains.id,
-      currentVersion: 1,
-      currentImageUrl: '/wojak.png',
-      energy: 85,
-      health: 100,
-    },
-  })
-
-  // Add some sample inventory to test character
-  await Promise.all([
-    prisma.characterInventory.create({
-      data: {
-        characterId: testCharacter.id,
-        itemId: items.find((i) => i.name === 'Dirty Coal')!.id,
-        quantity: 3,
-      },
-    }),
-    prisma.characterInventory.create({
-      data: {
-        characterId: testCharacter.id,
-        itemId: items.find((i) => i.name === 'Miners Hat')!.id,
-        quantity: 1,
-        isEquipped: true,
-      },
-    }),
-  ])
-
-  // Create some sample transactions
-  await Promise.all([
-    prisma.transaction.create({
-      data: {
-        characterId: testCharacter.id,
-        type: 'MINT',
-        description: 'Character minted',
-      },
-    }),
-    prisma.transaction.create({
-      data: {
-        characterId: testCharacter.id,
-        type: 'MINE',
-        itemId: items.find((i) => i.name === 'Dirty Coal')!.id,
-        quantity: 1,
-        description: 'Found Dirty Coal while mining',
-      },
-    }),
-  ])
-
-  console.log('👤 Created test character with inventory and history')
-
-  console.log('🎉 Database seeded successfully!')
+  console.log('🎉 Expanded database seed completed successfully!')
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Seed failed:', e)
+    console.error('❌ Enhanced seed failed:', e)
     process.exit(1)
   })
   .finally(async () => {

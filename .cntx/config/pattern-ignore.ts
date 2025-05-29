@@ -20,7 +20,6 @@ export default [
   '*.flac',
   '*.jpg',
   '*.jpeg',
-  '*.png',
   '*.gif',
   '*.webp',
   '*.svg',
@@ -33,6 +32,5 @@ export default [
   '*.tar',
   '*.gz',
   '*.rar',
-  'example-project',
-  'issues'
+  '*.png'
 ] as const;
