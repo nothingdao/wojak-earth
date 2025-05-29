@@ -5,11 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "prisma generate && tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "db:seed": "tsx prisma/seed.ts",
-    "seed:markets": "tsx scripts/seed-markets.ts"
+    "seed:markets": "tsx scripts/seed-markets.ts",
+    "functions:dev": "netlify dev",
+    "functions:build": "netlify build",
+    "postinstall": "prisma generate"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
