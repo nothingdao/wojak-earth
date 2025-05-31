@@ -1,16 +1,15 @@
 // src/components/views/MiningView.tsx
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, Pickaxe, Loader2 } from 'lucide-react'
+import { Pickaxe, Loader2 } from 'lucide-react'
 import type { Character } from '@/types'
 
 interface MiningViewProps {
   character: Character
   loadingItems: Set<string>
-  onBack: () => void
   onMine: () => void
 }
 
-export function MiningView({ character, loadingItems, onBack, onMine }: MiningViewProps) {
+export function MiningView({ character, loadingItems, onMine }: MiningViewProps) {
   const isMining = loadingItems.has('mining-action')
   const canMine = character.energy >= 10 && !isMining
 
@@ -47,11 +46,6 @@ export function MiningView({ character, loadingItems, onBack, onMine }: MiningVi
           Not enough energy! Use an Energy Drink to restore energy.
         </p>
       )}
-
-      <Button onClick={onBack} variant="ghost">
-        <ArrowLeft className="w-4 h-4 mr-2" />
-        Back
-      </Button>
     </div>
   )
 }

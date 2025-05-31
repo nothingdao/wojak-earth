@@ -7,7 +7,9 @@ export type GameView =
   | 'market'
   | 'inventory'
   | 'chat'
+  | 'npc-activity'
   | 'gamemaster'
+  | 'profile'
 
 export interface Character {
   id: string
@@ -15,6 +17,8 @@ export interface Character {
   gender: string
   energy: number
   health: number
+  level: number
+  coins: number
   currentImageUrl: string
   currentLocation: {
     id: string
@@ -162,4 +166,48 @@ export interface SlotBonuses {
   healthBonus: number
   miningBonus: number
   luckBonus: number
+}
+
+// Map-related types
+export type LandType =
+  | 'inhabited'
+  | 'uninhabited'
+  | 'ruins'
+  | 'wilderness'
+  | 'sacred'
+export type ExplorationState = 'unexplored' | 'rumors' | 'explored' | 'known'
+export type BiomeType =
+  | 'plains'
+  | 'desert'
+  | 'urban'
+  | 'digital'
+  | 'underground'
+  | 'temporal'
+  | 'ossuary'
+  | 'electromagnetic'
+
+export interface MapRegion {
+  name: string
+  description: string
+  lore?: string
+  landType: LandType
+  explorationState: ExplorationState
+  hoverColor: string
+  baseColor: string
+  worldData: {
+    difficulty: number
+    biome: BiomeType
+    hasMarket: boolean
+    hasMining: boolean
+    hasChat: boolean
+    welcomeMessage: string
+    mapX?: number
+    mapY?: number
+  }
+}
+
+export interface RegionInteraction {
+  regionId: string
+  action: 'explore' | 'trade' | 'mine' | 'chat'
+  timestamp: Date
 }

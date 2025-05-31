@@ -1,13 +1,13 @@
+// src/App.tsx
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { MapPin, Pickaxe, Store, Backpack, ArrowLeft, Zap, Heart, Users, Map, MessageCircle, Send, Earth } from 'lucide-react'
-import './App.css'
-import { ModeToggle } from './components/mode-toggle'
-// import { resolveVisibleLayers, generateCharacterLayers, generateNFTMetadata } from '@/lib/layerResolver'
+import { MapPin, Zap, Heart, Users, MessageCircle, Send, Earth, MapIcon } from 'lucide-react'
+import { GlobalNavbar } from './components/global-navbar'
 import { toast, Toaster } from 'sonner'
-import { InventoryView, MarketView, MiningView, WorldMapView } from '@/components/views'
-
+import { InventoryView, MarketView, MiningView, WorldMapView, ProfileView, MainView } from '@/components/views'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+import { NPCActivity } from './components/NPCActivity'
+// import { ConnectedPlayerWalletInfo } from './components/ConnectedPlayerWalletInfo'
 
 // API base URL - will be your Netlify functions URL
 const API_BASE = '/.netlify/functions'
@@ -20,6 +20,7 @@ import type {
   ChatMessage,
   Player
 } from '@/types'
+import GlobalActivityFeed from './components/GlobalActivityFeed'
 
 // Define a type for the rarity
 type Rarity = 'COMMON' | 'UNCOMMON' | 'RARE' | 'EPIC' | 'LEGENDARY';
@@ -27,7 +28,6 @@ type Rarity = 'COMMON' | 'UNCOMMON' | 'RARE' | 'EPIC' | 'LEGENDARY';
 function App() {
   const [currentView, setCurrentView] = useState<GameView>('main')
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null)
-  const [gameLog, setGameLog] = useState<string[]>([])
   const [chatInput, setChatInput] = useState('')
   const [loadingItems, setLoadingItems] = useState<Set<string>>(new Set())
 
@@ -41,6 +41,12 @@ function App() {
   const [error, setError] = useState<string | null>(null)
   const [travelingTo, setTravelingTo] = useState<Location | null>(null)
 
+  // Add this useEffect in your App.tsx
+  useEffect(() => {
+    if (character && currentView === 'main') {
+      loadPlayersAtLocation(character.currentLocation.id)
+    }
+  }, [currentView, character?.currentLocation.id, character])
   // Load initial data
   useEffect(() => {
     loadGameData()
@@ -67,6 +73,10 @@ function App() {
     }
   }, [currentView, selectedLocation?.id, character?.currentLocation.id, character])
 
+  const renderNPCActivityView = () => (
+    <NPCActivity />
+  )
+
   const loadGameData = async () => {
     try {
       setLoading(true)
@@ -82,15 +92,6 @@ function App() {
       if (!locationsResponse.ok) throw new Error('Failed to load locations')
       const locationsData = await locationsResponse.json()
       setLocations(locationsData.locations)
-
-      // Set initial game log
-      setGameLog([
-        `Welcome to Earth, ${characterData.name}!`,
-        `You find yourself in ${characterData.currentLocation.name}.`,
-        ...characterData.recentActivity.slice(0, 3).map((activity: Character['recentActivity'][0]) =>
-          `${activity.description}${activity.item ? ` - ${activity.item.name}` : ''}`
-        )
-      ])
 
       setError(null)
     } catch (err) {
@@ -248,10 +249,6 @@ function App() {
     }
   }
 
-  const addToLog = (message: string) => {
-    setGameLog(prev => [...prev.slice(-4), message]) // Keep last 5 messages
-  }
-
   const handleMining = async () => {
     if (!character) return
 
@@ -304,8 +301,6 @@ function App() {
           }
         )
 
-        // Add to game log
-        addToLog(`⛏️ ${result.message}`)
       } else {
         // Nothing found toast
         toast.info(
@@ -315,9 +310,6 @@ function App() {
             duration: 2000
           }
         )
-
-        // Add to game log  
-        addToLog(`⛏️ ${result.message}`)
       }
 
       // Only refresh character data (not full page reload)
@@ -331,7 +323,6 @@ function App() {
     } catch (error) {
       console.error('Mining failed:', error)
       toast.error('Mining attempt failed. Please try again.')
-      addToLog('⛏️ Mining attempt failed due to connection issues.')
     } finally {
       // Remove loading state
       setLoadingItems(prev => {
@@ -368,7 +359,6 @@ function App() {
       const result = await response.json()
 
       if (!response.ok) {
-        addToLog(result.message || result.error)
         setTravelingTo(null)
         return
       }
@@ -388,12 +378,6 @@ function App() {
           }
         }) : null)
 
-        // Show result in log
-        addToLog(result.message)
-        if (result.newLocation.welcomeMessage) {
-          addToLog(`"${result.newLocation.welcomeMessage}"`)
-        }
-
         // Refresh locations data in background without loading state
         try {
           const locationsResponse = await fetch(`${API_BASE}/get-locations`)
@@ -412,7 +396,6 @@ function App() {
 
     } catch (error) {
       console.error('Travel failed:', error)
-      addToLog('Travel failed. Please try again.')
       setTravelingTo(null)
     }
   }
@@ -676,14 +659,39 @@ function App() {
     }
   }
 
+  const handleSettingsClick = () => {
+    // TODO: Implement settings modal
+    toast.info('Settings panel coming soon!')
+  }
+
+  const handleHomeClick = () => {
+    setCurrentView('main')
+    setSelectedLocation(null)
+  }
+
+  const handleProfileClick = () => {
+    setCurrentView('profile')
+    setSelectedLocation(null)
+  }
+
+  const handleNavMapClick = () => {
+    setCurrentView('map')
+    setSelectedLocation(null)
+  }
+
+  const handleNavInventoryClick = () => {
+    setCurrentView('inventory')
+    setSelectedLocation(null)
+  }
+
   // Initial loading state (only for app startup)
   if (loading && !travelingTo) {
     return (
-      <div className="min-h-screen bg-background p-4 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          {/* <div className="text-2xl mb-4">🌍</div> */}
-          <Earth className="w-12 h-12 mb-4 animate-spin" />
-          <div>Loading Wojak Earth...</div>
+          <Earth className="w-8 h-8 mb-4 text-thin animate-spin mx-auto text-primary" />
+          <div className="text-lg font-medium">Loading Wojak Earth...</div>
+          <div className="text-sm text-muted-foreground mt-2">Preparing your adventure...</div>
         </div>
       </div>
     )
@@ -692,7 +700,7 @@ function App() {
   // Travel animation state
   if (travelingTo) {
     return (
-      <div className="min-h-screen bg-background p-4 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="text-center max-w-md mx-auto">
           <div className="mb-6">
             <div className="text-4xl mb-4 animate-bounce">
@@ -734,7 +742,7 @@ function App() {
   // Error state
   if (error) {
     return (
-      <div className="min-h-screen bg-background p-4 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="text-center">
           <div className="text-2xl mb-4">❌</div>
           <div className="text-red-500 mb-4">{error}</div>
@@ -747,7 +755,7 @@ function App() {
   // No character data
   if (!character) {
     return (
-      <div className="min-h-screen bg-background p-4 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="text-center">
           <div className="text-2xl mb-4">🤔</div>
           <div>No character data found</div>
@@ -756,176 +764,88 @@ function App() {
     )
   }
 
-
   // Add this new component for the character display
-  const CharacterRenderer: React.FC<{ character: Character }> = ({ character }) => {
-    const [imageError, setImageError] = useState(false)
-    const [imageLoading, setImageLoading] = useState(true)
+  // const CharacterRenderer: React.FC<{ character: Character }> = ({ character }) => {
+  //   const [imageError, setImageError] = useState(false)
+  //   const [imageLoading, setImageLoading] = useState(true)
 
-    // Generate the rendered character URL
-    // const characterImageUrl = `/.netlify/functions/render-character/${character.id}.png`
+  //   const handleImageLoad = () => {
+  //     setImageLoading(false)
+  //     setImageError(false)
+  //   }
 
-    const handleImageLoad = () => {
-      setImageLoading(false)
-      setImageError(false)
-    }
-
-    const handleImageError = () => {
-      setImageLoading(false)
-      setImageError(true)
-    }
-
-    return (
-      <div className="w-32 h-32 mx-auto bg-gray-200 rounded-lg flex items-center justify-center mb-4 overflow-hidden relative">
-        {imageLoading && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          </div>
-        )}
-
-        {!imageError ? (
-          <img
-            src="/wojak.png"
-            // src={characterImageUrl}
-            alt={character.name}
-            className="w-full h-full object-cover"
-            onLoad={handleImageLoad}
-            onError={handleImageError}
-            style={{ display: imageLoading ? 'none' : 'block' }}
-          />
-        ) : (
-          // Fallback to default wojak image
-          <img
-            src={character.currentImageUrl || "/wojak.png"}
-            alt={character.name}
-            className="w-full h-full object-cover"
-            onLoad={() => setImageLoading(false)}
-            onError={() => {
-              setImageLoading(false)
-              // Ultimate fallback
-              const target = event?.target as HTMLImageElement
-              if (target) {
-                target.style.display = 'none'
-                if (target.parentElement) {
-                  target.parentElement.innerHTML = '<div class="text-4xl">🥺</div>'
-                }
-              }
-            }}
-          />
-        )}
-      </div>
-    )
-  }
-
-  // Add this function to show layer information (useful for debugging)
-  // const LayerDebugPanel: React.FC<{ character: Character }> = ({ character }) => {
-  //   const characterLayers = generateCharacterLayers(character)
-  //   const visibleLayers = resolveVisibleLayers(
-  //     characterLayers,
-  //     character.currentLocation.biome
-  //   )
+  //   const handleImageError = () => {
+  //     setImageLoading(false)
+  //     setImageError(true)
+  //   }
 
   //   return (
-  //     <div className="mt-4 p-3 bg-muted/30 rounded-lg">
-  //       <h4 className="font-medium mb-2 text-sm">Character Layers (Debug)</h4>
-  //       <div className="space-y-1 text-xs">
-  //         {visibleLayers.map((layer, i) => (
-  //           <div key={i} className="flex justify-between items-center">
-  //             <span className={layer.visible ? 'text-green-600' : 'text-red-500'}>
-  //               {layer.type}/{layer.name}
-  //             </span>
-  //             <span className="text-muted-foreground">
-  //               z:{layer.zIndex} {layer.visible ? '✓' : '✗'}
-  //             </span>
-  //           </div>
-  //         ))}
-  //       </div>
+  //     <div className="w-32 h-32 mx-auto bg-gray-200 rounded-lg flex items-center justify-center mb-4 overflow-hidden relative">
+  //       {imageLoading && (
+  //         <div className="absolute inset-0 flex items-center justify-center">
+  //           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+  //         </div>
+  //       )}
 
-  //       <div className="mt-2 pt-2 border-t">
-  //         <a
-  //           href={`/.netlify/functions/metadata/${character.tokenId || character.id}`}
-  //           target="_blank"
-  //           rel="noopener noreferrer"
-  //           className="text-xs text-blue-500 hover:underline"
-  //         >
-  //           View NFT Metadata →
-  //         </a>
-  //       </div>
+  //       {!imageError ? (
+  //         <img
+  //           src="/wojak.png"
+  //           alt={character.name}
+  //           className="w-full h-full object-cover"
+  //           onLoad={handleImageLoad}
+  //           onError={handleImageError}
+  //           style={{ display: imageLoading ? 'none' : 'block' }}
+  //         />
+  //       ) : (
+  //         // Fallback to default wojak image
+  //         <img
+  //           src="/wojak.png"
+  //           alt={character.name}
+  //           className="w-full h-full object-cover"
+  //           onLoad={() => setImageLoading(false)}
+  //           onError={() => {
+  //             setImageLoading(false)
+  //             // Ultimate fallback
+  //             const target = event?.target as HTMLImageElement
+  //             if (target) {
+  //               target.style.display = 'none'
+  //               if (target.parentElement) {
+  //                 target.parentElement.innerHTML = '<div class="text-4xl">🥺</div>'
+  //               }
+  //             }
+  //           }}
+  //         />
+  //       )}
   //     </div>
   //   )
   // }
 
-
-
   const renderMainView = () => (
-    <div className="space-y-6">
-      <ModeToggle />
-      <div className="text-center">
-        <CharacterRenderer character={character} />
-        <h2 className="text-xl font-bold">{character.name}</h2>
-        <p className="text-muted-foreground">Currently in {character.currentLocation.name}</p>
-        <div className="flex justify-center gap-4 mt-2">
-          <span className="text-sm flex items-center gap-1">
-            <Zap className="w-3 h-3" /> {character.energy}/100
-          </span>
-          <span className="text-sm flex items-center gap-1">
-            <Heart className="w-3 h-3" /> {character.health}/100
-          </span>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <Button onClick={() => setCurrentView('map')} variant="outline">
-          <Map className="w-4 h-4 mr-2" />
-          Map
-        </Button>
-        <Button onClick={() => setCurrentView('mine')} variant="outline">
-          <Pickaxe className="w-4 h-4 mr-2" />
-          Mine
-        </Button>
-        <Button onClick={() => setCurrentView('market')} variant="outline">
-          <Store className="w-4 h-4 mr-2" />
-          Market
-        </Button>
-        <Button onClick={() => setCurrentView('inventory')} variant="outline">
-          <Backpack className="w-4 h-4 mr-2" />
-          Inventory
-        </Button>
-      </div>
-
-      <div className="mt-4">
-        <Button onClick={() => setCurrentView('chat')} variant="ghost" className="w-full">
-          <MessageCircle className="w-4 h-4 mr-2" />
-          Local Chat ({playersAtLocation.length} online)
-        </Button>
-      </div>
-
-      {/* Add debug panel in development */}
-      {/* {process.env.NODE_ENV === 'development' && character && (
-        <LayerDebugPanel character={character} />
-      )} */}
-    </div>
+    <MainView
+      character={character}
+      playersAtLocation={playersAtLocation}
+      onMineClick={() => setCurrentView('mine')}
+      onMarketClick={() => setCurrentView('market')}
+      onChatClick={() => setCurrentView('chat')}
+      onNPCActivityClick={() => setCurrentView('npc-activity')}
+    />
   )
 
   const renderMapView = () => (
     <div className="space-y-4">
-      <Button onClick={() => setCurrentView("main")} variant="ghost">
-        <ArrowLeft className="w-4 h-4 mr-2" />
-        Back
-      </Button>
-      <h3 className="text-lg font-semibold">World Map</h3>
-      <p className="text-sm text-muted-foreground">
-        Explore different locations across Wojak Earth
-      </p>
+      <h3 className="text-lg font-semibold flex items-center gap-2">
+        <MapIcon className="w-5 h-5" />
+        World Map
+      </h3>
 
-      <Tabs defaultValue="list" className="w-full">
+      <Tabs defaultValue="map" className="w-full">
         <TabsList className="mb-4">
-          <TabsTrigger value="list">List</TabsTrigger>
           <TabsTrigger value="map">Map</TabsTrigger>
+          <TabsTrigger value="list">List</TabsTrigger>
         </TabsList>
 
         <TabsContent value="list">
-          <div className="space-y-3">
+          <div className="space-y-3 max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-muted-foreground scrollbar-track-muted">
             {locations.map(location => (
               <div
                 key={location.id}
@@ -968,14 +888,15 @@ function App() {
         </TabsContent>
 
         <TabsContent value="map">
-          <WorldMapView locations={locations} />
+          <WorldMapView
+            locations={locations}
+            character={character}
+            onTravel={handleTravel}
+          />
         </TabsContent>
       </Tabs>
-
-
     </div>
   )
-
 
   const renderLocationView = () => {
     if (!selectedLocation) return null
@@ -1021,7 +942,7 @@ function App() {
         {selectedLocation.subLocations && selectedLocation.subLocations.length > 0 && (
           <div>
             <h4 className="font-medium mb-2">Places to Visit</h4>
-            <div className="space-y-2">
+            <div className="space-y-2 max-h-32 overflow-y-auto scrollbar-thin scrollbar-thumb-muted-foreground scrollbar-track-muted">
               {selectedLocation.subLocations.map((subLocation) => (
                 <div
                   key={subLocation.id}
@@ -1047,7 +968,7 @@ function App() {
             <Users className="w-4 h-4" />
             Players Here ({playersAtLocation.length})
           </h4>
-          <div className="space-y-2 max-h-32 overflow-y-auto">
+          <div className="space-y-2 max-h-32 overflow-y-auto scrollbar-thin scrollbar-thumb-muted-foreground scrollbar-track-muted">
             {playersAtLocation.map(player => (
               <div key={player.id} className="flex items-center justify-between p-2 bg-muted/30 rounded text-sm">
                 <div className="flex items-center gap-2">
@@ -1091,11 +1012,6 @@ function App() {
             <p className="text-sm text-muted-foreground">{selectedLocation.lore}</p>
           </div>
         )}
-
-        <Button onClick={() => setCurrentView('map')} variant="ghost">
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Map
-        </Button>
       </div>
     )
   }
@@ -1104,7 +1020,6 @@ function App() {
     <MiningView
       character={character}
       loadingItems={loadingItems}
-      onBack={() => setCurrentView('main')}
       onMine={handleMining}
     />
   )
@@ -1116,16 +1031,18 @@ function App() {
       locations={locations}
       marketItems={marketItems}
       loadingItems={loadingItems}
-      onBack={() => setCurrentView('main')}
       onPurchase={handlePurchase}
     />
+  )
+
+  const renderProfileView = () => (
+    <ProfileView character={character} />
   )
 
   const renderInventoryView = () => (
     <InventoryView
       character={character}
       loadingItems={loadingItems}
-      onBack={() => setCurrentView('main')}
       onUseItem={handleUseItem}
       onEquipItem={handleEquipItem}
     />
@@ -1144,7 +1061,7 @@ function App() {
           </p>
         </div>
 
-        <div className="bg-muted/30 rounded-lg p-3 h-64 overflow-y-auto space-y-2">
+        <div className="bg-muted/30 rounded-lg p-3 h-64 overflow-y-auto space-y-2 scrollbar-thin scrollbar-thumb-muted-foreground scrollbar-track-muted">
           {chatMessages.length > 0 ? (
             chatMessages.map(message => (
               <div key={message.id} className="space-y-1">
@@ -1192,11 +1109,6 @@ function App() {
             <Send className="w-4 h-4" />
           </Button>
         </div>
-
-        <Button onClick={() => setCurrentView(selectedLocation ? 'location' : 'main')} variant="ghost">
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back
-        </Button>
       </div>
     )
   }
@@ -1204,7 +1116,7 @@ function App() {
   return (
     <>
       <Toaster
-        position="top-right"
+        position="bottom-left"
         expand={false}
         richColors={true}
         closeButton={false}
@@ -1219,37 +1131,45 @@ function App() {
             fontSize: '14px',
             padding: '12px 16px',
             zIndex: 99999,
-            position: 'relative',
+            backdropFilter: 'none',
+            WebkitBackdropFilter: 'none',
+            opacity: 1,
           },
-          className: '',
+          className: 'solid-toast',
         }}
       />
-      <div className="min-h-screen bg-background-4">
-        <div className="max-w-md mx-auto">
-          <div className="rounded-lg-6 shadow-sm">
-            <h1 className="text-2xl font-bold text-center mb-6 flex items-center justify-center gap-2">
-              <MapPin className="w-6 h-6" />
-              Wojak Earth
-            </h1>
 
-            {currentView === 'main' && renderMainView()}
-            {currentView === 'map' && renderMapView()}
-            {currentView === 'location' && renderLocationView()}
-            {currentView === 'mine' && renderMineView()}
-            {currentView === 'market' && renderMarketView()}
-            {currentView === 'inventory' && renderInventoryView()}
-            {currentView === 'chat' && renderChatView()}
-          </div>
+      <div className="min-h-screen bg-background">
+        {/* Global Navigation */}
+        <GlobalNavbar
+          character={character}
+          onSettingsClick={handleSettingsClick}
+          onProfileClick={handleProfileClick}
+          onHomeClick={handleHomeClick}  // Add this new handler
+          onMapClick={handleNavMapClick}
+          onInventoryClick={handleNavInventoryClick}
+        />
 
-          {/* Game Log */}
-          <div className="mt-4 bg-card border rounded-lg p-4">
-            <h4 className="font-medium mb-2">Recent Activity</h4>
-            <div className="space-y-1 text-sm">
-              {gameLog.map((log, i) => (
-                <div key={i} className="text-muted-foreground">
-                  {log}
-                </div>
-              ))}
+        {/* Main Content */}
+        <div className="container mx-auto px-4 py-6">
+          <div className="max-w-md mx-auto">
+            {/* <ConnectedPlayerWalletInfo /> */}
+
+            <div className="">
+              {currentView === 'main' && renderMainView()}
+              {currentView === 'profile' && renderProfileView()}
+              {currentView === 'map' && renderMapView()}
+              {currentView === 'location' && renderLocationView()}
+              {currentView === 'mine' && renderMineView()}
+              {currentView === 'market' && renderMarketView()}
+              {currentView === 'inventory' && renderInventoryView()}
+              {currentView === 'chat' && renderChatView()}
+              {currentView === 'npc-activity' && renderNPCActivityView()} {/* Add this line */}
+            </div>
+
+            { /* Global Activity Feed */}
+            <div className="mt-4 bg-card border rounded-lg p-4">
+              <GlobalActivityFeed />
             </div>
           </div>
         </div>

@@ -1,13 +1,45 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/wojak-earth.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>wojak-earth</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/wojak-earth.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>wojak-earth</title>
+</head>
+
+<body>
+  <div id="root"></div>
+
+  <!-- Nuclear option: inline the Buffer polyfill -->
+  <script>
+    window.global = globalThis;
+    window.process = { env: {} };
+    window.require = function () { return {}; };
+
+    // Minimal Buffer polyfill that actually works
+    if (typeof Buffer === 'undefined') {
+      window.Buffer = {
+        from: function (data, encoding) {
+          if (typeof data === 'string') {
+            return new TextEncoder().encode(data);
+          }
+          return data;
+        },
+        alloc: function (size) {
+          return new Uint8Array(size);
+        },
+        allocUnsafe: function (size) {
+          return new Uint8Array(size);
+        },
+        isBuffer: function () {
+          return false;
+        }
+      };
+    }
+  </script>
+
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
 </html>

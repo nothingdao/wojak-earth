@@ -79,13 +79,13 @@ export function WalletConnectButton({ className }: WalletConnectButtonProps) {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="outline" className={`${className} flex items-center gap-2`}>
-            <Avatar className="w-6 h-6">
+            <Avatar className="w-4 h-4">
               <AvatarImage src={wallet?.adapter.icon} alt={wallet?.adapter.name} />
               <AvatarFallback>
                 <Wallet className="w-3 h-3" />
               </AvatarFallback>
             </Avatar>
-            <span className="font-mono">{truncatedAddress}</span>
+            <span className="font-thin">{truncatedAddress}</span>
             <ChevronDown className="w-4 h-4" />
           </Button>
         </DropdownMenuTrigger>

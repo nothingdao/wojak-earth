@@ -32,6 +32,8 @@ model Character {
   // Game stats
   energy Int @default(100)
   health Int @default(100)
+  level  Int @default(1) // Player level
+  coins  Int @default(0) // In-game currency
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -1,13 +1,13 @@
 // src/components/views/InventoryView.tsx - Enhanced version
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, Backpack, Loader2, Shield, Crown, Shirt, Gem, Package, Zap, Heart } from 'lucide-react'
+import { Backpack, Loader2, Shield, Crown, Shirt, Gem, Package, Zap, Heart } from 'lucide-react'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import type { Character } from '@/types'
 
 interface InventoryViewProps {
   character: Character
   loadingItems: Set<string>
-  onBack: () => void
   onUseItem: (inventoryId: string, itemName: string, energyEffect?: number, healthEffect?: number) => void
   onEquipItem: (inventoryId: string, isEquipped: boolean) => void
 }
@@ -25,7 +25,6 @@ const EQUIPMENT_SLOTS = {
 export function InventoryView({
   character,
   loadingItems,
-  onBack,
   onUseItem,
   onEquipItem
 }: InventoryViewProps) {
@@ -63,10 +62,11 @@ export function InventoryView({
   }
 
   const renderEquipmentSlots = () => (
-    <div className="bg-muted/30 p-4 rounded-lg mb-4">
-      <h4 className="font-medium mb-3 text-sm">Equipment Slots</h4>
-      <div className="grid grid-cols-2 gap-3">
-        {/* @typescript-eslint/no-unused-vars */}
+    <div className="bg-muted/30 p-3 rounded-lg mb-4">
+      <h4 className="font-medium mb-3 text-sm">Equipment</h4>
+
+      {/* Desktop: 2x2 grid */}
+      <div className="hidden sm:grid sm:grid-cols-2 gap-3">
         {Object.entries(EQUIPMENT_SLOTS).map(([, config]) => {
           const equippedItem = getEquippedBySlot(config.slot)
           const IconComponent = config.icon
@@ -84,7 +84,7 @@ export function InventoryView({
                 <div className="text-xs font-medium">{config.name}</div>
                 {equippedItem ? (
                   <div className="text-xs text-center">
-                    <div className="font-medium text-primary">{equippedItem.item.name}</div>
+                    <div className="font-medium text-primary truncate max-w-full">{equippedItem.item.name}</div>
                     <div className="text-muted-foreground capitalize">{equippedItem.item.rarity}</div>
                   </div>
                 ) : (
@@ -95,6 +95,39 @@ export function InventoryView({
           )
         })}
       </div>
+
+      {/* Mobile: Horizontal scroll */}
+      <ScrollArea className="w-full sm:hidden">
+        <div className="flex gap-3 pb-2">
+          {Object.entries(EQUIPMENT_SLOTS).map(([, config]) => {
+            const equippedItem = getEquippedBySlot(config.slot)
+            const IconComponent = config.icon
+
+            return (
+              <div
+                key={config.slot}
+                className={`flex-shrink-0 w-20 border-2 border-dashed rounded-lg p-2 text-center transition-colors ${equippedItem
+                  ? 'border-primary bg-primary/5'
+                  : 'border-muted-foreground/30 bg-muted/20'
+                  }`}
+              >
+                <div className="flex flex-col items-center gap-1">
+                  <IconComponent className={`w-5 h-5 ${equippedItem ? 'text-primary' : 'text-muted-foreground'}`} />
+                  <div className="text-xs font-medium">{config.name}</div>
+                  {equippedItem ? (
+                    <div className="text-xs text-center">
+                      <div className="font-medium text-primary truncate">{equippedItem.item.name}</div>
+                      <div className="text-muted-foreground capitalize text-[10px]">{equippedItem.item.rarity}</div>
+                    </div>
+                  ) : (
+                    <div className="text-xs text-muted-foreground">Empty</div>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </ScrollArea>
     </div>
   )
 
@@ -113,52 +146,54 @@ export function InventoryView({
     const isLoading = loadingItems.has(inv.id)
 
     return (
-      <div key={inv.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center text-sm">
-            {inv.item.category === 'HAT' ? '🎩' :
-              inv.item.category === 'CLOTHING' ? '👕' :
-                inv.item.category === 'ACCESSORY' ? '💎' :
-                  inv.item.category === 'TOOL' ? '🔧' :
-                    inv.item.category === 'MATERIAL' ? '⚡' :
-                      inv.item.category === 'CONSUMABLE' ? '🥤' : '📦'}
+      <div key={inv.id} className="grid grid-cols-[40px_1fr_80px] gap-3 p-3 bg-muted/50 rounded-lg items-center">
+        {/* Icon - Fixed 40px */}
+        <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center text-sm">
+          {inv.item.category === 'HAT' ? '🎩' :
+            inv.item.category === 'CLOTHING' ? '👕' :
+              inv.item.category === 'ACCESSORY' ? '💎' :
+                inv.item.category === 'TOOL' ? '🔧' :
+                  inv.item.category === 'MATERIAL' ? '⚡' :
+                    inv.item.category === 'CONSUMABLE' ? '🥤' : '📦'}
+        </div>
+
+        {/* Content - Takes remaining space but constrained */}
+        <div className="min-w-0 overflow-hidden">
+          <div className="font-medium flex items-center gap-2 mb-1">
+            <span className="truncate">{inv.item.name}</span>
+            {inv.isEquipped && (
+              <span className="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100 px-1.5 py-0.5 rounded-full flex-shrink-0">
+                Equipped
+              </span>
+            )}
           </div>
-          <div className="flex-1">
-            <div className="font-medium flex items-center gap-2">
-              {inv.item.name}
-              {inv.isEquipped && (
-                <span className="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100 px-1.5 py-0.5 rounded-full">
-                  Equipped
+          <div className="text-sm text-muted-foreground truncate">{inv.item.description}</div>
+
+          {/* Show consumable effects */}
+          {isConsumable && (energyEffect > 0 || healthEffect > 0) && (
+            <div className="text-xs text-green-600 mt-1 flex items-center gap-2">
+              {energyEffect > 0 && (
+                <span className="flex items-center gap-1">
+                  <Zap className="w-3 h-3" />
+                  +{energyEffect}
+                </span>
+              )}
+              {healthEffect > 0 && (
+                <span className="flex items-center gap-1">
+                  <Heart className="w-3 h-3" />
+                  +{healthEffect}
                 </span>
               )}
             </div>
-            <div className="text-sm text-muted-foreground">{inv.item.description}</div>
+          )}
 
-            {/* Show consumable effects */}
-            {isConsumable && (energyEffect > 0 || healthEffect > 0) && (
-              <div className="text-xs text-green-600 mt-1 flex items-center gap-2">
-                {energyEffect > 0 && (
-                  <span className="flex items-center gap-1">
-                    <Zap className="w-3 h-3" />
-                    +{energyEffect}
-                  </span>
-                )}
-                {healthEffect > 0 && (
-                  <span className="flex items-center gap-1">
-                    <Heart className="w-3 h-3" />
-                    +{healthEffect}
-                  </span>
-                )}
-              </div>
-            )}
-
-            <div className="text-xs text-muted-foreground capitalize mt-1">
-              {inv.item.rarity} • Qty: {inv.quantity}
-            </div>
+          <div className="text-xs text-muted-foreground capitalize mt-1 truncate">
+            {inv.item.rarity} • Qty: {inv.quantity}
           </div>
         </div>
 
-        <div className="flex flex-col gap-1">
+        {/* Buttons - Fixed 80px width */}
+        <div className="flex flex-col gap-1 w-20">
           {/* Equipment Button */}
           {['HAT', 'CLOTHING', 'ACCESSORY', 'TOOL'].includes(inv.item.category) && (
             <Button
@@ -166,7 +201,7 @@ export function InventoryView({
               variant={inv.isEquipped ? "default" : "outline"}
               onClick={() => onEquipItem(inv.id, inv.isEquipped)}
               disabled={isLoading}
-              className="text-xs px-2 py-1"
+              className="text-xs px-1 py-1 h-7 w-full"
             >
               {isLoading ? (
                 <Loader2 className="w-3 h-3 animate-spin" />
@@ -192,7 +227,7 @@ export function InventoryView({
                 `Already at full ${wouldWasteEnergy ? 'energy' : 'health'}` :
                 `Use ${inv.item.name}`
               }
-              className="text-xs px-2 py-1"
+              className="text-xs px-1 py-1 h-7 w-full"
             >
               {isLoading ? (
                 <Loader2 className="w-3 h-3 animate-spin" />
@@ -205,7 +240,7 @@ export function InventoryView({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 max-w-full">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold flex items-center gap-2">
           <Backpack className="w-5 h-5" />
@@ -216,8 +251,7 @@ export function InventoryView({
         </div>
       </div>
 
-      {/* Equipment Slots - only show on equipment tab or all tab */}
-      {(activeTab === 'equipment' || activeTab === 'all') && equipmentItems.length > 0 && renderEquipmentSlots()}
+
 
       {/* Tab Navigation */}
       <div className="overflow-x-auto border-b">
@@ -251,26 +285,26 @@ export function InventoryView({
         </div>
       </div>
 
-      {/* Inventory Items */}
-      <div className="space-y-2">
-        {getActiveItems().length > 0 ? (
-          getActiveItems().map(renderInventoryItem)
-        ) : (
-          <div className="bg-muted/50 p-8 rounded-lg text-center text-muted-foreground">
-            <Package className="w-12 h-12 mx-auto mb-2" />
-            {activeTab === 'all' ? (
-              <>Your bag is empty.<br />Start mining or visit the market!</>
-            ) : (
-              <>No {activeTab} items found.<br />Try a different tab or go mining!</>
-            )}
-          </div>
-        )}
-      </div>
+      {/* Equipment Slots - only show on equipment tab or all tab */}
+      {(activeTab === 'equipment' || activeTab === 'all') && equipmentItems.length > 0 && renderEquipmentSlots()}
 
-      <Button onClick={onBack} variant="ghost">
-        <ArrowLeft className="w-4 h-4 mr-2" />
-        Back
-      </Button>
+      {/* Inventory Items */}
+      <ScrollArea className="h-96">
+        <div className="space-y-2">
+          {getActiveItems().length > 0 ? (
+            getActiveItems().map(renderInventoryItem)
+          ) : (
+            <div className="bg-muted/50 p-8 rounded-lg text-center text-muted-foreground">
+              <Package className="w-12 h-12 mx-auto mb-2" />
+              {activeTab === 'all' ? (
+                <>Your bag is empty.<br />Start mining or visit the market!</>
+              ) : (
+                <>No {activeTab} items found.<br />Try a different tab or go mining!</>
+              )}
+            </div>
+          )}
+        </div>
+      </ScrollArea>
     </div>
   )
 }

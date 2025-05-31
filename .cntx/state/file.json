@@ -1,5 +1,5 @@
 {
-  "lastAccessed": "2025-05-29T23:23:23.655Z",
+  "lastAccessed": "2025-05-30T13:11:16.106Z",
   "files": {
     "prisma/schema.prisma": {
       "name": "schema.prisma",
@@ -7,7 +7,7 @@
       "lastModified": "2025-05-28T22:31:59.236Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "prisma/seed.ts": {
@@ -16,7 +16,7 @@
       "lastModified": "2025-05-28T23:49:37.575Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T09-31-51-668Z",
       "tags": []
     },
     "netlify/functions/get-market.js": {
@@ -25,7 +25,7 @@
       "lastModified": "2025-05-29T03:47:50.500Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "netlify/functions/send-message.js": {
@@ -34,7 +34,7 @@
       "lastModified": "2025-05-29T00:06:10.082Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "netlify/functions/get-chat.js": {
@@ -43,7 +43,7 @@
       "lastModified": "2025-05-28T23:51:59.175Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "netlify/functions/buy-item.js": {
@@ -52,7 +52,7 @@
       "lastModified": "2025-05-29T03:25:43.591Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "netlify/functions/get-locations.js": {
@@ -61,7 +61,7 @@
       "lastModified": "2025-05-29T00:12:36.034Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "netlify/functions/get-character.js": {
@@ -70,7 +70,7 @@
       "lastModified": "2025-05-28T23:17:38.002Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "netlify/functions/get-players-at-location.js": {
@@ -79,7 +79,7 @@
       "lastModified": "2025-05-28T23:55:02.361Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "netlify/functions/travel-action.js": {
@@ -88,7 +88,7 @@
       "lastModified": "2025-05-28T23:30:33.914Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "netlify/functions/mine-action.js": {
@@ -97,7 +97,7 @@
       "lastModified": "2025-05-29T07:11:55.499Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "netlify/functions/equip-item.js": {
@@ -106,7 +106,7 @@
       "lastModified": "2025-05-29T05:38:49.985Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "src/components/ui/button.tsx": {
@@ -115,7 +115,7 @@
       "lastModified": "2025-05-28T21:47:16.145Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "src/components/ui/dropdown-menu.tsx": {
@@ -124,7 +124,7 @@
       "lastModified": "2025-05-29T00:35:27.082Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "src/components/theme-provider.tsx": {
@@ -133,7 +133,7 @@
       "lastModified": "2025-05-29T00:31:34.688Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "src/components/mode-toggle.tsx": {
@@ -142,7 +142,7 @@
       "lastModified": "2025-05-29T00:32:40.806Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "src/lib/utils.ts": {
@@ -151,16 +151,16 @@
       "lastModified": "2025-05-28T21:46:49.754Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "src/main.tsx": {
       "name": "main.tsx",
       "directory": "src",
-      "lastModified": "2025-05-29T07:59:24.953Z",
+      "lastModified": "2025-05-30T07:19:09.520Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "src/App.css": {
@@ -169,25 +169,25 @@
       "lastModified": "2025-05-28T21:44:35.041Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T01-08-04-867Z",
       "tags": []
     },
     "src/App.tsx": {
       "name": "App.tsx",
       "directory": "src",
-      "lastModified": "2025-05-29T15:39:11.142Z",
+      "lastModified": "2025-05-30T12:02:54.715Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "src/index.css": {
       "name": "index.css",
       "directory": "src",
-      "lastModified": "2025-05-28T21:46:42.653Z",
+      "lastModified": "2025-05-30T07:35:23.369Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "src/vite-env.d.ts": {
@@ -196,7 +196,7 @@
       "lastModified": "2025-05-28T21:44:35.044Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "tsconfig.app.json": {
@@ -205,34 +205,34 @@
       "lastModified": "2025-05-28T21:48:18.933Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "README.md": {
       "name": "README.md",
       "directory": "Root",
-      "lastModified": "2025-05-29T23:17:22.745Z",
-      "isChanged": true,
+      "lastModified": "2025-05-29T23:23:32.468Z",
+      "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "TODO.md": {
       "name": "TODO.md",
       "directory": "Root",
-      "lastModified": "2025-05-29T23:19:12.572Z",
-      "isChanged": true,
+      "lastModified": "2025-05-29T23:23:31.702Z",
+      "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "package.json": {
       "name": "package.json",
       "directory": "Root",
-      "lastModified": "2025-05-29T11:14:27.449Z",
+      "lastModified": "2025-05-30T12:29:41.080Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "tsconfig.node.json": {
@@ -241,7 +241,7 @@
       "lastModified": "2025-05-28T21:46:21.462Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     ".gitignore": {
@@ -250,7 +250,7 @@
       "lastModified": "2025-05-28T23:07:21.376Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "components.json": {
@@ -259,7 +259,7 @@
       "lastModified": "2025-05-28T21:46:42.115Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "vite.config.ts": {
@@ -268,7 +268,7 @@
       "lastModified": "2025-05-28T21:46:16.230Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "tsconfig.json": {
@@ -277,7 +277,7 @@
       "lastModified": "2025-05-28T21:45:45.831Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "eslint.config.js": {
@@ -286,7 +286,7 @@
       "lastModified": "2025-05-28T21:44:35.037Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "index.html": {
@@ -295,7 +295,7 @@
       "lastModified": "2025-05-28T21:48:47.451Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     ".env": {
@@ -304,7 +304,7 @@
       "lastModified": "2025-05-28T21:52:13.504Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "public/layers/accessories/sunglasses.png": {
@@ -466,7 +466,7 @@
       "lastModified": "2025-05-29T02:46:20.676Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "netlify/functions/metadata.js": {
@@ -475,7 +475,7 @@
       "lastModified": "2025-05-29T02:46:06.495Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "src/lib/layerResolver.ts": {
@@ -484,7 +484,7 @@
       "lastModified": "2025-05-29T02:27:27.011Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "scripts/seed-markets.ts": {
@@ -493,7 +493,7 @@
       "lastModified": "2025-05-29T06:22:57.295Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T09-31-51-668Z",
       "tags": []
     },
     "netlify/functions/use-item.js": {
@@ -502,43 +502,43 @@
       "lastModified": "2025-05-29T04:02:05.691Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "src/components/ui/sonner.tsx": {
       "name": "sonner.tsx",
       "directory": "src/components/ui",
-      "lastModified": "2025-05-29T04:28:51.400Z",
+      "lastModified": "2025-05-30T07:01:23.254Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "src/types/index.ts": {
       "name": "index.ts",
       "directory": "src/types",
-      "lastModified": "2025-05-29T07:19:18.019Z",
+      "lastModified": "2025-05-30T06:16:45.874Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "src/components/views/MarketView.tsx": {
       "name": "MarketView.tsx",
       "directory": "src/components/views",
-      "lastModified": "2025-05-29T04:43:00.072Z",
+      "lastModified": "2025-05-30T01:04:49.232Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "src/components/views/InventoryView.tsx": {
       "name": "InventoryView.tsx",
       "directory": "src/components/views",
-      "lastModified": "2025-05-29T14:20:31.901Z",
+      "lastModified": "2025-05-30T01:55:06.045Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "src/components/views/index.ts": {
@@ -547,16 +547,16 @@
       "lastModified": "2025-05-29T11:12:15.786Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "src/components/views/MiningView.tsx": {
       "name": "MiningView.tsx",
       "directory": "src/components/views",
-      "lastModified": "2025-05-29T05:11:37.300Z",
+      "lastModified": "2025-05-30T01:14:03.835Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "scripts/seed-mining-resources.ts": {
@@ -565,7 +565,7 @@
       "lastModified": "2025-05-29T04:58:00.336Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T09-31-51-668Z",
       "tags": []
     },
     "scripts/add-themed-items.ts": {
@@ -574,7 +574,7 @@
       "lastModified": "2025-05-29T05:47:45.577Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T09-31-51-668Z",
       "tags": []
     },
     "scripts/update-mining-resources.ts": {
@@ -592,7 +592,7 @@
       "lastModified": "2025-05-29T06:25:23.751Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T09-31-51-668Z",
       "tags": []
     },
     "scripts/debug-market-locations.ts": {
@@ -601,7 +601,7 @@
       "lastModified": "2025-05-29T06:00:54.267Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T09-31-51-668Z",
       "tags": []
     },
     "scripts/fix-market-locations.ts": {
@@ -610,7 +610,7 @@
       "lastModified": "2025-05-29T06:07:56.390Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T09-31-51-668Z",
       "tags": []
     },
     "scripts/update-mining-with-tools.ts": {
@@ -619,7 +619,7 @@
       "lastModified": "2025-05-29T06:21:32.931Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T09-31-51-668Z",
       "tags": []
     },
     "scripts/add-proper-tools.ts": {
@@ -628,7 +628,7 @@
       "lastModified": "2025-05-29T06:21:08.021Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T09-31-51-668Z",
       "tags": []
     },
     "scripts/setup-complete-game.ts": {
@@ -637,7 +637,7 @@
       "lastModified": "2025-05-29T06:32:31.722Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T09-31-51-668Z",
       "tags": []
     },
     "netlify/functions/get-gamemaster-stats.js": {
@@ -682,7 +682,7 @@
       "lastModified": "2025-05-29T08:13:25.435Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "src/components/ui/avatar.tsx": {
@@ -691,7 +691,7 @@
       "lastModified": "2025-05-29T08:13:25.444Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "src/components/ui/badge.tsx": {
@@ -700,7 +700,7 @@
       "lastModified": "2025-05-29T08:13:25.456Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "src/components/ui/dialog.tsx": {
@@ -709,7 +709,7 @@
       "lastModified": "2025-05-29T08:13:25.281Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "src/components/wallet-select-modal.tsx": {
@@ -718,16 +718,16 @@
       "lastModified": "2025-05-29T14:03:44.572Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "src/components/wallet-connect-button.tsx": {
       "name": "wallet-connect-button.tsx",
       "directory": "src/components",
-      "lastModified": "2025-05-29T14:07:13.362Z",
+      "lastModified": "2025-05-30T07:27:03.156Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "src/components/wallet-provider.tsx": {
@@ -736,7 +736,7 @@
       "lastModified": "2025-05-29T13:59:18.314Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "netlify/functions/mint-character.js": {
@@ -754,7 +754,7 @@
       "lastModified": "2025-05-29T08:48:57.681Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T09-31-51-668Z",
       "tags": []
     },
     "scripts/setup-new-regions-content.ts": {
@@ -763,25 +763,25 @@
       "lastModified": "2025-05-29T10:04:14.004Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T09-31-51-668Z",
       "tags": []
     },
     "scripts/ultimate-world-setup.ts": {
       "name": "ultimate-world-setup.ts",
       "directory": "scripts",
-      "lastModified": "2025-05-29T10:08:28.693Z",
+      "lastModified": "2025-05-30T11:10:32.904Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "src/components/views/WorldMapView.tsx": {
       "name": "WorldMapView.tsx",
       "directory": "src/components/views",
-      "lastModified": "2025-05-29T12:27:30.500Z",
+      "lastModified": "2025-05-30T08:34:53.006Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "src/components/ui/tooltip.tsx": {
@@ -790,7 +790,7 @@
       "lastModified": "2025-05-29T11:09:24.963Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "src/components/ui/tabs.tsx": {
@@ -799,25 +799,25 @@
       "lastModified": "2025-05-29T11:14:29.295Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "WHITEPAPER.md": {
       "name": "WHITEPAPER.md",
       "directory": "Root",
-      "lastModified": "2025-05-29T23:23:07.102Z",
-      "isChanged": true,
+      "lastModified": "2025-05-29T23:23:33.622Z",
+      "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "PITCHDECK.md": {
       "name": "PITCHDECK.md",
       "directory": "Root",
-      "lastModified": "2025-05-29T23:22:40.326Z",
-      "isChanged": true,
+      "lastModified": "2025-05-29T23:23:34.482Z",
+      "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "NFT.md": {
@@ -826,16 +826,16 @@
       "lastModified": "2025-05-29T23:06:13.507Z",
       "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "LITEPAPER.md": {
       "name": "LITEPAPER.md",
       "directory": "Root",
-      "lastModified": "2025-05-29T23:21:53.082Z",
-      "isChanged": true,
+      "lastModified": "2025-05-29T23:23:35.642Z",
+      "isChanged": false,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     },
     "GUIDE.md": {
@@ -850,16 +850,160 @@
     "INDEX.md": {
       "name": "INDEX.md",
       "directory": "Root",
-      "lastModified": "2025-05-29T23:21:28.836Z",
+      "lastModified": "2025-05-29T23:23:29.796Z",
+      "isChanged": false,
+      "isStaged": false,
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
+      "tags": []
+    },
+    "src/components/global-navbar.tsx": {
+      "name": "global-navbar.tsx",
+      "directory": "src/components",
+      "lastModified": "2025-05-30T07:34:52.809Z",
+      "isChanged": false,
+      "isStaged": false,
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
+      "tags": []
+    },
+    "src/components/NPCActivity.tsx": {
+      "name": "NPCActivity.tsx",
+      "directory": "src/components",
+      "lastModified": "2025-05-30T09:40:45.354Z",
+      "isChanged": false,
+      "isStaged": false,
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
+      "tags": []
+    },
+    "netlify/functions/generate-npc-activity.js": {
+      "name": "generate-npc-activity.js",
+      "directory": "netlify/functions",
+      "lastModified": "2025-05-30T03:24:09.047Z",
+      "isChanged": false,
+      "isStaged": false,
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
+      "tags": []
+    },
+    "netlify/functions/get-global-activity.js": {
+      "name": "get-global-activity.js",
+      "directory": "netlify/functions",
+      "lastModified": "2025-05-30T05:38:29.748Z",
+      "isChanged": false,
+      "isStaged": false,
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
+      "tags": []
+    },
+    "data/worldLocations.ts": {
+      "name": "worldLocations.ts",
+      "directory": "data",
+      "lastModified": "2025-05-30T10:49:04.811Z",
+      "isChanged": false,
+      "isStaged": false,
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
+      "tags": []
+    },
+    "src/utils/worldToMapData.ts": {
+      "name": "worldToMapData.ts",
+      "directory": "src/utils",
+      "lastModified": "2025-05-30T06:18:48.404Z",
+      "isChanged": false,
+      "isStaged": false,
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
+      "tags": []
+    },
+    "src/components/Earth.tsx": {
+      "name": "Earth.tsx",
+      "directory": "src/components",
+      "lastModified": "2025-05-30T11:46:33.032Z",
+      "isChanged": false,
+      "isStaged": false,
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
+      "tags": []
+    },
+    "src/components/EarthSVG.tsx": {
+      "name": "EarthSVG.tsx",
+      "directory": "src/components",
+      "lastModified": "2025-05-30T13:10:18.316Z",
       "isChanged": true,
       "isStaged": false,
-      "masterBundleId": "master-2025-05-29T23-11-21-082Z",
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
+      "tags": []
+    },
+    "data/mining_plains_npc_chat.txt": {
+      "name": "mining_plains_npc_chat.txt",
+      "directory": "data",
+      "lastModified": "2025-05-30T09:21:36.172Z",
+      "isChanged": false,
+      "isStaged": false,
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
+      "tags": []
+    },
+    "data/glitch_wastes_npc_lines.txt": {
+      "name": "glitch_wastes_npc_lines.txt",
+      "directory": "data",
+      "lastModified": "2025-05-30T09:15:55.047Z",
+      "isChanged": false,
+      "isStaged": false,
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
+      "tags": []
+    },
+    "data/characterTemplates.ts": {
+      "name": "characterTemplates.ts",
+      "directory": "data",
+      "lastModified": "2025-05-30T10:24:27.904Z",
+      "isChanged": false,
+      "isStaged": false,
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
+      "tags": []
+    },
+    "data/worldConfig.ts": {
+      "name": "worldConfig.ts",
+      "directory": "data",
+      "lastModified": "2025-05-30T11:15:55.942Z",
+      "isChanged": false,
+      "isStaged": false,
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
+      "tags": []
+    },
+    "data/worldItems.ts": {
+      "name": "worldItems.ts",
+      "directory": "data",
+      "lastModified": "2025-05-30T11:27:36.760Z",
+      "isChanged": false,
+      "isStaged": false,
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
+      "tags": []
+    },
+    "data/marketConfigs.ts": {
+      "name": "marketConfigs.ts",
+      "directory": "data",
+      "lastModified": "2025-05-30T10:19:45.607Z",
+      "isChanged": true,
+      "isStaged": false,
+      "masterBundleId": "master-2025-05-30T09-31-51-668Z",
+      "tags": []
+    },
+    "data/miningConfig.ts": {
+      "name": "miningConfig.ts",
+      "directory": "data",
+      "lastModified": "2025-05-30T11:26:34.130Z",
+      "isChanged": false,
+      "isStaged": false,
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
+      "tags": []
+    },
+    "data/marketConfig.ts": {
+      "name": "marketConfig.ts",
+      "directory": "data",
+      "lastModified": "2025-05-30T11:25:55.277Z",
+      "isChanged": false,
+      "isStaged": false,
+      "masterBundleId": "master-2025-05-30T12-44-08-855Z",
       "tags": []
     }
   },
   "masterBundle": {
-    "id": "master-2025-05-29T23-11-21-082Z",
-    "created": "2025-05-29T23:11:21.082Z",
-    "fileCount": 71
+    "id": "master-2025-05-30T12-44-08-855Z",
+    "created": "2025-05-30T12:44:08.855Z",
+    "fileCount": 73
   }
 }

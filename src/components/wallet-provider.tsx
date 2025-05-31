@@ -1,3 +1,4 @@
+// src/components/wallet-provider.tsx
 "use client";
 
 import React, { useMemo } from 'react';
