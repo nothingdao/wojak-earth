@@ -8,8 +8,8 @@
     "build": "prisma generate && tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "setup:world": "tsx scripts/ultimate-world-setup.ts",
-    "setup:clean": "tsx scripts/ultimate-world-setup.ts",
+    "setup:world": "tsx scripts/build-the-earth.ts",
+    "setup:clean": "tsx scripts/build-the-earth.ts",
     "functions:dev": "netlify dev",
     "functions:build": "netlify build",
     "postinstall": "prisma generate"
