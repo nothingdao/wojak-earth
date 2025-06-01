@@ -9,7 +9,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { NPCActivity } from './components/NPCActivity'
 // import { ConnectedPlayerWalletInfo } from './components/ConnectedPlayerWalletInfo'
 
-// API base URL - will be your Netlify functions URL
+// API base URL - serverless functions URL (netlify, supabase, myspace, etc...)
 const API_BASE = '/.netlify/functions'
 
 import type {
