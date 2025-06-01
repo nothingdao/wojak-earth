@@ -1,5 +1,5 @@
 // components/views/WorldMapView.tsx
-import Earth from '../Earth'
+import Earth from '../map/Earth'
 import type { Location, Character } from '@/types'
 
 interface WorldMapViewProps {

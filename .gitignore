@@ -31,3 +31,5 @@ dist-ssr
 
 # cntx-ui
 .cntx
+
+server-keypair.json

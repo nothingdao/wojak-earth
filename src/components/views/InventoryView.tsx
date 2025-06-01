@@ -1,7 +1,22 @@
 // src/components/views/InventoryView.tsx - Enhanced version
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Backpack, Loader2, Shield, Crown, Shirt, Gem, Package, Zap, Heart } from 'lucide-react'
+import { Loader2, Zap, Heart } from 'lucide-react'
+import {
+  GiBackpack,
+  GiCrown,
+  GiChestArmor,
+  GiGemNecklace,
+  GiSpade,
+  GiHealthPotion,
+  GiCube,
+  GiTopHat,
+  GiShirt,
+  GiNecklace,
+  GiMining,
+  GiRock,
+  GiWaterBottle
+} from 'react-icons/gi'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import type { Character } from '@/types'
 
@@ -16,10 +31,10 @@ type InventoryTab = 'equipment' | 'consumables' | 'materials' | 'all'
 
 // Equipment slot mapping
 const EQUIPMENT_SLOTS = {
-  HAT: { name: 'Head', icon: Crown, slot: 'head' },
-  CLOTHING: { name: 'Body', icon: Shirt, slot: 'body' },
-  ACCESSORY: { name: 'Accessory', icon: Gem, slot: 'accessory' },
-  TOOL: { name: 'Tool', icon: Shield, slot: 'tool' },
+  HAT: { name: 'Head', icon: GiCrown, slot: 'head' },
+  CLOTHING: { name: 'Body', icon: GiChestArmor, slot: 'body' },
+  ACCESSORY: { name: 'Accessory', icon: GiGemNecklace, slot: 'accessory' },
+  TOOL: { name: 'Tool', icon: GiSpade, slot: 'tool' },
 } as const
 
 export function InventoryView({
@@ -59,6 +74,26 @@ export function InventoryView({
     return equipmentItems.find(inv =>
       inv.isEquipped && EQUIPMENT_SLOTS[inv.item.category as keyof typeof EQUIPMENT_SLOTS]?.slot === slot
     )
+  }
+
+  // Get category icon
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case 'HAT':
+        return <GiTopHat />
+      case 'CLOTHING':
+        return <GiShirt />
+      case 'ACCESSORY':
+        return <GiNecklace />
+      case 'TOOL':
+        return <GiMining />
+      case 'MATERIAL':
+        return <GiRock />
+      case 'CONSUMABLE':
+        return <GiHealthPotion />
+      default:
+        return <GiCube />
+    }
   }
 
   const renderEquipmentSlots = () => (
@@ -149,12 +184,7 @@ export function InventoryView({
       <div key={inv.id} className="grid grid-cols-[40px_1fr_80px] gap-3 p-3 bg-muted/50 rounded-lg items-center">
         {/* Icon - Fixed 40px */}
         <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center text-sm">
-          {inv.item.category === 'HAT' ? '🎩' :
-            inv.item.category === 'CLOTHING' ? '👕' :
-              inv.item.category === 'ACCESSORY' ? '💎' :
-                inv.item.category === 'TOOL' ? '🔧' :
-                  inv.item.category === 'MATERIAL' ? '⚡' :
-                    inv.item.category === 'CONSUMABLE' ? '🥤' : '📦'}
+          {getCategoryIcon(inv.item.category)}
         </div>
 
         {/* Content - Takes remaining space but constrained */}
@@ -243,7 +273,7 @@ export function InventoryView({
     <div className="space-y-4 max-w-full">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold flex items-center gap-2">
-          <Backpack className="w-5 h-5" />
+          <GiBackpack />
           Inventory
         </h3>
         <div className="text-sm text-muted-foreground">
@@ -251,16 +281,14 @@ export function InventoryView({
         </div>
       </div>
 
-
-
       {/* Tab Navigation */}
       <div className="overflow-x-auto border-b">
         <div className="flex min-w-max">
           {[
-            { id: 'all' as const, label: 'All', count: character.inventory?.length || 0, icon: Package },
-            { id: 'equipment' as const, label: 'Equipment', count: equipmentItems.length, icon: Shield },
-            { id: 'consumables' as const, label: 'Consumables', count: consumableItems.length, icon: Zap },
-            { id: 'materials' as const, label: 'Materials', count: materialItems.length, icon: Gem },
+            { id: 'all' as const, label: 'All', count: character.inventory?.length || 0, icon: GiCube },
+            { id: 'equipment' as const, label: 'Equipment', count: equipmentItems.length, icon: GiSpade },
+            { id: 'consumables' as const, label: 'Consumables', count: consumableItems.length, icon: GiWaterBottle },
+            { id: 'materials' as const, label: 'Materials', count: materialItems.length, icon: GiRock },
           ].map(tab => {
             const IconComponent = tab.icon
             return (
@@ -295,7 +323,7 @@ export function InventoryView({
             getActiveItems().map(renderInventoryItem)
           ) : (
             <div className="bg-muted/50 p-8 rounded-lg text-center text-muted-foreground">
-              <Package className="w-12 h-12 mx-auto mb-2" />
+              <GiBackpack className="w-12 h-12 mx-auto mb-2" />
               {activeTab === 'all' ? (
                 <>Your bag is empty.<br />Start mining or visit the market!</>
               ) : (

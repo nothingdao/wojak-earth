@@ -10,6 +10,7 @@ export type GameView =
   | 'npc-activity'
   | 'gamemaster'
   | 'profile'
+  | 'sandbox'
 
 export interface Character {
   id: string
@@ -172,6 +173,7 @@ export interface SlotBonuses {
 export type LandType =
   | 'inhabited'
   | 'uninhabited'
+  | 'unexplored'
   | 'ruins'
   | 'wilderness'
   | 'sacred'
@@ -185,6 +187,7 @@ export type BiomeType =
   | 'temporal'
   | 'ossuary'
   | 'electromagnetic'
+  | 'wilderness'
 
 export interface MapRegion {
   name: string
@@ -210,4 +213,31 @@ export interface RegionInteraction {
   regionId: string
   action: 'explore' | 'trade' | 'mine' | 'chat'
   timestamp: Date
+}
+
+export interface LocationTheme {
+  id: string
+  name: string
+  colors: {
+    base: string
+    hover: string
+    border?: string
+  }
+  opacity: number
+  effects: {
+    filter?: string
+    blur?: string
+  }
+}
+
+export interface MapLocation {
+  id: string
+  name: string
+  description: string
+  svgPathId: string
+  difficulty: number
+  theme: LocationTheme
+  isExplored: boolean
+  isPlayerHere: boolean
+  status: 'explored' | 'unexplored' | 'locked' | 'gm-only'
 }

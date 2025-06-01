@@ -1,4 +1,4 @@
-// data/worldLocations.ts - Pure data, no dependencies, safe for browser
+// data/worldLocations.ts - Fixed to match mapLocations names
 
 export interface WorldLocation {
   name: string
@@ -51,6 +51,36 @@ export const WORLD_LOCATIONS: WorldLocation[] = [
         welcomeMessage: 'Crystalline formations sparkle in your torchlight.',
       },
     ],
+  },
+
+  {
+    name: 'Underland',
+    description:
+      'Vast red-earth territories where ancient songlines whisper through weathered stone',
+    biome: 'wilderness',
+    difficulty: 3,
+    hasMarket: true,
+    hasMining: true,
+    hasChat: true,
+    welcomeMessage:
+      'The red earth stretches endlessly under the scorching sun.',
+    lore: 'These ancient lands hold secrets older than memory, where the very stones seem to hum with stories.',
+    mapX: 200,
+    mapY: 400,
+  },
+
+  {
+    name: 'Retardia', // ← Fixed to match mapLocations.ts
+    description: 'A dangerous mountain with lava flows and rare minerals',
+    biome: 'volcanic',
+    difficulty: 7,
+    hasMarket: false,
+    hasMining: true,
+    hasChat: true,
+    welcomeMessage: 'The heat is overwhelming, but the rewards are great.',
+    lore: 'Ancient dwarves once mined here before the volcano awakened.',
+    mapX: 500,
+    mapY: 150,
   },
 
   {
@@ -142,7 +172,7 @@ export const WORLD_LOCATIONS: WorldLocation[] = [
       },
       {
         name: 'The Glitch Club',
-        description: 'Underground social hub for hackers and rebels',
+        description: 'Underground social hub for hackers and glass eaters',
         biome: 'urban',
         difficulty: 2,
         hasMarket: true,

@@ -80,9 +80,9 @@ export const MainView: React.FC<MainViewProps> = ({
   return (
     <div className="space-y-6">
       <div className="text-center">
-        <CharacterRenderer character={character} />
-        <h2 className="text-xl font-bold">{character.name}</h2>
-        <p className="text-muted-foreground">Currently in {character.currentLocation.name}</p>
+        {/* <CharacterRenderer character={character} /> */}
+        {/* <h2 className="text-xl font-bold">{character.name}</h2> */}
+        <p className="text-muted-foreground">{character.currentLocation.name}</p>
       </div>
 
       <div className="grid grid-cols-2 gap-3">

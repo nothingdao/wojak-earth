@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { MapPin, Zap, Heart, Users, MessageCircle, Send, Earth, MapIcon } from 'lucide-react'
 import { GlobalNavbar } from './components/global-navbar'
 import { toast, Toaster } from 'sonner'
-import { InventoryView, MarketView, MiningView, WorldMapView, ProfileView, MainView } from '@/components/views'
+import { InventoryView, MarketView, MiningView, WorldMapView, ProfileView, MainView, SandboxView } from '@/components/views'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { NPCActivity } from './components/NPCActivity'
 // import { ConnectedPlayerWalletInfo } from './components/ConnectedPlayerWalletInfo'
@@ -679,6 +679,11 @@ function App() {
     setSelectedLocation(null)
   }
 
+  const handleSandboxClick = () => {
+    setCurrentView('sandbox')
+    setSelectedLocation(null)
+  }
+
   const handleNavInventoryClick = () => {
     setCurrentView('inventory')
     setSelectedLocation(null)
@@ -1039,6 +1044,10 @@ function App() {
     <ProfileView character={character} />
   )
 
+  const renderSandboxView = () => (
+    <SandboxView character={character} />
+  )
+
   const renderInventoryView = () => (
     <InventoryView
       character={character}
@@ -1147,6 +1156,7 @@ function App() {
           onProfileClick={handleProfileClick}
           onHomeClick={handleHomeClick}  // Add this new handler
           onMapClick={handleNavMapClick}
+          onSandboxClick={handleSandboxClick}
           onInventoryClick={handleNavInventoryClick}
         />
 
@@ -1158,13 +1168,14 @@ function App() {
             <div className="">
               {currentView === 'main' && renderMainView()}
               {currentView === 'profile' && renderProfileView()}
+              {currentView === 'sandbox' && renderSandboxView()}
               {currentView === 'map' && renderMapView()}
               {currentView === 'location' && renderLocationView()}
               {currentView === 'mine' && renderMineView()}
               {currentView === 'market' && renderMarketView()}
               {currentView === 'inventory' && renderInventoryView()}
               {currentView === 'chat' && renderChatView()}
-              {currentView === 'npc-activity' && renderNPCActivityView()} {/* Add this line */}
+              {currentView === 'npc-activity' && renderNPCActivityView()}
             </div>
 
             { /* Global Activity Feed */}

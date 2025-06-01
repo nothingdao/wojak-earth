@@ -1,0 +1,19 @@
+{
+  "name": "Player Character",
+  "description": "Player character NFT",
+  "image": "https://earth.ndao.computer/layers/bases/male.png",
+  "attributes": [
+    { "trait_type": "Type", "value": "Player Character" },
+    { "trait_type": "Level", "value": "1" },
+    { "trait_type": "Class", "value": "Adventurer" }
+  ],
+  "properties": {
+    "files": [
+      {
+        "uri": "https://earth.ndao.computer/layers/bases/male.png",
+        "type": "image/png"
+      }
+    ],
+    "category": "image"
+  }
+}

@@ -1,5 +1,18 @@
 import { useState, useEffect } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  GiWorld,
+  GiWalk,
+  GiMineWagon,
+  GiCoins,
+  GiShop,
+  GiSwordman,
+  GiBackpack,
+  GiSparkles,
+  GiScrollUnfurled,
+  GiSeedling,
+  GiCycle
+} from 'react-icons/gi';
 import supabase from '@/utils/supabase';
 
 // Types based on your Prisma schema
@@ -112,21 +125,21 @@ export default function GlobalActivityFeed({ className = "" }: GlobalActivityFee
   const getTransactionIcon = (type: TransactionType) => {
     switch (type) {
       case 'TRAVEL':
-        return '🚶';
+        return <GiWalk />;
       case 'MINE':
-        return '⛏️';
+        return <GiMineWagon />;
       case 'BUY':
-        return '💰';
+        return <GiCoins />;
       case 'SELL':
-        return '🏪';
+        return <GiShop />;
       case 'EQUIP':
-        return '⚔️';
+        return <GiSwordman />;
       case 'UNEQUIP':
-        return '📦';
+        return <GiBackpack />;
       case 'MINT':
-        return '✨';
+        return <GiSparkles />;
       default:
-        return '📝';
+        return <GiScrollUnfurled />;
     }
   };
 
@@ -150,12 +163,13 @@ export default function GlobalActivityFeed({ className = "" }: GlobalActivityFee
     <div className={`border rounded-lg ${className}`}>
       <div className="p-4 border-b">
         <h3 className="text-lg font-semibold flex items-center gap-2">
-          🌍 Global Activity Feed
+          <GiWorld />
+          Global Activity Feed
           {isLoading && (
             <div className="w-4 h-4 border-2 border-muted border-t-foreground rounded-full animate-spin"></div>
           )}
           <div className="flex items-center gap-1 ml-auto">
-            <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-foreground' : 'bg-muted'}`}></div>
+            <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
             <span className="text-xs text-muted-foreground">
               {isConnected ? 'Live' : 'Disconnected'}
             </span>
@@ -173,7 +187,7 @@ export default function GlobalActivityFeed({ className = "" }: GlobalActivityFee
               key={transaction.id}
               className="flex items-start gap-3 p-3 border rounded-lg hover:bg-accent transition-colors"
             >
-              <div className="text-lg flex-shrink-0">
+              <div className="flex-shrink-0">
                 {getTransactionIcon(transaction.type)}
               </div>
 
@@ -192,8 +206,9 @@ export default function GlobalActivityFeed({ className = "" }: GlobalActivityFee
                 </p>
 
                 {transaction.quantity && (
-                  <div className="text-xs text-muted-foreground mt-1">
-                    Quantity: {transaction.quantity}
+                  <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                    <span>Quantity:</span>
+                    <span className="font-mono">{transaction.quantity}</span>
                   </div>
                 )}
               </div>
@@ -206,7 +221,9 @@ export default function GlobalActivityFeed({ className = "" }: GlobalActivityFee
 
           {transactions.length === 0 && !isLoading && (
             <div className="text-center py-8 text-muted-foreground">
-              <div className="text-4xl mb-2">🌱</div>
+              <div className="flex justify-center mb-2">
+                <GiSeedling />
+              </div>
               <p>No activity yet...</p>
               <p className="text-xs mt-1">The world is waiting for adventurers!</p>
             </div>
@@ -240,8 +257,9 @@ export default function GlobalActivityFeed({ className = "" }: GlobalActivityFee
             getTransactions();
           }}
           disabled={isLoading}
-          className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+          className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
         >
+          <GiCycle className={`${isLoading ? 'animate-spin' : ''}`} />
           {isLoading ? 'Refreshing...' : isConnected ? 'Refresh • Live updates enabled' : 'Refresh • Realtime disconnected'}
         </button>
       </div>

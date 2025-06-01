@@ -10,6 +10,7 @@
     "preview": "vite preview",
     "setup:world": "tsx scripts/build-the-earth.ts",
     "setup:clean": "tsx scripts/build-the-earth.ts",
+    "restock": "tsx scripts/restock-markets.ts",
     "functions:dev": "netlify dev",
     "functions:build": "netlify build",
     "postinstall": "prisma generate"
@@ -18,6 +19,7 @@
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@metaplex-foundation/js": "^0.20.1",
     "@prisma/client": "^6.8.2",
     "@radix-ui/react-avatar": "^1.1.10",
     "@radix-ui/react-dialog": "^1.1.14",
@@ -43,6 +45,7 @@
     "prisma": "^6.8.2",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "react-icons": "^5.5.0",
     "socket.io-client": "^4.8.1",
     "sonner": "^2.0.3",
     "tailwind-merge": "^3.3.0",

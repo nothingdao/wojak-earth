@@ -9,14 +9,15 @@ import type { MapRegion, LandType, ExplorationState, BiomeType } from '../types'
 
 // Map biomes to visual themes
 const BIOME_TO_LAND_TYPE: Record<BiomeType, LandType> = {
-  plains: 'inhabited',
+  plains: 'inhabited', // ← Mining Plains gets this theme
+  wilderness: 'wilderness', // ← Underland gets this theme
+  underground: 'wilderness', // ← Fungi Networks gets this theme
   desert: 'uninhabited',
   urban: 'inhabited',
-  digital: 'uninhabited',
-  underground: 'inhabited',
+  digital: 'wilderness',
   temporal: 'sacred',
   ossuary: 'ruins',
-  electromagnetic: 'uninhabited',
+  electromagnetic: 'wilderness',
 } as const
 
 // Map biomes to color schemes
@@ -24,6 +25,10 @@ const BIOME_COLORS: Record<BiomeType, { base: string; hover: string }> = {
   plains: {
     base: 'fill-green-100',
     hover: 'hover:fill-green-200',
+  },
+  wilderness: {
+    base: 'fill-red-100', // ← Make Underland more red (Australian)
+    hover: 'hover:fill-red-200',
   },
   desert: {
     base: 'fill-yellow-100',
