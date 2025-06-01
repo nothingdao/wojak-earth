@@ -3,12 +3,10 @@ import { PrismaClient } from '@prisma/client'
 
 let prisma
 
-function getPrismaClient() {
-  if (!prisma) {
-    prisma = new PrismaClient()
-  }
-  return prisma
+if (!globalThis.prisma) {
+  globalThis.prisma = new PrismaClient()
 }
+prisma = globalThis.prisma
 
 export const handler = async (event, context) => {
   const headers = {
@@ -22,8 +20,6 @@ export const handler = async (event, context) => {
   }
 
   try {
-    const prisma = getPrismaClient()  // ADD THIS LINE
-
     // For MVP, we'll use hardcoded character ID
     const characterId = event.queryStringParameters?.characterId || 'hardcoded-demo'
 

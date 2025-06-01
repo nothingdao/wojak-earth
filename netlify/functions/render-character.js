@@ -3,12 +3,10 @@ import { PrismaClient } from '@prisma/client'
 
 let prisma
 
-function getPrismaClient() {
-  if (!prisma) {
-    prisma = new PrismaClient()
-  }
-  return prisma
+if (!globalThis.prisma) {
+  globalThis.prisma = new PrismaClient()
 }
+prisma = globalThis.prisma
 
 // Configuration
 const ASSET_BASE_URL = process.env.NODE_ENV === 'production'
@@ -103,7 +101,6 @@ export const handler = async (event, context) => {
   }
 
   try {
-    const prisma = getPrismaClient()
     // Extract character ID from path
     const pathParts = event.path.split('/')
     const characterParam = pathParts[pathParts.length - 1]

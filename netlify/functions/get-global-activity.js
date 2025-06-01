@@ -3,20 +3,10 @@ import { PrismaClient } from '@prisma/client'
 
 let prisma
 
-function getPrismaClient() {
-  if (!prisma) {
-    prisma = new PrismaClient()
-  }
-  return prisma
+if (!globalThis.prisma) {
+  globalThis.prisma = new PrismaClient()
 }
-
-try {
-  prisma = new PrismaClient({
-    log: ['error', 'warn'],
-  })
-} catch (error) {
-  console.error('Failed to initialize Prisma client:', error)
-}
+prisma = globalThis.prisma
 
 export const handler = async (event, context) => {
   const headers = {
@@ -36,14 +26,6 @@ export const handler = async (event, context) => {
   })
 
   try {
-    const prisma = getPrismaClient()  // Initialize Prisma client
-    if (!prisma) {
-      throw new Error('Prisma client not initialized')
-    }
-
-    await prisma.$connect()
-    console.log('Database connected successfully')
-
     const limit = parseInt(event.queryStringParameters?.limit || '20')
     const timeWindow = parseInt(event.queryStringParameters?.timeWindow || '60')
     const includePlayer = event.queryStringParameters?.includePlayer === 'true'

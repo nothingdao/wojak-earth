@@ -3,12 +3,10 @@ import { PrismaClient } from '@prisma/client'
 
 let prisma
 
-function getPrismaClient() {
-  if (!prisma) {
-    prisma = new PrismaClient()
-  }
-  return prisma
+if (!globalThis.prisma) {
+  globalThis.prisma = new PrismaClient()
 }
+prisma = globalThis.prisma
 
 // NPC Personality configurations
 const NPC_PERSONALITIES = {
@@ -104,7 +102,6 @@ export const handler = async (event, context) => {
   }
 
   try {
-    const prisma = getPrismaClient()
     // Parse configuration
     const config = JSON.parse(event.body || '{}')
 

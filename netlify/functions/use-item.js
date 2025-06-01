@@ -3,12 +3,10 @@ import { PrismaClient } from '@prisma/client'
 
 let prisma
 
-function getPrismaClient() {
-  if (!prisma) {
-    prisma = new PrismaClient()
-  }
-  return prisma
+if (!globalThis.prisma) {
+  globalThis.prisma = new PrismaClient()
 }
+prisma = globalThis.prisma
 
 export const handler = async (event, context) => {
   const headers = {
@@ -30,7 +28,6 @@ export const handler = async (event, context) => {
   }
 
   try {
-    const prisma = getPrismaClient()
     const { characterId = 'hardcoded-demo', inventoryId } = JSON.parse(event.body || '{}')
 
     if (!inventoryId) {

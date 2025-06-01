@@ -76,8 +76,11 @@ export const SandboxView: React.FC<SandboxViewProps> = () => {
       }
 
     } catch (error) {
-      console.error('Mint failed:', error)
-      toast.error(`Failed: ${error.message}`)
+      if (error instanceof Error) {
+        console.error('Mint failed:', error)
+
+        toast.error(`Failed: ${error.message}`)
+      }
     } finally {
       setLoading(false)
     }
