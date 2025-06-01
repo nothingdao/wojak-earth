@@ -15,11 +15,11 @@ export const handler = async (event, context) => {
 
   try {
     // For MVP, we'll use hardcoded character ID
-    const characterId = event.queryStringParameters?.characterId || 'hardcoded-demo'
+    const characterId = event.queryStringParameters?.characterId || 'char_wojak__777'
 
     let character
 
-    if (characterId === 'hardcoded-demo') {
+    if (characterId === 'char_wojak__777') {
       // Return our seeded test character
       character = await prisma.character.findFirst({
         where: {
