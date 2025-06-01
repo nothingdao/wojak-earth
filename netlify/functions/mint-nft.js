@@ -89,13 +89,12 @@ export const handler = async (event, context) => {
 
     console.log('Creating NFT for player:', playerName)
 
+    // Use your GitHub raw metadata file
+    const metadataUri = "https://raw.githubusercontent.com/nothingdao/wojak-earth/main/public/metadata/player-character.json"
 
-    // Upload the metadata to your own storage or use a metadata endpoint
-    const metadataUri = await metaplex.nfts().uploadMetadata(metadata)
-
-    // Mint NFT with the uploaded metadata
+    // Mint NFT with your hosted metadata
     const nft = await metaplex.nfts().create({
-      uri: metadataUri.uri,
+      uri: metadataUri,
       name: playerName,
       symbol: "PLAYER",
       sellerFeeBasisPoints: 0,
@@ -123,7 +122,7 @@ export const handler = async (event, context) => {
         success: true,
         mintAddress: nft.mintAddress.toBase58(),
         signature: nft.response.signature,
-        metadataUri: metadataUri.uri,
+        metadataUri: metadataUri,
         message: `Player character "${playerName}" minted successfully!`
       })
     }
