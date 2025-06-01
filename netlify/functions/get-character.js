@@ -1,6 +1,14 @@
+// netlify/functions/get-character.js
 import { PrismaClient } from '@prisma/client'
 
-const prisma = new PrismaClient()
+let prisma
+
+function getPrismaClient() {
+  if (!prisma) {
+    prisma = new PrismaClient()
+  }
+  return prisma
+}
 
 export const handler = async (event, context) => {
   const headers = {
@@ -14,12 +22,14 @@ export const handler = async (event, context) => {
   }
 
   try {
+    const prisma = getPrismaClient()  // ADD THIS LINE
+
     // For MVP, we'll use hardcoded character ID
-    const characterId = event.queryStringParameters?.characterId || 'char_wojak__777'
+    const characterId = event.queryStringParameters?.characterId || 'hardcoded-demo'
 
     let character
 
-    if (characterId === 'char_wojak__777') {
+    if (characterId === 'hardcoded-demo') {
       // Return our seeded test character
       character = await prisma.character.findFirst({
         where: {
@@ -171,7 +181,5 @@ export const handler = async (event, context) => {
         message: 'Failed to fetch character data'
       })
     }
-  } finally {
-    await prisma.$disconnect()
   }
 }

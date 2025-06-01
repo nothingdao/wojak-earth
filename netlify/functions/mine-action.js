@@ -1,6 +1,13 @@
 import { PrismaClient } from '@prisma/client'
 
-const prisma = new PrismaClient()
+let prisma
+
+function getPrismaClient() {
+  if (!prisma) {
+    prisma = new PrismaClient()
+  }
+  return prisma
+}
 
 export const handler = async (event, context) => {
   const headers = {
@@ -22,6 +29,7 @@ export const handler = async (event, context) => {
   }
 
   try {
+    const prisma = getPrismaClient()
     const { characterId = 'hardcoded-demo', locationId } = JSON.parse(event.body || '{}')
 
     // Get character
@@ -224,7 +232,5 @@ export const handler = async (event, context) => {
         message: 'Mining operation failed'
       })
     }
-  } finally {
-    await prisma.$disconnect()
   }
 }

@@ -1,6 +1,13 @@
 import { PrismaClient } from '@prisma/client'
 
-const prisma = new PrismaClient()
+let prisma
+
+function getPrismaClient() {
+  if (!prisma) {
+    prisma = new PrismaClient()
+  }
+  return prisma
+}
 
 export const handler = async (event, context) => {
   const headers = {
@@ -14,6 +21,7 @@ export const handler = async (event, context) => {
   }
 
   try {
+    const prisma = getPrismaClient()  // Initialize Prisma client
     const locationId = event.queryStringParameters?.locationId
     const limit = parseInt(event.queryStringParameters?.limit || '50')
 
@@ -142,8 +150,6 @@ export const handler = async (event, context) => {
         message: 'Failed to fetch chat messages'
       })
     }
-  } finally {
-    await prisma.$disconnect()
   }
 }
 

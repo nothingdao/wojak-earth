@@ -1,7 +1,14 @@
 // netlify/functions/metadata.js
 import { PrismaClient } from '@prisma/client'
 
-const prisma = new PrismaClient()
+let prisma
+
+function getPrismaClient() {
+  if (!prisma) {
+    prisma = new PrismaClient()
+  }
+  return prisma
+}
 
 // Configuration
 const ASSET_BASE_URL = process.env.NODE_ENV === 'production'
@@ -153,6 +160,7 @@ export const handler = async (event, context) => {
   }
 
   try {
+    const prisma = getPrismaClient() // Initialize Prisma client
     // Extract token ID from path
     const pathParts = event.path.split('/')
     const tokenId = pathParts[pathParts.length - 1]
@@ -257,7 +265,5 @@ export const handler = async (event, context) => {
         message: error.message
       })
     }
-  } finally {
-    await prisma.$disconnect()
   }
 }

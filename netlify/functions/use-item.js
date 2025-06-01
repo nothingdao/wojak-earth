@@ -1,7 +1,14 @@
 // netlify/functions/use-item.js
 import { PrismaClient } from '@prisma/client'
 
-const prisma = new PrismaClient()
+let prisma
+
+function getPrismaClient() {
+  if (!prisma) {
+    prisma = new PrismaClient()
+  }
+  return prisma
+}
 
 export const handler = async (event, context) => {
   const headers = {
@@ -23,6 +30,7 @@ export const handler = async (event, context) => {
   }
 
   try {
+    const prisma = getPrismaClient()
     const { characterId = 'hardcoded-demo', inventoryId } = JSON.parse(event.body || '{}')
 
     if (!inventoryId) {
@@ -209,7 +217,5 @@ export const handler = async (event, context) => {
         message: 'Failed to use item'
       })
     }
-  } finally {
-    await prisma.$disconnect()
   }
 }

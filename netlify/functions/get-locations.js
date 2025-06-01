@@ -1,6 +1,13 @@
 import { PrismaClient } from '@prisma/client'
 
-const prisma = new PrismaClient()
+let prisma
+
+function getPrismaClient() {
+  if (!prisma) {
+    prisma = new PrismaClient()
+  }
+  return prisma
+}
 
 export const handler = async (event, context) => {
   const headers = {
@@ -14,6 +21,7 @@ export const handler = async (event, context) => {
   }
 
   try {
+    const prisma = getPrismaClient()  // Initialize Prisma client
     // Fetch all top-level locations (no parent) with their sub-locations
     const locations = await prisma.location.findMany({
       where: {
@@ -104,7 +112,5 @@ export const handler = async (event, context) => {
         message: 'Failed to fetch locations'
       })
     }
-  } finally {
-    await prisma.$disconnect()
   }
 }

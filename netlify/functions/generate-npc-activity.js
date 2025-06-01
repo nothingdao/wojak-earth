@@ -1,7 +1,14 @@
 // netlify/functions/generate-npc-activity.js
 import { PrismaClient } from '@prisma/client'
 
-const prisma = new PrismaClient()
+let prisma
+
+function getPrismaClient() {
+  if (!prisma) {
+    prisma = new PrismaClient()
+  }
+  return prisma
+}
 
 // NPC Personality configurations
 const NPC_PERSONALITIES = {
@@ -97,6 +104,7 @@ export const handler = async (event, context) => {
   }
 
   try {
+    const prisma = getPrismaClient()
     // Parse configuration
     const config = JSON.parse(event.body || '{}')
 
@@ -227,8 +235,6 @@ export const handler = async (event, context) => {
         message: error.message
       })
     }
-  } finally {
-    await prisma.$disconnect()
   }
 }
 

@@ -3,6 +3,13 @@ import { PrismaClient } from '@prisma/client'
 
 let prisma
 
+function getPrismaClient() {
+  if (!prisma) {
+    prisma = new PrismaClient()
+  }
+  return prisma
+}
+
 try {
   prisma = new PrismaClient({
     log: ['error', 'warn'],
@@ -29,6 +36,7 @@ export const handler = async (event, context) => {
   })
 
   try {
+    const prisma = getPrismaClient()  // Initialize Prisma client
     if (!prisma) {
       throw new Error('Prisma client not initialized')
     }

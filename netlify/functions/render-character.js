@@ -1,8 +1,14 @@
 // netlify/functions/render-character.js
 import { PrismaClient } from '@prisma/client'
 
-// For now, let's create a simple version without Sharp since it might be causing issues
-const prisma = new PrismaClient()
+let prisma
+
+function getPrismaClient() {
+  if (!prisma) {
+    prisma = new PrismaClient()
+  }
+  return prisma
+}
 
 // Configuration
 const ASSET_BASE_URL = process.env.NODE_ENV === 'production'
@@ -97,6 +103,7 @@ export const handler = async (event, context) => {
   }
 
   try {
+    const prisma = getPrismaClient()
     // Extract character ID from path
     const pathParts = event.path.split('/')
     const characterParam = pathParts[pathParts.length - 1]
@@ -179,7 +186,5 @@ export const handler = async (event, context) => {
         message: error.message
       })
     }
-  } finally {
-    await prisma.$disconnect()
   }
 }
