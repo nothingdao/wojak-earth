@@ -1,4 +1,4 @@
-// netlify/functions/get-character.js
+// netlify/functions/get-player-character.js
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL
@@ -9,17 +9,33 @@ export const handler = async (event, context) => {
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
+    'Access-Control-Allow-Methods': 'GET, OPTIONS'
   }
 
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers, body: '' }
   }
 
-  try {
-    const characterId = event.queryStringParameters?.characterId || 'hardcoded-demo'
+  if (event.httpMethod !== 'GET') {
+    return {
+      statusCode: 405,
+      headers,
+      body: JSON.stringify({ error: 'Method not allowed' })
+    }
+  }
 
-    // Query using Supabase client instead of Prisma
+  try {
+    const walletAddress = event.queryStringParameters?.walletAddress
+
+    if (!walletAddress) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ error: 'Wallet address is required' })
+      }
+    }
+
+    // Query character by wallet address
     const { data: character, error } = await supabase
       .from('characters')
       .select(`
@@ -32,17 +48,30 @@ export const handler = async (event, context) => {
         imageHistory:character_images(*),
         transactions(*)
       `)
-      .eq('name', 'Wojak #1337')
+      .eq('walletAddress', walletAddress)
+      .eq('status', 'ACTIVE')
       .single()
 
-    if (error) {
+    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
       console.error('Supabase error:', error)
       return {
-        statusCode: 404,
+        statusCode: 500,
         headers,
         body: JSON.stringify({
-          error: 'Character not found',
+          error: 'Database error',
           message: error.message
+        })
+      }
+    }
+
+    if (!character) {
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          hasCharacter: false,
+          character: null,
+          message: 'No character found for this wallet'
         })
       }
     }
@@ -50,7 +79,10 @@ export const handler = async (event, context) => {
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify(character)
+      body: JSON.stringify({
+        hasCharacter: true,
+        character: character
+      })
     }
 
   } catch (error) {

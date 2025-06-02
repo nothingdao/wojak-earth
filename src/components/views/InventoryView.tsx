@@ -1,4 +1,4 @@
-// src/components/views/InventoryView.tsx - Enhanced version
+// src/components/views/InventoryView.tsx - FIXED VERSION
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Loader2, Zap, Heart } from 'lucide-react'
@@ -227,9 +227,14 @@ export function InventoryView({
           {/* Equipment Button */}
           {['HAT', 'CLOTHING', 'ACCESSORY', 'TOOL'].includes(inv.item.category) && (
             <Button
+              type="button"
               size="sm"
               variant={inv.isEquipped ? "default" : "outline"}
-              onClick={() => onEquipItem(inv.id, inv.isEquipped)}
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                onEquipItem(inv.id, inv.isEquipped)
+              }}
               disabled={isLoading}
               className="text-xs px-1 py-1 h-7 w-full"
             >
@@ -244,14 +249,19 @@ export function InventoryView({
           {/* Use Button for Consumables */}
           {isConsumable && (
             <Button
+              type="button"
               size="sm"
               variant="outline"
-              onClick={() => onUseItem(
-                inv.id,
-                inv.item.name,
-                inv.item.energyEffect,
-                inv.item.healthEffect
-              )}
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                onUseItem(
+                  inv.id,
+                  inv.item.name,
+                  inv.item.energyEffect,
+                  inv.item.healthEffect
+                )
+              }}
               disabled={wouldBeWasted || isLoading}
               title={wouldBeWasted ?
                 `Already at full ${wouldWasteEnergy ? 'energy' : 'health'}` :
@@ -294,11 +304,15 @@ export function InventoryView({
             return (
               <button
                 key={tab.id}
+                type="button"
                 className={`py-2 px-4 text-sm font-medium border-b-2 transition-colors flex items-center gap-1 whitespace-nowrap ${activeTab === tab.id
                   ? 'border-primary text-primary bg-primary/5'
                   : 'border-transparent text-muted-foreground hover:text-foreground'
                   }`}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={(e) => {
+                  e.preventDefault()
+                  setActiveTab(tab.id)
+                }}
               >
                 <IconComponent className="w-4 h-4" />
                 <span>{tab.label}</span>

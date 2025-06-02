@@ -1,11 +1,10 @@
-import { PrismaClient } from '@prisma/client'
+// netlify/functions/send-message.js - UPDATED
+import { createClient } from '@supabase/supabase-js'
+import { randomUUID } from 'crypto'
 
-let prisma
-
-if (!globalThis.prisma) {
-  globalThis.prisma = new PrismaClient()
-}
-prisma = globalThis.prisma
+const supabaseUrl = process.env.VITE_SUPABASE_URL
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 export const handler = async (event, context) => {
   const headers = {
@@ -28,19 +27,19 @@ export const handler = async (event, context) => {
 
   try {
     const {
-      characterId = 'hardcoded-demo',
+      walletAddress,
       locationId,
       message,
       messageType = 'CHAT'
     } = JSON.parse(event.body || '{}')
 
-    if (!locationId || !message?.trim()) {
+    if (!walletAddress || !locationId || !message?.trim()) {
       return {
         statusCode: 400,
         headers,
         body: JSON.stringify({
           error: 'Missing required fields',
-          message: 'Location ID and message content are required'
+          message: 'Wallet address, location ID and message content are required'
         })
       }
     }
@@ -57,30 +56,33 @@ export const handler = async (event, context) => {
       }
     }
 
-    // Get character
-    let character
-    if (characterId === 'hardcoded-demo') {
-      character = await prisma.character.findFirst({
-        where: { name: "Wojak #1337" }
-      })
-    } else {
-      character = await prisma.character.findUnique({
-        where: { id: characterId }
-      })
-    }
+    // Get character by wallet address
+    const { data: character, error } = await supabase
+      .from('characters')
+      .select('*')
+      .eq('walletAddress', walletAddress)
+      .eq('status', 'ACTIVE')
+      .single()
 
-    if (!character) {
+    if (error || !character) {
       return {
         statusCode: 404,
         headers,
-        body: JSON.stringify({ error: 'Character not found' })
+        body: JSON.stringify({
+          error: 'Character not found',
+          message: 'No active character found for this wallet address'
+        })
       }
     }
 
     // Get location to verify it exists and has chat enabled
-    const location = await prisma.location.findUnique({
-      where: { id: locationId }
-    })
+    const { data: location, error: locationError } = await supabase
+      .from('locations')
+      .select('*')
+      .eq('id', locationId)
+      .single()
+
+    if (locationError) throw locationError
 
     if (!location) {
       return {
@@ -107,21 +109,19 @@ export const handler = async (event, context) => {
     if (character.currentLocationId === locationId) {
       canChat = true
     } else if (location.chatScope === 'REGIONAL') {
-      // Check if character is in a sub-location or parent location
-      const characterLocation = await prisma.location.findUnique({
-        where: { id: character.currentLocationId }
-      })
+      const { data: characterLocation, error: charLocError } = await supabase
+        .from('locations')
+        .select('*')
+        .eq('id', character.currentLocationId)
+        .single()
 
-      if (characterLocation) {
-        // Check if character's location is a parent of the chat location
+      if (!charLocError && characterLocation) {
         if (characterLocation.id === location.parentLocationId) {
           canChat = true
         }
-        // Check if character's location has the same parent as chat location
         else if (characterLocation.parentLocationId === location.parentLocationId && location.parentLocationId) {
           canChat = true
         }
-        // Check if chat location is a sub-location of character's location
         else if (location.parentLocationId === characterLocation.id) {
           canChat = true
         }
@@ -139,8 +139,8 @@ export const handler = async (event, context) => {
       }
     }
 
-    // Basic content filtering (expand as needed)
-    const bannedWords = ['spam', 'scam', 'hack'] // Add more as needed
+    // Basic content filtering
+    const bannedWords = ['spam', 'scam', 'hack']
     const lowercaseMessage = message.toLowerCase()
     const hasBannedWords = bannedWords.some(word => lowercaseMessage.includes(word))
 
@@ -155,17 +155,17 @@ export const handler = async (event, context) => {
       }
     }
 
-    // Rate limiting check (simple version)
-    const recentMessages = await prisma.chatMessage.findMany({
-      where: {
-        characterId: character.id,
-        createdAt: {
-          gte: new Date(Date.now() - 60000) // Last minute
-        }
-      }
-    })
+    // Rate limiting check
+    const oneMinuteAgo = new Date(Date.now() - 60000).toISOString()
+    const { data: recentMessages, error: rateError } = await supabase
+      .from('chat_messages')
+      .select('id')
+      .eq('characterId', character.id)
+      .gte('createdAt', oneMinuteAgo)
 
-    if (recentMessages.length >= 10) {
+    if (rateError) throw rateError
+
+    if (recentMessages?.length >= 10) {
       return {
         statusCode: 429,
         headers,
@@ -177,40 +177,47 @@ export const handler = async (event, context) => {
     }
 
     // Create chat message
-    const chatMessage = await prisma.chatMessage.create({
-      data: {
+    const messageId = randomUUID()
+    const { data: chatMessage, error: createError } = await supabase
+      .from('chat_messages')
+      .insert({
+        id: messageId,
         locationId: locationId,
         characterId: character.id,
         message: message.trim(),
         messageType: messageType,
         isSystem: false
-      },
-      include: {
-        character: {
-          select: {
-            id: true,
-            name: true,
-            characterType: true,
-            currentImageUrl: true
-          }
-        },
-        location: {
-          select: {
-            id: true,
-            name: true,
-            locationType: true
-          }
-        }
-      }
-    })
+      })
+      .select('*')
+      .single()
+
+    if (createError) throw createError
 
     // Update location last active timestamp
-    await prisma.location.update({
-      where: { id: locationId },
-      data: { lastActive: new Date() }
-    })
+    const { error: updateError } = await supabase
+      .from('locations')
+      .update({ lastActive: new Date().toISOString() })
+      .eq('id', locationId)
 
-    // Transform message for response
+    if (updateError) throw updateError
+
+    // Get character and location details for response
+    const { data: characterDetails, error: charError } = await supabase
+      .from('characters')
+      .select('id, name, characterType, currentImageUrl')
+      .eq('id', character.id)
+      .single()
+
+    if (charError) throw charError
+
+    const { data: locationDetails, error: locError } = await supabase
+      .from('locations')
+      .select('id, name, locationType')
+      .eq('id', locationId)
+      .single()
+
+    if (locError) throw locError
+
     const transformedMessage = {
       id: chatMessage.id,
       message: chatMessage.message,
@@ -219,15 +226,15 @@ export const handler = async (event, context) => {
       timeAgo: 'now',
       createdAt: chatMessage.createdAt,
       character: {
-        id: chatMessage.character.id,
-        name: chatMessage.character.name,
-        characterType: chatMessage.character.characterType,
-        imageUrl: chatMessage.character.currentImageUrl
+        id: characterDetails.id,
+        name: characterDetails.name,
+        characterType: characterDetails.characterType,
+        imageUrl: characterDetails.currentImageUrl
       },
       location: {
-        id: chatMessage.location.id,
-        name: chatMessage.location.name,
-        locationType: chatMessage.location.locationType
+        id: locationDetails.id,
+        name: locationDetails.name,
+        locationType: locationDetails.locationType
       }
     }
 

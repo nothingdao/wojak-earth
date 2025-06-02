@@ -1,4 +1,4 @@
-// src/components/views/MarketView.tsx
+// src/components/views/MarketView.tsx - FIXED VERSION
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Store, Coins, Loader2 } from 'lucide-react'
@@ -38,6 +38,8 @@ export function MarketView({
 
   const renderMarketItem = (marketItem: MarketItem) => {
     const isLoading = loadingItems.has(marketItem.id)
+    const canAfford = character.coins >= marketItem.price
+    const canBuy = marketItem.quantity > 0 && canAfford && !isLoading
 
     return (
       <div key={marketItem.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
@@ -63,22 +65,37 @@ export function MarketView({
           </div>
         </div>
         <div className="text-right flex-shrink-0 ml-3">
-          <div className="font-bold flex items-center gap-1 justify-end">
+          <div className={`font-bold flex items-center gap-1 justify-end ${!canAfford && marketItem.quantity > 0 ? 'text-red-500' : ''
+            }`}>
             <Coins className="w-3 h-3" />
             {marketItem.price}
           </div>
           <div className="text-xs text-muted-foreground mb-1">
             Qty: {marketItem.quantity > 0 ? marketItem.quantity : 'Out of Stock'}
           </div>
+          {!canAfford && marketItem.quantity > 0 && (
+            <div className="text-xs text-red-500 mb-1">Not enough coins</div>
+          )}
           <Button
+            type="button"
             size="sm"
-            onClick={() => onPurchase(marketItem.id, marketItem.price, marketItem.item.name)}
-            disabled={marketItem.quantity === 0 || isLoading}
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              onPurchase(marketItem.id, marketItem.price, marketItem.item.name)
+            }}
+            disabled={!canBuy}
             className="text-xs"
+            title={
+              marketItem.quantity === 0 ? 'Out of stock' :
+                !canAfford ? `Need ${marketItem.price - character.coins} more coins` :
+                  'Purchase this item'
+            }
           >
             {isLoading ? (
               <Loader2 className="w-3 h-3 animate-spin" />
-            ) : marketItem.quantity > 0 ? 'Buy' : 'Sold Out'}
+            ) : marketItem.quantity === 0 ? 'Sold Out' :
+              !canAfford ? 'No Coins' : 'Buy'}
           </Button>
         </div>
       </div>
@@ -89,8 +106,12 @@ export function MarketView({
     <div className="space-y-4 max-w-full">
       <div className="text-center">
         <h3 className="text-lg font-semibold">Market - {currentLoc?.name}</h3>
+        <div className="text-sm text-muted-foreground flex items-center justify-center gap-2 mt-1">
+          <Coins className="w-4 h-4" />
+          <span>You have {character.coins} coins</span>
+        </div>
         {isChildLocation && (
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground mt-1">
             Unique local items + supplies from the main settlement
           </p>
         )}
@@ -100,11 +121,15 @@ export function MarketView({
       {isChildLocation && (
         <div className="flex border-b">
           <button
+            type="button"
             className={`flex-1 py-2 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'local'
               ? 'border-primary text-primary bg-primary/5'
               : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}
-            onClick={() => setActiveTab('local')}
+            onClick={(e) => {
+              e.preventDefault()
+              setActiveTab('local')
+            }}
           >
             Local Specialties
             {localItems.length > 0 && (
@@ -114,11 +139,15 @@ export function MarketView({
             )}
           </button>
           <button
+            type="button"
             className={`flex-1 py-2 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'global'
               ? 'border-primary text-primary bg-primary/5'
               : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}
-            onClick={() => setActiveTab('global')}
+            onClick={(e) => {
+              e.preventDefault()
+              setActiveTab('global')
+            }}
           >
             Global Market
             {globalItems.length > 0 && (

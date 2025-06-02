@@ -1,11 +1,10 @@
-import { PrismaClient } from '@prisma/client'
+// netlify/functions/travel-action.js - UPDATED
+import { createClient } from '@supabase/supabase-js'
+import { randomUUID } from 'crypto'
 
-let prisma
-
-if (!globalThis.prisma) {
-  globalThis.prisma = new PrismaClient()
-}
-prisma = globalThis.prisma
+const supabaseUrl = process.env.VITE_SUPABASE_URL
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 export const handler = async (event, context) => {
   const headers = {
@@ -27,46 +26,56 @@ export const handler = async (event, context) => {
   }
 
   try {
-    const { characterId = 'hardcoded-demo', destinationId } = JSON.parse(event.body || '{}')
+    const { walletAddress, destinationId } = JSON.parse(event.body || '{}')
 
-    if (!destinationId) {
+    if (!walletAddress || !destinationId) {
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ error: 'Destination ID is required' })
+        body: JSON.stringify({ error: 'Wallet address and destination ID are required' })
       }
     }
 
-    // Get character
-    let character
-    if (characterId === 'hardcoded-demo') {
-      character = await prisma.character.findFirst({
-        where: { name: "Wojak #1337" },
-        include: { currentLocation: true }
-      })
-    } else {
-      character = await prisma.character.findUnique({
-        where: { id: characterId },
-        include: { currentLocation: true }
-      })
-    }
+    // Get character by wallet address
+    const { data: character, error } = await supabase
+      .from('characters')
+      .select('*')
+      .eq('walletAddress', walletAddress)
+      .eq('status', 'ACTIVE')
+      .single()
 
-    if (!character) {
+    if (error || !character) {
       return {
         statusCode: 404,
         headers,
-        body: JSON.stringify({ error: 'Character not found' })
+        body: JSON.stringify({
+          error: 'Character not found',
+          message: 'No active character found for this wallet address'
+        })
       }
     }
 
+    // Get current location details
+    const { data: currentLocation, error: currentError } = await supabase
+      .from('locations')
+      .select('*')
+      .eq('id', character.currentLocationId)
+      .single()
+
+    if (currentError) throw currentError
+
     // Get destination location
-    const destination = await prisma.location.findUnique({
-      where: { id: destinationId },
-      include: {
-        subLocations: true,
-        parentLocation: true
-      }
-    })
+    const { data: destination, error: destError } = await supabase
+      .from('locations')
+      .select(`
+        *,
+        subLocations:locations!parentLocationId(*),
+        parentLocation:locations!parentLocationId(*)
+      `)
+      .eq('id', destinationId)
+      .single()
+
+    if (destError) throw destError
 
     if (!destination) {
       return {
@@ -88,58 +97,54 @@ export const handler = async (event, context) => {
       }
     }
 
-    // TODO: Future travel requirements check
-    // const requirements = getTravelRequirements(character.currentLocation, destination)
-    // const canTravel = checkTravelRequirements(character, requirements)
-    // if (!canTravel.allowed) {
-    //   return { statusCode: 400, body: JSON.stringify({ error: canTravel.reason }) }
-    // }
+    // Update character location
+    const { data: updatedCharacter, error: updateError } = await supabase
+      .from('characters')
+      .update({ currentLocationId: destinationId })
+      .eq('id', character.id)
+      .select('*')
+      .single()
 
-    // For MVP: Instant travel with no cost
-    const result = await prisma.$transaction(async (tx) => {
-      // Update character location
-      const updatedCharacter = await tx.character.update({
-        where: { id: character.id },
-        data: {
-          currentLocationId: destinationId
-        },
-        include: {
-          currentLocation: true
-        }
+    if (updateError) throw updateError
+
+    // Log the travel transaction
+    const transactionId = randomUUID()
+    const { data: transaction, error: transactionError } = await supabase
+      .from('transactions')
+      .insert({
+        id: transactionId,
+        characterId: character.id,
+        type: 'TRAVEL',
+        description: `Traveled from ${currentLocation.name} to ${destination.name}`
       })
+      .select('*')
+      .single()
 
-      // Log the travel transaction
-      const transaction = await tx.transaction.create({
-        data: {
-          characterId: character.id,
-          type: 'TRAVEL',
-          description: `Traveled from ${character.currentLocation.name} to ${destination.name}`
-        }
+    if (transactionError) throw transactionError
+
+    // Update player counts
+    const { error: decrementError } = await supabase
+      .from('locations')
+      .update({
+        playerCount: Math.max(0, (currentLocation.playerCount || 1) - 1)
       })
+      .eq('id', character.currentLocationId)
 
-      // Update player counts (decrement old location, increment new location)
-      await tx.location.update({
-        where: { id: character.currentLocationId },
-        data: {
-          playerCount: { decrement: 1 }
-        }
+    if (decrementError) throw decrementError
+
+    const { error: incrementError } = await supabase
+      .from('locations')
+      .update({
+        playerCount: (destination.playerCount || 0) + 1,
+        lastActive: new Date().toISOString()
       })
+      .eq('id', destinationId)
 
-      await tx.location.update({
-        where: { id: destinationId },
-        data: {
-          playerCount: { increment: 1 },
-          lastActive: new Date()
-        }
-      })
+    if (incrementError) throw incrementError
 
-      return {
-        character: updatedCharacter,
-        transaction
-      }
-    })
+    // Attach current location to character for response
+    updatedCharacter.currentLocation = destination
 
-    // Prepare response
     const responseData = {
       success: true,
       message: `Welcome to ${destination.name}!`,
@@ -156,15 +161,14 @@ export const handler = async (event, context) => {
         hasChat: destination.hasChat
       },
       previousLocation: {
-        id: character.currentLocation.id,
-        name: character.currentLocation.name
+        id: currentLocation.id,
+        name: currentLocation.name
       },
-      // Future: costs incurred
       costs: {
-        time: 0,      // minutes
-        energy: 0,    // energy points
-        money: 0,     // SOL
-        status: []    // required items used
+        time: 0,
+        energy: 0,
+        money: 0,
+        status: []
       }
     }
 
@@ -185,34 +189,5 @@ export const handler = async (event, context) => {
         message: 'Travel failed'
       })
     }
-  }
-}
-
-// Future: Travel requirements calculation
-function getTravelRequirements(origin, destination) {
-  // Calculate based on:
-  // - Distance (map coordinates)
-  // - Difficulty difference
-  // - Location type (REGION vs BUILDING vs ROOM)
-  // - Special requirements per location
-
-  return {
-    time: 0,        // Will calculate based on distance/difficulty
-    energy: 0,      // Will calculate based on terrain/difficulty  
-    money: 0,       // Will be location-specific
-    status: []      // Will check location.minLevel, required items, etc.
-  }
-}
-
-function checkTravelRequirements(character, requirements) {
-  // Check if character meets all requirements
-  // - Has enough energy
-  // - Can afford SOL cost
-  // - Has required status items in inventory
-  // - Meets level requirements
-
-  return {
-    allowed: true,
-    reason: null
   }
 }

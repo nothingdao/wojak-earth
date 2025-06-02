@@ -1,247 +1,158 @@
 // netlify/functions/metadata.js
-import { PrismaClient } from '@prisma/client'
+import { createClient } from '@supabase/supabase-js'
 
-let prisma
-
-if (!globalThis.prisma) {
-  globalThis.prisma = new PrismaClient()
-}
-prisma = globalThis.prisma
-
-// Configuration
-const ASSET_BASE_URL = process.env.NODE_ENV === 'production'
-  ? 'https://earth.ndao.computer'
-  : process.env.URL || 'http://localhost:8888'
-
-/**
- * Generate trait attributes from character data
- */
-function generateAttributes(character) {
-  const attributes = []
-
-  // Basic character traits
-  attributes.push({
-    trait_type: "Gender",
-    value: character.gender
-  })
-
-  attributes.push({
-    trait_type: "Character Type",
-    value: character.characterType
-  })
-
-  // Location-based traits
-  if (character.currentLocation) {
-    attributes.push({
-      trait_type: "Current Location",
-      value: character.currentLocation.name
-    })
-
-    if (character.currentLocation.biome) {
-      attributes.push({
-        trait_type: "Biome",
-        value: character.currentLocation.biome.charAt(0).toUpperCase() +
-          character.currentLocation.biome.slice(1)
-      })
-    }
-  }
-
-  // Equipment traits
-  if (character.inventory) {
-    const equippedItems = character.inventory.filter(inv => inv.isEquipped)
-
-    equippedItems.forEach(inv => {
-      const item = inv.item
-      attributes.push({
-        trait_type: item.category.charAt(0).toUpperCase() +
-          item.category.slice(1).toLowerCase(),
-        value: item.name
-      })
-    })
-
-    // Equipment count
-    attributes.push({
-      trait_type: "Equipped Items",
-      value: equippedItems.length,
-      display_type: "number"
-    })
-  }
-
-  // Stats
-  attributes.push({
-    trait_type: "Energy",
-    value: character.energy,
-    max_value: 100,
-    display_type: "boost_percentage"
-  })
-
-  attributes.push({
-    trait_type: "Health",
-    value: character.health,
-    max_value: 100,
-    display_type: "boost_percentage"
-  })
-
-  // Game progression (could be calculated)
-  const daysSinceCreation = Math.floor(
-    (Date.now() - new Date(character.createdAt).getTime()) / (1000 * 60 * 60 * 24)
-  )
-
-  attributes.push({
-    trait_type: "Days Active",
-    value: daysSinceCreation,
-    display_type: "number"
-  })
-
-  return attributes
-}
-
-/**
- * Generate visible layers data
- */
-function generateLayerData(character) {
-  const layers = []
-
-  // Background
-  const backgroundName = character.currentLocation?.biome || 'mining-plains'
-  layers.push(`${ASSET_BASE_URL}/layers/backgrounds/${backgroundName}.png`)
-
-  // Base
-  const baseName = character.gender?.toLowerCase() || 'male'
-  layers.push(`${ASSET_BASE_URL}/layers/bases/${baseName}.png`)
-
-  // Equipment layers
-  if (character.inventory) {
-    character.inventory
-      .filter(inv => inv.isEquipped)
-      .forEach(inv => {
-        const item = inv.item
-        let layerPath
-
-        // Map items to layer paths
-        switch (item.name) {
-          case 'Miners Hat':
-            layerPath = 'accessories/miners-hat.png'
-            break
-          case 'Cyber Jacket':
-            layerPath = 'clothing/cyber-jacket.png'
-            break
-          case 'Work Gloves':
-            layerPath = 'accessories/work-gloves.png'
-            break
-          case 'Lucky Charm':
-            layerPath = 'accessories/lucky-charm.png'
-            break
-          // Add more mappings as needed
-        }
-
-        if (layerPath) {
-          layers.push(`${ASSET_BASE_URL}/layers/${layerPath}`)
-        }
-      })
-  }
-
-  return layers
-}
+const supabaseUrl = process.env.VITE_SUPABASE_URL
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 export const handler = async (event, context) => {
   const headers = {
+    'Content-Type': 'application/json',
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Allow-Methods': 'GET, OPTIONS',
-    'Content-Type': 'application/json',
-    'Cache-Control': 'public, max-age=1800' // Cache for 30 minutes
+    'Cache-Control': 'public, max-age=300' // Cache for 5 minutes
   }
 
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers, body: '' }
   }
 
-  try {
-    // Extract token ID from path
-    const pathParts = event.path.split('/')
-    const tokenId = pathParts[pathParts.length - 1]
+  if (event.httpMethod !== 'GET') {
+    return {
+      statusCode: 405,
+      headers,
+      body: JSON.stringify({ error: 'Method not allowed' })
+    }
+  }
 
-    if (!tokenId) {
+  try {
+    // Extract character ID from path: /metadata/{characterId}
+    const pathParts = event.path.split('/')
+    const characterId = pathParts[pathParts.length - 1]
+
+    if (!characterId) {
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ error: 'Token ID required' })
+        body: JSON.stringify({ error: 'Character ID is required' })
       }
     }
 
-    // Get character data
-    let character
+    // Get character with full details
+    const { data: character, error: characterError } = await supabase
+      .from('characters')
+      .select(`
+        *,
+        currentLocation:locations(
+          id,
+          name,
+          locationType,
+          biome
+        ),
+        inventory:character_inventory(
+          quantity,
+          isEquipped,
+          item:items(
+            name,
+            category,
+            rarity
+          )
+        )
+      `)
+      .eq('id', characterId)
+      .eq('status', 'ACTIVE') // Only return metadata for active characters
+      .single()
 
-    if (tokenId === 'demo' || tokenId === '1337') {
-      // Demo character
-      character = await prisma.character.findFirst({
-        where: { name: "Wojak #1337" },
-        include: {
-          currentLocation: true,
-          inventory: {
-            where: { isEquipped: true },
-            include: { item: true }
-          }
-        }
-      })
-    } else {
-      // Try to find by tokenId first, then by ID
-      character = await prisma.character.findFirst({
-        where: {
-          OR: [
-            { tokenId: tokenId },
-            { id: tokenId }
-          ]
-        },
-        include: {
-          currentLocation: true,
-          inventory: {
-            where: { isEquipped: true },
-            include: { item: true }
-          }
-        }
-      })
-    }
-
-    if (!character) {
+    if (characterError || !character) {
       return {
         statusCode: 404,
         headers,
-        body: JSON.stringify({ error: 'Character not found' })
+        body: JSON.stringify({
+          error: 'Character not found',
+          message: 'Character does not exist or is not active'
+        })
       }
     }
 
-    // Generate metadata
+    // Calculate derived stats
+    const stats = calculateCharacterStats(character)
+
+    // Build attributes array
+    const attributes = [
+      { trait_type: "Level", value: character.level.toString() },
+      { trait_type: "Gender", value: character.gender },
+      { trait_type: "Type", value: character.characterType },
+      { trait_type: "Current_Location", value: character.currentLocation?.name || "Unknown" },
+      { trait_type: "Energy", value: character.energy.toString() },
+      { trait_type: "Health", value: character.health.toString() },
+      { trait_type: "Coins", value: character.coins.toString() },
+      { trait_type: "Character_Version", value: character.currentVersion.toString() },
+
+      // Location attributes
+      ...(character.currentLocation?.biome ? [{
+        trait_type: "Current_Biome",
+        value: character.currentLocation.biome
+      }] : []),
+
+      // Equipped items as traits
+      ...getEquippedItemTraits(character.inventory),
+
+      // Derived stats
+      { trait_type: "Total_Items", value: stats.totalItems.toString() },
+      { trait_type: "Equipped_Items", value: stats.equippedItems.toString() },
+      { trait_type: "Inventory_Value", value: stats.inventoryValue.toString() },
+
+      // Rarity distribution
+      ...getRarityTraits(character.inventory),
+
+      // Timestamps
+      { trait_type: "Created", value: new Date(character.createdAt).toISOString().split('T')[0] },
+      { trait_type: "Last_Updated", value: new Date(character.updatedAt).toISOString().split('T')[0] }
+    ]
+
+    // Generate dynamic description
+    const description = generateCharacterDescription(character, stats)
+
+    // Build NFT metadata
     const metadata = {
       name: character.name,
-      description: `${character.name} is a ${character.characterType.toLowerCase()} explorer currently in ${character.currentLocation?.name || 'Unknown Location'}. Energy: ${character.energy}/100, Health: ${character.health}/100.`,
-      image: `${ASSET_BASE_URL}/.netlify/functions/render-character/${character.tokenId || character.id}.png`,
-      external_url: `${ASSET_BASE_URL}/character/${character.tokenId || character.id}`,
+      description: description,
+      image: character.currentImageUrl || "https://earth.ndao.computer/layers/bases/male.png",
+      external_url: `https://earth.ndao.computer/character/${character.id}`,
 
-      // Standard NFT metadata
-      attributes: generateAttributes(character),
+      attributes: attributes.filter(attr => attr.value !== null && attr.value !== undefined),
 
-      // Wojak Earth specific data
-      wojak_earth: {
+      properties: {
+        files: [
+          {
+            uri: character.currentImageUrl || "https://earth.ndao.computer/layers/bases/male.png",
+            type: "image/png"
+          }
+        ],
+        category: "image",
+        creators: [
+          {
+            address: process.env.SERVER_KEYPAIR_PUBLIC || "",
+            share: 100
+          }
+        ]
+      },
+
+      // Custom game data (not standard but useful)
+      game_data: {
         character_id: character.id,
-        token_id: character.tokenId,
+        wallet_address: character.walletAddress,
         nft_address: character.nftAddress,
-        current_location: {
-          id: character.currentLocation?.id,
-          name: character.currentLocation?.name,
-          type: character.currentLocation?.locationType,
-          biome: character.currentLocation?.biome
-        },
+        current_location_id: character.currentLocationId,
         stats: {
+          level: character.level,
           energy: character.energy,
           health: character.health,
-          level: Math.floor((Date.now() - new Date(character.createdAt).getTime()) / (1000 * 60 * 60 * 24 * 7)) + 1 // Rough level calculation
+          coins: character.coins
         },
-        assets: {
-          layers: generateLayerData(character),
-          last_updated: new Date().toISOString()
-        }
+        version: character.currentVersion,
+        last_updated: character.updatedAt
       }
     }
 
@@ -258,9 +169,121 @@ export const handler = async (event, context) => {
       statusCode: 500,
       headers,
       body: JSON.stringify({
-        error: 'Metadata generation failed',
+        error: 'Failed to generate metadata',
         message: error.message
       })
     }
   }
+}
+
+// Helper: Calculate derived character stats
+function calculateCharacterStats(character) {
+  const inventory = character.inventory || []
+
+  const totalItems = inventory.reduce((sum, inv) => sum + inv.quantity, 0)
+  const equippedItems = inventory.filter(inv => inv.isEquipped).length
+
+  // Simple inventory value calculation (based on rarity)
+  const rarityValues = {
+    'COMMON': 10,
+    'UNCOMMON': 25,
+    'RARE': 50,
+    'EPIC': 100,
+    'LEGENDARY': 250
+  }
+
+  const inventoryValue = inventory.reduce((sum, inv) => {
+    const itemValue = rarityValues[inv.item?.rarity || 'COMMON'] || 10
+    return sum + (itemValue * inv.quantity)
+  }, 0)
+
+  return {
+    totalItems,
+    equippedItems,
+    inventoryValue
+  }
+}
+
+// Helper: Get equipped items as traits
+function getEquippedItemTraits(inventory) {
+  const equippedItems = inventory?.filter(inv => inv.isEquipped) || []
+
+  return equippedItems.map(inv => ({
+    trait_type: `Equipped_${inv.item.category}`,
+    value: inv.item.name
+  }))
+}
+
+// Helper: Get rarity distribution traits
+function getRarityTraits(inventory) {
+  const rarityCount = {}
+
+  inventory?.forEach(inv => {
+    const rarity = inv.item?.rarity || 'COMMON'
+    rarityCount[rarity] = (rarityCount[rarity] || 0) + inv.quantity
+  })
+
+  return Object.entries(rarityCount).map(([rarity, count]) => ({
+    trait_type: `${rarity}_Items`,
+    value: count.toString()
+  }))
+}
+
+// Helper: Generate dynamic character description
+function generateCharacterDescription(character, stats) {
+  const location = character.currentLocation?.name || "an unknown location"
+  const level = character.level
+  const type = character.characterType.toLowerCase()
+  const gender = character.gender.toLowerCase()
+
+  let description = `${character.name} is a level ${level} ${gender} ${type} currently exploring ${location}.`
+
+  // Add stats context
+  if (character.energy < 30) {
+    description += " They appear tired and need rest."
+  } else if (character.energy > 90) {
+    description += " They are full of energy and ready for adventure."
+  }
+
+  // Add inventory context
+  if (stats.equippedItems > 0) {
+    description += ` Currently equipped with ${stats.equippedItems} item${stats.equippedItems > 1 ? 's' : ''}.`
+  }
+
+  // Add wealth context
+  if (character.coins > 1000) {
+    description += " A wealthy adventurer with substantial resources."
+  } else if (character.coins > 100) {
+    description += " An experienced traveler with modest savings."
+  } else {
+    description += " A humble explorer just starting their journey."
+  }
+
+  return description
+}
+
+// Helper: Handle different character lookup methods
+async function findCharacterByIdentifier(identifier) {
+  // Try by character ID first
+  let { data: character, error } = await supabase
+    .from('characters')
+    .select('*')
+    .eq('id', identifier)
+    .eq('status', 'ACTIVE')
+    .single()
+
+  if (!character && !error) {
+    // Try by NFT address
+    const result = await supabase
+      .from('characters')
+      .select('*')
+      .eq('nftAddress', identifier)
+      .eq('status', 'ACTIVE')
+      .single()
+
+    character = result.data
+    error = result.error
+  }
+
+  return { data: character, error }
 }

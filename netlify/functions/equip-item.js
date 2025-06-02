@@ -1,13 +1,10 @@
-// netlify/functions/equip-item.js - Fixed version
-import { PrismaClient } from '@prisma/client'
+// netlify/functions/equip-item.js - UPDATED
+import { createClient } from '@supabase/supabase-js'
+import { randomUUID } from 'crypto'
 
-let prisma
-
-if (!globalThis.prisma) {
-  globalThis.prisma = new PrismaClient()
-}
-prisma = globalThis.prisma
-
+const supabaseUrl = process.env.VITE_SUPABASE_URL
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 export const handler = async (event, context) => {
   const headers = {
@@ -29,41 +26,43 @@ export const handler = async (event, context) => {
   }
 
   try {
-    const { characterId = 'hardcoded-demo', inventoryId, equip = true } = JSON.parse(event.body || '{}')
+    const { walletAddress, inventoryId, equip = true } = JSON.parse(event.body || '{}')
 
-    if (!inventoryId) {
+    if (!walletAddress || !inventoryId) {
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ error: 'Inventory ID is required' })
+        body: JSON.stringify({ error: 'Wallet address and inventory ID are required' })
       }
     }
 
-    // Get character
-    let character
-    if (characterId === 'hardcoded-demo') {
-      character = await prisma.character.findFirst({
-        where: { name: "Wojak #1337" }
-      })
-    } else {
-      character = await prisma.character.findUnique({
-        where: { id: characterId }
-      })
-    }
+    // Get character by wallet address
+    const { data: character, error } = await supabase
+      .from('characters')
+      .select('*')
+      .eq('walletAddress', walletAddress)
+      .eq('status', 'ACTIVE')
+      .single()
 
-    if (!character) {
+    if (error || !character) {
       return {
         statusCode: 404,
         headers,
-        body: JSON.stringify({ error: 'Character not found' })
+        body: JSON.stringify({
+          error: 'Character not found',
+          message: 'No active character found for this wallet address'
+        })
       }
     }
 
-    // Get inventory item with details
-    const inventoryItem = await prisma.characterInventory.findUnique({
-      where: { id: inventoryId },
-      include: { item: true }
-    })
+    // Get inventory item
+    const { data: inventoryItem, error: inventoryError } = await supabase
+      .from('character_inventory')
+      .select('*')
+      .eq('id', inventoryId)
+      .single()
+
+    if (inventoryError) throw inventoryError
 
     if (!inventoryItem) {
       return {
@@ -72,6 +71,17 @@ export const handler = async (event, context) => {
         body: JSON.stringify({ error: 'Inventory item not found' })
       }
     }
+
+    // Get item details
+    const { data: item, error: itemError } = await supabase
+      .from('items')
+      .select('*')
+      .eq('id', inventoryItem.itemId)
+      .single()
+
+    if (itemError) throw itemError
+
+    inventoryItem.item = item
 
     // Verify ownership
     if (inventoryItem.characterId !== character.id) {
@@ -95,105 +105,118 @@ export const handler = async (event, context) => {
       }
     }
 
-    // Perform equipment action within transaction
-    const result = await prisma.$transaction(async (tx) => {
-      let replacedItems = []
+    let replacedItems = []
+    let result
 
-      if (equip) {
-        // Find conflicting items in the same category to auto-unequip
-        const conflictingItems = await tx.characterInventory.findMany({
-          where: {
-            characterId: character.id,
-            isEquipped: true,
-            item: {
-              category: inventoryItem.item.category
-            },
-            id: { not: inventoryId } // Don't include the item we're trying to equip
-          },
-          include: { item: true }
-        })
+    if (equip) {
+      // Find conflicting items in the same category to auto-unequip
+      const { data: conflictingItems, error: conflictError } = await supabase
+        .from('character_inventory')
+        .select(`
+          *,
+          item:items(*)
+        `)
+        .eq('characterId', character.id)
+        .eq('isEquipped', true)
+        .neq('id', inventoryId)
 
-        // Unequip conflicting items
-        if (conflictingItems.length > 0) {
-          await tx.characterInventory.updateMany({
-            where: {
+      if (conflictError) throw conflictError
+
+      // Filter for same category items
+      const sameCategory = conflictingItems?.filter(ci => ci.item.category === inventoryItem.item.category) || []
+
+      // Unequip conflicting items
+      if (sameCategory.length > 0) {
+        for (const conflictItem of sameCategory) {
+          const { error: unequipError } = await supabase
+            .from('character_inventory')
+            .update({ isEquipped: false })
+            .eq('id', conflictItem.id)
+
+          if (unequipError) throw unequipError
+
+          const unequipTransactionId = randomUUID()
+          const { error: unequipTxError } = await supabase
+            .from('transactions')
+            .insert({
+              id: unequipTransactionId,
               characterId: character.id,
-              isEquipped: true,
-              item: {
-                category: inventoryItem.item.category
-              },
-              id: { not: inventoryId }
-            },
-            data: { isEquipped: false }
-          })
-
-          // Log unequip transactions for replaced items
-          for (const item of conflictingItems) {
-            await tx.transaction.create({
-              data: {
-                characterId: character.id,
-                type: 'UNEQUIP',
-                itemId: item.itemId,
-                description: `Auto-unequipped ${item.item.name} (replaced by ${inventoryItem.item.name})`
-              }
+              type: 'UNEQUIP',
+              itemId: conflictItem.itemId,
+              description: `Auto-unequipped ${conflictItem.item.name} (replaced by ${inventoryItem.item.name})`
             })
-          }
 
-          replacedItems = conflictingItems.map(item => item.item.name)
+          if (unequipTxError) throw unequipTxError
         }
 
-        // Equip the new item
-        const updatedItem = await tx.characterInventory.update({
-          where: { id: inventoryId },
-          data: { isEquipped: true },
-          include: { item: true }
-        })
-
-        // Log the equip transaction
-        await tx.transaction.create({
-          data: {
-            characterId: character.id,
-            type: 'EQUIP',
-            itemId: inventoryItem.itemId,
-            description: `Equipped ${inventoryItem.item.name}`
-          }
-        })
-
-        return {
-          action: 'equipped',
-          item: updatedItem,
-          replacedItems: replacedItems
-        }
-
-      } else {
-        // Unequip the item
-        const updatedItem = await tx.characterInventory.update({
-          where: { id: inventoryId },
-          data: { isEquipped: false },
-          include: { item: true }
-        })
-
-        // Log the transaction
-        await tx.transaction.create({
-          data: {
-            characterId: character.id,
-            type: 'UNEQUIP',
-            itemId: inventoryItem.itemId,
-            description: `Unequipped ${inventoryItem.item.name}`
-          }
-        })
-
-        return { action: 'unequipped', item: updatedItem, replacedItems: [] }
+        replacedItems = sameCategory.map(item => item.item.name)
       }
-    })
 
-    // Calculate stat effects (for future implementation)
+      // Equip the new item
+      const { data: updatedItem, error: equipError } = await supabase
+        .from('character_inventory')
+        .update({ isEquipped: true })
+        .eq('id', inventoryId)
+        .select('*')
+        .single()
+
+      if (equipError) throw equipError
+
+      updatedItem.item = item
+
+      const equipTransactionId = randomUUID()
+      const { error: equipTxError } = await supabase
+        .from('transactions')
+        .insert({
+          id: equipTransactionId,
+          characterId: character.id,
+          type: 'EQUIP',
+          itemId: inventoryItem.itemId,
+          description: `Equipped ${inventoryItem.item.name}`
+        })
+
+      if (equipTxError) throw equipTxError
+
+      result = {
+        action: 'equipped',
+        item: updatedItem,
+        replacedItems: replacedItems
+      }
+
+    } else {
+      // Unequip the item
+      const { data: updatedItem, error: unequipError } = await supabase
+        .from('character_inventory')
+        .update({ isEquipped: false })
+        .eq('id', inventoryId)
+        .select('*')
+        .single()
+
+      if (unequipError) throw unequipError
+
+      updatedItem.item = item
+
+      const unequipTransactionId = randomUUID()
+      const { error: unequipTxError } = await supabase
+        .from('transactions')
+        .insert({
+          id: unequipTransactionId,
+          characterId: character.id,
+          type: 'UNEQUIP',
+          itemId: inventoryItem.itemId,
+          description: `Unequipped ${inventoryItem.item.name}`
+        })
+
+      if (unequipTxError) throw unequipTxError
+
+      result = { action: 'unequipped', item: updatedItem, replacedItems: [] }
+    }
+
     const statEffects = {
       energy: inventoryItem.item.energyEffect || 0,
       health: inventoryItem.item.healthEffect || 0
     }
 
-    // Prepare response with replacement info
     let message = `${inventoryItem.item.name} ${result.action} successfully!`
     if (result.replacedItems.length > 0) {
       message += ` (Replaced: ${result.replacedItems.join(', ')})`
@@ -230,7 +253,7 @@ export const handler = async (event, context) => {
       body: JSON.stringify({
         error: 'Internal server error',
         message: 'Equipment action failed',
-        details: error.message // Added for debugging
+        details: error.message
       })
     }
   }

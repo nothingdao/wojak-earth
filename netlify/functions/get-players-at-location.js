@@ -1,11 +1,9 @@
-import { PrismaClient } from '@prisma/client'
+// netlify/functions/get-players-at-location.js
+import { createClient } from '@supabase/supabase-js'
 
-let prisma
-
-if (!globalThis.prisma) {
-  globalThis.prisma = new PrismaClient()
-}
-prisma = globalThis.prisma
+const supabaseUrl = process.env.VITE_SUPABASE_URL
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 export const handler = async (event, context) => {
   const headers = {
@@ -33,37 +31,65 @@ export const handler = async (event, context) => {
       }
     }
 
-    const players = await prisma.character.findMany({
-      where: {
-        currentLocationId: locationId
-      },
-      select: {
-        id: true,
-        name: true,
-        gender: true,
-        characterType: true,
-        energy: true,
-        health: true,
-        currentImageUrl: true,
-        createdAt: true,
-        inventory: {
-          where: { isEquipped: true },
-          include: { item: true }
-        }
-      },
-      orderBy: {
-        name: 'asc'
-      }
-    })
+    // Get players at the location with their equipped items
+    const { data: players, error } = await supabase
+      .from('characters')
+      .select(`
+        id,
+        name,
+        gender,
+        characterType,
+        energy,
+        health,
+        currentImageUrl,
+        createdAt,
+        inventory:character_inventory!inner(
+          isEquipped,
+          item:items(
+            name,
+            category,
+            rarity
+          )
+        )
+      `)
+      .eq('currentLocationId', locationId)
+      .eq('inventory.isEquipped', true)
+      .order('name', { ascending: true })
 
-    const playersWithStatus = players.map(player => {
+    if (error) {
+      console.error('Supabase error:', error)
+      throw error
+    }
+
+    // Also get players without equipped items
+    const { data: allPlayers, error: allError } = await supabase
+      .from('characters')
+      .select(`
+        id,
+        name,
+        gender,
+        characterType,
+        energy,
+        health,
+        currentImageUrl,
+        createdAt
+      `)
+      .eq('currentLocationId', locationId)
+      .order('name', { ascending: true })
+
+    if (allError) {
+      console.error('Supabase error:', allError)
+      throw allError
+    }
+
+    const playersWithStatus = allPlayers.map(player => {
       let status = 'Idle'
 
       if (player.energy < 20) {
         status = 'Resting'
       } else if (player.energy > 90) {
         status = 'Energetic'
-      } else if (player.inventory.some(inv => inv.item.category === 'HAT')) {
+      } else if (players.some(p => p.id === player.id && p.inventory?.some(inv => inv.item.category === 'HAT'))) {
         status = 'Mining'
       } else if (player.energy < 50) {
         status = 'Tired'
@@ -72,8 +98,16 @@ export const handler = async (event, context) => {
         status = activities[Math.floor(Math.random() * activities.length)]
       }
 
-      const daysSinceCreation = Math.floor((Date.now() - player.createdAt.getTime()) / (1000 * 60 * 60 * 24))
+      const daysSinceCreation = Math.floor((Date.now() - new Date(player.createdAt).getTime()) / (1000 * 60 * 60 * 24))
       const level = Math.max(1, Math.floor(daysSinceCreation / 7) + Math.floor(Math.random() * 20) + 1)
+
+      // Find equipped items for this player
+      const playerWithItems = players.find(p => p.id === player.id)
+      const equippedItems = playerWithItems?.inventory?.map(inv => ({
+        name: inv.item.name,
+        category: inv.item.category,
+        rarity: inv.item.rarity
+      })) || []
 
       return {
         id: player.id,
@@ -85,11 +119,7 @@ export const handler = async (event, context) => {
         health: player.health,
         status: status,
         currentImageUrl: player.currentImageUrl,
-        equippedItems: player.inventory.map(inv => ({
-          name: inv.item.name,
-          category: inv.item.category,
-          rarity: inv.item.rarity
-        }))
+        equippedItems: equippedItems
       }
     })
 

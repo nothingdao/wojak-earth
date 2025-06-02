@@ -1,8 +1,10 @@
+// src/components/global-navbar.tsx
 import { Button } from '@/components/ui/button'
 import { Zap, Heart, Map, Backpack, MapPin, BoxIcon } from 'lucide-react'
 import { ModeToggle } from './mode-toggle'
 import type { Character } from '@/types'
 import { WalletConnectButton } from './wallet-connect-button'
+import { useState } from 'react'
 
 interface GlobalNavbarProps {
   character: Character | null
@@ -21,6 +23,25 @@ export function GlobalNavbar({
   onSandboxClick,
   onInventoryClick
 }: GlobalNavbarProps) {
+  const [imageError, setImageError] = useState(false)
+
+  // Handle image load error
+  const handleImageError = () => {
+    setImageError(true)
+  }
+
+  // Get character image URL with fallback
+  const getCharacterImageUrl = () => {
+    if (!character) return '/wojak.png'
+
+    // If there's an error or no currentImageUrl, use fallback
+    if (imageError || !character.currentImageUrl) {
+      return '/wojak.png'
+    }
+
+    return character.currentImageUrl
+  }
+
   return (
     <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex h-14 items-center justify-between px-4 relative w-full">
@@ -48,7 +69,6 @@ export function GlobalNavbar({
           {character && (
             <div className="flex items-center gap-2">
 
-
               {/* Quick Action Buttons - Only show on larger screens */}
               <div className="hidden sm:flex items-center gap-1">
                 <Button
@@ -75,17 +95,30 @@ export function GlobalNavbar({
                 >
                   <Backpack className="w-4 h-4" />
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 w-8 p-0 bg-cover bg-center bg-no-repeat"
-                  style={{
-                    backgroundImage: `url('/wojak.png')`
-                  }}
-                  onClick={onProfileClick}
-                  aria-label={`${character.name} profile`}
-                >
-                </Button>
+
+                {/* Character Avatar Button */}
+                <div className="relative">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 w-8 p-0 overflow-hidden"
+                    onClick={onProfileClick}
+                    aria-label={`${character.name} profile`}
+                  >
+                    <img
+                      src={getCharacterImageUrl()}
+                      alt={character.name}
+                      className="w-full h-full object-cover"
+                      onError={handleImageError}
+                      onLoad={() => setImageError(false)}
+                    />
+                  </Button>
+
+                  {/* Optional: Show character name on hover */}
+                  <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-popover text-popover-foreground text-xs px-2 py-1 rounded shadow-md opacity-0 hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                    {character.name}
+                  </div>
+                </div>
               </div>
 
               {/* Stats */}
@@ -101,7 +134,6 @@ export function GlobalNavbar({
                   <span className="xs:hidden font-thin">{character.health}</span>
                 </span>
               </div>
-
 
             </div>
           )}

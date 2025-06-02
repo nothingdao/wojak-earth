@@ -1,11 +1,9 @@
-import { PrismaClient } from '@prisma/client'
+// netlify/functions/get-chat.js
+import { createClient } from '@supabase/supabase-js'
 
-let prisma
-
-if (!globalThis.prisma) {
-  globalThis.prisma = new PrismaClient()
-}
-prisma = globalThis.prisma
+const supabaseUrl = process.env.VITE_SUPABASE_URL
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 export const handler = async (event, context) => {
   const headers = {
@@ -31,13 +29,13 @@ export const handler = async (event, context) => {
     }
 
     // Get the location to understand chat scope
-    const location = await prisma.location.findUnique({
-      where: { id: locationId },
-      include: {
-        parentLocation: true,
-        subLocations: true
-      }
-    })
+    const { data: location, error: locationError } = await supabase
+      .from('locations')
+      .select('*')
+      .eq('id', locationId)
+      .single()
+
+    if (locationError) throw locationError
 
     if (!location) {
       return {
@@ -47,81 +45,116 @@ export const handler = async (event, context) => {
       }
     }
 
+    // Get parent location if exists
+    let parentLocation = null
+    if (location.parentLocationId) {
+      const { data: parent, error: parentError } = await supabase
+        .from('locations')
+        .select('*')
+        .eq('id', location.parentLocationId)
+        .single()
+
+      if (!parentError) {
+        parentLocation = parent
+      }
+    }
+
+    // Get sub-locations if this is a parent
+    const { data: subLocations, error: subError } = await supabase
+      .from('locations')
+      .select('*')
+      .eq('parentLocationId', locationId)
+
+    if (subError && subError.code !== 'PGRST116') { // PGRST116 = no rows returned, which is fine
+      throw subError
+    }
+
     let chatLocationIds = [locationId]
 
     // Handle chat scope - REGIONAL chat includes parent and sub-locations
     if (location.chatScope === 'REGIONAL') {
       // If this is a parent location, include all sub-locations
-      if (location.subLocations?.length > 0) {
-        chatLocationIds.push(...location.subLocations.map(sub => sub.id))
+      if (subLocations?.length > 0) {
+        chatLocationIds.push(...subLocations.map(sub => sub.id))
       }
       // If this is a sub-location, include the parent
       if (location.parentLocationId) {
         chatLocationIds.push(location.parentLocationId)
         // Also include sibling sub-locations
-        const siblings = await prisma.location.findMany({
-          where: {
-            parentLocationId: location.parentLocationId,
-            id: { not: locationId }
-          }
-        })
-        chatLocationIds.push(...siblings.map(sib => sib.id))
+        const { data: siblings, error: siblingsError } = await supabase
+          .from('locations')
+          .select('*')
+          .eq('parentLocationId', location.parentLocationId)
+          .neq('id', locationId)
+
+        if (!siblingsError && siblings?.length > 0) {
+          chatLocationIds.push(...siblings.map(sib => sib.id))
+        }
       }
     }
 
     // Get chat messages for the relevant locations
-    const messages = await prisma.chatMessage.findMany({
-      where: {
-        locationId: { in: chatLocationIds }
-      },
-      include: {
-        character: {
-          select: {
-            id: true,
-            name: true,
-            characterType: true,
-            currentImageUrl: true
-          }
-        },
-        location: {
-          select: {
-            id: true,
-            name: true,
-            locationType: true
-          }
+    const { data: messages, error: messagesError } = await supabase
+      .from('chat_messages')
+      .select('*')
+      .in('locationId', chatLocationIds)
+      .order('createdAt', { ascending: false })
+      .limit(limit)
+
+    if (messagesError) throw messagesError
+
+    // Get character and location details for each message
+    const transformedMessages = []
+
+    for (const msg of messages || []) {
+      let character = null
+      if (!msg.isSystem) {
+        const { data: charData, error: charError } = await supabase
+          .from('characters')
+          .select('id, name, characterType, currentImageUrl')
+          .eq('id', msg.characterId)
+          .single()
+
+        if (!charError) {
+          character = charData
         }
-      },
-      orderBy: {
-        createdAt: 'desc'
-      },
-      take: limit
-    })
+      }
 
-    // Transform messages for frontend
-    const transformedMessages = messages.reverse().map(msg => {
+      // Get location details
+      const { data: msgLocation, error: msgLocError } = await supabase
+        .from('locations')
+        .select('id, name, locationType')
+        .eq('id', msg.locationId)
+        .single()
+
+      if (msgLocError) throw msgLocError
+
       // Calculate time ago
-      const timeAgo = getTimeAgo(msg.createdAt)
+      const timeAgo = getTimeAgo(new Date(msg.createdAt))
 
-      return {
+      transformedMessages.push({
         id: msg.id,
         message: msg.message,
         messageType: msg.messageType,
         isSystem: msg.isSystem,
         timeAgo: timeAgo,
         createdAt: msg.createdAt,
-        character: msg.isSystem ? null : {
-          id: msg.character.id,
-          name: msg.character.name,
-          characterType: msg.character.characterType,
-          imageUrl: msg.character.currentImageUrl
-        },
+        character: msg.isSystem ? null : character ? {
+          id: character.id,
+          name: character.name,
+          characterType: character.characterType,
+          imageUrl: character.currentImageUrl
+        } : null,
         location: {
-          id: msg.location.id,
-          name: msg.location.name,
-          locationType: msg.location.locationType
+          id: msgLocation.id,
+          name: msgLocation.name,
+          locationType: msgLocation.locationType
         }
-      }
-    })
+      })
+    }
+
+    // Reverse to get chronological order (oldest first)
+    transformedMessages.reverse()
 
     return {
       statusCode: 200,

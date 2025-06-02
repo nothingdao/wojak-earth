@@ -1,4 +1,4 @@
-// data/mapLocations.ts - Fixed location mappings and names
+// data/mapLocations.ts
 
 import { LOCATION_THEMES } from '@/components/map/themes/locationThemes'
 import type { MapLocation } from '@/types'
@@ -19,7 +19,7 @@ export const MAP_LOCATIONS: MapLocation[] = [
     id: 'crystal-caves',
     name: 'Crystal Caves',
     description: 'Deep underground shafts where rare crystals grow',
-    svgPathId: 'underland-island', // This maps to small island SVG
+    svgPathId: 'underland-island',
     difficulty: 2,
     theme: LOCATION_THEMES.underground,
     isExplored: true,
@@ -76,7 +76,7 @@ export const MAP_LOCATIONS: MapLocation[] = [
     description: 'The vast ocean surrounding the lands',
     svgPathId: 'oceanBase',
     difficulty: 0,
-    theme: LOCATION_THEMES.plains, // or create an ocean theme
+    theme: LOCATION_THEMES.plains,
     isExplored: true,
     isPlayerHere: false,
     status: 'locked',
@@ -103,7 +103,6 @@ export const MAP_LOCATIONS: MapLocation[] = [
     isPlayerHere: false,
     status: 'locked',
   },
-
   {
     id: 'continental-shelf',
     name: 'Continental Shelf',

@@ -1,11 +1,9 @@
-import { PrismaClient } from '@prisma/client'
+// netlify/functions/get-locations.js
+import { createClient } from '@supabase/supabase-js'
 
-let prisma
-
-if (!globalThis.prisma) {
-  globalThis.prisma = new PrismaClient()
-}
-prisma = globalThis.prisma
+const supabaseUrl = process.env.VITE_SUPABASE_URL
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 export const handler = async (event, context) => {
   const headers = {
@@ -20,41 +18,31 @@ export const handler = async (event, context) => {
 
   try {
     // Fetch all top-level locations (no parent) with their sub-locations
-    const locations = await prisma.location.findMany({
-      where: {
-        parentLocationId: null // Only top-level locations
-      },
-      include: {
-        subLocations: {
-          include: {
-            _count: {
-              select: {
-                characters: true // Count characters in each sub-location
-              }
-            }
-          },
-          orderBy: {
-            name: 'asc'
-          }
-        },
-        _count: {
-          select: {
-            characters: true // Count characters directly in parent location
-          }
-        }
-      },
-      orderBy: {
-        difficulty: 'asc' // Easier locations first
-      }
-    })
+    const { data: locations, error } = await supabase
+      .from('locations')
+      .select(`
+        *,
+        subLocations:locations!parentLocationId(
+          *,
+          characterCount:characters(count)
+        ),
+        characterCount:characters(count)
+      `)
+      .is('parentLocationId', null)
+      .order('difficulty', { ascending: true })
+
+    if (error) {
+      console.error('Supabase error:', error)
+      throw error
+    }
 
     // Transform data for frontend with aggregated player counts
     const responseData = locations.map(location => {
       // Calculate total players: direct + all sub-locations
-      const directPlayerCount = location._count.characters
-      const subLocationPlayerCount = location.subLocations.reduce((total, subLoc) => {
-        return total + subLoc._count.characters
-      }, 0)
+      const directPlayerCount = location.characterCount?.[0]?.count || 0
+      const subLocationPlayerCount = location.subLocations?.reduce((total, subLoc) => {
+        return total + (subLoc.characterCount?.[0]?.count || 0)
+      }, 0) || 0
       const totalPlayerCount = directPlayerCount + subLocationPlayerCount
 
       return {
@@ -73,19 +61,19 @@ export const handler = async (event, context) => {
         welcomeMessage: location.welcomeMessage,
         lore: location.lore,
 
-        subLocations: location.subLocations.map(subLoc => ({
+        subLocations: location.subLocations?.map(subLoc => ({
           id: subLoc.id,
           name: subLoc.name,
           description: subLoc.description,
           locationType: subLoc.locationType,
           difficulty: subLoc.difficulty,
-          playerCount: subLoc._count.characters, // Real player count for sub-location
+          playerCount: subLoc.characterCount?.[0]?.count || 0, // Real player count for sub-location
           hasMarket: subLoc.hasMarket,
           hasMining: subLoc.hasMining,
           hasChat: subLoc.hasChat,
           welcomeMessage: subLoc.welcomeMessage,
           parentLocationId: subLoc.parentLocationId
-        }))
+        })) || []
       }
     })
 

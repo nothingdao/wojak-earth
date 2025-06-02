@@ -15,7 +15,6 @@ import {
 import { useWalletInfo } from '@/hooks/useWalletInfo'
 import { toast } from 'sonner'
 import type { Character } from '@/types'
-// import { TokenMintForm } from '../TokenMintForm'
 
 interface ProfileViewProps {
   character: Character
@@ -36,6 +35,14 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ character }) => {
     setImageError(true)
   }
 
+  // Get character image URL with fallback
+  const getCharacterImageUrl = () => {
+    if (imageError || !character.currentImageUrl) {
+      return '/wojak.png'
+    }
+    return character.currentImageUrl
+  }
+
   const copyAddress = () => {
     if (walletInfo.fullAddress) {
       navigator.clipboard.writeText(walletInfo.fullAddress)
@@ -52,14 +59,29 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ character }) => {
     }
   }
 
+  const copyCharacterInfo = () => {
+    const characterInfo = `${character.name} - Level ${character.level} ${character.gender} ${character.characterType}\nLocation: ${character.currentLocation.name}\nEnergy: ${character.energy}/100 | Health: ${character.health}/100 | Coins: ${character.coins}`
+    navigator.clipboard.writeText(characterInfo)
+    toast.success('Character info copied to clipboard!')
+  }
+
   return (
     <div className='space-y-6'>
       {/* Character Section */}
       <div className='bg-card border rounded-lg p-6'>
-        <h3 className='text-lg font-semibold mb-4 flex items-center gap-2'>
-          <User className='w-5 h-5' />
-          Character Profile
-        </h3>
+        <div className='flex items-center justify-between mb-4'>
+          <h3 className='text-lg font-semibold flex items-center gap-2'>
+            <User className='w-5 h-5' />
+            Character Profile
+          </h3>
+          <Button
+            variant='ghost'
+            size='sm'
+            onClick={copyCharacterInfo}
+          >
+            <Copy className='w-4 h-4' />
+          </Button>
+        </div>
 
         <div className='text-center mb-4'>
           {/* Character Image */}
@@ -72,7 +94,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ character }) => {
 
             {!imageError ? (
               <img
-                src='/wojak.png'
+                src={getCharacterImageUrl()}
                 alt={character.name}
                 className='w-full h-full object-cover'
                 onLoad={handleImageLoad}
@@ -85,7 +107,14 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ character }) => {
           </div>
 
           <h2 className='text-xl font-bold'>{character.name}</h2>
-          <p className='text-muted-foreground'>Level {character.level}</p>
+          <p className='text-muted-foreground'>
+            Level {character.level} • {character.gender} {character.characterType}
+          </p>
+
+          {/* Character ID for debugging */}
+          <div className='text-xs text-muted-foreground mt-1 font-mono'>
+            ID: {character.id.slice(0, 8)}...
+          </div>
         </div>
 
         {/* Character Stats */}
@@ -135,14 +164,22 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ character }) => {
             {character.currentLocation.description}
           </div>
         </div>
+
+        {/* Character Version & Status */}
+        <div className='grid grid-cols-2 gap-3 mt-3'>
+          <div className='bg-muted/20 rounded p-2 text-center'>
+            <div className='text-xs text-muted-foreground'>Version</div>
+            <div className='font-medium'>{character.currentVersion}</div>
+          </div>
+          <div className='bg-muted/20 rounded p-2 text-center'>
+            <div className='text-xs text-muted-foreground'>Status</div>
+            <div className='font-medium capitalize'>{character.status?.toLowerCase() || 'Active'}</div>
+          </div>
+        </div>
       </div>
 
       {/* Wallet Section */}
       <div className='bg-card border rounded-lg p-6'>
-
-        {/* {walletInfo.connected && (
-          <TokenMintForm />
-        )} */}
 
         <div className='flex items-center justify-between mb-4'>
           <h3 className='text-lg font-semibold flex items-center gap-2'>
@@ -151,8 +188,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ character }) => {
           </h3>
 
           <div className="flex items-center gap-2">
-
-
             {walletInfo.connected && (
               <Button
                 variant='ghost'
@@ -200,6 +235,38 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ character }) => {
               </div>
             </div>
 
+            {/* NFT Address if available */}
+            {character.nftAddress && (
+              <div>
+                <div className='text-sm text-muted-foreground mb-1'>NFT Address</div>
+                <div className='flex items-center gap-2'>
+                  <code className='text-sm font-mono bg-muted px-3 py-2 rounded flex-1'>
+                    {character.nftAddress.slice(0, 4)}...{character.nftAddress.slice(-4)}
+                  </code>
+                  <Button
+                    variant='ghost'
+                    size='sm'
+                    onClick={() => {
+                      navigator.clipboard.writeText(character.nftAddress || '')
+                      toast.success('NFT address copied!')
+                    }}
+                  >
+                    <Copy className='w-4 h-4' />
+                  </Button>
+                  <Button
+                    variant='ghost'
+                    size='sm'
+                    onClick={() => window.open(
+                      `https://explorer.solana.com/address/${character.nftAddress}?cluster=devnet`,
+                      '_blank'
+                    )}
+                  >
+                    <ExternalLink className='w-4 h-4' />
+                  </Button>
+                </div>
+              </div>
+            )}
+
             {/* Balance */}
             <div className='bg-muted/30 rounded-lg p-4'>
               <div className='text-sm text-muted-foreground mb-1'>
@@ -216,39 +283,34 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ character }) => {
             </div>
 
             {/* Equipped Items Preview */}
-            {character.inventory.filter((item) => item.isEquipped).length >
-              0 && (
-                <div>
-                  <div className='text-sm text-muted-foreground mb-2'>
-                    Currently Equipped
-                  </div>
-                  <div className='space-y-1'>
-                    {character.inventory
-                      .filter((item) => item.isEquipped)
-                      .slice(0, 3)
-                      .map((item) => (
-                        <div
-                          key={item.id}
-                          className='flex items-center justify-between bg-muted/30 rounded p-2 text-sm'
-                        >
-                          <span className='font-medium'>{item.item.name}</span>
-                          <span className='text-xs text-muted-foreground capitalize'>
-                            {item.item.category.toLowerCase()}
-                          </span>
-                        </div>
-                      ))}
-                    {character.inventory.filter((item) => item.isEquipped)
-                      .length > 3 && (
-                        <div className='text-xs text-muted-foreground text-center'>
-                          +
-                          {character.inventory.filter((item) => item.isEquipped)
-                            .length - 3}{' '}
-                          more items
-                        </div>
-                      )}
-                  </div>
+            {character.inventory.filter((item) => item.isEquipped).length > 0 && (
+              <div>
+                <div className='text-sm text-muted-foreground mb-2'>
+                  Currently Equipped
                 </div>
-              )}
+                <div className='space-y-1'>
+                  {character.inventory
+                    .filter((item) => item.isEquipped)
+                    .slice(0, 3)
+                    .map((item) => (
+                      <div
+                        key={item.id}
+                        className='flex items-center justify-between bg-muted/30 rounded p-2 text-sm'
+                      >
+                        <span className='font-medium'>{item.item.name}</span>
+                        <span className='text-xs text-muted-foreground capitalize'>
+                          {item.item.category.toLowerCase()}
+                        </span>
+                      </div>
+                    ))}
+                  {character.inventory.filter((item) => item.isEquipped).length > 3 && (
+                    <div className='text-xs text-muted-foreground text-center'>
+                      +{character.inventory.filter((item) => item.isEquipped).length - 3} more items
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <div className='text-center py-8'>

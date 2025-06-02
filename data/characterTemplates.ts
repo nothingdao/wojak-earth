@@ -2,7 +2,7 @@
 
 export interface CharacterTemplate {
   name: string
-  gender: string // Will be cast to Prisma Gender enum in setup
+  gender: string
   location: string
   energy: number
   health: number
@@ -79,8 +79,6 @@ export const CHARACTER_TEMPLATES: CharacterTemplate[] = [
     energy: 85,
     health: 100,
   },
-
-  // New characters for weird regions
   {
     name: 'Wojak #404',
     gender: 'MALE',

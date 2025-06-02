@@ -1,12 +1,9 @@
-// netlify/functions/get-global-activity.js - Fixed for current schema
-import { PrismaClient } from '@prisma/client'
+// netlify/functions/get-global-activity.js
+import { createClient } from '@supabase/supabase-js'
 
-let prisma
-
-if (!globalThis.prisma) {
-  globalThis.prisma = new PrismaClient()
-}
-prisma = globalThis.prisma
+const supabaseUrl = process.env.VITE_SUPABASE_URL
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 export const handler = async (event, context) => {
   const headers = {
@@ -32,78 +29,105 @@ export const handler = async (event, context) => {
 
     console.log('Query parameters:', { limit, timeWindow, includePlayer })
 
-    const timeThreshold = new Date(Date.now() - timeWindow * 60 * 1000)
+    const timeThreshold = new Date(Date.now() - timeWindow * 60 * 1000).toISOString()
     console.log('Time threshold:', timeThreshold)
 
-    // Build where clause
-    const whereClause = {
-      createdAt: {
-        gte: timeThreshold
-      }
-    }
+    // Get recent transactions
+    console.log('Querying transactions...')
+    let query = supabase
+      .from('transactions')
+      .select('*')
+      .gte('createdAt', timeThreshold)
+      .order('createdAt', { ascending: false })
+      .limit(limit)
 
     // Optionally exclude the main player character
     if (!includePlayer) {
-      whereClause.character = {
-        NOT: {
-          OR: [
-            { name: "Wojak #1337" },
-            { id: 'char_wojak_1337' }
-          ]
-        }
+      // Get the player character ID first
+      const { data: playerChar } = await supabase
+        .from('characters')
+        .select('id')
+        .eq('name', 'Wojak #1337')
+        .single()
+
+      if (playerChar) {
+        query = query.neq('characterId', playerChar.id)
       }
     }
 
-    console.log('Where clause:', JSON.stringify(whereClause, null, 2))
+    const { data: transactions, error: transactionsError } = await query
 
-    // Get recent transactions - FIXED: Remove item include since relation doesn't exist
-    console.log('Querying transactions...')
-    const transactions = await prisma.transaction.findMany({
-      where: whereClause,
-      include: {
-        character: {
-          select: {
-            id: true,
-            name: true,
-            characterType: true,
-            currentLocation: {
-              select: {
-                id: true,
-                name: true,
-                locationType: true,
-                biome: true
-              }
-            }
+    if (transactionsError) throw transactionsError
+
+    console.log(`Found ${transactions?.length || 0} transactions`)
+
+    if (!transactions || transactions.length === 0) {
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          activities: [],
+          summary: {
+            totalActivities: 0,
+            timeWindow: timeWindow,
+            activeCharacters: 0,
+            npcActions: 0,
+            playerActions: 0,
+            activityBreakdown: {},
+            locationActivity: {},
+            characterActivity: [],
+            timestamp: new Date().toISOString()
+          },
+          pagination: {
+            limit,
+            returned: 0,
+            hasMore: false
           }
-        }
-        // REMOVED: item include since relation doesn't exist in schema
-      },
-      orderBy: {
-        createdAt: 'desc'
-      },
-      take: limit
-    })
+        })
+      }
+    }
 
-    console.log(`Found ${transactions.length} transactions`)
+    // Get character details for all transactions
+    const characterIds = [...new Set(transactions.map(t => t.characterId))]
+    const { data: characters, error: charactersError } = await supabase
+      .from('characters')
+      .select(`
+        id,
+        name,
+        characterType,
+        currentLocationId,
+        currentLocation:locations(
+          id,
+          name,
+          locationType,
+          biome
+        )
+      `)
+      .in('id', characterIds)
+
+    if (charactersError) throw charactersError
+
+    // Create character lookup map
+    const characterMap = characters?.reduce((acc, char) => {
+      acc[char.id] = char
+      return acc
+    }, {}) || {}
 
     // Get unique item IDs to fetch item details separately
     const itemIds = [...new Set(transactions.filter(t => t.itemId).map(t => t.itemId))]
     console.log(`Found ${itemIds.length} unique items to fetch`)
 
     // Fetch item details separately
-    const items = itemIds.length > 0 ? await prisma.item.findMany({
-      where: {
-        id: { in: itemIds }
-      },
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        category: true,
-        rarity: true,
-        imageUrl: true
-      }
-    }) : []
+    let items = []
+    if (itemIds.length > 0) {
+      const { data: itemsData, error: itemsError } = await supabase
+        .from('items')
+        .select('id, name, description, category, rarity, imageUrl')
+        .in('id', itemIds)
+
+      if (itemsError) throw itemsError
+      items = itemsData || []
+    }
 
     // Create item lookup map
     const itemMap = items.reduce((acc, item) => {
@@ -115,7 +139,8 @@ export const handler = async (event, context) => {
 
     // Transform transactions into activity format
     const activities = transactions.map(transaction => {
-      const timeAgo = getTimeAgo(transaction.createdAt)
+      const timeAgo = getTimeAgo(new Date(transaction.createdAt))
+      const character = characterMap[transaction.characterId]
 
       // Parse additional details from description if it's an NPC action
       const isNPCAction = transaction.description.startsWith('[NPC]')
@@ -127,7 +152,7 @@ export const handler = async (event, context) => {
       const item = transaction.itemId ? itemMap[transaction.itemId] : null
 
       // Extract location from description if available
-      let location = transaction.character?.currentLocation?.name
+      let location = character?.currentLocation?.name
       const locationMatch = cleanDescription.match(/in ([^,]+)(?:,|$)/)
       if (locationMatch) {
         location = locationMatch[1]
@@ -170,9 +195,9 @@ export const handler = async (event, context) => {
 
       return {
         id: transaction.id,
-        timestamp: transaction.createdAt.toISOString(),
-        characterName: transaction.character?.name || 'Unknown',
-        characterType: transaction.character?.characterType || 'HUMAN',
+        timestamp: transaction.createdAt,
+        characterName: character?.name || 'Unknown',
+        characterType: character?.characterType || 'HUMAN',
         actionType: transaction.type,
         description: cleanDescription,
         location: location,

@@ -1,11 +1,10 @@
-import { PrismaClient } from '@prisma/client'
+// netlify/functions/mine-action.js - UPDATED
+import { createClient } from '@supabase/supabase-js'
+import { randomUUID } from 'crypto'
 
-let prisma
-
-if (!globalThis.prisma) {
-  globalThis.prisma = new PrismaClient()
-}
-prisma = globalThis.prisma
+const supabaseUrl = process.env.VITE_SUPABASE_URL
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 export const handler = async (event, context) => {
   const headers = {
@@ -27,189 +26,198 @@ export const handler = async (event, context) => {
   }
 
   try {
-    const { characterId = 'hardcoded-demo', locationId } = JSON.parse(event.body || '{}')
+    const { walletAddress, locationId } = JSON.parse(event.body || '{}')
 
-    // Get character
-    let character
-    if (characterId === 'hardcoded-demo') {
-      character = await prisma.character.findFirst({
-        where: { name: "Wojak #1337" },
-        include: { currentLocation: true }
-      })
-    } else {
-      character = await prisma.character.findUnique({
-        where: { id: characterId },
-        include: { currentLocation: true }
-      })
+    if (!walletAddress) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ error: 'Wallet address is required' })
+      }
     }
 
-    if (!character) {
+    // Get character by wallet address
+    const { data: character, error } = await supabase
+      .from('characters')
+      .select('*')
+      .eq('walletAddress', walletAddress)
+      .eq('status', 'ACTIVE')
+      .single()
+
+    if (error || !character) {
       return {
         statusCode: 404,
         headers,
-        body: JSON.stringify({ error: 'Character not found' })
+        body: JSON.stringify({
+          error: 'Character not found',
+          message: 'No active character found for this wallet address'
+        })
+      }
+    }
+
+    // Check energy requirement
+    const energyCost = 10
+    if (character.energy < energyCost) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({
+          error: 'Insufficient energy',
+          message: `You need at least ${energyCost} energy to mine. Current: ${character.energy}`
+        })
       }
     }
 
     // Use current location if none specified
-    const targetLocationId = locationId || character.currentLocationId
+    const miningLocationId = locationId || character.currentLocationId
 
-    // Check if character has enough energy
-    const ENERGY_COST = 10
-    if (character.energy < ENERGY_COST) {
+    // Get location to verify mining is available
+    const { data: location, error: locationError } = await supabase
+      .from('locations')
+      .select('*')
+      .eq('id', miningLocationId)
+      .single()
+
+    if (locationError) throw locationError
+
+    if (!location) {
+      return {
+        statusCode: 404,
+        headers,
+        body: JSON.stringify({ error: 'Location not found' })
+      }
+    }
+
+    if (!location.hasMining) {
       return {
         statusCode: 400,
         headers,
         body: JSON.stringify({
-          error: 'Not enough energy',
-          message: `Mining requires ${ENERGY_COST} energy. You have ${character.energy}.`,
-          currentEnergy: character.energy,
-          required: ENERGY_COST
+          error: 'Mining not available',
+          message: `Mining is not available in ${location.name}`
         })
       }
     }
 
-    // Get location and its available resources
-    const location = await prisma.location.findUnique({
-      where: { id: targetLocationId },
-      include: {
-        resources: {
-          include: {
-            item: true
-          }
-        }
+    // Deduct energy
+    const newEnergyLevel = character.energy - energyCost
+    const { data: updatedCharacter, error: updateError } = await supabase
+      .from('characters')
+      .update({ energy: newEnergyLevel })
+      .eq('id', character.id)
+      .select('*')
+      .single()
+
+    if (updateError) throw updateError
+
+    // Mining success rate and item finding logic
+    const miningSuccessRate = 0.7 // 70% chance to find something
+    const foundSomething = Math.random() < miningSuccessRate
+
+    let foundItem = null
+
+    if (foundSomething) {
+      // Get available items for this location's biome/difficulty
+      const { data: availableItems, error: itemsError } = await supabase
+        .from('items')
+        .select('*')
+        .eq('category', 'MATERIAL') // Focus on mining materials
+        .order('rarity')
+
+      if (itemsError) throw itemsError
+
+      // Simple rarity-based selection
+      const rarityWeights = {
+        'COMMON': 60,
+        'UNCOMMON': 25,
+        'RARE': 10,
+        'EPIC': 4,
+        'LEGENDARY': 1
       }
-    })
 
-    if (!location || !location.hasMining) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({
-          error: 'Cannot mine here',
-          message: 'This location does not support mining'
-        })
-      }
-    }
-
-    if (location.resources.length === 0) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({
-          error: 'No resources available',
-          message: 'This location has no mineable resources'
-        })
-      }
-    }
-
-    // Mining logic - check each resource by spawn rate
-    const roll = Math.random()
-    let foundResource = null
-
-    // Sort by spawn rate (highest first) for better user experience
-    const sortedResources = location.resources.sort((a, b) => b.spawnRate - a.spawnRate)
-
-    for (const resource of sortedResources) {
-      if (roll < resource.spawnRate) {
-        foundResource = resource
-        break
-      }
-    }
-
-    // Start transaction to update character and add item
-    const result = await prisma.$transaction(async (tx) => {
-      // Reduce character energy
-      const updatedCharacter = await tx.character.update({
-        where: { id: character.id },
-        data: {
-          energy: character.energy - ENERGY_COST
+      // Create weighted array
+      const weightedItems = []
+      availableItems?.forEach(item => {
+        const weight = rarityWeights[item.rarity] || 10
+        for (let i = 0; i < weight; i++) {
+          weightedItems.push(item)
         }
       })
 
-      let addedItem = null
-      let transaction = null
+      if (weightedItems.length > 0) {
+        const randomIndex = Math.floor(Math.random() * weightedItems.length)
+        foundItem = weightedItems[randomIndex]
 
-      if (foundResource) {
-        // Check if character already has this item in inventory
-        const existingInventory = await tx.characterInventory.findUnique({
-          where: {
-            characterId_itemId: {
-              characterId: character.id,
-              itemId: foundResource.itemId
-            }
-          }
-        })
+        // Add item to character inventory
+        const { data: existingInventory } = await supabase
+          .from('character_inventory')
+          .select('*')
+          .eq('characterId', character.id)
+          .eq('itemId', foundItem.id)
+          .single()
 
         if (existingInventory) {
-          // Update quantity
-          addedItem = await tx.characterInventory.update({
-            where: { id: existingInventory.id },
-            data: { quantity: existingInventory.quantity + 1 },
-            include: { item: true }
-          })
+          // Update existing inventory
+          const { error: updateInvError } = await supabase
+            .from('character_inventory')
+            .update({ quantity: existingInventory.quantity + 1 })
+            .eq('id', existingInventory.id)
+
+          if (updateInvError) throw updateInvError
         } else {
           // Create new inventory entry
-          addedItem = await tx.characterInventory.create({
-            data: {
+          const inventoryId = randomUUID()
+          const { error: createInvError } = await supabase
+            .from('character_inventory')
+            .insert({
+              id: inventoryId,
               characterId: character.id,
-              itemId: foundResource.itemId,
-              quantity: 1
-            },
-            include: { item: true }
-          })
+              itemId: foundItem.id,
+              quantity: 1,
+              isEquipped: false,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            })
+
+          if (createInvError) throw createInvError
         }
 
-        // Log the transaction
-        transaction = await tx.transaction.create({
-          data: {
+        // Log the mining transaction
+        const transactionId = randomUUID()
+        const { data: transaction, error: transactionError } = await supabase
+          .from('transactions')
+          .insert({
+            id: transactionId,
             characterId: character.id,
             type: 'MINE',
-            itemId: foundResource.itemId,
+            itemId: foundItem.id,
             quantity: 1,
-            description: `Found ${foundResource.item.name} while mining in ${location.name}`
-          }
-        })
-      } else {
-        // Log failed mining attempt
-        transaction = await tx.transaction.create({
-          data: {
-            characterId: character.id,
-            type: 'MINE',
-            description: `Mining attempt in ${location.name} - nothing found`
-          }
-        })
-      }
+            description: `Mined ${foundItem.name} at ${location.name}`
+          })
+          .select('*')
+          .single()
 
-      return {
-        character: updatedCharacter,
-        foundItem: addedItem,
-        transaction
+        if (transactionError) throw transactionError
       }
-    })
+    }
 
     // Prepare response
     const responseData = {
       success: true,
-      energyUsed: ENERGY_COST,
-      newEnergyLevel: result.character.energy,
+      message: foundItem ? `Found ${foundItem.name}!` : 'Nothing found this time...',
+      newEnergyLevel: newEnergyLevel,
+      energyCost: energyCost,
+      foundItem: foundItem ? {
+        id: foundItem.id,
+        name: foundItem.name,
+        description: foundItem.description,
+        rarity: foundItem.rarity,
+        category: foundItem.category
+      } : null,
       location: {
         id: location.id,
         name: location.name
       }
-    }
-
-    if (result.foundItem) {
-      responseData.foundItem = {
-        name: result.foundItem.item.name,
-        description: result.foundItem.item.description,
-        rarity: result.foundItem.item.rarity,
-        imageUrl: result.foundItem.item.imageUrl,
-        newQuantity: result.foundItem.quantity
-      }
-      responseData.message = `You found: ${result.foundItem.item.name} (${result.foundItem.item.rarity})!`
-    } else {
-      responseData.message = "You dig around but find nothing useful..."
     }
 
     return {
@@ -226,7 +234,7 @@ export const handler = async (event, context) => {
       headers,
       body: JSON.stringify({
         error: 'Internal server error',
-        message: 'Mining operation failed'
+        message: 'Mining failed'
       })
     }
   }

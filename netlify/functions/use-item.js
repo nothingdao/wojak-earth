@@ -1,12 +1,10 @@
-// netlify/functions/use-item.js
-import { PrismaClient } from '@prisma/client'
+// netlify/functions/use-item.js - UPDATED
+import { createClient } from '@supabase/supabase-js'
+import { randomUUID } from 'crypto'
 
-let prisma
-
-if (!globalThis.prisma) {
-  globalThis.prisma = new PrismaClient()
-}
-prisma = globalThis.prisma
+const supabaseUrl = process.env.VITE_SUPABASE_URL
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 export const handler = async (event, context) => {
   const headers = {
@@ -28,41 +26,43 @@ export const handler = async (event, context) => {
   }
 
   try {
-    const { characterId = 'hardcoded-demo', inventoryId } = JSON.parse(event.body || '{}')
+    const { walletAddress, inventoryId } = JSON.parse(event.body || '{}')
 
-    if (!inventoryId) {
+    if (!walletAddress || !inventoryId) {
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ error: 'Inventory ID is required' })
+        body: JSON.stringify({ error: 'Wallet address and inventory ID are required' })
       }
     }
 
-    // Get character
-    let character
-    if (characterId === 'hardcoded-demo') {
-      character = await prisma.character.findFirst({
-        where: { name: "Wojak #1337" }
-      })
-    } else {
-      character = await prisma.character.findUnique({
-        where: { id: characterId }
-      })
-    }
+    // Get character by wallet address
+    const { data: character, error } = await supabase
+      .from('characters')
+      .select('*')
+      .eq('walletAddress', walletAddress)
+      .eq('status', 'ACTIVE')
+      .single()
 
-    if (!character) {
+    if (error || !character) {
       return {
         statusCode: 404,
         headers,
-        body: JSON.stringify({ error: 'Character not found' })
+        body: JSON.stringify({
+          error: 'Character not found',
+          message: 'No active character found for this wallet address'
+        })
       }
     }
 
-    // Get inventory item with details
-    const inventoryItem = await prisma.characterInventory.findUnique({
-      where: { id: inventoryId },
-      include: { item: true }
-    })
+    // Get inventory item
+    const { data: inventoryItem, error: inventoryError } = await supabase
+      .from('character_inventory')
+      .select('*')
+      .eq('id', inventoryId)
+      .single()
+
+    if (inventoryError) throw inventoryError
 
     if (!inventoryItem) {
       return {
@@ -71,6 +71,17 @@ export const handler = async (event, context) => {
         body: JSON.stringify({ error: 'Inventory item not found' })
       }
     }
+
+    // Get item details
+    const { data: item, error: itemError } = await supabase
+      .from('items')
+      .select('*')
+      .eq('id', inventoryItem.itemId)
+      .single()
+
+    if (itemError) throw itemError
+
+    inventoryItem.item = item
 
     // Verify ownership
     if (inventoryItem.characterId !== character.id) {
@@ -127,73 +138,79 @@ export const handler = async (event, context) => {
       }
     }
 
-    // Perform consumption within transaction
-    const result = await prisma.$transaction(async (tx) => {
-      // Update character stats
-      const updatedCharacter = await tx.character.update({
-        where: { id: character.id },
-        data: {
-          energy: newEnergy,
-          health: newHealth
-        }
+    // Update character stats
+    const { data: updatedCharacter, error: updateError } = await supabase
+      .from('characters')
+      .update({
+        energy: newEnergy,
+        health: newHealth
       })
+      .eq('id', character.id)
+      .select('*')
+      .single()
 
-      // Reduce inventory quantity or remove item
-      let updatedInventory
-      if (inventoryItem.quantity === 1) {
-        // Remove item completely
-        await tx.characterInventory.delete({
-          where: { id: inventoryId }
-        })
-        updatedInventory = null
-      } else {
-        // Reduce quantity
-        updatedInventory = await tx.characterInventory.update({
-          where: { id: inventoryId },
-          data: { quantity: inventoryItem.quantity - 1 },
-          include: { item: true }
-        })
-      }
+    if (updateError) throw updateError
 
-      // Log the transaction
-      const transaction = await tx.transaction.create({
-        data: {
-          characterId: character.id,
-          type: 'MINE', // We can add 'USE' to the enum later, using MINE for now
-          itemId: inventoryItem.itemId,
-          quantity: 1,
-          description: `Used ${inventoryItem.item.name}${actualEnergyGain > 0 || actualHealthGain > 0 ?
-            ` (${[
-              actualEnergyGain > 0 ? `+${actualEnergyGain} energy` : null,
-              actualHealthGain > 0 ? `+${actualHealthGain} health` : null
-            ].filter(Boolean).join(', ')})` : ''
-            }`
-        }
+    // Reduce inventory quantity or remove item
+    let updatedInventory = null
+    if (inventoryItem.quantity === 1) {
+      // Remove item completely
+      const { error: deleteError } = await supabase
+        .from('character_inventory')
+        .delete()
+        .eq('id', inventoryId)
+
+      if (deleteError) throw deleteError
+    } else {
+      // Reduce quantity
+      const { data: reducedInventory, error: reduceError } = await supabase
+        .from('character_inventory')
+        .update({ quantity: inventoryItem.quantity - 1 })
+        .eq('id', inventoryId)
+        .select('*')
+        .single()
+
+      if (reduceError) throw reduceError
+      updatedInventory = reducedInventory
+      updatedInventory.item = item
+    }
+
+    // Log the transaction
+    const transactionId = randomUUID()
+    const { data: transaction, error: transactionError } = await supabase
+      .from('transactions')
+      .insert({
+        id: transactionId,
+        characterId: character.id,
+        type: 'MINE', // We can add 'USE' to the enum later, using MINE for now
+        itemId: inventoryItem.itemId,
+        quantity: 1,
+        description: `Used ${inventoryItem.item.name}${actualEnergyGain > 0 || actualHealthGain > 0 ?
+          ` (${[
+            actualEnergyGain > 0 ? `+${actualEnergyGain} energy` : null,
+            actualHealthGain > 0 ? `+${actualHealthGain} health` : null
+          ].filter(Boolean).join(', ')})` : ''
+          }`
       })
+      .select('*')
+      .single()
 
-      return {
-        character: updatedCharacter,
-        inventory: updatedInventory,
-        transaction,
-        effects: {
-          energy: actualEnergyGain,
-          health: actualHealthGain
-        }
-      }
-    })
+    if (transactionError) throw transactionError
 
-    // Prepare response
     const responseData = {
       success: true,
       message: `Used ${inventoryItem.item.name}!`,
-      effects: result.effects,
+      effects: {
+        energy: actualEnergyGain,
+        health: actualHealthGain
+      },
       newStats: {
-        energy: result.character.energy,
-        health: result.character.health
+        energy: updatedCharacter.energy,
+        health: updatedCharacter.health
       },
       inventory: {
-        remainingQuantity: result.inventory?.quantity || 0,
-        wasRemoved: !result.inventory
+        remainingQuantity: updatedInventory?.quantity || 0,
+        wasRemoved: !updatedInventory
       }
     }
 

@@ -1,4 +1,4 @@
-// src/components/views/MiningView.tsx
+// src/components/views/MiningView.tsx - FIXED VERSION
 import { Button } from '@/components/ui/button'
 import { Pickaxe, Loader2 } from 'lucide-react'
 import type { Character } from '@/types'
@@ -27,7 +27,16 @@ export function MiningView({ character, loadingItems, onMine }: MiningViewProps)
         </div>
       </div>
 
-      <Button onClick={onMine} className="w-full" disabled={!canMine}>
+      <Button
+        type="button"
+        onClick={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          onMine()
+        }}
+        className="w-full"
+        disabled={!canMine}
+      >
         {isMining ? (
           <>
             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
