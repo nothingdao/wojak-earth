@@ -11,22 +11,22 @@ import { useGameData } from '@/hooks/useGameData'
 import { useGameHandlers } from '@/hooks/useGameHandlers'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { WalletConnectButton } from './components/wallet-connect-button'
-import type { GameView, Location } from '@/types'
+import type { GameView, DatabaseLocation } from '@/types'
+import { LocationPreview } from './components/LocationPreview'
+import { LocalRadio } from './components/LocalRadio'
+
 
 function App() {
   const wallet = useWallet()
   const { character, loading: characterLoading, hasCharacter, refetchCharacter } = usePlayerCharacter()
   const characterActions = useCharacterActions()
-
   const [currentView, setCurrentView] = useState<GameView>('main')
-  const [selectedLocation, setSelectedLocation] = useState<Location | null>(null)
+  const [selectedLocation, setSelectedLocation] = useState<DatabaseLocation | null>(null)
   const [loadingItems, setLoadingItems] = useState<Set<string>>(new Set())
-  const [travelingTo, setTravelingTo] = useState<Location | null>(null)
-
-  // Use the new game data hook
+  const [travelingTo, setTravelingTo] = useState<DatabaseLocation | null>(null)
   const gameData = useGameData(character, currentView, selectedLocation)
 
-  // Initialize game handlers with simplified dependencies
+  // Initialize game handlers
   const {
     handleMining,
     handleTravel,
@@ -104,6 +104,7 @@ function App() {
       <div className="min-h-screen bg-background">
         <GlobalNavbar
           character={null}
+          currentLocation={character?.currentLocation?.name || "Earth"}
           onProfileClick={handleProfileClick}
           onHomeClick={handleHomeClick}
           onMapClick={handleNavMapClick}
@@ -141,41 +142,70 @@ function App() {
     )
   }
 
+
   // Travel animation state
   if (travelingTo) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="text-center max-w-md mx-auto">
           <div className="mb-6">
-            <div className="text-4xl mb-4 animate-bounce">
-              {travelingTo.biome === 'desert' ? '🏜️' :
-                travelingTo.biome === 'urban' ? '🏙️' :
-                  travelingTo.biome === 'plains' ? '🌾' :
-                    travelingTo.locationType === 'BUILDING' ? '🏠' : '🗺️'}
+            {/* SVG Preview of Destination */}
+            <div className="mb-6 flex justify-center">
+              <LocationPreview
+                location={travelingTo}
+                locations={gameData.locations}
+                size={140}
+                animated={true}
+                className="animate-in zoom-in-50 duration-500"
+              />
             </div>
+
             <div className="text-xl font-bold mb-2">Traveling to...</div>
             <div className="text-2xl font-bold text-primary mb-2">{travelingTo.name}</div>
-            <div className="text-muted-foreground mb-4">{travelingTo.description}</div>
+            <div className="text-muted-foreground mb-4 leading-relaxed">{travelingTo.description}</div>
 
-            <div className="w-full bg-muted rounded-full h-2 mb-4 overflow-hidden">
-              <div className="bg-primary h-2 rounded-full animate-pulse"
+            {/* Additional location info */}
+            <div className="mb-4 p-3 bg-muted/30 rounded-lg">
+              <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground">
+                <div className="flex items-center gap-1">
+                  <span>🎯</span>
+                  <span>Level {travelingTo.difficulty}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span>🌍</span>
+                  <span className="capitalize">{travelingTo.biome}</span>
+                </div>
+                {travelingTo.playerCount > 0 && (
+                  <div className="flex items-center gap-1">
+                    <span>👥</span>
+                    <span>{travelingTo.playerCount} players</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="w-full bg-muted rounded-full h-3 mb-4 overflow-hidden">
+              <div className="bg-gradient-to-r from-primary/80 to-primary h-3 rounded-full shadow-sm"
                 style={{
-                  animation: 'travel-progress 1.5s ease-in-out forwards',
+                  animation: 'travel-progress 9.8s ease-in-out forwards',
                   width: '0%'
                 }}></div>
             </div>
 
             <div className="text-sm text-muted-foreground animate-pulse">
-              Preparing for arrival...
+              <div className="flex items-center justify-center gap-2">
+                <span className="animate-spin">⚡</span>
+                <span>Preparing for arrival...</span>
+              </div>
             </div>
           </div>
 
           <style>{`
-            @keyframes travel-progress {
-              0% { width: 0%; }
-              100% { width: 100%; }
-            }
-          `}</style>
+          @keyframes travel-progress {
+            0% { width: 0%; }
+            100% { width: 100%; }
+          }
+        `}</style>
         </div>
       </div>
     )
@@ -235,6 +265,7 @@ function App() {
       <div className="min-h-screen bg-background">
         <GlobalNavbar
           character={character}
+          currentLocation={character?.currentLocation?.name || "Earth"}
           onProfileClick={handleProfileClick}
           onHomeClick={handleHomeClick}
           onMapClick={handleNavMapClick}
@@ -244,6 +275,13 @@ function App() {
 
         <div className="container mx-auto px-4 py-6">
           <div className="max-w-md mx-auto">
+            {/* Add Persistent Radio Bar */}
+            {character && (
+              <div className="mb-4">
+                <LocalRadio locationId={character.currentLocation.id} />
+              </div>
+            )}
+
             <div className="">
               {currentView === 'main' && (
                 <MainView
@@ -295,6 +333,7 @@ function App() {
                   selectedLocation={selectedLocation}
                   chatMessages={gameData.chatMessages}
                   onSendMessage={handleSendMessage}
+                  onAddPresenceMessage={gameData.actions.addPresenceMessage}
                   loading={gameData.loading}
                 />
               )}

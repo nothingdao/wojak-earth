@@ -1,8 +1,8 @@
-// src/components/views/MarketView.tsx - FIXED VERSION
-import { useState } from 'react'
+// src/components/views/MarketView.tsx - LAYOUT FIXED VERSION
 import { Button } from '@/components/ui/button'
 import { Store, Coins, Loader2 } from 'lucide-react'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import type { Character, Location, MarketItem } from '@/types'
 
 interface MarketViewProps {
@@ -22,19 +22,15 @@ export function MarketView({
   loadingItems,
   onPurchase
 }: MarketViewProps) {
-  const [activeTab, setActiveTab] = useState<'local' | 'global'>('local')
+  // Remove useState for activeTab since Tabs component handles it internally
 
   // Determine if we're at a child location (has parent location)
   const currentLoc = selectedLocation || character?.currentLocation
-  const isChildLocation = currentLoc && locations.find(loc =>
-    loc.subLocations?.some(sub => sub.id === currentLoc.id)
-  )
 
   // Filter market items by tab
   const localItems = marketItems.filter(item => item.isLocalSpecialty || false)
   const globalItems = marketItems.filter(item => !item.isLocalSpecialty)
-
-  const activeItems = activeTab === 'local' ? localItems : globalItems
+  const p2pItems: MarketItem[] = [] // Placeholder - will be player-listed items
 
   const renderMarketItem = (marketItem: MarketItem) => {
     const isLoading = loadingItems.has(marketItem.id)
@@ -42,15 +38,18 @@ export function MarketView({
     const canBuy = marketItem.quantity > 0 && canAfford && !isLoading
 
     return (
-      <div key={marketItem.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-        <div className="flex items-center gap-3 flex-1 min-w-0">
+      <div key={marketItem.id} className="w-full">
+        <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg"> {/* Change items-center to items-start */}
+          {/* Icon */}
           <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center text-sm flex-shrink-0">
             {marketItem.item.category === 'HAT' ? '🎩' :
               marketItem.item.category === 'CONSUMABLE' ? '🥤' :
                 marketItem.isLocalSpecialty ? '✨' : '📦'}
           </div>
-          <div className="flex-1 min-w-0">
-            <div className="font-medium flex items-center gap-2">
+
+          {/* Item Details - Allow this to grow and shrink */}
+          <div className="flex-1 min-w-0"> {/* Remove overflow-hidden */}
+            <div className="font-medium flex items-center gap-2 mb-1 flex-wrap"> {/* Add flex-wrap */}
               <span className="truncate">{marketItem.item.name}</span>
               {marketItem.isLocalSpecialty && (
                 <span className="text-xs bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded-full flex-shrink-0">
@@ -58,130 +57,150 @@ export function MarketView({
                 </span>
               )}
             </div>
-            <div className="text-sm text-muted-foreground truncate">{marketItem.item.description}</div>
+            <div className="text-sm text-muted-foreground mb-1 break-words"> {/* Change truncate to break-words */}
+              {marketItem.item.description}
+            </div>
             <div className="text-xs text-muted-foreground capitalize">
               {marketItem.item.rarity} • Sold by {marketItem.isSystemItem ? 'System' : marketItem.seller?.name}
             </div>
           </div>
-        </div>
-        <div className="text-right flex-shrink-0 ml-3">
-          <div className={`font-bold flex items-center gap-1 justify-end ${!canAfford && marketItem.quantity > 0 ? 'text-red-500' : ''
-            }`}>
-            <Coins className="w-3 h-3" />
-            {marketItem.price}
+
+          {/* Price and Purchase Section - Fixed width */}
+          <div className="flex flex-col items-end gap-1 flex-shrink-0 min-w-[80px]"> {/* Change w-20 to min-w-[80px] */}
+            {/* Price */}
+            <div className={`font-bold flex items-center gap-1 text-sm ${!canAfford && marketItem.quantity > 0 ? 'text-red-500' : ''}`}>
+              <Coins className="w-3 h-3" />
+              <span>{marketItem.price}</span> {/* Remove truncate */}
+            </div>
+
+            {/* Quantity */}
+            <div className="text-xs text-muted-foreground text-center">
+              Qty: {marketItem.quantity > 0 ? marketItem.quantity : 'Out'}
+            </div>
+
+            {/* Error Message */}
+            {!canAfford && marketItem.quantity > 0 && (
+              <div className="text-xs text-red-500 text-center leading-tight"> {/* Add leading-tight */}
+                Need {marketItem.price - character.coins} more
+              </div>
+            )}
+
+            {/* Buy Button */}
+            <Button
+              type="button"
+              size="sm"
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                onPurchase(marketItem.id, marketItem.price, marketItem.item.name)
+              }}
+              disabled={!canBuy}
+              className="text-xs w-full h-7"
+              title={
+                marketItem.quantity === 0 ? 'Out of stock' :
+                  !canAfford ? `Need ${marketItem.price - character.coins} more coins` :
+                    'Purchase this item'
+              }
+            >
+              {isLoading ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : marketItem.quantity === 0 ? 'Out' :
+                !canAfford ? 'Poor' : 'Buy'}
+            </Button>
           </div>
-          <div className="text-xs text-muted-foreground mb-1">
-            Qty: {marketItem.quantity > 0 ? marketItem.quantity : 'Out of Stock'}
-          </div>
-          {!canAfford && marketItem.quantity > 0 && (
-            <div className="text-xs text-red-500 mb-1">Not enough coins</div>
-          )}
-          <Button
-            type="button"
-            size="sm"
-            onClick={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
-              onPurchase(marketItem.id, marketItem.price, marketItem.item.name)
-            }}
-            disabled={!canBuy}
-            className="text-xs"
-            title={
-              marketItem.quantity === 0 ? 'Out of stock' :
-                !canAfford ? `Need ${marketItem.price - character.coins} more coins` :
-                  'Purchase this item'
-            }
-          >
-            {isLoading ? (
-              <Loader2 className="w-3 h-3 animate-spin" />
-            ) : marketItem.quantity === 0 ? 'Sold Out' :
-              !canAfford ? 'No Coins' : 'Buy'}
-          </Button>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-4 max-w-full">
+    <div className="space-y-4 w-full max-w-full overflow-hidden">
       <div className="text-center">
         <h3 className="text-lg font-semibold">Market - {currentLoc?.name}</h3>
         <div className="text-sm text-muted-foreground flex items-center justify-center gap-2 mt-1">
           <Coins className="w-4 h-4" />
           <span>You have {character.coins} coins</span>
         </div>
-        {isChildLocation && (
-          <p className="text-xs text-muted-foreground mt-1">
-            Unique local items + supplies from the main settlement
-          </p>
-        )}
       </div>
 
-      {/* Tab Navigation - only show if child location */}
-      {isChildLocation && (
-        <div className="flex border-b">
-          <button
-            type="button"
-            className={`flex-1 py-2 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'local'
-              ? 'border-primary text-primary bg-primary/5'
-              : 'border-transparent text-muted-foreground hover:text-foreground'
-              }`}
-            onClick={(e) => {
-              e.preventDefault()
-              setActiveTab('local')
-            }}
-          >
-            Local Specialties
+      {/* Compact Shadcn Tabs */}
+      <Tabs defaultValue="local" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="local" className="text-xs">
+            Local
             {localItems.length > 0 && (
-              <span className="ml-1 text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded-full">
+              <span className="ml-1 text-xs bg-primary/20 text-primary px-1 rounded">
                 {localItems.length}
               </span>
             )}
-          </button>
-          <button
-            type="button"
-            className={`flex-1 py-2 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'global'
-              ? 'border-primary text-primary bg-primary/5'
-              : 'border-transparent text-muted-foreground hover:text-foreground'
-              }`}
-            onClick={(e) => {
-              e.preventDefault()
-              setActiveTab('global')
-            }}
-          >
-            Global Market
+          </TabsTrigger>
+          <TabsTrigger value="global" className="text-xs">
+            Global
             {globalItems.length > 0 && (
-              <span className="ml-1 text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">
+              <span className="ml-1 text-xs bg-muted-foreground/20 px-1 rounded">
                 {globalItems.length}
               </span>
             )}
-          </button>
-        </div>
-      )}
+          </TabsTrigger>
+          <TabsTrigger value="p2p" className="text-xs">
+            P2P
+            <span className="ml-1 text-xs opacity-50">(Soon)</span>
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Market Items - Scrollable Container */}
-      <ScrollArea className="h-96">
-        <div className="space-y-2">
-          {activeItems.length > 0 ? (
-            activeItems.map(renderMarketItem)
-          ) : (
-            <div className="bg-muted/30 p-8 rounded-lg text-center text-muted-foreground">
-              <Store className="w-12 h-12 mx-auto mb-2" />
-              {activeTab === 'local' ? (
-                <>
-                  No local specialties available.<br />
-                  Check back later or try the global market.
-                </>
-              ) : (
-                <>
-                  No items available in the global market.<br />
-                  The merchants might be restocking.
-                </>
-              )}
-            </div>
-          )}
-        </div>
-      </ScrollArea>
+        {/* Local Tab Content */}
+        <TabsContent value="local" className="mt-4">
+          <div className="h-[400px] w-full border rounded-lg">
+            <ScrollArea className="h-full w-full p-2">
+              <div className="space-y-3">
+                {localItems.length > 0 ? (
+                  localItems.map(renderMarketItem)
+                ) : (
+                  <div className="bg-muted/30 p-8 rounded-lg text-center text-muted-foreground">
+                    <Store className="w-12 h-12 mx-auto mb-2" />
+                    No local specialties available.<br />
+                    <span className="text-xs">These are unique items specific to this location.</span>
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+          </div>
+        </TabsContent>
+
+        {/* Global Tab Content */}
+        <TabsContent value="global" className="mt-4">
+          <div className="h-[400px] w-full border rounded-lg">
+            <ScrollArea className="h-full w-full p-2">
+              <div className="space-y-3">
+                {globalItems.length > 0 ? (
+                  globalItems.map(renderMarketItem)
+                ) : (
+                  <div className="bg-muted/30 p-8 rounded-lg text-center text-muted-foreground">
+                    <Store className="w-12 h-12 mx-auto mb-2" />
+                    No items available in the global market.<br />
+                    <span className="text-xs">Check back later as merchants restock.</span>
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+          </div>
+        </TabsContent>
+
+        {/* P2P Tab Content */}
+        <TabsContent value="p2p" className="mt-4">
+          <div className="h-[400px] w-full border rounded-lg">
+            <ScrollArea className="h-full w-full p-2">
+              <div className="space-y-3">
+                <div className="bg-muted/30 p-8 rounded-lg text-center text-muted-foreground">
+                  <Store className="w-12 h-12 mx-auto mb-2" />
+                  Player Market Coming Soon!<br />
+                  <span className="text-xs">Players will be able to list items from their inventory in local markets.</span>
+                </div>
+              </div>
+            </ScrollArea>
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

@@ -55,22 +55,42 @@ export interface Character {
   }>
 }
 
+// Updated Location interface to match database schema
 export interface Location {
   id: string
   name: string
   description: string
-  locationType: string
-  biome?: string
+  imageUrl?: string
+  parentLocationId?: string
+  locationType: 'REGION' | 'BUILDING' | 'AREA'
+  biome: string
   difficulty: number
+  mapX?: number
+  mapY?: number
   playerCount: number
   lastActive?: string
   hasMarket: boolean
   hasMining: boolean
+  hasTravel: boolean
   hasChat: boolean
+  chatScope: 'LOCAL' | 'REGIONAL' | 'GLOBAL'
   welcomeMessage?: string
   lore?: string
+  minLevel?: number
+  entryCost?: number
+  isPrivate: boolean
+  createdAt: Date
+  updatedAt: Date
+  svgpathid: string
+  theme: string
+  // New fields from migration
+  isExplored?: boolean
+  status?: 'explored' | 'unexplored' | 'locked'
   subLocations?: Location[]
 }
+
+// Alias for backward compatibility
+export type DatabaseLocation = Location
 
 export interface MarketItem {
   id: string
@@ -188,6 +208,8 @@ export type BiomeType =
   | 'ossuary'
   | 'electromagnetic'
   | 'wilderness'
+  | 'alpine'
+  | 'volcanic'
 
 export interface MapRegion {
   name: string
@@ -216,6 +238,9 @@ export interface RegionInteraction {
 }
 
 export interface LocationTheme {
+  strokeClass: string
+  hoverClass: string
+  fillClass: string
   id: string
   name: string
   colors: {
@@ -230,6 +255,7 @@ export interface LocationTheme {
   }
 }
 
+// Updated MapLocation interface to work with database
 export interface MapLocation {
   id: string
   name: string
@@ -240,4 +266,69 @@ export interface MapLocation {
   isExplored: boolean
   isPlayerHere: boolean
   status: 'explored' | 'unexplored' | 'locked' | 'gm-only'
+}
+
+// New types for database-driven travel system
+export interface TravelValidation {
+  allowed: boolean
+  reason?: string
+  cost?: number
+}
+
+export interface TravelRestriction {
+  type: 'level' | 'cost' | 'private' | 'disabled' | 'exploration'
+  value?: number
+  message: string
+}
+
+// Theme system types for database integration
+export interface ThemeColors {
+  fillClass: string
+  hoverClass: string
+  strokeClass: string
+  primaryColor: string
+  secondaryColor: string
+  accentColor: string
+}
+
+export interface LocationThemeDefinition {
+  name: string
+  fillClass: string
+  hoverClass: string
+  strokeClass: string
+  primaryColor: string
+  secondaryColor: string
+  accentColor: string
+  backgroundColor?: string
+  borderColor?: string
+}
+
+// Travel system types
+export interface TravelOptions {
+  characterId: string
+  destinationId: string
+  payEntryCost?: boolean
+}
+
+export interface TravelResult {
+  success: boolean
+  message: string
+  newLocation?: Location
+  costPaid?: number
+}
+
+// Location query types for API
+export interface LocationFilters {
+  biome?: string
+  minDifficulty?: number
+  maxDifficulty?: number
+  hasTravel?: boolean
+  isExplored?: boolean
+  accessible?: boolean // Only locations character can access
+}
+
+export interface LocationsResponse {
+  locations: Location[]
+  totalCount: number
+  accessibleCount?: number
 }

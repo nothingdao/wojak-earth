@@ -1,6 +1,7 @@
+// themes/locationThemes.ts
+// these are not defined in the database. We just need to be able to see ids matching between the database and the themes and the map display compoenents.
 import type { LocationTheme } from '@/types'
 
-// themes/locationThemes.ts - All visual themes including Alpine
 export const LOCATION_THEMES: Record<string, LocationTheme> = {
   plains: {
     id: 'plains',
@@ -12,6 +13,9 @@ export const LOCATION_THEMES: Record<string, LocationTheme> = {
     },
     opacity: 0.8,
     effects: {},
+    strokeClass: '',
+    hoverClass: '',
+    fillClass: '',
   },
 
   invisible: {
@@ -24,6 +28,9 @@ export const LOCATION_THEMES: Record<string, LocationTheme> = {
     },
     opacity: 0.8,
     effects: {},
+    strokeClass: '',
+    hoverClass: '',
+    fillClass: '',
   },
 
   volcanic: {
@@ -38,6 +45,9 @@ export const LOCATION_THEMES: Record<string, LocationTheme> = {
     effects: {
       filter: 'hue-rotate(15deg) brightness(1.1)',
     },
+    strokeClass: '',
+    hoverClass: '',
+    fillClass: '',
   },
 
   wilderness: {
@@ -50,6 +60,9 @@ export const LOCATION_THEMES: Record<string, LocationTheme> = {
     },
     opacity: 0.8,
     effects: {},
+    strokeClass: '',
+    hoverClass: '',
+    fillClass: '',
   },
 
   underground: {
@@ -62,6 +75,9 @@ export const LOCATION_THEMES: Record<string, LocationTheme> = {
     },
     opacity: 0.8,
     effects: {},
+    strokeClass: '',
+    hoverClass: '',
+    fillClass: '',
   },
 
   alpine: {
@@ -76,6 +92,9 @@ export const LOCATION_THEMES: Record<string, LocationTheme> = {
     effects: {
       filter: 'brightness(1.1)',
     },
+    strokeClass: '',
+    hoverClass: '',
+    fillClass: '',
   },
 
   desert: {
@@ -90,6 +109,9 @@ export const LOCATION_THEMES: Record<string, LocationTheme> = {
     effects: {
       filter: 'brightness(0.9)',
     },
+    strokeClass: '',
+    hoverClass: '',
+    fillClass: '',
   },
 
   urban: {
@@ -102,6 +124,9 @@ export const LOCATION_THEMES: Record<string, LocationTheme> = {
     },
     opacity: 0.8,
     effects: {},
+    strokeClass: '',
+    hoverClass: '',
+    fillClass: '',
   },
 
   digital: {
@@ -116,6 +141,9 @@ export const LOCATION_THEMES: Record<string, LocationTheme> = {
     effects: {
       filter: 'hue-rotate(10deg)',
     },
+    strokeClass: '',
+    hoverClass: '',
+    fillClass: '',
   },
 
   temporal: {
@@ -130,6 +158,9 @@ export const LOCATION_THEMES: Record<string, LocationTheme> = {
     effects: {
       filter: 'hue-rotate(30deg)',
     },
+    strokeClass: '',
+    hoverClass: '',
+    fillClass: '',
   },
 
   ossuary: {
@@ -144,6 +175,9 @@ export const LOCATION_THEMES: Record<string, LocationTheme> = {
     effects: {
       filter: 'sepia(0.3)',
     },
+    strokeClass: '',
+    hoverClass: '',
+    fillClass: '',
   },
 
   electromagnetic: {
@@ -158,6 +192,9 @@ export const LOCATION_THEMES: Record<string, LocationTheme> = {
     effects: {
       filter: 'contrast(1.1)',
     },
+    strokeClass: '',
+    hoverClass: '',
+    fillClass: '',
   },
 
   // Special states
@@ -172,6 +209,9 @@ export const LOCATION_THEMES: Record<string, LocationTheme> = {
     effects: {
       filter: 'grayscale(0.8) blur(4px)',
     },
+    strokeClass: '',
+    hoverClass: '',
+    fillClass: '',
   },
 
   // In Locked and GM Only states
@@ -186,6 +226,9 @@ export const LOCATION_THEMES: Record<string, LocationTheme> = {
     effects: {
       filter: 'grayscale(1)',
     },
+    strokeClass: '',
+    hoverClass: '',
+    fillClass: '',
   },
 
   gmOnly: {
@@ -199,5 +242,8 @@ export const LOCATION_THEMES: Record<string, LocationTheme> = {
     effects: {
       filter: 'grayscale(0.8) contrast(0.5)',
     },
+    strokeClass: '',
+    hoverClass: '',
+    fillClass: '',
   },
 }

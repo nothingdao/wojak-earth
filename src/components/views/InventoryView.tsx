@@ -1,6 +1,6 @@
-// src/components/views/InventoryView.tsx - FIXED VERSION
-import { useState } from 'react'
+// src/components/views/InventoryView.tsx - SHADCN TABS VERSION
 import { Button } from '@/components/ui/button'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Loader2, Zap, Heart } from 'lucide-react'
 import {
   GiBackpack,
@@ -27,8 +27,6 @@ interface InventoryViewProps {
   onEquipItem: (inventoryId: string, isEquipped: boolean) => void
 }
 
-type InventoryTab = 'equipment' | 'consumables' | 'materials' | 'all'
-
 // Equipment slot mapping
 const EQUIPMENT_SLOTS = {
   HAT: { name: 'Head', icon: GiCrown, slot: 'head' },
@@ -43,8 +41,6 @@ export function InventoryView({
   onUseItem,
   onEquipItem
 }: InventoryViewProps) {
-  const [activeTab, setActiveTab] = useState<InventoryTab>('all')
-
   // Categorize inventory items
   const equipmentItems = character.inventory?.filter(inv =>
     ['HAT', 'CLOTHING', 'ACCESSORY', 'TOOL'].includes(inv.item.category)
@@ -57,17 +53,6 @@ export function InventoryView({
   const materialItems = character.inventory?.filter(inv =>
     inv.item.category === 'MATERIAL'
   ) || []
-
-  // Get items based on active tab
-  const getActiveItems = () => {
-    switch (activeTab) {
-      case 'equipment': return equipmentItems
-      case 'consumables': return consumableItems
-      case 'materials': return materialItems
-      case 'all': return character.inventory || []
-      default: return character.inventory || []
-    }
-  }
 
   // Get equipped items by slot
   const getEquippedBySlot = (slot: string) => {
@@ -291,62 +276,113 @@ export function InventoryView({
         </div>
       </div>
 
-      {/* Tab Navigation */}
-      <div className="overflow-x-auto border-b">
-        <div className="flex min-w-max">
-          {[
-            { id: 'all' as const, label: 'All', count: character.inventory?.length || 0, icon: GiCube },
-            { id: 'equipment' as const, label: 'Equipment', count: equipmentItems.length, icon: GiSpade },
-            { id: 'consumables' as const, label: 'Consumables', count: consumableItems.length, icon: GiWaterBottle },
-            { id: 'materials' as const, label: 'Materials', count: materialItems.length, icon: GiRock },
-          ].map(tab => {
-            const IconComponent = tab.icon
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                className={`py-2 px-4 text-sm font-medium border-b-2 transition-colors flex items-center gap-1 whitespace-nowrap ${activeTab === tab.id
-                  ? 'border-primary text-primary bg-primary/5'
-                  : 'border-transparent text-muted-foreground hover:text-foreground'
-                  }`}
-                onClick={(e) => {
-                  e.preventDefault()
-                  setActiveTab(tab.id)
-                }}
-              >
-                <IconComponent className="w-4 h-4" />
-                <span>{tab.label}</span>
-                {tab.count > 0 && (
-                  <span className="ml-1 text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">
-                    {tab.count}
-                  </span>
-                )}
-              </button>
-            )
-          })}
-        </div>
-      </div>
+      {/* Compact Shadcn Tabs */}
+      <Tabs defaultValue="all" className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="all" className="text-xs">
+            <GiCube className="w-3 h-3 mr-1" />
+            All
+            {character.inventory?.length > 0 && (
+              <span className="ml-1 text-xs bg-primary/20 text-primary px-1 rounded">
+                {character.inventory.length}
+              </span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="equipment" className="text-xs">
+            <GiSpade className="w-3 h-3 mr-1" />
+            Gear
+            {equipmentItems.length > 0 && (
+              <span className="ml-1 text-xs bg-primary/20 text-primary px-1 rounded">
+                {equipmentItems.length}
+              </span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="consumables" className="text-xs">
+            <GiWaterBottle className="w-3 h-3 mr-1" />
+            Use
+            {consumableItems.length > 0 && (
+              <span className="ml-1 text-xs bg-primary/20 text-primary px-1 rounded">
+                {consumableItems.length}
+              </span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="materials" className="text-xs">
+            <GiRock className="w-3 h-3 mr-1" />
+            Mats
+            {materialItems.length > 0 && (
+              <span className="ml-1 text-xs bg-primary/20 text-primary px-1 rounded">
+                {materialItems.length}
+              </span>
+            )}
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Equipment Slots - only show on equipment tab or all tab */}
-      {(activeTab === 'equipment' || activeTab === 'all') && equipmentItems.length > 0 && renderEquipmentSlots()}
-
-      {/* Inventory Items */}
-      <ScrollArea className="h-96">
-        <div className="space-y-2">
-          {getActiveItems().length > 0 ? (
-            getActiveItems().map(renderInventoryItem)
-          ) : (
-            <div className="bg-muted/50 p-8 rounded-lg text-center text-muted-foreground">
-              <GiBackpack className="w-12 h-12 mx-auto mb-2" />
-              {activeTab === 'all' ? (
-                <>Your bag is empty.<br />Start mining or visit the market!</>
+        {/* All Tab Content */}
+        <TabsContent value="all" className="mt-4">
+          {equipmentItems.length > 0 && renderEquipmentSlots()}
+          <ScrollArea className="h-96">
+            <div className="space-y-2">
+              {character.inventory?.length > 0 ? (
+                character.inventory.map(renderInventoryItem)
               ) : (
-                <>No {activeTab} items found.<br />Try a different tab or go mining!</>
+                <div className="bg-muted/50 p-8 rounded-lg text-center text-muted-foreground">
+                  <GiBackpack className="w-12 h-12 mx-auto mb-2" />
+                  Your bag is empty.<br />Start mining or visit the market!
+                </div>
               )}
             </div>
-          )}
-        </div>
-      </ScrollArea>
+          </ScrollArea>
+        </TabsContent>
+
+        {/* Equipment Tab Content */}
+        <TabsContent value="equipment" className="mt-4">
+          {equipmentItems.length > 0 && renderEquipmentSlots()}
+          <ScrollArea className="h-96">
+            <div className="space-y-2">
+              {equipmentItems.length > 0 ? (
+                equipmentItems.map(renderInventoryItem)
+              ) : (
+                <div className="bg-muted/50 p-8 rounded-lg text-center text-muted-foreground">
+                  <GiSpade className="w-12 h-12 mx-auto mb-2" />
+                  No equipment items found.<br />Try mining or visit the market!
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+        </TabsContent>
+
+        {/* Consumables Tab Content */}
+        <TabsContent value="consumables" className="mt-4">
+          <ScrollArea className="h-96">
+            <div className="space-y-2">
+              {consumableItems.length > 0 ? (
+                consumableItems.map(renderInventoryItem)
+              ) : (
+                <div className="bg-muted/50 p-8 rounded-lg text-center text-muted-foreground">
+                  <GiWaterBottle className="w-12 h-12 mx-auto mb-2" />
+                  No consumable items found.<br />Visit the market for energy drinks!
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+        </TabsContent>
+
+        {/* Materials Tab Content */}
+        <TabsContent value="materials" className="mt-4">
+          <ScrollArea className="h-96">
+            <div className="space-y-2">
+              {materialItems.length > 0 ? (
+                materialItems.map(renderInventoryItem)
+              ) : (
+                <div className="bg-muted/50 p-8 rounded-lg text-center text-muted-foreground">
+                  <GiRock className="w-12 h-12 mx-auto mb-2" />
+                  No material items found.<br />Go mining to find materials!
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

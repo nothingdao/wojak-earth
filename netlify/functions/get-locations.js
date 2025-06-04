@@ -60,6 +60,15 @@ export const handler = async (event, context) => {
         hasChat: location.hasChat,
         welcomeMessage: location.welcomeMessage,
         lore: location.lore,
+        svgpathid: location.svgpathid,
+        theme: location.theme,
+
+        // Add missing fields that DatabaseMapStyling expects
+        hasTravel: location.hasTravel ?? true, // Default to true if not set
+        isExplored: location.isExplored ?? true, // Default to true if not set
+        isPrivate: location.isPrivate ?? false, // Default to false if not set
+        minLevel: location.minLevel || null, // Minimum level requirement
+        entryCost: location.entryCost || null, // Entry cost in coins
 
         subLocations: location.subLocations?.map(subLoc => ({
           id: subLoc.id,
@@ -72,7 +81,17 @@ export const handler = async (event, context) => {
           hasMining: subLoc.hasMining,
           hasChat: subLoc.hasChat,
           welcomeMessage: subLoc.welcomeMessage,
-          parentLocationId: subLoc.parentLocationId
+          parentLocationId: subLoc.parentLocationId,
+
+          // Add missing fields for sub-locations too
+          hasTravel: subLoc.hasTravel ?? true,
+          isExplored: subLoc.isExplored ?? true,
+          isPrivate: subLoc.isPrivate ?? false,
+          minLevel: subLoc.minLevel || null,
+          entryCost: subLoc.entryCost || null,
+          svgpathid: subLoc.svgpathid,
+          theme: subLoc.theme,
+          biome: subLoc.biome
         })) || []
       }
     })
@@ -94,7 +113,8 @@ export const handler = async (event, context) => {
       headers,
       body: JSON.stringify({
         error: 'Internal server error',
-        message: 'Failed to fetch locations'
+        message: 'Failed to fetch locations',
+        details: error.message
       })
     }
   }

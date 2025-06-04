@@ -1,273 +1,969 @@
-// scripts/restockMarkets.ts - Selective market restocking with multiple modes
+// scripts/restockMarkets.ts - Biome-aware market restocking with themed items
 import { createClient } from '@supabase/supabase-js'
 import { randomUUID } from 'crypto'
-import { MARKET_SEED_DATA } from '../config/seedData'
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL!,
-  process.env.VITE_SUPABASE_ANON_KEY! // Using anon key for now
+  process.env.VITE_SUPABASE_ANON_KEY!
 )
 
-interface ItemRestockConfig {
+// ============================================================================
+// BIOME-SPECIFIC MARKET CONFIGURATIONS
+// ============================================================================
+
+interface MarketItem {
   itemName: string
-  locations: string[]
+  basePrice: number
   quantity: number
-  price?: number // Optional - will use existing price if not specified
-  mode: 'add' | 'replace' | 'update' // How to handle existing stock
+  restockFrequency: 'high' | 'medium' | 'low' // How often to restock
 }
 
-interface GeneralRestockConfig {
-  minQuantity: number // Restock when below this
-  maxQuantity: number // Restock up to this amount
-  priceVariation: number // ±% price variation from base
+const BIOME_MARKET_CONFIGS: Record<string, MarketItem[]> = {
+  // ===== PLAINS BIOME =====
+  plains: [
+    // Basic supplies for beginners
+    {
+      itemName: 'Energy Drink',
+      basePrice: 8,
+      quantity: 30,
+      restockFrequency: 'high',
+    },
+    {
+      itemName: 'Health Potion',
+      basePrice: 15,
+      quantity: 20,
+      restockFrequency: 'high',
+    },
+    {
+      itemName: 'Ration Pack',
+      basePrice: 12,
+      quantity: 25,
+      restockFrequency: 'high',
+    },
+    {
+      itemName: 'Basic Pickaxe',
+      basePrice: 25,
+      quantity: 15,
+      restockFrequency: 'medium',
+    },
+    {
+      itemName: 'Miners Hat',
+      basePrice: 30,
+      quantity: 10,
+      restockFrequency: 'medium',
+    },
+    {
+      itemName: 'Work Gloves',
+      basePrice: 20,
+      quantity: 12,
+      restockFrequency: 'medium',
+    },
+    {
+      itemName: 'Multi-Tool',
+      basePrice: 45,
+      quantity: 8,
+      restockFrequency: 'low',
+    },
+    {
+      itemName: 'Survival Pack Harness',
+      basePrice: 35,
+      quantity: 6,
+      restockFrequency: 'low',
+    },
+  ],
+
+  // ===== ALPINE BIOME =====
+  alpine: [
+    // Cold weather gear and mountain supplies
+    {
+      itemName: 'Hot Cocoa',
+      basePrice: 10,
+      quantity: 25,
+      restockFrequency: 'high',
+    },
+    {
+      itemName: 'Thermal Undersuit',
+      basePrice: 120,
+      quantity: 5,
+      restockFrequency: 'low',
+    },
+    {
+      itemName: 'Ice Walker Boots',
+      basePrice: 60,
+      quantity: 8,
+      restockFrequency: 'medium',
+    },
+    {
+      itemName: 'Frostbite Cloak',
+      basePrice: 90,
+      quantity: 6,
+      restockFrequency: 'medium',
+    },
+    {
+      itemName: 'Ironwood Planks',
+      basePrice: 40,
+      quantity: 15,
+      restockFrequency: 'medium',
+    },
+    {
+      itemName: 'Frost Crystal',
+      basePrice: 75,
+      quantity: 8,
+      restockFrequency: 'low',
+    },
+    {
+      itemName: 'Energy Drink',
+      basePrice: 10,
+      quantity: 20,
+      restockFrequency: 'medium',
+    },
+    {
+      itemName: 'Health Potion',
+      basePrice: 18,
+      quantity: 15,
+      restockFrequency: 'medium',
+    },
+  ],
+
+  // ===== UNDERGROUND BIOME =====
+  underground: [
+    // Mining and fungal network items
+    {
+      itemName: 'Crystal Shard',
+      basePrice: 50,
+      quantity: 12,
+      restockFrequency: 'medium',
+    },
+    {
+      itemName: 'Neural Spores',
+      basePrice: 25,
+      quantity: 20,
+      restockFrequency: 'medium',
+    },
+    {
+      itemName: 'Mycelium Thread',
+      basePrice: 15,
+      quantity: 25,
+      restockFrequency: 'high',
+    },
+    {
+      itemName: 'Mushroom Stew',
+      basePrice: 20,
+      quantity: 18,
+      restockFrequency: 'high',
+    },
+    {
+      itemName: 'Network Interface',
+      basePrice: 80,
+      quantity: 6,
+      restockFrequency: 'low',
+    },
+    {
+      itemName: 'Spore Mask',
+      basePrice: 35,
+      quantity: 10,
+      restockFrequency: 'medium',
+    },
+    {
+      itemName: 'Symbiotic Armor',
+      basePrice: 150,
+      quantity: 4,
+      restockFrequency: 'low',
+    },
+    {
+      itemName: 'Miners Hat',
+      basePrice: 35,
+      quantity: 8,
+      restockFrequency: 'medium',
+    },
+  ],
+
+  // ===== URBAN BIOME =====
+  urban: [
+    // High-tech city gear
+    {
+      itemName: 'Data Chip',
+      basePrice: 30,
+      quantity: 20,
+      restockFrequency: 'high',
+    },
+    {
+      itemName: 'Bandwidth Booster',
+      basePrice: 45,
+      quantity: 15,
+      restockFrequency: 'medium',
+    },
+    {
+      itemName: 'Cyber Jacket',
+      basePrice: 100,
+      quantity: 8,
+      restockFrequency: 'low',
+    },
+    {
+      itemName: 'Cyberpunk Shades',
+      basePrice: 70,
+      quantity: 10,
+      restockFrequency: 'medium',
+    },
+    {
+      itemName: 'Neon Visor',
+      basePrice: 85,
+      quantity: 6,
+      restockFrequency: 'low',
+    },
+    {
+      itemName: 'Hacking Toolkit',
+      basePrice: 120,
+      quantity: 5,
+      restockFrequency: 'low',
+    },
+    {
+      itemName: 'Energy Drink',
+      basePrice: 12,
+      quantity: 25,
+      restockFrequency: 'high',
+    },
+    {
+      itemName: 'Multi-Tool',
+      basePrice: 50,
+      quantity: 12,
+      restockFrequency: 'medium',
+    },
+  ],
+
+  // ===== DIGITAL BIOME =====
+  digital: [
+    // Glitch realm artifacts
+    {
+      itemName: 'Pixel Dust',
+      basePrice: 8,
+      quantity: 30,
+      restockFrequency: 'high',
+    },
+    {
+      itemName: 'Fragmented Code',
+      basePrice: 60,
+      quantity: 12,
+      restockFrequency: 'medium',
+    },
+    {
+      itemName: 'Buffer Overflow Potion',
+      basePrice: 200,
+      quantity: 3,
+      restockFrequency: 'low',
+    },
+    {
+      itemName: 'Glitch Goggles',
+      basePrice: 75,
+      quantity: 8,
+      restockFrequency: 'medium',
+    },
+    {
+      itemName: 'Error Handler',
+      basePrice: 90,
+      quantity: 6,
+      restockFrequency: 'low',
+    },
+    {
+      itemName: 'Rare Floppy Disk',
+      basePrice: 500,
+      quantity: 1,
+      restockFrequency: 'low',
+    },
+    {
+      itemName: 'Data Armor Plating',
+      basePrice: 180,
+      quantity: 4,
+      restockFrequency: 'low',
+    },
+  ],
+
+  // ===== DESERT BIOME =====
+  desert: [
+    // Survival gear for harsh conditions
+    {
+      itemName: 'Water Purification Tablet',
+      basePrice: 25,
+      quantity: 20,
+      restockFrequency: 'high',
+    },
+    {
+      itemName: 'Desert Wrap',
+      basePrice: 30,
+      quantity: 15,
+      restockFrequency: 'medium',
+    },
+    {
+      itemName: 'Sandstorm Goggles',
+      basePrice: 40,
+      quantity: 12,
+      restockFrequency: 'medium',
+    },
+    {
+      itemName: 'Heat Dispersal Vest',
+      basePrice: 85,
+      quantity: 8,
+      restockFrequency: 'low',
+    },
+    {
+      itemName: 'Dune Boots',
+      basePrice: 35,
+      quantity: 10,
+      restockFrequency: 'medium',
+    },
+    {
+      itemName: 'Ancient Artifact',
+      basePrice: 750,
+      quantity: 1,
+      restockFrequency: 'low',
+    },
+    {
+      itemName: 'Energy Drink',
+      basePrice: 15,
+      quantity: 18,
+      restockFrequency: 'medium',
+    },
+    {
+      itemName: 'Ration Pack',
+      basePrice: 18,
+      quantity: 15,
+      restockFrequency: 'medium',
+    },
+  ],
+
+  // ===== TEMPORAL BIOME =====
+  temporal: [
+    // Time-related artifacts
+    {
+      itemName: 'Time Shard',
+      basePrice: 80,
+      quantity: 8,
+      restockFrequency: 'medium',
+    },
+    {
+      itemName: 'Temporal Stabilizer',
+      basePrice: 40,
+      quantity: 12,
+      restockFrequency: 'medium',
+    },
+    {
+      itemName: 'Chronometer Watch',
+      basePrice: 120,
+      quantity: 5,
+      restockFrequency: 'low',
+    },
+    {
+      itemName: 'Causality Loop',
+      basePrice: 200,
+      quantity: 3,
+      restockFrequency: 'low',
+    },
+    {
+      itemName: 'Paradox Engine',
+      basePrice: 1000,
+      quantity: 1,
+      restockFrequency: 'low',
+    },
+    {
+      itemName: 'Temporal Flux',
+      basePrice: 1500,
+      quantity: 1,
+      restockFrequency: 'low',
+    },
+  ],
+
+  // ===== OSSUARY BIOME =====
+  ossuary: [
+    // Bone and calcium items
+    {
+      itemName: 'Calcium Crystals',
+      basePrice: 35,
+      quantity: 18,
+      restockFrequency: 'medium',
+    },
+    {
+      itemName: 'Bone Meal',
+      basePrice: 20,
+      quantity: 25,
+      restockFrequency: 'high',
+    },
+    {
+      itemName: 'Marrow Extract',
+      basePrice: 65,
+      quantity: 10,
+      restockFrequency: 'medium',
+    },
+    {
+      itemName: 'Living Bone Tools',
+      basePrice: 95,
+      quantity: 6,
+      restockFrequency: 'low',
+    },
+    {
+      itemName: 'Skeletal Framework',
+      basePrice: 110,
+      quantity: 5,
+      restockFrequency: 'low',
+    },
+    {
+      itemName: 'Fossil Fragment',
+      basePrice: 150,
+      quantity: 4,
+      restockFrequency: 'low',
+    },
+    {
+      itemName: 'Health Potion',
+      basePrice: 22,
+      quantity: 12,
+      restockFrequency: 'medium',
+    },
+  ],
+
+  // ===== ELECTROMAGNETIC BIOME =====
+  electromagnetic: [
+    // Static and signal items
+    {
+      itemName: 'Static Cling',
+      basePrice: 12,
+      quantity: 20,
+      restockFrequency: 'high',
+    },
+    {
+      itemName: 'Radio Wave',
+      basePrice: 28,
+      quantity: 15,
+      restockFrequency: 'medium',
+    },
+    {
+      itemName: 'Static Shock Drink',
+      basePrice: 18,
+      quantity: 20,
+      restockFrequency: 'high',
+    },
+    {
+      itemName: 'White Noise Generator',
+      basePrice: 75,
+      quantity: 8,
+      restockFrequency: 'medium',
+    },
+    {
+      itemName: 'Frequency Modulator',
+      basePrice: 120,
+      quantity: 5,
+      restockFrequency: 'low',
+    },
+    {
+      itemName: 'Signal Booster Helmet',
+      basePrice: 90,
+      quantity: 6,
+      restockFrequency: 'low',
+    },
+    {
+      itemName: 'Energy Drink',
+      basePrice: 14,
+      quantity: 18,
+      restockFrequency: 'medium',
+    },
+  ],
+
+  // ===== VOLCANIC BIOME =====
+  volcanic: [
+    // Extreme heat survival items
+    {
+      itemName: 'Magma Shard',
+      basePrice: 200,
+      quantity: 5,
+      restockFrequency: 'medium',
+    },
+    {
+      itemName: 'Heat Shield',
+      basePrice: 400,
+      quantity: 2,
+      restockFrequency: 'low',
+    },
+    {
+      itemName: 'Lava Tube Map',
+      basePrice: 100,
+      quantity: 3,
+      restockFrequency: 'low',
+    },
+    {
+      itemName: 'Adaptive Respirator',
+      basePrice: 110,
+      quantity: 4,
+      restockFrequency: 'low',
+    },
+    {
+      itemName: 'Heat Dispersal Vest',
+      basePrice: 120,
+      quantity: 3,
+      restockFrequency: 'low',
+    },
+    {
+      itemName: 'Health Potion',
+      basePrice: 25,
+      quantity: 8,
+      restockFrequency: 'medium',
+    },
+    {
+      itemName: 'Energy Drink',
+      basePrice: 20,
+      quantity: 10,
+      restockFrequency: 'medium',
+    },
+  ],
+
+  // ===== WILDERNESS BIOME =====
+  wilderness: [
+    // General survival and exploration items
+    {
+      itemName: 'Ration Pack',
+      basePrice: 15,
+      quantity: 20,
+      restockFrequency: 'high',
+    },
+    {
+      itemName: 'Ancient Coin',
+      basePrice: 45,
+      quantity: 12,
+      restockFrequency: 'medium',
+    },
+    {
+      itemName: 'Lucky Charm',
+      basePrice: 25,
+      quantity: 10,
+      restockFrequency: 'medium',
+    },
+    {
+      itemName: 'Survival Pack Harness',
+      basePrice: 40,
+      quantity: 8,
+      restockFrequency: 'medium',
+    },
+    {
+      itemName: 'Climate Sensor Bracelet',
+      basePrice: 55,
+      quantity: 6,
+      restockFrequency: 'low',
+    },
+    {
+      itemName: 'Adaptive Respirator',
+      basePrice: 85,
+      quantity: 5,
+      restockFrequency: 'low',
+    },
+    {
+      itemName: 'Energy Drink',
+      basePrice: 10,
+      quantity: 25,
+      restockFrequency: 'high',
+    },
+    {
+      itemName: 'Health Potion',
+      basePrice: 18,
+      quantity: 15,
+      restockFrequency: 'medium',
+    },
+  ],
+
+  // ===== OCEAN BIOME =====
+  ocean: [
+    // Basic items for ocean areas (usually not markets)
+    {
+      itemName: 'Energy Drink',
+      basePrice: 12,
+      quantity: 5,
+      restockFrequency: 'low',
+    },
+    {
+      itemName: 'Ration Pack',
+      basePrice: 15,
+      quantity: 5,
+      restockFrequency: 'low',
+    },
+  ],
 }
 
 // ============================================================================
-// RESTOCKING CONFIGURATIONS
+// LOCATION TO BIOME MAPPING
 // ============================================================================
 
-const ITEM_RESTOCK_CONFIGS: ItemRestockConfig[] = [
-  {
-    itemName: 'Energy Drink',
-    locations: [
-      'Mining Plains',
-      'Crystal Caves',
-      'Frostpine Reaches',
-      'Fungi Networks',
-      'Underland',
-    ],
-    quantity: 25, // Add 25 to each location
-    mode: 'add', // Add to existing stock
-  },
-  {
-    itemName: 'Health Potion',
-    locations: ['Crystal Caves', 'Frostpine Reaches', 'Fungi Networks'],
-    quantity: 15,
-    mode: 'add',
-  },
-  {
-    itemName: 'Basic Pickaxe',
-    locations: ['Mining Plains', 'Frostpine Reaches'],
-    quantity: 10,
-    price: 20, // Override price
-    mode: 'replace',
-  },
-]
+const LOCATION_BIOME_MAP: Record<string, string> = {
+  // Plains
+  'Mining Plains': 'plains',
+  'Rusty Pickaxe Inn': 'plains',
 
-const GENERAL_RESTOCK_CONFIG: GeneralRestockConfig = {
-  minQuantity: 2, // Restock when quantity drops below 2
-  maxQuantity: 15, // Don't exceed 15 of any item
-  priceVariation: 0.15, // ±15% price variation
+  // Alpine
+  'Frostpine Reaches': 'alpine',
+  'Ironwood Trading Post': 'alpine',
+  'Rimeglass Lake': 'alpine',
+  'The Old Cairns': 'alpine',
+
+  // Underground
+  'Crystal Caves': 'underground',
+  'Fungi Networks': 'underground',
+  'Spore Exchange': 'underground',
+  'The Great Mycelium': 'underground',
+
+  // Urban
+  'Cyber City': 'urban',
+  'Central Exchange': 'urban',
+  'The Glitch Club': 'urban',
+
+  // Digital
+  'The Glitch Wastes': 'digital',
+  'Error 404 Oasis': 'digital',
+  'Corrupted Data Mines': 'digital',
+
+  // Desert
+  'Desert Outpost': 'desert',
+
+  // Temporal
+  'Temporal Rift Zone': 'temporal',
+  "Yesterday's Tomorrow": 'temporal',
+  'Clock Tower Ruins': 'temporal',
+
+  // Ossuary
+  'The Bone Markets': 'ossuary',
+  'Calcium Exchange': 'ossuary',
+  'Ossuary Club': 'ossuary',
+
+  // Electromagnetic
+  'Static Fields': 'electromagnetic',
+  'Channel 0': 'electromagnetic',
+  'Dead Air Tavern': 'electromagnetic',
+
+  // Volcanic
+  Retardia: 'volcanic',
+
+  // Wilderness
+  Underland: 'wilderness',
+
+  // Ocean (usually no markets)
+  Ocean: 'ocean',
 }
 
 // ============================================================================
 // UTILITY FUNCTIONS
 // ============================================================================
 
+function getLocationBiome(locationName: string): string {
+  return LOCATION_BIOME_MAP[locationName] || 'plains'
+}
+
 function applyPriceMultiplier(basePrice: number, locationName: string): number {
   // Price multipliers based on location difficulty/remoteness
   const priceMultipliers: Record<string, number> = {
-    'Mining Plains': 1.0,
+    // Plains - cheapest
+    'Mining Plains': 0.9,
+    'Rusty Pickaxe Inn': 0.95,
+
+    // Alpine - cold weather premium
+    'Frostpine Reaches': 1.15,
+    'Ironwood Trading Post': 1.1,
+    'Rimeglass Lake': 1.2,
+    'The Old Cairns': 1.25,
+
+    // Underground - mining premium
     'Crystal Caves': 1.1,
-    'Frostpine Reaches': 1.2,
-    'Fungi Networks': 1.1,
-    Underland: 1.15,
-    Retardia: 1.3,
+    'Fungi Networks': 1.15,
+    'Spore Exchange': 1.12,
+    'The Great Mycelium': 1.18,
+
+    // Urban - high tech premium
+    'Cyber City': 1.05,
+    'Central Exchange': 1.0, // Main exchange, competitive prices
+    'The Glitch Club': 1.08,
+
+    // Digital - rare items premium
+    'The Glitch Wastes': 1.3,
+    'Error 404 Oasis': 1.25,
+    'Corrupted Data Mines': 1.35,
+
+    // Desert - survival premium
+    'Desert Outpost': 1.4,
+
+    // Temporal - extreme rarity premium
+    'Temporal Rift Zone': 1.5,
+    "Yesterday's Tomorrow": 1.45,
+    'Clock Tower Ruins': 1.6,
+
+    // Ossuary - specialty premium
+    'The Bone Markets': 1.2,
+    'Calcium Exchange': 1.15,
+    'Ossuary Club': 1.25,
+
+    // Electromagnetic - tech premium
+    'Static Fields': 1.3,
+    'Channel 0': 1.35,
+    'Dead Air Tavern': 1.25,
+
+    // Volcanic - extreme danger premium
+    Retardia: 2.0,
+
+    // Wilderness - moderate premium
+    Underland: 1.1,
+
+    // Ocean - basic
+    Ocean: 1.0,
   }
 
   const multiplier = priceMultipliers[locationName] || 1.0
   return Math.round(basePrice * multiplier)
 }
 
-async function getMarketListingsNeedingRestock() {
-  console.log('🔍 Checking market listings that need restocking...')
+async function getLocationInfo(locationName: string) {
+  const { data: location, error } = await supabase
+    .from('locations')
+    .select('id, name, hasMarket, biome')
+    .eq('name', locationName)
+    .single()
 
-  const { data: lowStockListings, error } = await supabase
-    .from('market_listings')
-    .select(
-      `
-      id,
-      quantity,
-      price,
-      isSystemItem,
-      locations:locationId(id, name),
-      items:itemId(id, name)
-    `
-    )
-    .eq('isSystemItem', true)
-    .lt('quantity', GENERAL_RESTOCK_CONFIG.minQuantity)
-
-  if (error) {
-    console.error('❌ Failed to fetch market listings:', error)
-    throw error
+  if (error || !location) {
+    console.log(`  ❌ Location '${locationName}' not found`)
+    return null
   }
 
-  return lowStockListings || []
+  if (!location.hasMarket) {
+    console.log(`  ⚠️  Location '${locationName}' has no market`)
+    return null
+  }
+
+  return location
+}
+
+async function getItemInfo(itemName: string) {
+  const { data: item, error } = await supabase
+    .from('items')
+    .select('id, name')
+    .eq('name', itemName)
+    .single()
+
+  if (error || !item) {
+    console.log(`  ❌ Item '${itemName}' not found`)
+    return null
+  }
+
+  return item
 }
 
 // ============================================================================
-// SPECIFIC ITEM RESTOCKING
+// BIOME-BASED RESTOCKING
 // ============================================================================
 
-async function restockSpecificItems() {
-  console.log('🔄 Starting specific item restocking...')
-  console.log('='.repeat(50))
+async function restockBiomeMarkets(biomes: string[] = []) {
+  console.log('🌍 Starting biome-based market restocking...')
+  console.log('='.repeat(60))
 
-  let totalUpdates = 0
-  let totalAdded = 0
-  let totalReplaced = 0
+  const targetBiomes =
+    biomes.length > 0 ? biomes : Object.keys(BIOME_MARKET_CONFIGS)
+  let totalRestocked = 0
+  let totalCreated = 0
 
-  for (const config of ITEM_RESTOCK_CONFIGS) {
-    console.log(`\n📦 Processing ${config.itemName}...`)
+  for (const biome of targetBiomes) {
+    console.log(`\n🏔️  Processing ${biome.toUpperCase()} biome markets...`)
 
-    // Find the item
-    const { data: item, error: itemError } = await supabase
-      .from('items')
-      .select('id, name')
-      .eq('name', config.itemName)
-      .single()
-
-    if (itemError || !item) {
-      console.log(`  ❌ Item '${config.itemName}' not found`)
+    const marketConfig = BIOME_MARKET_CONFIGS[biome]
+    if (!marketConfig) {
+      console.log(`  ❌ No market config found for biome: ${biome}`)
       continue
     }
 
-    // Process each location
-    for (const locationName of config.locations) {
-      const { data: location, error: locationError } = await supabase
-        .from('locations')
-        .select('id, name, hasMarket')
-        .eq('name', locationName)
-        .single()
+    // Find all locations in this biome
+    const biomeLocations = Object.entries(LOCATION_BIOME_MAP)
+      .filter(([_, biomeName]) => biomeName === biome)
+      .map(([locationName, _]) => locationName)
 
-      if (locationError || !location) {
-        console.log(`  ❌ Location '${locationName}' not found`)
-        continue
-      }
+    console.log(
+      `  📍 Found ${biomeLocations.length} locations: ${biomeLocations.join(
+        ', '
+      )}`
+    )
 
-      if (!location.hasMarket) {
-        console.log(`  ⚠️  Location '${locationName}' has no market`)
-        continue
-      }
+    for (const locationName of biomeLocations) {
+      console.log(`\n    🏪 Restocking ${locationName}...`)
 
-      // Check for existing listing
-      const { data: existingListing } = await supabase
-        .from('market_listings')
-        .select('id, quantity, price')
-        .eq('locationId', location.id)
-        .eq('itemId', item.id)
-        .eq('isSystemItem', true)
-        .single()
+      const location = await getLocationInfo(locationName)
+      if (!location) continue
 
-      const basePrice = config.price || 8 // Default price
-      const adjustedPrice = applyPriceMultiplier(basePrice, locationName)
+      for (const marketItem of marketConfig) {
+        const item = await getItemInfo(marketItem.itemName)
+        if (!item) continue
 
-      if (existingListing) {
-        // Handle existing listing based on mode
-        switch (config.mode) {
-          case 'add': {
-            const { error: addError } = await supabase
-              .from('market_listings')
-              .update({
-                quantity: existingListing.quantity + config.quantity,
-                updatedAt: new Date().toISOString(),
-              })
-              .eq('id', existingListing.id)
-
-            if (!addError) {
-              console.log(
-                `  ✅ Added ${
-                  config.quantity
-                } to existing stock in ${locationName} (total: ${
-                  existingListing.quantity + config.quantity
-                })`
-              )
-              totalAdded++
-            }
-            break
-          }
-
-          case 'replace': {
-            const { error: replaceError } = await supabase
-              .from('market_listings')
-              .update({
-                quantity: config.quantity,
-                price: adjustedPrice,
-                updatedAt: new Date().toISOString(),
-              })
-              .eq('id', existingListing.id)
-
-            if (!replaceError) {
-              console.log(
-                `  🔄 Replaced stock in ${locationName} (new quantity: ${config.quantity})`
-              )
-              totalReplaced++
-            }
-            break
-          }
-
-          case 'update': {
-            const { error: updateError } = await supabase
-              .from('market_listings')
-              .update({
-                quantity: Math.max(existingListing.quantity, config.quantity),
-                price: adjustedPrice,
-                updatedAt: new Date().toISOString(),
-              })
-              .eq('id', existingListing.id)
-
-            if (!updateError) {
-              console.log(
-                `  ⬆️  Updated stock in ${locationName} (quantity: ${Math.max(
-                  existingListing.quantity,
-                  config.quantity
-                )})`
-              )
-              totalUpdates++
-            }
-            break
-          }
-        }
-      } else {
-        // Create new listing
-        const { error: createError } = await supabase
+        // Check for existing listing
+        const { data: existingListing } = await supabase
           .from('market_listings')
-          .insert({
+          .select('id, quantity, price')
+          .eq('locationId', location.id)
+          .eq('itemId', item.id)
+          .eq('isSystemItem', true)
+          .single()
+
+        const adjustedPrice = applyPriceMultiplier(
+          marketItem.basePrice,
+          locationName
+        )
+
+        if (existingListing) {
+          // Update existing listing based on restock frequency
+          let shouldRestock = false
+          let newQuantity = existingListing.quantity
+
+          switch (marketItem.restockFrequency) {
+            case 'high':
+              shouldRestock =
+                existingListing.quantity < marketItem.quantity * 0.3
+              newQuantity = Math.min(
+                existingListing.quantity +
+                  Math.floor(marketItem.quantity * 0.5),
+                marketItem.quantity
+              )
+              break
+            case 'medium':
+              shouldRestock =
+                existingListing.quantity < marketItem.quantity * 0.2
+              newQuantity = Math.min(
+                existingListing.quantity +
+                  Math.floor(marketItem.quantity * 0.3),
+                marketItem.quantity
+              )
+              break
+            case 'low':
+              shouldRestock = existingListing.quantity === 0
+              newQuantity = Math.min(
+                existingListing.quantity +
+                  Math.floor(marketItem.quantity * 0.2),
+                marketItem.quantity
+              )
+              break
+          }
+
+          if (shouldRestock && newQuantity > existingListing.quantity) {
+            const { error } = await supabase
+              .from('market_listings')
+              .update({
+                quantity: newQuantity,
+                price: adjustedPrice,
+                updatedAt: new Date().toISOString(),
+              })
+              .eq('id', existingListing.id)
+
+            if (!error) {
+              console.log(
+                `      ✅ ${marketItem.itemName}: ${existingListing.quantity} → ${newQuantity} (${adjustedPrice}c)`
+              )
+              totalRestocked++
+            }
+          }
+        } else {
+          // Create new listing
+          const { error } = await supabase.from('market_listings').insert({
             id: randomUUID(),
             sellerId: null,
             locationId: location.id,
             itemId: item.id,
-            quantity: config.quantity,
+            quantity: marketItem.quantity,
             price: adjustedPrice,
             isSystemItem: true,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           })
 
-        if (!createError) {
-          console.log(
-            `  🆕 Created new listing in ${locationName} (quantity: ${config.quantity}, price: ${adjustedPrice})`
-          )
-          totalAdded++
+          if (!error) {
+            console.log(
+              `      🆕 ${marketItem.itemName}: Created with ${marketItem.quantity} (${adjustedPrice}c)`
+            )
+            totalCreated++
+          }
         }
       }
     }
   }
 
-  console.log('\n📊 SPECIFIC ITEM RESTOCKING SUMMARY')
-  console.log('='.repeat(50))
-  console.log(`📈 Items added: ${totalAdded}`)
-  console.log(`🔄 Items replaced: ${totalReplaced}`)
-  console.log(`⬆️  Items updated: ${totalUpdates}`)
-  console.log(
-    `🎯 Total operations: ${totalAdded + totalReplaced + totalUpdates}`
-  )
+  console.log('\n📊 BIOME RESTOCKING SUMMARY')
+  console.log('='.repeat(60))
+  console.log(`📈 Items restocked: ${totalRestocked}`)
+  console.log(`🆕 New listings created: ${totalCreated}`)
+  console.log(`🎯 Total operations: ${totalRestocked + totalCreated}`)
 }
 
 // ============================================================================
-// ENERGY DRINK QUICK RESTOCK
+// ANALYSIS FUNCTIONS
 // ============================================================================
 
+async function analyzeCurrentStock() {
+  console.log('📊 CURRENT MARKET ANALYSIS')
+  console.log('='.repeat(50))
+
+  const { data: marketListings, error } = await supabase
+    .from('market_listings')
+    .select(
+      `
+      quantity,
+      price,
+      items:itemId(name),
+      locations:locationId(name)
+    `
+    )
+    .eq('isSystemItem', true)
+    .order('items(name)')
+
+  if (error || !marketListings) {
+    console.error('❌ Failed to fetch market listings:', error)
+    return
+  }
+
+  // Group by item
+  const itemStock = new Map<
+    string,
+    Array<{ location: string; quantity: number; price: number }>
+  >()
+
+  for (const listing of marketListings) {
+    const itemName = listing.items?.name
+    if (!itemName) continue
+
+    if (!itemStock.has(itemName)) {
+      itemStock.set(itemName, [])
+    }
+    itemStock.get(itemName)!.push({
+      location: listing.locations?.name || 'Unknown',
+      quantity: listing.quantity,
+      price: listing.price,
+    })
+  }
+
+  // Display analysis
+  for (const [itemName, locations] of itemStock) {
+    const totalStock = locations.reduce((sum, loc) => sum + loc.quantity, 0)
+    const avgPrice = Math.round(
+      locations.reduce((sum, loc) => sum + loc.price, 0) / locations.length
+    )
+
+    console.log(`\n📦 ${itemName}:`)
+    console.log(
+      `   Total Stock: ${totalStock} across ${locations.length} locations`
+    )
+    console.log(`   Average Price: ${avgPrice} coins`)
+
+    if (totalStock < 10) {
+      console.log(`   ⚠️  LOW STOCK WARNING`)
+    }
+
+    // Show top 3 locations by stock
+    const topLocations = locations
+      .sort((a, b) => b.quantity - a.quantity)
+      .slice(0, 3)
+
+    topLocations.forEach((loc, i) => {
+      console.log(
+        `   ${i + 1}. ${loc.location}: ${loc.quantity} @ ${loc.price}c`
+      )
+    })
+  }
+}
+
+// Legacy function for old energy drink restocking
 async function restockEnergyDrinksOnly(quantity: number = 50) {
   console.log(`⚡ Quick-restocking Energy Drinks (+${quantity} each location)`)
   console.log('='.repeat(50))
@@ -350,333 +1046,70 @@ async function restockEnergyDrinksOnly(quantity: number = 50) {
 }
 
 // ============================================================================
-// GENERAL MARKET RESTOCKING (Low Stock Items)
+// MAIN EXECUTION
 // ============================================================================
-
-async function restockSystemItems() {
-  console.log('📦 Restocking system market items (low stock)...')
-
-  const lowStockListings = await getMarketListingsNeedingRestock()
-
-  if (lowStockListings.length === 0) {
-    console.log('✅ No items need restocking')
-    return
-  }
-
-  const updates = []
-
-  for (const listing of lowStockListings) {
-    const locationName = listing.locations?.name
-    const itemName = listing.items?.name
-
-    // Find the base configuration for this item
-    const baseConfig = MARKET_SEED_DATA[locationName]?.find(
-      (item) => item.itemName === itemName
-    )
-
-    if (!baseConfig) {
-      console.warn(`⚠️ No base config found for ${itemName} in ${locationName}`)
-      continue
-    }
-
-    // Calculate new quantity (random between current and max)
-    const currentQuantity = listing.quantity
-    const targetQuantity = Math.min(
-      baseConfig.quantity,
-      GENERAL_RESTOCK_CONFIG.maxQuantity
-    )
-    const newQuantity = Math.max(
-      currentQuantity,
-      Math.floor(Math.random() * (targetQuantity - currentQuantity + 1)) +
-        currentQuantity
-    )
-
-    // Calculate price variation (±15% from base price)
-    const basePrice = baseConfig.basePrice
-    const priceVariation =
-      (Math.random() - 0.5) * 2 * GENERAL_RESTOCK_CONFIG.priceVariation
-    const adjustedBasePrice = applyPriceMultiplier(basePrice, locationName)
-    const newPrice = Math.round(adjustedBasePrice * (1 + priceVariation))
-
-    updates.push({
-      id: listing.id,
-      quantity: newQuantity,
-      price: newPrice,
-      updatedAt: new Date().toISOString(),
-    })
-
-    console.log(
-      `  📈 ${locationName}: ${itemName} ${currentQuantity} → ${newQuantity} (${newPrice} coins)`
-    )
-  }
-
-  if (updates.length > 0) {
-    const { error } = await supabase
-      .from('market_listings')
-      .upsert(updates, { onConflict: 'id' })
-
-    if (error) {
-      console.error('❌ Failed to update market listings:', error)
-      throw error
-    }
-  }
-
-  console.log(`✅ Restocked ${updates.length} items`)
-}
-
-async function addMissingSystemItems() {
-  console.log('🔍 Checking for missing system items...')
-
-  const missingItems = []
-
-  for (const [locationName, items] of Object.entries(MARKET_SEED_DATA)) {
-    // Get location
-    const { data: location } = await supabase
-      .from('locations')
-      .select('id')
-      .eq('name', locationName)
-      .single()
-
-    if (!location) continue
-
-    for (const marketItem of items) {
-      // Get item
-      const { data: item } = await supabase
-        .from('items')
-        .select('id')
-        .eq('name', marketItem.itemName)
-        .single()
-
-      if (!item) continue
-
-      // Check if this item already exists in this location's market
-      const { data: existingListing } = await supabase
-        .from('market_listings')
-        .select('id')
-        .eq('locationId', location.id)
-        .eq('itemId', item.id)
-        .eq('isSystemItem', true)
-        .single()
-
-      if (!existingListing) {
-        const adjustedPrice = applyPriceMultiplier(
-          marketItem.basePrice,
-          locationName
-        )
-
-        missingItems.push({
-          id: crypto.randomUUID(),
-          sellerId: null,
-          locationId: location.id,
-          itemId: item.id,
-          price: adjustedPrice,
-          quantity: marketItem.quantity,
-          isSystemItem: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        })
-
-        console.log(
-          `  ➕ Adding missing: ${marketItem.itemName} to ${locationName}`
-        )
-      }
-    }
-  }
-
-  if (missingItems.length > 0) {
-    const { error } = await supabase
-      .from('market_listings')
-      .insert(missingItems)
-
-    if (error) {
-      console.error('❌ Failed to add missing items:', error)
-      throw error
-    }
-  }
-
-  console.log(`✅ Added ${missingItems.length} missing system items`)
-}
-
-async function removeOverstockedItems() {
-  console.log('📉 Checking for overstocked items...')
-
-  const { data: overstockedListings, error } = await supabase
-    .from('market_listings')
-    .select(
-      `
-      id, 
-      quantity, 
-      locations:locationId(name), 
-      items:itemId(name)
-    `
-    )
-    .eq('isSystemItem', true)
-    .gt('quantity', GENERAL_RESTOCK_CONFIG.maxQuantity)
-
-  if (error) {
-    console.error('❌ Failed to fetch overstocked listings:', error)
-    throw error
-  }
-
-  if (!overstockedListings || overstockedListings.length === 0) {
-    console.log('✅ No overstocked items found')
-    return
-  }
-
-  const updates = overstockedListings.map((listing) => ({
-    id: listing.id,
-    quantity: GENERAL_RESTOCK_CONFIG.maxQuantity,
-    updatedAt: new Date().toISOString(),
-  }))
-
-  const { error: updateError } = await supabase
-    .from('market_listings')
-    .upsert(updates, { onConflict: 'id' })
-
-  if (updateError) {
-    console.error('❌ Failed to reduce overstocked items:', updateError)
-    throw updateError
-  }
-
-  console.log(`✅ Reduced quantity for ${updates.length} overstocked items`)
-}
-
-// ============================================================================
-// MARKET ANALYSIS TOOLS
-// ============================================================================
-
-async function analyzeCurrentStock() {
-  console.log('📊 CURRENT MARKET ANALYSIS')
-  console.log('='.repeat(50))
-
-  const { data: marketListings, error } = await supabase
-    .from('market_listings')
-    .select(
-      `
-      quantity,
-      price,
-      items:itemId(name),
-      locations:locationId(name)
-    `
-    )
-    .eq('isSystemItem', true)
-    .order('items(name)')
-
-  if (error || !marketListings) {
-    console.error('❌ Failed to fetch market listings:', error)
-    return
-  }
-
-  // Group by item
-  const itemStock = new Map<
-    string,
-    Array<{ location: string; quantity: number; price: number }>
-  >()
-
-  for (const listing of marketListings) {
-    const itemName = listing.items?.name
-    if (!itemName) continue
-
-    if (!itemStock.has(itemName)) {
-      itemStock.set(itemName, [])
-    }
-    itemStock.get(itemName)!.push({
-      location: listing.locations?.name || 'Unknown',
-      quantity: listing.quantity,
-      price: listing.price,
-    })
-  }
-
-  // Display analysis
-  for (const [itemName, locations] of itemStock) {
-    const totalStock = locations.reduce((sum, loc) => sum + loc.quantity, 0)
-    const avgPrice = Math.round(
-      locations.reduce((sum, loc) => sum + loc.price, 0) / locations.length
-    )
-
-    console.log(`\n📦 ${itemName}:`)
-    console.log(
-      `   Total Stock: ${totalStock} across ${locations.length} locations`
-    )
-    console.log(`   Average Price: ${avgPrice} coins`)
-
-    if (totalStock < 10) {
-      console.log(`   ⚠️  LOW STOCK WARNING`)
-    }
-
-    // Show top 3 locations by stock
-    const topLocations = locations
-      .sort((a, b) => b.quantity - a.quantity)
-      .slice(0, 3)
-
-    topLocations.forEach((loc, i) => {
-      console.log(
-        `   ${i + 1}. ${loc.location}: ${loc.quantity} @ ${loc.price}c`
-      )
-    })
-  }
-}
-
-// ============================================================================
-// MAIN EXECUTION OPTIONS
-// ============================================================================
-
-// Main restocking function
-export async function restockMarkets() {
-  console.log('🏪 Starting comprehensive market restocking...\n')
-
-  try {
-    await addMissingSystemItems() // Add any items that are completely missing
-    await restockSystemItems() // Restock items that are low
-    await removeOverstockedItems() // Cap items that are too high
-
-    console.log('\n🎉 Market restocking completed successfully!')
-  } catch (error) {
-    console.error('\n💥 Market restocking failed:', error)
-    throw error
-  }
-}
 
 async function main() {
   const args = process.argv.slice(2)
-  const command = args[0] || 'energy'
+  const command = args[0] || 'help'
 
   try {
     switch (command) {
-      case 'energy': {
-        const quantity = parseInt(args[1]) || 50
-        await restockEnergyDrinksOnly(quantity)
+      case 'biome': {
+        const biomes = args.slice(1)
+        await restockBiomeMarkets(biomes)
         break
       }
 
-      case 'specific': {
-        await restockSpecificItems()
+      case 'location': {
+        const locationName = args.slice(1).join(' ')
+        if (!locationName) {
+          console.log('❌ Please specify a location name')
+          return
+        }
+        await restockSpecificLocation(locationName)
+        break
+      }
+
+      case 'consumables': {
+        await quickRestockConsumables()
         break
       }
 
       case 'full': {
-        await restockMarkets()
+        await restockBiomeMarkets()
         break
       }
 
-      case 'analyze': {
-        await analyzeCurrentStock()
-        break
-      }
-
+      case 'help':
       default: {
-        console.log('📋 Available commands:')
+        console.log('🏪 Market Restocking Commands:')
+        console.log('='.repeat(50))
         console.log(
-          '  npm run restock energy [quantity]  - Restock energy drinks (default: 50)'
+          '  npm run restock biome [biome1 biome2 ...]  - Restock specific biomes'
         )
         console.log(
-          '  npm run restock specific           - Run specific item configs'
+          '  npm run restock location "Location Name"    - Restock specific location'
         )
         console.log(
-          '  npm run restock full              - Run full restocking system'
+          '  npm run restock consumables                 - Quick restock consumables'
         )
         console.log(
-          '  npm run restock analyze           - Analyze current market stock'
+          '  npm run restock full                        - Restock all biome markets'
+        )
+        console.log('')
+        console.log('Available biomes:')
+        console.log('  plains, alpine, underground, urban, digital, desert,')
+        console.log(
+          '  temporal, ossuary, electromagnetic, volcanic, wilderness'
+        )
+        console.log('')
+        console.log('Examples:')
+        console.log(
+          '  npm run restock biome urban digital        - Restock urban and digital'
+        )
+        console.log(
+          '  npm run restock location "Cyber City"      - Restock Cyber City only'
         )
         break
       }
@@ -686,15 +1119,16 @@ async function main() {
   }
 }
 
-// Export configuration for external use
+// Export for external use
 export {
-  GENERAL_RESTOCK_CONFIG,
-  restockEnergyDrinksOnly,
-  restockSpecificItems,
-  analyzeCurrentStock,
+  restockBiomeMarkets,
+  quickRestockConsumables,
+  restockSpecificLocation,
+  BIOME_MARKET_CONFIGS,
+  LOCATION_BIOME_MAP,
 }
 
-// Run if called directly
-if (require.main === module) {
+// Run if called directly (ES module check)
+if (import.meta.url === `file://${process.argv[1]}`) {
   main()
 }

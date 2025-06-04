@@ -12,7 +12,7 @@ export interface WorldItem {
 }
 
 export const WORLD_ITEMS: WorldItem[] = [
-  // Basic Materials
+  // ===== BASIC MATERIALS =====
   {
     name: 'Dirty Coal',
     description: 'Basic fuel found in shallow mines',
@@ -38,7 +38,7 @@ export const WORLD_ITEMS: WorldItem[] = [
     rarity: 'EPIC',
   },
 
-  // Basic Equipment
+  // ===== BASIC EQUIPMENT =====
   {
     name: 'Miners Hat',
     description: 'Worn leather hat with a dim headlamp',
@@ -63,34 +63,8 @@ export const WORLD_ITEMS: WorldItem[] = [
     layerType: 'ACCESSORY',
     rarity: 'UNCOMMON',
   },
-  {
-    name: 'Cyber Jacket',
-    description: 'High-tech jacket with built-in displays',
-    category: 'CLOTHING',
-    layerType: 'CLOTHING',
-    rarity: 'RARE',
-    energyEffect: 15,
-  },
-  {
-    name: 'Sandstorm Goggles',
-    description: 'Reinforced eyewear that filters out dust and glare',
-    category: 'ACCESSORY',
-    layerType: 'ACCESSORY',
-    rarity: 'UNCOMMON',
-    durability: 60,
-    energyEffect: 5,
-  },
-  {
-    name: 'Heat Dispersal Vest',
-    description: 'Reflective vest with cooling gel chambers',
-    category: 'CLOTHING',
-    layerType: 'CLOTHING',
-    rarity: 'RARE',
-    durability: 100,
-    healthEffect: 12,
-    energyEffect: 15, // Keeps you cool and energized
-  },
-  // Basic Consumables
+
+  // ===== BASIC CONSUMABLES =====
   {
     name: 'Energy Drink',
     description: 'Restores energy and keeps you alert',
@@ -105,8 +79,16 @@ export const WORLD_ITEMS: WorldItem[] = [
     rarity: 'UNCOMMON',
     healthEffect: 30,
   },
+  {
+    name: 'Ration Pack',
+    description: 'Preserved food that sustains you for hours',
+    category: 'CONSUMABLE',
+    rarity: 'COMMON',
+    energyEffect: 15,
+    healthEffect: 10,
+  },
 
-  // Tools
+  // ===== BASIC TOOLS =====
   {
     name: 'Basic Pickaxe',
     description: 'Standard mining tool for beginners',
@@ -123,31 +105,35 @@ export const WORLD_ITEMS: WorldItem[] = [
     rarity: 'COMMON',
     durability: 100,
   },
-  {
-    name: 'Hacking Toolkit',
-    description: 'Portable device for digital infiltration',
-    category: 'TOOL',
-    layerType: 'ACCESSORY',
-    rarity: 'RARE',
-    durability: 150,
-  },
-  {
-    name: 'Omni-Tool',
-    description: 'Legendary device that adapts to any situation',
-    category: 'TOOL',
-    layerType: 'ACCESSORY',
-    rarity: 'LEGENDARY',
-    durability: 1000,
-    energyEffect: 20,
-    healthEffect: 10,
-  },
 
-  // Themed Items - Cyber
+  // ===== URBAN/CYBER BIOME ITEMS =====
   {
-    name: 'Rare Floppy Disk',
-    description: 'Contains legendary source code from the early net',
-    category: 'MATERIAL',
+    name: 'Cyber Jacket',
+    description: 'High-tech jacket with built-in displays',
+    category: 'CLOTHING',
+    layerType: 'CLOTHING',
+    rarity: 'RARE',
+    durability: 120,
+    energyEffect: 15,
+  },
+  {
+    name: 'Neural Interface Crown',
+    description: 'Circlet of circuits that enhances digital perception',
+    category: 'HAT',
+    layerType: 'HAT',
     rarity: 'LEGENDARY',
+    durability: 200,
+    energyEffect: 25,
+  },
+  {
+    name: 'Data Armor Plating',
+    description: 'Modular armor that adapts to digital threats',
+    category: 'CLOTHING',
+    layerType: 'CLOTHING',
+    rarity: 'EPIC',
+    durability: 180,
+    healthEffect: 25,
+    energyEffect: 5,
   },
   {
     name: 'Cyberpunk Shades',
@@ -165,76 +151,35 @@ export const WORLD_ITEMS: WorldItem[] = [
     rarity: 'EPIC',
     energyEffect: 15,
   },
-
   {
-    name: 'Neural Interface Crown',
-    description: 'Circlet of circuits that enhances digital perception',
-    category: 'HAT',
-    layerType: 'HAT',
-    rarity: 'LEGENDARY',
-    durability: 200,
-    energyEffect: 25,
-  },
-
-  {
-    name: 'Data Armor Plating',
-    description: 'Modular armor that adapts to digital threats',
-    category: 'CLOTHING',
-    layerType: 'CLOTHING',
-    rarity: 'EPIC',
-    durability: 180,
-    healthEffect: 25,
-    energyEffect: 5,
-  },
-
-  {
-    name: 'Adaptive Respirator',
-    description: 'Smart mask that filters any atmospheric condition',
-    category: 'ACCESSORY',
+    name: 'Hacking Toolkit',
+    description: 'Portable device for digital infiltration',
+    category: 'TOOL',
     layerType: 'ACCESSORY',
     rarity: 'RARE',
-    durability: 90,
-    healthEffect: 18,
+    durability: 150,
   },
-
   {
-    name: 'Climate Sensor Bracelet',
-    description: 'Warns of environmental dangers and optimizes gear',
-    category: 'ACCESSORY',
-    layerType: 'ACCESSORY',
+    name: 'Data Chip',
+    description: 'Encrypted storage containing valuable information',
+    category: 'MATERIAL',
     rarity: 'UNCOMMON',
-    durability: 70,
-    energyEffect: 12,
+  },
+  {
+    name: 'Bandwidth Booster',
+    description: 'Enhances connection speed and data flow',
+    category: 'CONSUMABLE',
+    rarity: 'RARE',
+    energyEffect: 35,
   },
 
+  // ===== DIGITAL BIOME ITEMS =====
   {
-    name: 'Survival Pack Harness',
-    description: 'Ergonomic gear system that distributes weight perfectly',
-    category: 'CLOTHING',
-    layerType: 'CLOTHING',
-    rarity: 'COMMON',
-    durability: 50,
-    energyEffect: 8,
-    healthEffect: 5,
-  },
-
-  // Themed Items - Desert
-  {
-    name: 'Desert Wrap',
-    description: 'Traditional headwrap that protects from sandstorms',
-    category: 'HAT',
-    layerType: 'HAT',
-    rarity: 'UNCOMMON',
-    healthEffect: 8,
-  },
-  {
-    name: 'Ancient Artifact',
-    description: 'Mysterious relic from a lost desert civilization',
+    name: 'Rare Floppy Disk',
+    description: 'Contains legendary source code from the early net',
     category: 'MATERIAL',
     rarity: 'LEGENDARY',
   },
-
-  // Weird Items - Glitch
   {
     name: 'Fragmented Code',
     description: 'Broken data fragments that shimmer with digital energy',
@@ -263,8 +208,117 @@ export const WORLD_ITEMS: WorldItem[] = [
     rarity: 'RARE',
     energyEffect: 10,
   },
+  {
+    name: 'Error Handler',
+    description: 'Debug tool that fixes reality glitches',
+    category: 'TOOL',
+    layerType: 'ACCESSORY',
+    rarity: 'EPIC',
+    durability: 75,
+  },
 
-  // Weird Items - Fungi
+  // ===== DESERT BIOME ITEMS =====
+  {
+    name: 'Desert Wrap',
+    description: 'Traditional headwrap that protects from sandstorms',
+    category: 'HAT',
+    layerType: 'HAT',
+    rarity: 'UNCOMMON',
+    healthEffect: 8,
+  },
+  {
+    name: 'Sandstorm Goggles',
+    description: 'Reinforced eyewear that filters out dust and glare',
+    category: 'ACCESSORY',
+    layerType: 'ACCESSORY',
+    rarity: 'UNCOMMON',
+    durability: 60,
+    energyEffect: 5,
+  },
+  {
+    name: 'Heat Dispersal Vest',
+    description: 'Reflective vest with cooling gel chambers',
+    category: 'CLOTHING',
+    layerType: 'CLOTHING',
+    rarity: 'RARE',
+    durability: 100,
+    healthEffect: 12,
+    energyEffect: 15,
+  },
+  {
+    name: 'Ancient Artifact',
+    description: 'Mysterious relic from a lost desert civilization',
+    category: 'MATERIAL',
+    rarity: 'LEGENDARY',
+  },
+  {
+    name: 'Water Purification Tablet',
+    description: 'Makes any water source safe to drink',
+    category: 'CONSUMABLE',
+    rarity: 'UNCOMMON',
+    healthEffect: 20,
+  },
+  {
+    name: 'Dune Boots',
+    description: 'Specialized footwear for walking on sand',
+    category: 'CLOTHING',
+    layerType: 'ACCESSORY',
+    rarity: 'COMMON',
+    energyEffect: 8,
+  },
+
+  // ===== ALPINE/FROSTPINE BIOME ITEMS =====
+  {
+    name: 'Frostbite Cloak',
+    description: 'Thick fur-lined cloak that shimmers with ice crystals',
+    category: 'CLOTHING',
+    layerType: 'CLOTHING',
+    rarity: 'RARE',
+    durability: 120,
+    healthEffect: 15,
+    energyEffect: -5,
+  },
+  {
+    name: 'Ice Walker Boots',
+    description: 'Spiked boots that grip frozen surfaces perfectly',
+    category: 'CLOTHING',
+    layerType: 'ACCESSORY',
+    rarity: 'UNCOMMON',
+    durability: 80,
+    energyEffect: 8,
+  },
+  {
+    name: 'Thermal Undersuit',
+    description: 'Advanced base layer that regulates body temperature',
+    category: 'CLOTHING',
+    layerType: 'CLOTHING',
+    rarity: 'EPIC',
+    durability: 150,
+    healthEffect: 20,
+    energyEffect: 10,
+  },
+  {
+    name: 'Hot Cocoa',
+    description: 'Steaming beverage that warms you from the inside',
+    category: 'CONSUMABLE',
+    rarity: 'COMMON',
+    healthEffect: 15,
+    energyEffect: 10,
+  },
+  {
+    name: 'Ironwood Planks',
+    description: 'Durable wood from the legendary ironwood trees',
+    category: 'MATERIAL',
+    rarity: 'RARE',
+  },
+  {
+    name: 'Frost Crystal',
+    description: 'Perfectly formed ice that never melts',
+    category: 'MATERIAL',
+    rarity: 'EPIC',
+  },
+
+  // ===== UNDERGROUND/FUNGI BIOME ITEMS =====
   {
     name: 'Neural Spores',
     description: 'Microscopic fungal networks that enhance thought',
@@ -277,6 +331,7 @@ export const WORLD_ITEMS: WorldItem[] = [
     category: 'CLOTHING',
     layerType: 'CLOTHING',
     rarity: 'EPIC',
+    durability: 160,
     healthEffect: 25,
   },
   {
@@ -285,8 +340,32 @@ export const WORLD_ITEMS: WorldItem[] = [
     category: 'MATERIAL',
     rarity: 'COMMON',
   },
+  {
+    name: 'Spore Mask',
+    description: 'Filters air while allowing beneficial spores through',
+    category: 'ACCESSORY',
+    layerType: 'ACCESSORY',
+    rarity: 'UNCOMMON',
+    healthEffect: 12,
+  },
+  {
+    name: 'Network Interface',
+    description: 'Biological device that connects to the mycelium web',
+    category: 'TOOL',
+    layerType: 'ACCESSORY',
+    rarity: 'RARE',
+    energyEffect: 20,
+  },
+  {
+    name: 'Mushroom Stew',
+    description: 'Hearty meal that connects you to the network',
+    category: 'CONSUMABLE',
+    rarity: 'COMMON',
+    healthEffect: 25,
+    energyEffect: 15,
+  },
 
-  // Weird Items - Temporal
+  // ===== TEMPORAL BIOME ITEMS =====
   {
     name: 'Temporal Flux',
     description: 'Crystallized time that bends around your fingers',
@@ -309,8 +388,29 @@ export const WORLD_ITEMS: WorldItem[] = [
     layerType: 'ACCESSORY',
     rarity: 'EPIC',
   },
+  {
+    name: 'Chronometer Watch',
+    description: 'Keeps perfect time across all timelines',
+    category: 'ACCESSORY',
+    layerType: 'ACCESSORY',
+    rarity: 'RARE',
+    energyEffect: 15,
+  },
+  {
+    name: 'Time Shard',
+    description: 'Fragment of a broken timeline',
+    category: 'MATERIAL',
+    rarity: 'RARE',
+  },
+  {
+    name: 'Temporal Stabilizer',
+    description: 'Prevents time-sickness and paradox headaches',
+    category: 'CONSUMABLE',
+    rarity: 'UNCOMMON',
+    healthEffect: 20,
+  },
 
-  // Weird Items - Bone
+  // ===== OSSUARY BIOME ITEMS =====
   {
     name: 'Living Bone Tools',
     description: 'Ossified implements that grow sharper with use',
@@ -331,10 +431,32 @@ export const WORLD_ITEMS: WorldItem[] = [
     category: 'CLOTHING',
     layerType: 'CLOTHING',
     rarity: 'RARE',
+    durability: 140,
     healthEffect: 20,
   },
+  {
+    name: 'Bone Meal',
+    description: 'Powdered calcium supplement for stronger bones',
+    category: 'CONSUMABLE',
+    rarity: 'COMMON',
+    healthEffect: 18,
+  },
+  {
+    name: 'Marrow Extract',
+    description: 'Life essence extracted from ancient bones',
+    category: 'CONSUMABLE',
+    rarity: 'RARE',
+    healthEffect: 40,
+    energyEffect: 20,
+  },
+  {
+    name: 'Fossil Fragment',
+    description: 'Petrified remains from a prehistoric creature',
+    category: 'MATERIAL',
+    rarity: 'EPIC',
+  },
 
-  // Weird Items - Static
+  // ===== ELECTROMAGNETIC BIOME ITEMS =====
   {
     name: 'White Noise Generator',
     description: 'Creates interference that masks your presence',
@@ -365,38 +487,81 @@ export const WORLD_ITEMS: WorldItem[] = [
     rarity: 'RARE',
     energyEffect: 20,
   },
-
-  // Themed Items - Frostpine
   {
-    name: 'Frostbite Cloak',
-    description: 'Thick fur-lined cloak that shimmers with ice crystals',
-    category: 'CLOTHING',
-    layerType: 'CLOTHING',
-    rarity: 'RARE',
-    durability: 120,
-    healthEffect: 15,
-    energyEffect: -5, // Heavy but protective
+    name: 'Radio Wave',
+    description: 'Captured electromagnetic signal in crystalline form',
+    category: 'MATERIAL',
+    rarity: 'UNCOMMON',
+  },
+  {
+    name: 'Static Shock Drink',
+    description: 'Electrolyte beverage that tingles with energy',
+    category: 'CONSUMABLE',
+    rarity: 'COMMON',
+    energyEffect: 30,
   },
 
+  // ===== VOLCANIC ITEMS (RETARDIA) =====
   {
-    name: 'Ice Walker Boots',
-    description: 'Spiked boots that grip frozen surfaces perfectly',
+    name: 'Magma Shard',
+    description: 'Molten rock that retains its heat',
+    category: 'MATERIAL',
+    rarity: 'EPIC',
+  },
+  {
+    name: 'Heat Shield',
+    description: 'Protective barrier against extreme temperatures',
     category: 'CLOTHING',
+    layerType: 'CLOTHING',
+    rarity: 'LEGENDARY',
+    durability: 200,
+    healthEffect: 30,
+  },
+  {
+    name: 'Lava Tube Map',
+    description: 'Guide to safe passages through volcanic terrain',
+    category: 'MATERIAL',
+    rarity: 'RARE',
+  },
+
+  // ===== UNIVERSAL ADVANCED ITEMS =====
+  {
+    name: 'Omni-Tool',
+    description: 'Legendary device that adapts to any situation',
+    category: 'TOOL',
+    layerType: 'ACCESSORY',
+    rarity: 'LEGENDARY',
+    durability: 1000,
+    energyEffect: 20,
+    healthEffect: 10,
+  },
+  {
+    name: 'Adaptive Respirator',
+    description: 'Smart mask that filters any atmospheric condition',
+    category: 'ACCESSORY',
+    layerType: 'ACCESSORY',
+    rarity: 'RARE',
+    durability: 90,
+    healthEffect: 18,
+  },
+  {
+    name: 'Climate Sensor Bracelet',
+    description: 'Warns of environmental dangers and optimizes gear',
+    category: 'ACCESSORY',
     layerType: 'ACCESSORY',
     rarity: 'UNCOMMON',
-    durability: 80,
-    energyEffect: 8, // Better movement on ice
+    durability: 70,
+    energyEffect: 12,
   },
-
   {
-    name: 'Thermal Undersuit',
-    description: 'Advanced base layer that regulates body temperature',
+    name: 'Survival Pack Harness',
+    description: 'Ergonomic gear system that distributes weight perfectly',
     category: 'CLOTHING',
     layerType: 'CLOTHING',
-    rarity: 'EPIC',
-    durability: 150,
-    healthEffect: 20,
-    energyEffect: 10,
+    rarity: 'COMMON',
+    durability: 50,
+    energyEffect: 8,
+    healthEffect: 5,
   },
 ]
 

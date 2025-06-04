@@ -151,7 +151,7 @@ export function useGameHandlers({
         await loadGameData()
         setTravelingTo(null)
         setCurrentView('main')
-      }, 1500)
+      }, 2800)
     } catch (error) {
       console.error('Travel failed:', error)
       setTravelingTo(null)
