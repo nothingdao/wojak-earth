@@ -34,6 +34,13 @@ const ZOOM_CONFIG = {
   transition: 'transform 0.2s ease-out'
 }
 
+// Viewport configuration
+const VIEWPORT = {
+  maxWidth: '500px',
+  aspectRatio: '3/4', // Portrait ratio that works well for the SVG
+  minHeight: '400px'
+}
+
 // Helper function to get distance between two touch points
 const getTouchDistance = (touches: TouchList): number => {
   if (touches.length < 2) return 0
@@ -69,6 +76,7 @@ export default function Earth({
   const [hoveredRegion, setHoveredRegion] = useState<string | null>(null)
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null)
   const [travelValidation, setTravelValidation] = useState<TravelValidation | null>(null)
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
 
   // Zoom and pan state
   const [zoom, setZoom] = useState(1)
@@ -168,6 +176,15 @@ export default function Earth({
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (e.button !== 0) return // Only left mouse button
 
+    // Close modal immediately on any mouse down
+    if (selectedRegion) {
+      setSelectedRegion(null)
+      setTravelValidation(null)
+    }
+
+    // Clear tooltip when starting to drag
+    setHoveredRegion(null)
+
     setIsDragging(true)
     setHasDragged(false) // Reset drag flag
     setDragStart({
@@ -176,7 +193,7 @@ export default function Earth({
       panX,
       panY
     })
-  }, [panX, panY])
+  }, [panX, panY, selectedRegion])
 
   // Handle mouse drag
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
@@ -207,6 +224,9 @@ export default function Earth({
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     e.preventDefault()
 
+    // Clear tooltip on touch
+    setHoveredRegion(null)
+
     if (e.touches.length === 1) {
       // Single touch - check for double tap or start drag
       const now = Date.now()
@@ -225,6 +245,7 @@ export default function Earth({
       } else {
         // Start drag
         setIsDragging(true)
+        setHasDragged(false)
         setDragStart({
           x: touch.clientX,
           y: touch.clientY,
@@ -306,11 +327,22 @@ export default function Earth({
 
   // Original hover/click handlers
   const handleMouseOver = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
+    // Don't show tooltip while dragging
+    if (isDragging) return
+
     const target = e.target as SVGPathElement
     if (target.tagName === "path" && target.id) {
       setHoveredRegion(target.id)
+      // Update mouse position for tooltip positioning
+      const rect = containerRef.current?.getBoundingClientRect()
+      if (rect) {
+        setMousePosition({
+          x: e.clientX - rect.left,
+          y: e.clientY - rect.top
+        })
+      }
     }
-  }, [])
+  }, [isDragging])
 
   const handleMouseOut = useCallback(() => {
     setHoveredRegion(null)
@@ -418,138 +450,173 @@ export default function Earth({
     cursor: isDragging ? 'grabbing' : zoom > 1 ? 'grab' : 'default'
   }
 
+  // Smart tooltip positioning - avoid the top-left dead zone
+  const getTooltipPosition = () => {
+    const isInTopLeft = mousePosition.x < 200 && mousePosition.y < 100
+    return isInTopLeft ? 'top-4 right-4' : 'top-4 left-16'
+  }
+
   return (
-    <div className="w-full h-auto flex items-center justify-center relative">
-      {/* Zoom Controls */}
-      <div className="absolute top-4 left-4 z-50 flex flex-col gap-2">
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => {
-            const newZoom = clampZoom(zoom + 0.5)
-            setZoom(newZoom)
-          }}
-          disabled={zoom >= ZOOM_CONFIG.max}
-          className="w-8 h-8 p-0"
-        >
-          +
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => {
-            const newZoom = clampZoom(zoom - 0.5)
-            setZoom(newZoom)
-            if (newZoom <= 1.1) {
-              setPanX(0)
-              setPanY(0)
-            }
-          }}
-          disabled={zoom <= ZOOM_CONFIG.min}
-          className="w-8 h-8 p-0"
-        >
-          −
-        </Button>
-        {(zoom !== 1 || panX !== 0 || panY !== 0) && (
+    <div className="w-full flex items-center justify-center relative">
+      {/* Responsive Viewport Container */}
+      <div
+        className="relative w-full bg-background border rounded-lg overflow-hidden"
+        style={{
+          maxWidth: VIEWPORT.maxWidth,
+          aspectRatio: VIEWPORT.aspectRatio,
+          minHeight: VIEWPORT.minHeight
+        }}
+      >
+        {/* Zoom Controls */}
+        <div className="absolute top-4 left-4 z-50 flex flex-col gap-2">
           <Button
             size="sm"
             variant="outline"
-            onClick={resetView}
-            className="w-8 h-8 p-0 text-xs"
+            onClick={() => {
+              const newZoom = clampZoom(zoom + 0.5)
+              setZoom(newZoom)
+            }}
+            disabled={zoom >= ZOOM_CONFIG.max}
+            className="w-8 h-8 p-0"
           >
-            ⌂
+            +
           </Button>
-        )}
-      </div>
-
-      {/* Zoom Level Indicator */}
-      {zoom !== 1 && (
-        <div className="absolute top-4 right-4 z-50 bg-card/95 backdrop-blur-sm text-card-foreground px-2 py-1 rounded text-xs border">
-          {Math.round(zoom * 100)}%
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              const newZoom = clampZoom(zoom - 0.5)
+              setZoom(newZoom)
+              if (newZoom <= 1.1) {
+                setPanX(0)
+                setPanY(0)
+              }
+            }}
+            disabled={zoom <= ZOOM_CONFIG.min}
+            className="w-8 h-8 p-0"
+          >
+            −
+          </Button>
+          {(zoom !== 1 || panX !== 0 || panY !== 0) && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={resetView}
+              className="w-8 h-8 p-0 text-xs"
+            >
+              ⌂
+            </Button>
+          )}
         </div>
-      )}
 
-      {/* Hover Tooltip */}
-      {hoveredRegion && (
-        <div className="absolute top-4 left-16 bg-card/95 backdrop-blur-sm text-card-foreground px-3 py-2 rounded-lg shadow-lg border z-40 max-w-xs animate-in fade-in-0 slide-in-from-top-1 duration-200">
-          {(() => {
-            const location = mapStyling.getLocationBySvgPath(hoveredRegion)
-            const info = mapStyling.getLocationInfo(hoveredRegion)
+        {/* Zoom Level Indicator */}
+        {zoom !== 1 && (
+          <div className="absolute top-4 right-4 z-50 bg-card/95 backdrop-blur-sm text-card-foreground px-2 py-1 rounded text-xs border">
+            {Math.round(zoom * 100)}%
+          </div>
+        )}
 
-            if (!location || !info) {
+        {/* Hover Tooltip */}
+        {hoveredRegion && (
+          <div className={`absolute ${getTooltipPosition()} bg-card/95 backdrop-blur-sm text-card-foreground px-3 py-2 rounded-lg shadow-lg border z-40 max-w-xs animate-in fade-in-0 slide-in-from-top-1 duration-200`}>
+            {(() => {
+              const location = mapStyling.getLocationBySvgPath(hoveredRegion)
+              const info = mapStyling.getLocationInfo(hoveredRegion)
+
+              if (!location || !info) {
+                return (
+                  <>
+                    <div className="font-medium text-sm">Unknown Territory</div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      This region awaits discovery...
+                    </div>
+                  </>
+                )
+              }
+
               return (
                 <>
-                  <div className="font-medium text-sm">Unknown Territory</div>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    This region awaits discovery...
+                  <div className="font-medium text-sm">{info.name}</div>
+                  <div className="text-xs text-primary mt-1 space-y-0.5">
+                    <div className="flex items-center gap-1">
+                      <GiTreasureMap className="w-3 h-3" />
+                      <span>{location.isExplored ? 'Explored' : 'Unknown'}</span>
+                      <span className="text-muted-foreground">•</span>
+                      <span>Level {info.difficulty}</span>
+                    </div>
+
+                    {mapStyling.isPlayerHere(hoveredRegion) && (
+                      <div className="text-emerald-600 font-medium text-xs flex items-center gap-1">
+                        <GiPositionMarker className="w-3 h-3 animate-pulse" />
+                        You are here
+                      </div>
+                    )}
+
+                    {!location.hasTravel && (
+                      <div className="text-red-500 text-xs flex items-center gap-1">
+                        <GiLockedBox className="w-3 h-3" />
+                        Travel disabled
+                      </div>
+                    )}
+
+                    {location.minLevel && character && character.level < location.minLevel && (
+                      <div className="text-yellow-500 text-xs flex items-center gap-1">
+                        <GiCrossedSwords className="w-3 h-3" />
+                        Requires level {location.minLevel}
+                      </div>
+                    )}
+
+                    {location.entryCost && (
+                      <div className="text-blue-500 text-xs flex items-center gap-1">
+                        <GiCoins className="w-3 h-3" />
+                        Costs {location.entryCost} coins
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="text-xs text-muted-foreground mt-2 border-t pt-1">
+                    <div>
+                      {selectedRegion === hoveredRegion ? 'Click to close details' : 'Click for details'}
+                    </div>
                   </div>
                 </>
               )
-            }
+            })()}
+          </div>
+        )}
 
-            return (
-              <>
-                <div className="font-medium text-sm">{info.name}</div>
-                <div className="text-xs text-primary mt-1 space-y-0.5">
-                  <div className="flex items-center gap-1">
-                    <GiTreasureMap className="w-3 h-3" />
-                    <span>{location.isExplored ? 'Explored' : 'Unknown'}</span>
-                    <span className="text-muted-foreground">•</span>
-                    <span>Level {info.difficulty}</span>
+        {/* Detailed Info Modal */}
+        {selectedRegion && (
+          <div className="absolute top-36 right-4 bg-card/95 backdrop-blur-sm text-card-foreground p-4 rounded-lg shadow-lg border max-w-sm z-40 animate-in fade-in-0 slide-in-from-left-1 duration-300">
+            {(() => {
+              const location = mapStyling.getLocationBySvgPath(selectedRegion)
+              const info = mapStyling.getLocationInfo(selectedRegion)
+
+              if (!location || !info) {
+                return (
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between mb-2">
+                      <h3 className="font-semibold text-lg">Unknown Territory</h3>
+                      <button
+                        onClick={() => setSelectedRegion(null)}
+                        className="text-muted-foreground hover:text-card-foreground transition-colors p-1 hover:bg-muted rounded"
+                      >
+                        <GiCrossMark className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <div className="p-3 bg-muted/20 rounded-md border border-dashed">
+                      <p className="text-xs text-muted-foreground">
+                        This region has not yet been explored or documented.
+                      </p>
+                    </div>
                   </div>
+                )
+              }
 
-                  {mapStyling.isPlayerHere(hoveredRegion) && (
-                    <div className="text-emerald-600 font-medium text-xs flex items-center gap-1">
-                      <GiPositionMarker className="w-3 h-3 animate-pulse" />
-                      You are here
-                    </div>
-                  )}
-
-                  {!location.hasTravel && (
-                    <div className="text-red-500 text-xs flex items-center gap-1">
-                      <GiLockedBox className="w-3 h-3" />
-                      Travel disabled
-                    </div>
-                  )}
-
-                  {location.minLevel && character && character.level < location.minLevel && (
-                    <div className="text-yellow-500 text-xs flex items-center gap-1">
-                      <GiCrossedSwords className="w-3 h-3" />
-                      Requires level {location.minLevel}
-                    </div>
-                  )}
-
-                  {location.entryCost && (
-                    <div className="text-blue-500 text-xs flex items-center gap-1">
-                      <GiCoins className="w-3 h-3" />
-                      Costs {location.entryCost} coins
-                    </div>
-                  )}
-                </div>
-
-                <div className="text-xs text-muted-foreground mt-2 border-t pt-1">
-                  <div>
-                    {selectedRegion === hoveredRegion ? 'Click to close details' : 'Click for details'}
-                  </div>
-                </div>
-              </>
-            )
-          })()}
-        </div>
-      )}
-
-      {/* Detailed Info Modal */}
-      {selectedRegion && (
-        <div className="absolute top-36 right-4 bg-card/95 backdrop-blur-sm text-card-foreground p-4 rounded-lg shadow-lg border max-w-sm z-40 animate-in fade-in-0 slide-in-from-left-1 duration-300">
-          {(() => {
-            const location = mapStyling.getLocationBySvgPath(selectedRegion)
-            const info = mapStyling.getLocationInfo(selectedRegion)
-
-            if (!location || !info) {
               return (
-                <div className="space-y-3">
+                <>
                   <div className="flex items-start justify-between mb-2">
-                    <h3 className="font-semibold text-lg">Unknown Territory</h3>
+                    <h3 className="font-semibold text-lg">{info.name}</h3>
                     <button
                       onClick={() => setSelectedRegion(null)}
                       className="text-muted-foreground hover:text-card-foreground transition-colors p-1 hover:bg-muted rounded"
@@ -557,166 +624,147 @@ export default function Earth({
                       <GiCrossMark className="w-4 h-4" />
                     </button>
                   </div>
-                  <div className="p-3 bg-muted/20 rounded-md border border-dashed">
-                    <p className="text-xs text-muted-foreground">
-                      This region has not yet been explored or documented.
-                    </p>
-                  </div>
-                </div>
-              )
-            }
 
-            return (
-              <>
-                <div className="flex items-start justify-between mb-2">
-                  <h3 className="font-semibold text-lg">{info.name}</h3>
-                  <button
-                    onClick={() => setSelectedRegion(null)}
-                    className="text-muted-foreground hover:text-card-foreground transition-colors p-1 hover:bg-muted rounded"
-                  >
-                    <GiCrossMark className="w-4 h-4" />
-                  </button>
-                </div>
+                  <p className="text-sm text-muted-foreground mb-3 leading-relaxed">
+                    {info.description}
+                  </p>
 
-                <p className="text-sm text-muted-foreground mb-3 leading-relaxed">
-                  {info.description}
-                </p>
-
-                <div className="space-y-2 mb-3 p-2 bg-muted/30 rounded-md">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-medium text-muted-foreground flex items-center gap-1">
-                      <GiCrossedSwords className="w-3 h-3" />
-                      Difficulty:
-                    </span>
-                    <div className="flex items-center gap-1">
-                      <div className={`w-2 h-2 rounded-full ${info.difficulty <= 3 ? 'bg-emerald-500' :
-                        info.difficulty <= 6 ? 'bg-yellow-500' : 'bg-red-500'
-                        }`} />
-                      <span className="font-mono">{info.difficulty}/10</span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-medium text-muted-foreground flex items-center gap-1">
-                      <GiCompass className="w-3 h-3" />
-                      Status:
-                    </span>
-                    <span className="capitalize font-medium">
-                      {location.isExplored ? 'Explored' : 'Unexplored'}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-medium text-muted-foreground flex items-center gap-1">
-                      <GiTreasureMap className="w-3 h-3" />
-                      Biome:
-                    </span>
-                    <span className="capitalize font-medium">{location.biome}</span>
-                  </div>
-
-                  {location.minLevel && (
+                  <div className="space-y-2 mb-3 p-2 bg-muted/30 rounded-md">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="font-medium text-muted-foreground">Min Level:</span>
-                      <span className="font-medium">{location.minLevel}</span>
+                      <span className="font-medium text-muted-foreground flex items-center gap-1">
+                        <GiCrossedSwords className="w-3 h-3" />
+                        Difficulty:
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <div className={`w-2 h-2 rounded-full ${info.difficulty <= 3 ? 'bg-emerald-500' :
+                          info.difficulty <= 6 ? 'bg-yellow-500' : 'bg-red-500'
+                          }`} />
+                        <span className="font-mono">{info.difficulty}/10</span>
+                      </div>
                     </div>
-                  )}
 
-                  {location.entryCost && (
                     <div className="flex items-center justify-between text-xs">
-                      <span className="font-medium text-muted-foreground">Entry Cost:</span>
-                      <span className="font-medium">{location.entryCost} coins</span>
+                      <span className="font-medium text-muted-foreground flex items-center gap-1">
+                        <GiCompass className="w-3 h-3" />
+                        Status:
+                      </span>
+                      <span className="capitalize font-medium">
+                        {location.isExplored ? 'Explored' : 'Unexplored'}
+                      </span>
                     </div>
-                  )}
-                </div>
 
-                {/* Feature Indicators */}
-                <div className="flex flex-wrap gap-2 mt-3">
-                  {location.hasMarket && (
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded-full">
-                      <GiCastle className="w-3 h-3" />
-                      <span>Market</span>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-medium text-muted-foreground flex items-center gap-1">
+                        <GiTreasureMap className="w-3 h-3" />
+                        Biome:
+                      </span>
+                      <span className="capitalize font-medium">{location.biome}</span>
                     </div>
-                  )}
-                  {location.hasMining && (
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded-full">
-                      <GiMineWagon className="w-3 h-3" />
-                      <span>Mining</span>
-                    </div>
-                  )}
-                  {location.hasChat && (
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded-full">
-                      <GiChatBubble className="w-3 h-3" />
-                      <span>Chat</span>
-                    </div>
-                  )}
-                </div>
 
-                {/* Travel Button */}
-                {onTravel && character && (
-                  <div className="mt-3 pt-3 border-t">
-                    <Button
-                      onClick={() => {
-                        if (travelValidation?.allowed) {
-                          onTravel(location.id)
+                    {location.minLevel && (
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-medium text-muted-foreground">Min Level:</span>
+                        <span className="font-medium">{location.minLevel}</span>
+                      </div>
+                    )}
+
+                    {location.entryCost && (
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-medium text-muted-foreground">Entry Cost:</span>
+                        <span className="font-medium">{location.entryCost} coins</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Feature Indicators */}
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {location.hasMarket && (
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded-full">
+                        <GiCastle className="w-3 h-3" />
+                        <span>Market</span>
+                      </div>
+                    )}
+                    {location.hasMining && (
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded-full">
+                        <GiMineWagon className="w-3 h-3" />
+                        <span>Mining</span>
+                      </div>
+                    )}
+                    {location.hasChat && (
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded-full">
+                        <GiChatBubble className="w-3 h-3" />
+                        <span>Chat</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Travel Button */}
+                  {onTravel && character && (
+                    <div className="mt-3 pt-3 border-t">
+                      <Button
+                        onClick={() => {
+                          if (travelValidation?.allowed) {
+                            onTravel(location.id)
+                          }
+                        }}
+                        disabled={!travelValidation?.allowed}
+                        className="w-full"
+                        variant={mapStyling.isPlayerHere(selectedRegion) ? "secondary" : "default"}
+                        size="sm"
+                      >
+                        <GiPositionMarker className="w-4 h-4 mr-2" />
+                        {mapStyling.isPlayerHere(selectedRegion)
+                          ? "You are here"
+                          : travelValidation?.allowed
+                            ? `Travel to ${info.name}${travelValidation.cost ? ` (${travelValidation.cost} coins)` : ''}`
+                            : travelValidation?.reason || "Cannot travel"
                         }
-                      }}
-                      disabled={!travelValidation?.allowed}
-                      className="w-full"
-                      variant={mapStyling.isPlayerHere(selectedRegion) ? "secondary" : "default"}
-                      size="sm"
-                    >
-                      <GiPositionMarker className="w-4 h-4 mr-2" />
-                      {mapStyling.isPlayerHere(selectedRegion)
-                        ? "You are here"
-                        : travelValidation?.allowed
-                          ? `Travel to ${info.name}${travelValidation.cost ? ` (${travelValidation.cost} coins)` : ''}`
-                          : travelValidation?.reason || "Cannot travel"
-                      }
-                    </Button>
-                  </div>
-                )}
-              </>
-            )
-          })()}
-        </div>
-      )}
+                      </Button>
+                    </div>
+                  )}
+                </>
+              )
+            })()}
+          </div>
+        )}
 
-      {/* Map Container */}
-      <div
-        ref={containerRef}
-        className="w-full h-auto relative overflow-hidden select-none"
-        style={{
-          touchAction: 'none',
-          outline: 'none',
-          overscrollBehavior: 'none' // Prevent overscroll on trackpads
-        }}
-        onWheel={(e) => {
-          // This is just a backup - the native listener should handle it
-          e.preventDefault()
-          e.stopPropagation()
-        }}
-        onScroll={(e) => {
-          // Block any scroll events that slip through
-          e.preventDefault()
-          e.stopPropagation()
-          return false
-        }}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-      >
-        <div ref={svgRef} style={transformStyle}>
-          <EarthSVG
-            onMouseOver={handleMouseOver}
-            onMouseOut={handleMouseOut}
-            onClick={handleClick}
-            getPathStyling={(pathId) => mapStyling.getPathClasses(pathId)}
-            getPathAttributes={getPathAttributesForSVG}
-          />
+        {/* Map Container */}
+        <div
+          ref={containerRef}
+          className="w-full h-full relative overflow-hidden select-none"
+          style={{
+            touchAction: 'none',
+            outline: 'none',
+            overscrollBehavior: 'none' // Prevent overscroll on trackpads
+          }}
+          onWheel={(e) => {
+            // This is just a backup - the native listener should handle it
+            e.preventDefault()
+            e.stopPropagation()
+          }}
+          onScroll={(e) => {
+            // Block any scroll events that slip through
+            e.preventDefault()
+            e.stopPropagation()
+            return false
+          }}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
+          <div ref={svgRef} style={transformStyle}>
+            <EarthSVG
+              onMouseOver={handleMouseOver}
+              onMouseOut={handleMouseOut}
+              onClick={handleClick}
+              getPathStyling={(pathId) => mapStyling.getPathClasses(pathId)}
+              getPathAttributes={getPathAttributesForSVG}
+            />
+          </div>
         </div>
       </div>
     </div>
