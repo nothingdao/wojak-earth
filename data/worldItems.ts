@@ -3,9 +3,9 @@
 export interface WorldItem {
   name: string
   description: string
-  category: string // Will be cast to Prisma enum in setup
-  layerType?: string // Will be cast to Prisma enum in setup
-  rarity: string // Will be cast to Prisma enum in setup
+  category: string
+  layerType?: string
+  rarity: string
   durability?: number
   energyEffect?: number
   healthEffect?: number

@@ -11,7 +11,7 @@ import {
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL!,
-  process.env.VITE_SUPABASE_ANON_KEY! // Using anon key for now
+  process.env.VITE_SUPABASE_ANON_KEY!
 )
 
 async function seedLocations() {
