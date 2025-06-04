@@ -1,25 +1,17 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 // src/components/views/SandboxView.tsx
-import { Connection, PublicKey, Transaction, TransactionInstruction } from '@solana/web3.js'
-import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from '@solana/spl-token'
-
 import React, { useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   RefreshCw,
   Loader2,
   User,
-  Trash2,
   Image as ImageIcon,
 } from 'lucide-react'
 import { useWalletInfo } from '@/hooks/useWalletInfo'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { toast } from 'sonner'
 import type { Character } from '@/types'
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogTitle, AlertDialogTrigger } from '@radix-ui/react-alert-dialog'
-import { AlertDialogFooter, AlertDialogHeader } from '../ui/alert-dialog'
-
-
 
 interface SandboxViewProps {
   character: Character | null
@@ -34,125 +26,6 @@ export const SandboxView: React.FC<SandboxViewProps> = ({ character, onCharacter
   const [generatedImage, setGeneratedImage] = useState<string | null>(null)
   const [imageLoading, setImageLoading] = useState(false)
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const [nuking, setNuking] = useState(false)
-
-  const copyAddress = () => {
-    if (walletInfo.fullAddress) {
-      navigator.clipboard.writeText(walletInfo.fullAddress)
-      toast.success('Address copied to clipboard!')
-    }
-  }
-
-  const nukeCharacter = async () => {
-    if (!character || !wallet.publicKey || !wallet.sendTransaction) {
-      toast.error('Wallet not connected properly')
-      return
-    }
-
-    if (!character.nftAddress) {
-      toast.error('Character has no NFT to burn')
-      return
-    }
-
-    setNuking(true)
-
-    try {
-      // 1. Set up Solana connection
-      const connection = new Connection(
-        "https://api.devnet.solana.com",
-        "confirmed"
-      )
-
-      const mintAddress = new PublicKey(character.nftAddress)
-
-      // Get the associated token account
-      const tokenAccount = await getAssociatedTokenAddress(
-        mintAddress,
-        wallet.publicKey
-      )
-
-      console.log('Burning NFT:', character.nftAddress)
-      console.log('Token account:', tokenAccount.toBase58())
-
-      // Create burn instruction manually with Uint8Array
-      const burnData = new Uint8Array(9)
-      burnData[0] = 8 // Burn instruction
-
-      // Write amount as 8 bytes little endian
-      const amount = BigInt(1)
-      const view = new DataView(burnData.buffer, 1, 8)
-      view.setBigUint64(0, amount, true) // little endian
-
-      const burnInstruction = new TransactionInstruction({
-        keys: [
-          { pubkey: tokenAccount, isSigner: false, isWritable: true },
-          { pubkey: mintAddress, isSigner: false, isWritable: true },
-          { pubkey: wallet.publicKey, isSigner: true, isWritable: false },
-        ],
-        programId: TOKEN_PROGRAM_ID,
-        data: Buffer.from(burnData),
-      })
-
-      // Create transaction
-      const transaction = new Transaction().add(burnInstruction)
-
-      // Get recent blockhash
-      const { blockhash } = await connection.getLatestBlockhash()
-      transaction.recentBlockhash = blockhash
-      transaction.feePayer = wallet.publicKey
-
-      // Send transaction
-      const signature = await wallet.sendTransaction(transaction, connection)
-
-      // Wait for confirmation
-      await connection.confirmTransaction(signature, 'confirmed')
-
-      console.log('NFT burned successfully:', signature)
-
-      // 2. Now tell the backend to clean up the database
-      const cleanupResponse = await fetch('/.netlify/functions/nuke-character', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          characterId: character.id,
-          walletAddress: wallet.publicKey.toString(),
-          burnSignature: signature
-        })
-      })
-
-      const result = await cleanupResponse.json()
-
-      if (result.success) {
-        toast.success(`${character.name} has been permanently destroyed`)
-        // Call the callback to refresh character data
-        if (onCharacterCreated) {
-          onCharacterCreated()
-        } else {
-          window.location.reload()
-        }
-      } else {
-        throw new Error(result.error)
-      }
-
-    } catch (error: unknown) {
-      console.error('Nuke failed:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      toast.error(`Failed to burn NFT: ${errorMessage}`)
-    } finally {
-      setNuking(false)
-    }
-  }
-
-  const openInExplorer = () => {
-    if (walletInfo.fullAddress) {
-      window.open(
-        `https://explorer.solana.com/address/${walletInfo.fullAddress}?cluster=devnet`,
-        '_blank'
-      )
-    }
-  }
 
   // Generate random character image using dynamic layer detection
   const generateCharacterImage = async () => {
@@ -514,48 +387,6 @@ export const SandboxView: React.FC<SandboxViewProps> = ({ character, onCharacter
             <User className='w-5 h-5' />
             Your Character
           </h3>
-
-          <div className='pt-4 border-t'>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant='destructive'
-                  size='sm'
-                  disabled={nuking}
-                >
-                  {nuking ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Burning...
-                    </>
-                  ) : (
-                    <>
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Burn Character
-                    </>
-                  )}
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Permanently Destroy Character?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will permanently burn your NFT and delete {character?.name} forever.
-                    This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={nukeCharacter}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  >
-                    Yes, Burn Forever
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
 
           <div className='space-y-4'>
             <div className='flex items-center gap-4'>

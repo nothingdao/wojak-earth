@@ -293,7 +293,7 @@ function App() {
                   onNPCActivityClick={() => setCurrentView('npc-activity')}
                 />
               )}
-              {currentView === 'profile' && <ProfileView character={character} />}
+              {currentView === 'profile' && <ProfileView character={character} onCharacterUpdated={refetchCharacter} />}
               {currentView === 'sandbox' && <SandboxView character={character} />}
               {currentView === 'map' && (
                 <WorldMapView
