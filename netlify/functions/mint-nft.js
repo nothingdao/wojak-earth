@@ -205,20 +205,31 @@ export const handler = async (event, context) => {
 
 // Helper: Get next Wojak number, handling zombies
 async function getNextWojakNumber() {
-  // Get highest number from completed characters
+  // Get ALL characters with Wojak # pattern
   const { data: characters, error } = await supabase
     .from('characters')
     .select('name')
     .like('name', 'Wojak #%')
-    .order('name', { ascending: false })
-    .limit(1)
 
   if (error) throw error
 
-  const highestNumber = characters?.length > 0
-    ? parseInt(characters[0].name.split('#')[1])
-    : 1336 // Start from 1337
+  // If no characters exist, start from 1337
+  if (!characters || characters.length === 0) {
+    return 1337
+  }
 
+  // Extract all numbers from Wojak names
+  const wojakNumbers = characters
+    .map(char => {
+      const match = char.name.match(/Wojak #(\d+)/)
+      return match ? parseInt(match[1]) : null
+    })
+    .filter(num => num !== null) // Remove any failed matches
+
+  // Find the highest number
+  const highestNumber = Math.max(...wojakNumbers)
+
+  // Return next number
   return highestNumber + 1
 }
 

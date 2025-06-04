@@ -21,6 +21,8 @@ export interface Character {
   level: number
   coins: number
   currentImageUrl: string
+  nftAddress?: string
+  characterType: string
   currentLocation: {
     id: string
     name: string
