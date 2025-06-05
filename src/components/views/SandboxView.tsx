@@ -59,11 +59,8 @@ export const SandboxView: React.FC<SandboxViewProps> = ({ character, onCharacter
               // Try to load gender-specific files
               const genderPrefix = selectedGender.toLowerCase()
               const testFiles = [
-                `${genderPrefix}-cyber-jacket.png`,
-                `${genderPrefix}-miners-jacket.png`,
-                `${genderPrefix}-parka-yellow.png`,
-                `${genderPrefix}-gold-hair.png`,
-                `${genderPrefix}-white-hair.png`,
+                `${genderPrefix}-yankees-hat.png`,
+                `${genderPrefix}-cigarette.png`,
                 `${genderPrefix}.png` // for bases
               ]
 
@@ -306,7 +303,7 @@ export const SandboxView: React.FC<SandboxViewProps> = ({ character, onCharacter
                   <img
                     src={generatedImage}
                     alt={`Generated ${selectedGender.toLowerCase()} character`}
-                    className='w-32 h-32 rounded border'
+                    className='w-64 h-64 rounded border'
                   />
                   <Button
                     variant='outline'
