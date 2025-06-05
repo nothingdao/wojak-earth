@@ -1,4 +1,4 @@
-// netlify/functions/mint-nft.js - UPDATED WITH COLLECTION SUPPORT
+// netlify/functions/mint-nft.js - DEBUG VERSION
 import { Metaplex, keypairIdentity } from "@metaplex-foundation/js"
 import { Connection, Keypair, PublicKey } from "@solana/web3.js"
 import { createClient } from '@supabase/supabase-js'
@@ -28,14 +28,18 @@ export const handler = async (event, context) => {
     }
   }
 
-  // Generate the character ID ONCE at the top level
   const characterId = randomUUID()
   console.log('🆔 Generated character ID:', characterId)
 
   try {
     const { walletAddress, gender, imageBlob } = JSON.parse(event.body)
 
-    // Validate input
+    // Enhanced collection debugging
+    console.log('🔍 COLLECTION DEBUG START')
+    console.log('🔍 Environment check:')
+    console.log('  - WOJAK_COLLECTION_ADDRESS:', process.env.WOJAK_COLLECTION_ADDRESS || 'NOT SET')
+    console.log('  - SERVER_KEYPAIR_SECRET:', process.env.SERVER_KEYPAIR_SECRET ? 'SET' : 'NOT SET')
+
     if (!walletAddress || !gender || !imageBlob) {
       return {
         statusCode: 400,
@@ -46,7 +50,6 @@ export const handler = async (event, context) => {
       }
     }
 
-    // Validate wallet address
     let userWallet
     try {
       userWallet = new PublicKey(walletAddress)
@@ -58,12 +61,7 @@ export const handler = async (event, context) => {
       }
     }
 
-    // Check collection address
-    if (!process.env.WOJAK_COLLECTION_ADDRESS) {
-      console.warn('⚠️  WOJAK_COLLECTION_ADDRESS not set - NFTs will be created without collection')
-    }
-
-    // 1. Check if wallet already has a character
+    // 1. Check existing character
     const { data: existingChar } = await supabase
       .from('characters')
       .select('id, name')
@@ -81,14 +79,11 @@ export const handler = async (event, context) => {
       }
     }
 
-    // 2. Get next Wojak number
+    // 2-6. Character creation and image upload (same as before)
     const wojakNumber = await getNextWojakNumber()
     const characterName = `Wojak #${wojakNumber}`
-
-    // 3. Generate random character data
     const characterData = await generateRandomCharacter(characterName, gender, walletAddress)
 
-    // 4. Create character record first
     const { data: character, error: createError } = await supabase
       .from('characters')
       .insert({
@@ -104,18 +99,14 @@ export const handler = async (event, context) => {
 
     if (createError) throw createError
 
-    console.log('✅ Character created in DB with ID:', character.id)
-
-    // 5. Upload character image
     const imageUrl = await uploadCharacterImage(characterId, imageBlob)
-
-    // 6. Update character with image URL
     await supabase
       .from('characters')
       .update({ currentImageUrl: imageUrl })
       .eq('id', characterId)
 
-    // 7. Set up Solana connection
+    // 7. Enhanced Solana setup with collection debugging
+    console.log('🔧 Setting up Solana connection...')
     const connection = new Connection(
       process.env.SOLANA_RPC_URL || "https://api.devnet.solana.com",
       "confirmed"
@@ -125,19 +116,55 @@ export const handler = async (event, context) => {
       new Uint8Array(JSON.parse(process.env.SERVER_KEYPAIR_SECRET))
     )
 
+    console.log('🔑 Server wallet:', serverKeypair.publicKey.toBase58())
+
     const metaplex = Metaplex.make(connection)
       .use(keypairIdentity(serverKeypair))
 
-    // 8. Mint NFT with collection support
-    const metadataUri = `https://earth.ndao.computer/.netlify/functions/metadata/${characterId}`
-    console.log('📝 Generated metadata URI:', metadataUri)
+    // 8. Collection verification and setup
+    let collectionMint = null
+    if (process.env.WOJAK_COLLECTION_ADDRESS) {
+      try {
+        collectionMint = new PublicKey(process.env.WOJAK_COLLECTION_ADDRESS)
+        console.log('🗂️  Collection mint address:', collectionMint.toBase58())
 
-    // Prepare NFT creation parameters
-    const nftParams = {
+        // Verify collection exists
+        console.log('🔍 Verifying collection exists...')
+        const collectionNft = await metaplex.nfts().findByMint({
+          mintAddress: collectionMint
+        })
+        console.log('✅ Collection found:', collectionNft.name)
+        console.log('🔍 Collection details:')
+        console.log('  - Name:', collectionNft.name)
+        console.log('  - Symbol:', collectionNft.symbol)
+        console.log('  - Is Collection:', collectionNft.collectionDetails ? 'YES' : 'NO')
+        console.log('  - Owner:', collectionNft.tokenStandard)
+
+      } catch (collectionError) {
+        console.error('❌ Collection validation failed:', collectionError)
+        console.log('⚠️  Proceeding without collection...')
+        collectionMint = null
+      }
+    } else {
+      console.log('⚠️  No collection address set')
+    }
+
+    // 9. NFT creation with enhanced debugging
+    const metadataUri = `https://earth.ndao.computer/.netlify/functions/metadata/${characterId}`
+    console.log('📝 Metadata URI:', metadataUri)
+
+    console.log('🎨 Creating NFT...')
+    console.log('  - Name:', characterName)
+    console.log('  - Symbol: WOJAK')
+    console.log('  - Owner:', userWallet.toBase58())
+    console.log('  - Collection:', collectionMint?.toBase58() || 'None')
+
+    // Create NFT with or without collection
+    let nftParams = {
       uri: metadataUri,
       name: characterName,
       symbol: "WOJAK",
-      sellerFeeBasisPoints: 500, // 5% royalty
+      sellerFeeBasisPoints: 500,
       creators: [
         {
           address: serverKeypair.publicKey,
@@ -146,38 +173,48 @@ export const handler = async (event, context) => {
         }
       ],
       tokenOwner: userWallet,
-      isMutable: true, // Allow future updates
+      isMutable: true,
     }
 
     // Add collection if available
-    if (process.env.WOJAK_COLLECTION_ADDRESS) {
-      nftParams.collection = new PublicKey(process.env.WOJAK_COLLECTION_ADDRESS)
-      console.log('🗂️  Linking to collection:', process.env.WOJAK_COLLECTION_ADDRESS)
+    if (collectionMint) {
+      console.log('🔗 Adding collection to NFT params...')
+      nftParams.collection = collectionMint
     }
 
+    console.log('🚀 Minting NFT...')
     const nft = await metaplex.nfts().create(nftParams)
 
-    console.log('✅ NFT minted:', nft.mintAddress.toBase58())
+    console.log('✅ NFT minted successfully!')
+    console.log('  - Mint address:', nft.mintAddress.toBase58())
+    console.log('  - Transaction:', nft.response.signature)
 
-    // 9. Verify collection membership if collection exists
-    if (process.env.WOJAK_COLLECTION_ADDRESS) {
+    // 10. Collection verification (separate step)
+    if (collectionMint) {
       try {
-        console.log('🔗 Verifying collection membership...')
+        console.log('🔐 Starting collection verification...')
+        console.log('  - NFT mint:', nft.mintAddress.toBase58())
+        console.log('  - Collection mint:', collectionMint.toBase58())
+        console.log('  - Authority:', serverKeypair.publicKey.toBase58())
 
-        await metaplex.nfts().verifyCollection({
+        const verifyResult = await metaplex.nfts().verifyCollection({
           mintAddress: nft.mintAddress,
-          collectionMintAddress: new PublicKey(process.env.WOJAK_COLLECTION_ADDRESS),
+          collectionMintAddress: collectionMint,
           collectionAuthority: serverKeypair,
         })
 
-        console.log('✅ Collection verification complete')
+        console.log('✅ Collection verification successful!')
+        console.log('  - Verification transaction:', verifyResult.response.signature)
+
       } catch (verifyError) {
-        console.warn('⚠️  Collection verification failed:', verifyError.message)
-        // Don't fail the entire mint for verification issues
+        console.error('❌ Collection verification failed:')
+        console.error('  - Error:', verifyError.message)
+        console.error('  - Stack:', verifyError.stack)
+        console.log('⚠️  NFT created but not verified in collection')
       }
     }
 
-    // 10. Update character with NFT details
+    // 11. Final steps (same as before)
     const { data: finalCharacter, error: updateError } = await supabase
       .from('characters')
       .update({
@@ -189,19 +226,12 @@ export const handler = async (event, context) => {
       .select()
       .single()
 
-    if (updateError) {
-      console.error('❌ Failed to update character with NFT details:', updateError)
-      throw updateError
-    }
+    if (updateError) throw updateError
 
-    console.log('✅ Character updated to ACTIVE status')
-
-    // 11. Create starting inventory
     await createStartingInventory(characterId)
 
-    console.log('✅ Character minted successfully:', characterName)
-    console.log('📍 NFT Address:', nft.mintAddress.toBase58())
-    console.log('🗂️  Collection:', process.env.WOJAK_COLLECTION_ADDRESS || 'None')
+    console.log('🎉 Character creation complete!')
+    console.log('🔍 COLLECTION DEBUG END')
 
     return {
       statusCode: 200,
@@ -213,23 +243,25 @@ export const handler = async (event, context) => {
         signature: nft.response.signature,
         imageUrl: imageUrl,
         metadataUri: metadataUri,
-        collectionAddress: process.env.WOJAK_COLLECTION_ADDRESS || null,
+        collectionAddress: collectionMint?.toBase58() || null,
+        collectionLinked: !!collectionMint,
         message: `${characterName} created and minted to your wallet!`
       })
     }
 
   } catch (error) {
-    console.error('❌ Error minting character:', error)
+    console.error('❌ FATAL ERROR:', error)
+    console.error('❌ Stack trace:', error.stack)
 
-    // Cleanup incomplete character record
+    // Cleanup
     try {
       await supabase
         .from('characters')
         .delete()
         .eq('id', characterId)
-      console.log('🧹 Cleaned up incomplete character record:', characterId)
+      console.log('🧹 Cleaned up incomplete character record')
     } catch (cleanupError) {
-      console.error('❌ Failed to cleanup character record:', cleanupError)
+      console.error('❌ Cleanup failed:', cleanupError)
     }
 
     return {
@@ -244,7 +276,7 @@ export const handler = async (event, context) => {
   }
 }
 
-// Helper functions remain the same...
+// Helper functions (same as before)
 async function getNextWojakNumber() {
   const { data: characters, error } = await supabase
     .from('characters')
