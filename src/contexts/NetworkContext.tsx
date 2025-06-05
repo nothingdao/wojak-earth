@@ -42,7 +42,7 @@ export const NetworkProvider: React.FC<NetworkProviderProps> = ({ children }) =>
 
   const getExplorerUrl = (address: string) => {
     const cluster = isDevnet ? '?cluster=devnet' : ''
-    return `https://explorer.solana.com/address/${address}${cluster}`
+    return `https://amman-explorer.metaplex.com/#/address/${address}${cluster}`
   }
 
   const getRpcUrl = () => {

@@ -1,4 +1,4 @@
-// netlify/functions/mint-nft.js - FIXED VERSION
+// netlify/functions/mint-nft.js - UPDATED WITH COLLECTION SUPPORT
 import { Metaplex, keypairIdentity } from "@metaplex-foundation/js"
 import { Connection, Keypair, PublicKey } from "@solana/web3.js"
 import { createClient } from '@supabase/supabase-js'
@@ -58,6 +58,11 @@ export const handler = async (event, context) => {
       }
     }
 
+    // Check collection address
+    if (!process.env.WOJAK_COLLECTION_ADDRESS) {
+      console.warn('⚠️  WOJAK_COLLECTION_ADDRESS not set - NFTs will be created without collection')
+    }
+
     // 1. Check if wallet already has a character
     const { data: existingChar } = await supabase
       .from('characters')
@@ -76,20 +81,20 @@ export const handler = async (event, context) => {
       }
     }
 
-    // 2. Get next Wojak number (handle zombie cleanup)
+    // 2. Get next Wojak number
     const wojakNumber = await getNextWojakNumber()
     const characterName = `Wojak #${wojakNumber}`
 
     // 3. Generate random character data
     const characterData = await generateRandomCharacter(characterName, gender, walletAddress)
 
-    // 4. Create character record first (DB-first approach) - USE THE SINGLE characterId
+    // 4. Create character record first
     const { data: character, error: createError } = await supabase
       .from('characters')
       .insert({
-        id: characterId, // ← Use the single generated ID
+        id: characterId,
         ...characterData,
-        nftAddress: null, // Will be filled after successful mint
+        nftAddress: null,
         tokenId: null,
         status: 'PENDING_MINT',
         updatedAt: new Date().toISOString()
@@ -100,26 +105,21 @@ export const handler = async (event, context) => {
     if (createError) throw createError
 
     console.log('✅ Character created in DB with ID:', character.id)
-    console.log('✅ Character ID matches expected:', character.id === characterId)
 
-    // 5. Upload character image to Supabase Storage
-    const imageUrl = await uploadCharacterImage(characterId, imageBlob) // Use characterId directly
+    // 5. Upload character image
+    const imageUrl = await uploadCharacterImage(characterId, imageBlob)
 
     // 6. Update character with image URL
     await supabase
       .from('characters')
       .update({ currentImageUrl: imageUrl })
-      .eq('id', characterId) // Use characterId directly
+      .eq('id', characterId)
 
-    // 7. Set up Solana connection and keypair
+    // 7. Set up Solana connection
     const connection = new Connection(
       process.env.SOLANA_RPC_URL || "https://api.devnet.solana.com",
       "confirmed"
     )
-
-    if (!process.env.SERVER_KEYPAIR_SECRET) {
-      throw new Error('SERVER_KEYPAIR_SECRET environment variable not set')
-    }
 
     const serverKeypair = Keypair.fromSecretKey(
       new Uint8Array(JSON.parse(process.env.SERVER_KEYPAIR_SECRET))
@@ -128,15 +128,16 @@ export const handler = async (event, context) => {
     const metaplex = Metaplex.make(connection)
       .use(keypairIdentity(serverKeypair))
 
-    // 8. Mint NFT with dynamic metadata - USE characterId directly
+    // 8. Mint NFT with collection support
     const metadataUri = `https://earth.ndao.computer/.netlify/functions/metadata/${characterId}`
     console.log('📝 Generated metadata URI:', metadataUri)
 
-    const nft = await metaplex.nfts().create({
+    // Prepare NFT creation parameters
+    const nftParams = {
       uri: metadataUri,
       name: characterName,
       symbol: "WOJAK",
-      sellerFeeBasisPoints: 0,
+      sellerFeeBasisPoints: 500, // 5% royalty
       creators: [
         {
           address: serverKeypair.publicKey,
@@ -144,10 +145,39 @@ export const handler = async (event, context) => {
           share: 100
         }
       ],
-      tokenOwner: userWallet, // NFT goes directly to user
-    })
+      tokenOwner: userWallet,
+      isMutable: true, // Allow future updates
+    }
 
-    // 9. Update character with NFT details and mark as active - USE characterId directly
+    // Add collection if available
+    if (process.env.WOJAK_COLLECTION_ADDRESS) {
+      nftParams.collection = new PublicKey(process.env.WOJAK_COLLECTION_ADDRESS)
+      console.log('🗂️  Linking to collection:', process.env.WOJAK_COLLECTION_ADDRESS)
+    }
+
+    const nft = await metaplex.nfts().create(nftParams)
+
+    console.log('✅ NFT minted:', nft.mintAddress.toBase58())
+
+    // 9. Verify collection membership if collection exists
+    if (process.env.WOJAK_COLLECTION_ADDRESS) {
+      try {
+        console.log('🔗 Verifying collection membership...')
+
+        await metaplex.nfts().verifyCollection({
+          mintAddress: nft.mintAddress,
+          collectionMintAddress: new PublicKey(process.env.WOJAK_COLLECTION_ADDRESS),
+          collectionAuthority: serverKeypair,
+        })
+
+        console.log('✅ Collection verification complete')
+      } catch (verifyError) {
+        console.warn('⚠️  Collection verification failed:', verifyError.message)
+        // Don't fail the entire mint for verification issues
+      }
+    }
+
+    // 10. Update character with NFT details
     const { data: finalCharacter, error: updateError } = await supabase
       .from('characters')
       .update({
@@ -155,7 +185,7 @@ export const handler = async (event, context) => {
         tokenId: nft.mintAddress.toBase58(),
         status: 'ACTIVE'
       })
-      .eq('id', characterId) // Use characterId directly
+      .eq('id', characterId)
       .select()
       .single()
 
@@ -166,11 +196,12 @@ export const handler = async (event, context) => {
 
     console.log('✅ Character updated to ACTIVE status')
 
-    // 10. Create starting inventory
-    await createStartingInventory(characterId) // Use characterId directly
+    // 11. Create starting inventory
+    await createStartingInventory(characterId)
 
-    console.log('✅ Character minted successfully:', characterName, nft.mintAddress.toBase58())
-    console.log('✅ Metadata URI:', metadataUri)
+    console.log('✅ Character minted successfully:', characterName)
+    console.log('📍 NFT Address:', nft.mintAddress.toBase58())
+    console.log('🗂️  Collection:', process.env.WOJAK_COLLECTION_ADDRESS || 'None')
 
     return {
       statusCode: 200,
@@ -182,6 +213,7 @@ export const handler = async (event, context) => {
         signature: nft.response.signature,
         imageUrl: imageUrl,
         metadataUri: metadataUri,
+        collectionAddress: process.env.WOJAK_COLLECTION_ADDRESS || null,
         message: `${characterName} created and minted to your wallet!`
       })
     }
@@ -189,7 +221,7 @@ export const handler = async (event, context) => {
   } catch (error) {
     console.error('❌ Error minting character:', error)
 
-    // Cleanup: Delete incomplete character record - USE characterId directly
+    // Cleanup incomplete character record
     try {
       await supabase
         .from('characters')

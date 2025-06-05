@@ -242,7 +242,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ character, onCharacter
                   variant='ghost'
                   size='sm'
                   onClick={() => window.open(
-                    `https://explorer.solana.com/address/${character.nftAddress}?cluster=devnet`,
+                    `amman-explorer.metaplex.com/#/address/${character.nftAddress}?cluster=devnet`,
                     '_blank'
                   )}
                 >

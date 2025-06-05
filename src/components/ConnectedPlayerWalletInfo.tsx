@@ -45,7 +45,7 @@ export const ConnectedPlayerWalletInfo: React.FC = () => {
 
   const openInExplorer = () => {
     if (publicKey) {
-      window.open(`https://explorer.solana.com/address/${publicKey.toString()}?cluster=devnet`, '_blank')
+      window.open(`https://amman-explorer.metaplex.com/#/address/${publicKey.toString()}?cluster=devnet`, '_blank')
     }
   }
 
