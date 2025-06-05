@@ -42,6 +42,7 @@ interface MainViewProps {
   onMarketClick: () => void
   onChatClick: () => void
   onNPCActivityClick: () => void
+  // Removed navigation props since they're now handled by LocationNavbar in App.tsx
 }
 
 export const MainView: React.FC<MainViewProps> = ({
@@ -51,6 +52,7 @@ export const MainView: React.FC<MainViewProps> = ({
   onMarketClick,
   onChatClick,
   onNPCActivityClick
+  // Removed navigation props since they're now handled by LocationNavbar in App.tsx
 }) => {
   const locationId = character.currentLocation.id
   const chatParticipants = useChatParticipantCount(locationId)
@@ -187,6 +189,8 @@ export const MainView: React.FC<MainViewProps> = ({
 
   const ActionPreviewButtons = () => (
     <div className="grid grid-cols-2 gap-3">
+
+      {/* mine */}
       <Button
         variant="outline"
         className="h-auto p-4 flex-col items-start"
@@ -221,7 +225,7 @@ export const MainView: React.FC<MainViewProps> = ({
           </div>
         )}
       </Button>
-
+      {/* market */}
       <Button
         variant="outline"
         className="h-auto p-4 flex-col items-start"
@@ -250,6 +254,29 @@ export const MainView: React.FC<MainViewProps> = ({
               <div>Market available</div>
             )}
           </div>
+        ) : (
+          <div className="text-xs text-muted-foreground">
+            Remote location
+          </div>
+        )}
+      </Button>
+      {/* scavenge */}
+      {/* todo: make items that can be found that are not typical mining itmes so this would be things like flppy disk, walkman, mobile phone, etc... */}
+      <Button
+        variant="outline"
+        className="h-auto p-4 flex-col items-start"
+        disabled={!location.hasScaveging}
+      >
+        <div className="flex items-center gap-2 mb-1 self-start">
+          <Store className="w-4 h-4" />
+          <span>Scavenge</span>
+        </div>
+        {location.hasMarket ? (
+
+          <div className="text-xs text-muted-foreground">
+            Look around for useful items
+          </div>
+
         ) : (
           <div className="text-xs text-muted-foreground">
             Remote location
@@ -302,6 +329,8 @@ export const MainView: React.FC<MainViewProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* LocationNavbar is now in App.tsx, so we removed it from here */}
+
       <AtmosphericHeader />
       <ActionPreviewButtons />
       <DetailedResourcePreview />

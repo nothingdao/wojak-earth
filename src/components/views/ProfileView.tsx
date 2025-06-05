@@ -17,6 +17,7 @@ import { useWalletInfo } from '@/hooks/useWalletInfo'
 import { toast } from 'sonner'
 import type { Character } from '@/types'
 import { BurnCharacter } from '../BurnCharacter'
+import { useNetwork } from '@/contexts/NetworkContext'
 
 interface ProfileViewProps {
   character: Character
@@ -27,6 +28,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ character, onCharacter
   const walletInfo = useWalletInfo()
   const [imageError, setImageError] = useState(false)
   const [imageLoading, setImageLoading] = useState(true)
+  const { getExplorerUrl } = useNetwork()
 
   const handleImageLoad = () => {
     setImageLoading(false)
@@ -55,38 +57,18 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ character, onCharacter
 
   const openInExplorer = () => {
     if (walletInfo.fullAddress) {
-      window.open(
-        `https://explorer.solana.com/address/${walletInfo.fullAddress}?cluster=devnet`,
-        '_blank'
-      )
+      getExplorerUrl(walletInfo.fullAddress)
     }
   }
 
-  const copyCharacterInfo = () => {
-    const characterInfo = `${character.name} - Level ${character.level} ${character.gender} ${character.characterType}\nLocation: ${character.currentLocation.name}\nEnergy: ${character.energy}/100 | Health: ${character.health}/100 | Coins: ${character.coins}`
-    navigator.clipboard.writeText(characterInfo)
-    toast.success('Character info copied to clipboard!')
-  }
+
 
   const renderCharacterProfile = () => (
     <div className='bg-card border rounded-lg p-6'>
-      <div className='flex items-center justify-between mb-4'>
-        <h3 className='text-lg font-semibold flex items-center gap-2'>
-          <User className='w-5 h-5' />
-          Character Profile
-        </h3>
-        <Button
-          variant='ghost'
-          size='sm'
-          onClick={copyCharacterInfo}
-        >
-          <Copy className='w-4 h-4' />
-        </Button>
-      </div>
 
       <div className='text-center mb-4'>
         {/* Character Image */}
-        <div className='w-32 h-32 mx-auto bg-gray-200 rounded-lg flex items-center justify-center mb-4 overflow-hidden relative'>
+        <div className='w-full mx-auto bg-gray-200 rounded-lg flex items-center justify-center mb-4 overflow-hidden relative'>
           {imageLoading && (
             <div className='absolute inset-0 flex items-center justify-center'>
               <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-primary'></div>

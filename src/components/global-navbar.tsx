@@ -1,6 +1,6 @@
-// src/components/global-navbar.tsx
+// src/components/global-navbar.tsx - Updated with admin button
 import { Button } from '@/components/ui/button'
-import { Map, Backpack, MapPin, BoxIcon, Menu } from 'lucide-react'
+import { Map, Backpack, MapPin, BoxIcon, Menu, Shield } from 'lucide-react'
 import { ModeToggle } from './mode-toggle'
 import type { Character } from '@/types'
 import { WalletConnectButton } from './wallet-connect-button'
@@ -10,6 +10,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu'
 
 interface GlobalNavbarProps {
@@ -20,6 +21,7 @@ interface GlobalNavbarProps {
   onMapClick?: () => void
   onSandboxClick?: () => void
   onInventoryClick?: () => void
+  onAdminClick?: () => void // Optional admin click handler
 }
 
 export function GlobalNavbar({
@@ -29,7 +31,8 @@ export function GlobalNavbar({
   onHomeClick,
   onMapClick,
   onSandboxClick,
-  onInventoryClick
+  onInventoryClick,
+  onAdminClick // Add this to the destructuring
 }: GlobalNavbarProps) {
   const [imageError, setImageError] = useState(false)
 
@@ -121,6 +124,19 @@ export function GlobalNavbar({
                 <Backpack className="w-4 h-4 mr-2" />
                 Inventory
               </Button>
+
+              {/* Desktop Admin Button - only show if onAdminClick is provided */}
+              {onAdminClick && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 px-3 text-red-500 border-red-500/30 hover:bg-red-500/10 hover:text-red-400"
+                  onClick={onAdminClick}
+                >
+                  <Shield className="w-4 h-4 mr-2" />
+                  Admin
+                </Button>
+              )}
             </div>
           )}
         </div>
@@ -161,6 +177,20 @@ export function GlobalNavbar({
                     />
                     Profile
                   </DropdownMenuItem>
+
+                  {/* Mobile Admin Menu Item - only show if onAdminClick is provided */}
+                  {onAdminClick && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={onAdminClick}
+                        className="text-red-500 focus:text-red-400 focus:bg-red-500/10"
+                      >
+                        <Shield className="w-4 h-4 mr-2" />
+                        Admin Panel
+                      </DropdownMenuItem>
+                    </>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>

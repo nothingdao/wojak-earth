@@ -11,6 +11,7 @@ export type GameView =
   | 'gamemaster'
   | 'profile'
   | 'sandbox'
+  | 'admin'
 
 export interface Character {
   id: string
@@ -19,8 +20,10 @@ export interface Character {
   energy: number
   health: number
   level: number
+  status: string
   coins: number
   currentImageUrl: string
+  currentVersion: number
   nftAddress?: string
   characterType: string
   currentLocation: {
@@ -59,6 +62,7 @@ export interface Character {
 
 // Updated Location interface to match database schema
 export interface Location {
+  hasScaveging: boolean
   id: string
   name: string
   description: string
@@ -89,6 +93,19 @@ export interface Location {
   isExplored?: boolean
   status?: 'explored' | 'unexplored' | 'locked'
   subLocations?: Location[]
+}
+
+// Item and MarketItem interfaces for inventory and market. Why are these separate? Well, the MarketItem is a more detailed version of Item with additional fields like price, quantity, and seller information. But, not all items are meant for the market.
+
+export interface Item {
+  id: string
+  name: string
+  category: string
+  rarity: string
+  description: string
+  energyEffect?: number
+  healthEffect?: number
+  durability?: number
 }
 
 // Alias for backward compatibility

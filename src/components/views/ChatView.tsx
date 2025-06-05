@@ -267,7 +267,7 @@ export function ChatView({
                 ) : (
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 text-xs">
-                      <div className="w-4 h-4 rounded-full bg-gray-300 flex items-center justify-center overflow-hidden">
+                      <div className="w-10 h-10 rounded-lg bg-gray-300 flex items-center justify-center overflow-hidden">
                         {getCharacterImageUrl(message) ? (
                           <img
                             src={getCharacterImageUrl(message)!}
@@ -289,7 +289,7 @@ export function ChatView({
                       </span>
                       <span className="text-muted-foreground">{message.timeAgo}</span>
                     </div>
-                    <div className={`text-sm pl-6 ${message.character?.id === character.id ? 'text-primary/90' : ''}`}>
+                    <div className={`text-sm pl-12 ${message.character?.id === character.id ? 'text-primary/90' : ''}`}>
                       {message.messageType === 'EMOTE' ? (
                         <span className="italic">*{message.message}*</span>
                       ) : (

@@ -14,7 +14,9 @@ import { WalletConnectButton } from './components/wallet-connect-button'
 import type { GameView, DatabaseLocation } from '@/types'
 import { LocationPreview } from './components/LocationPreview'
 import { LocalRadio } from './components/LocalRadio'
-
+// import { LocationNavbar } from './components/location-navbar'
+import { AdminView } from '@/components/views'
+import { isAdmin } from '@/config/admins'
 
 function App() {
   const wallet = useWallet()
@@ -73,6 +75,11 @@ function App() {
     setSelectedLocation(null)
   }
 
+  const handleAdminClick = () => {
+    setCurrentView('admin')
+    setSelectedLocation(null)
+  }
+
   // Wallet not connected
   if (!wallet.connected) {
     return (
@@ -110,6 +117,8 @@ function App() {
           onMapClick={handleNavMapClick}
           onSandboxClick={handleSandboxClick}
           onInventoryClick={handleNavInventoryClick}
+          onAdminClick={wallet.publicKey && isAdmin(wallet.publicKey.toString()) ? handleAdminClick : undefined}
+
         />
 
         <div className="container mx-auto px-4 py-6">
@@ -271,6 +280,11 @@ function App() {
           onMapClick={handleNavMapClick}
           onSandboxClick={handleSandboxClick}
           onInventoryClick={handleNavInventoryClick}
+          onAdminClick={
+            wallet.publicKey && isAdmin(wallet.publicKey.toString())
+              ? handleAdminClick
+              : undefined
+          }
         />
 
         <div className="container mx-auto px-4 py-6">
@@ -281,6 +295,18 @@ function App() {
                 <LocalRadio locationId={character.currentLocation.id} />
               </div>
             )}
+
+            {/* Add LocationNavbar for all views */}
+            {/* {character && (
+              <LocationNavbar
+                character={character}
+                currentLocation={character.currentLocation.name}
+                onProfileClick={handleProfileClick}
+                onHomeClick={handleHomeClick}
+                onMapClick={handleNavMapClick}
+                onInventoryClick={handleNavInventoryClick}
+              />
+            )} */}
 
             <div className="">
               {currentView === 'main' && (
@@ -338,6 +364,8 @@ function App() {
                 />
               )}
               {currentView === 'npc-activity' && <NPCActivity />}
+              {currentView === 'admin' && <AdminView character={character} />}
+
             </div>
           </div>
         </div>

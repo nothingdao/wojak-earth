@@ -1,13 +1,16 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 // src/components/BurnCharacter.tsx
 import { Connection, PublicKey, Transaction, TransactionInstruction } from '@solana/web3.js'
-import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from '@solana/spl-token'
+import {
+  getAssociatedTokenAddress,
+  TOKEN_PROGRAM_ID,
+  getAccount
+} from '@solana/spl-token'
 
 import React, { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Loader2,
-  User,
   Trash2,
 } from 'lucide-react'
 import { useWallet } from '@solana/wallet-adapter-react'
@@ -15,6 +18,7 @@ import { toast } from 'sonner'
 import type { Character } from '@/types'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogTitle, AlertDialogTrigger } from '@radix-ui/react-alert-dialog'
 import { AlertDialogFooter, AlertDialogHeader } from './ui/alert-dialog'
+import { useNetwork } from '@/contexts/NetworkContext'
 
 interface BurnCharacterProps {
   character: Character | null
@@ -24,6 +28,7 @@ interface BurnCharacterProps {
 export const BurnCharacter: React.FC<BurnCharacterProps> = ({ character, onCharacterCreated }) => {
   const wallet = useWallet()
   const [nuking, setNuking] = useState(false)
+  const { getRpcUrl } = useNetwork()
 
   const nukeCharacter = async () => {
     if (!character || !wallet.publicKey || !wallet.sendTransaction) {
@@ -40,10 +45,8 @@ export const BurnCharacter: React.FC<BurnCharacterProps> = ({ character, onChara
 
     try {
       // 1. Set up Solana connection
-      const connection = new Connection(
-        "https://api.devnet.solana.com",
-        "confirmed"
-      )
+      const connection = new Connection(getRpcUrl(), "confirmed")
+
 
       const mintAddress = new PublicKey(character.nftAddress)
 
@@ -56,15 +59,21 @@ export const BurnCharacter: React.FC<BurnCharacterProps> = ({ character, onChara
       console.log('Burning NFT:', character.nftAddress)
       console.log('Token account:', tokenAccount.toBase58())
 
-      // Create burn instruction manually with Uint8Array
-      const burnData = new Uint8Array(9)
-      burnData[0] = 8 // Burn instruction
+      // Check if token account exists and has the token
+      try {
+        const tokenAccountInfo = await getAccount(connection, tokenAccount)
 
-      // Write amount as 8 bytes little endian
-      const amount = BigInt(1)
-      const view = new DataView(burnData.buffer, 1, 8)
-      view.setBigUint64(0, amount, true) // little endian
+        if (tokenAccountInfo.amount === 0n) {
+          throw new Error('No tokens in account to burn')
+        }
 
+        console.log('Token account balance:', tokenAccountInfo.amount.toString())
+      } catch (error) {
+        console.error('Token account error:', error)
+        throw new Error('Token account not found or invalid')
+      }
+
+      // Create burn instruction manually (due to library version issues)
       const burnInstruction = new TransactionInstruction({
         keys: [
           { pubkey: tokenAccount, isSigner: false, isWritable: true },
@@ -72,22 +81,72 @@ export const BurnCharacter: React.FC<BurnCharacterProps> = ({ character, onChara
           { pubkey: wallet.publicKey, isSigner: true, isWritable: false },
         ],
         programId: TOKEN_PROGRAM_ID,
-        data: Buffer.from(burnData),
+        data: Buffer.from([
+          8, // Burn instruction discriminator
+          1, 0, 0, 0, 0, 0, 0, 0, // Amount as little-endian u64 (1)
+        ]),
       })
 
       // Create transaction
-      const transaction = new Transaction().add(burnInstruction)
+      const transaction = new Transaction()
+      transaction.add(burnInstruction)
 
-      // Get recent blockhash
-      const { blockhash } = await connection.getLatestBlockhash()
+      // Get recent blockhash and set fee payer
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed')
       transaction.recentBlockhash = blockhash
       transaction.feePayer = wallet.publicKey
 
-      // Send transaction
-      const signature = await wallet.sendTransaction(transaction, connection)
+      console.log('Sending burn transaction...')
+      console.log('Wallet name:', wallet.wallet?.adapter?.name || 'Unknown')
 
-      // Wait for confirmation
-      await connection.confirmTransaction(signature, 'confirmed')
+      // Send transaction with retry logic for wallet compatibility
+      let signature: string
+      try {
+        signature = await wallet.sendTransaction(transaction, connection, {
+          skipPreflight: false,
+          preflightCommitment: 'confirmed'
+        })
+      } catch (firstError) {
+        console.warn('First attempt failed, retrying with different settings:', firstError)
+
+        // For Magic Eden and other strict wallets, try signing first then sending
+        const walletName = wallet.wallet?.adapter?.name?.toLowerCase() || ''
+        if (walletName.includes('magic') || walletName.includes('eden')) {
+          try {
+            console.log('Trying Magic Eden compatible approach...')
+            if (!wallet.signTransaction) {
+              throw new Error('Wallet does not support signing transactions')
+            }
+            const signedTransaction = await wallet.signTransaction(transaction)
+            signature = await connection.sendRawTransaction(signedTransaction.serialize(), {
+              skipPreflight: true,
+              preflightCommitment: 'processed'
+            })
+          } catch (magicEdenError) {
+            console.error('Magic Eden approach also failed:', magicEdenError)
+            throw magicEdenError
+          }
+        } else {
+          // Retry with less strict settings for other wallets
+          signature = await wallet.sendTransaction(transaction, connection, {
+            skipPreflight: true,
+            preflightCommitment: 'processed'
+          })
+        }
+      }
+
+      console.log('Transaction sent:', signature)
+
+      // Wait for confirmation with timeout
+      const confirmation = await connection.confirmTransaction({
+        signature,
+        blockhash,
+        lastValidBlockHeight
+      }, 'confirmed')
+
+      if (confirmation.value.err) {
+        throw new Error(`Transaction failed: ${JSON.stringify(confirmation.value.err)}`)
+      }
 
       console.log('NFT burned successfully:', signature)
 
@@ -104,6 +163,10 @@ export const BurnCharacter: React.FC<BurnCharacterProps> = ({ character, onChara
         })
       })
 
+      if (!cleanupResponse.ok) {
+        throw new Error(`HTTP error! status: ${cleanupResponse.status}`)
+      }
+
       const result = await cleanupResponse.json()
 
       if (result.success) {
@@ -115,12 +178,26 @@ export const BurnCharacter: React.FC<BurnCharacterProps> = ({ character, onChara
           window.location.reload()
         }
       } else {
-        throw new Error(result.error)
+        throw new Error(result.error || 'Backend cleanup failed')
       }
 
     } catch (error: unknown) {
       console.error('Nuke failed:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      let errorMessage = 'Unknown error'
+
+      if (error instanceof Error) {
+        errorMessage = error.message
+
+        // Handle specific wallet errors
+        if (error.message.includes('User rejected')) {
+          errorMessage = 'Transaction was cancelled by user'
+        } else if (error.message.includes('insufficient')) {
+          errorMessage = 'Insufficient funds for transaction fee'
+        } else if (error.message.includes('blockhash')) {
+          errorMessage = 'Transaction expired, please try again'
+        }
+      }
+
       toast.error(`Failed to burn NFT: ${errorMessage}`)
     } finally {
       setNuking(false)
@@ -129,11 +206,9 @@ export const BurnCharacter: React.FC<BurnCharacterProps> = ({ character, onChara
 
   return (
     <div className='space-y-6'>
-
       {/* Character exists - show existing character nuke section */}
       {character && (
         <div className='bg-card border rounded-lg p-6'>
-
           <div className=''>
             <AlertDialog>
               <AlertDialogTrigger asChild>
@@ -175,10 +250,8 @@ export const BurnCharacter: React.FC<BurnCharacterProps> = ({ character, onChara
               </AlertDialogContent>
             </AlertDialog>
           </div>
-
         </div>
       )}
-
     </div>
   )
 }

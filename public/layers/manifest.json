@@ -1,0 +1,97 @@
+{
+  "1-base": {
+    "male": ["male.png"],
+    "female": ["female.png"]
+  },
+  "2-skin": {
+    "male": [],
+    "female": [],
+    "neutral": []
+  },
+  "3-undergarments": {
+    "male": [],
+    "female": [],
+    "neutral": []
+  },
+  "4-clothing": {
+    "male": ["male-black-t-shirt.png", "male-tie-dye-t-shirt.png"],
+    "female": [
+      "female-underland-t-shirt.png",
+      "female-tiger-tank.png",
+      "female-404-not-found-t-shirt.png"
+    ],
+    "neutral": []
+  },
+  "5-outerwear": {
+    "male": [],
+    "female": ["female-leather-jacket.png"],
+    "neutral": []
+  },
+  "6-hair": {
+    "male": ["male-bald.png"],
+    "female": [],
+    "neutral": []
+  },
+  "7-face-accessories": {
+    "male": [],
+    "female": [],
+    "neutral": []
+  },
+  "8-headwear": {
+    "male": [
+      {
+        "file": "male-sun-hat.png",
+        "requires_hair": [],
+        "incompatible_hair": []
+      }
+    ],
+    "female": [
+      {
+        "file": "female-yankees-hat.png",
+        "requires_hair": []
+      }
+    ],
+    "neutral": []
+  },
+  "9-misc-accessories": {
+    "male": ["male-cigarette.png"],
+    "female": ["female-cigarette.png", "female-solana-seeker.png"],
+    "neutral": []
+  },
+  "backgrounds": {
+    "neutral": []
+  },
+  "overlays": {
+    "neutral": []
+  },
+  "compatibility_rules": {
+    "hair_headwear_conflicts": {
+      "male-mohawk.png": {
+        "blocks": [],
+        "allows": []
+      },
+      "female-long.png": {
+        "blocks": [],
+        "allows": []
+      }
+    },
+    "outerwear_combinations": {
+      "hoodie.png": {
+        "blocks_headwear": [],
+        "allows_headwear": []
+      },
+      "formal-jacket.png": {
+        "blocks_headwear": [],
+        "allows_headwear": []
+      }
+    },
+    "style_themes": {
+      "cyberpunk": {
+        "preferred_combinations": [[], []]
+      },
+      "western": {
+        "preferred_combinations": [[], []]
+      }
+    }
+  }
+}

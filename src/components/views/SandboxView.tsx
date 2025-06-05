@@ -1,6 +1,5 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // src/components/views/SandboxView.tsx
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   RefreshCw,
@@ -18,16 +17,178 @@ interface SandboxViewProps {
   onCharacterCreated?: () => void
 }
 
+// Type definitions for manifest structure
+interface AssetEntry {
+  file: string
+  compatible_headwear?: string[]
+  incompatible_headwear?: string[]
+  requires_hair?: string[]
+  incompatible_hair?: string[]
+  compatible_outerwear?: string[]
+  incompatible_outerwear?: string[]
+  rules?: Record<string, unknown>
+}
+
+interface LayerManifest {
+  male?: (string | AssetEntry)[]
+  female?: (string | AssetEntry)[]
+  neutral?: (string | AssetEntry)[]
+}
+
+interface Manifest {
+  [layerType: string]: LayerManifest
+  compatibility_rules?: {
+    hair_headwear_conflicts?: Record<string, { blocks?: string[]; allows?: string[] }>
+    outerwear_combinations?: Record<string, { blocks_headwear?: string[]; allows_headwear?: string[] }>
+    style_themes?: Record<string, { preferred_combinations?: string[][] }>
+  }
+}
+
+type GenderFilter = 'ALL' | 'MALE' | 'FEMALE'
+
+// Define proper layer order with probability weights
+const LAYER_CONFIG = {
+  '1-base': { required: true, probability: 1.0 },
+  '2-skin': { required: false, probability: 0.3 },
+  '3-undergarments': { required: false, probability: 0.4 },
+  '4-clothing': { required: false, probability: 0.8 },
+  '5-outerwear': { required: false, probability: 0.6 },
+  '6-hair': { required: true, probability: 1.0 },
+  '7-face-accessories': { required: false, probability: 0.3 },
+  '8-headwear': { required: false, probability: 0.4 },
+  '9-misc-accessories': { required: false, probability: 0.2 },
+  'backgrounds': { required: true, probability: 1.0 },
+  'overlays': { required: false, probability: 0.3 }
+}
+
 export const SandboxView: React.FC<SandboxViewProps> = ({ character, onCharacterCreated }) => {
   const walletInfo = useWalletInfo()
   const wallet = useWallet()
   const [loading, setLoading] = useState(false)
-  const [selectedGender, setSelectedGender] = useState<'MALE' | 'FEMALE'>('MALE')
+  const [genderFilter, setGenderFilter] = useState<GenderFilter>('ALL')
   const [generatedImage, setGeneratedImage] = useState<string | null>(null)
   const [imageLoading, setImageLoading] = useState(false)
+  const [currentGender, setCurrentGender] = useState<'MALE' | 'FEMALE'>('MALE')
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
-  // Generate random character image using dynamic layer detection
+  // Auto-generate character on component mount
+  useEffect(() => {
+    if (walletInfo.connected && !character) {
+      generateCharacterImage()
+    }
+  }, [walletInfo.connected, character])
+
+  // Load and parse the layers manifest
+  const loadLayersManifest = async (): Promise<Manifest> => {
+    try {
+      const response = await fetch('/layers/manifest.json')
+      if (!response.ok) {
+        throw new Error('Failed to load manifest')
+      }
+      return await response.json() as Manifest
+    } catch (error) {
+      console.error('Failed to load layers manifest:', error)
+      return {}
+    }
+  }
+
+  // Parse asset entry (can be string or object with compatibility rules)
+  const parseAssetEntry = (entry: string | AssetEntry): { file: string; rules?: AssetEntry } => {
+    if (typeof entry === 'string') {
+      return { file: entry }
+    }
+    if (typeof entry === 'object' && entry.file) {
+      return { file: entry.file, rules: entry }
+    }
+    return { file: '' }
+  }
+
+  // Get available assets for a layer based on gender and manifest
+  const getLayerAssets = (manifest: Manifest, layerType: string, gender: 'MALE' | 'FEMALE'): string[] => {
+    const layerData = manifest[layerType]
+    if (!layerData) return []
+
+    const genderKey = gender.toLowerCase() as 'male' | 'female'
+    const availableAssets: string[] = []
+
+    // Add gender-specific assets
+    if (layerData[genderKey]) {
+      for (const entry of layerData[genderKey]) {
+        const parsed = parseAssetEntry(entry)
+        if (parsed.file) {
+          availableAssets.push(parsed.file)
+        }
+      }
+    }
+
+    // Add neutral assets (work for all genders)
+    if (layerData.neutral) {
+      for (const entry of layerData.neutral) {
+        const parsed = parseAssetEntry(entry)
+        if (parsed.file) {
+          availableAssets.push(parsed.file)
+        }
+      }
+    }
+
+    return availableAssets
+  }
+
+  // Check if two assets are compatible based on manifest rules
+  const areAssetsCompatible = (manifest: Manifest, selectedLayers: Record<string, string | null>): boolean => {
+    const rules = manifest.compatibility_rules || {}
+
+    // Check hair-headwear conflicts
+    const selectedHair = selectedLayers['6-hair']
+    const selectedHeadwear = selectedLayers['8-headwear']
+
+    if (selectedHair && selectedHeadwear && rules.hair_headwear_conflicts) {
+      const hairConflicts = rules.hair_headwear_conflicts[selectedHair]
+      if (hairConflicts) {
+        if (hairConflicts.blocks && hairConflicts.blocks.includes(selectedHeadwear)) {
+          return false
+        }
+        if (hairConflicts.allows && !hairConflicts.allows.includes(selectedHeadwear)) {
+          return false
+        }
+      }
+    }
+
+    // Check outerwear-headwear combinations
+    const selectedOuterwear = selectedLayers['5-outerwear']
+    if (selectedOuterwear && selectedHeadwear && rules.outerwear_combinations) {
+      const outerwearRules = rules.outerwear_combinations[selectedOuterwear]
+      if (outerwearRules) {
+        if (outerwearRules.blocks_headwear && outerwearRules.blocks_headwear.includes(selectedHeadwear)) {
+          return false
+        }
+        if (outerwearRules.allows_headwear && !outerwearRules.allows_headwear.includes(selectedHeadwear)) {
+          return false
+        }
+      }
+    }
+
+    return true
+  }
+
+  // Get compatible assets for a layer considering already selected items
+  const getCompatibleAssets = (manifest: Manifest, layerType: string, selectedLayers: Record<string, string | null>, gender: 'MALE' | 'FEMALE'): string[] => {
+    const layerAssets = getLayerAssets(manifest, layerType, gender)
+    const compatibleAssets: string[] = []
+
+    for (const asset of layerAssets) {
+      // Create temporary selection to test compatibility
+      const testSelection = { ...selectedLayers, [layerType]: asset }
+
+      if (areAssetsCompatible(manifest, testSelection)) {
+        compatibleAssets.push(asset)
+      }
+    }
+
+    return compatibleAssets
+  }
+
+  // Generate random character image using proper layer system
   const generateCharacterImage = async () => {
     setImageLoading(true)
 
@@ -41,137 +202,75 @@ export const SandboxView: React.FC<SandboxViewProps> = ({ character, onCharacter
       // Set canvas size
       canvas.width = 400
       canvas.height = 400
-
-      // Clear canvas
       ctx.clearRect(0, 0, 400, 400)
 
-      // Dynamically load available layers from directories
-      const loadAvailableLayers = async () => {
-        const layerTypes = ['backgrounds', 'bases', 'clothing', 'accessories', 'overlays']
-        const availableLayers: { [key: string]: string[] } = {}
+      // Determine gender for this generation
+      let selectedGender: 'MALE' | 'FEMALE'
+      if (genderFilter === 'ALL') {
+        selectedGender = Math.random() < 0.5 ? 'MALE' : 'FEMALE'
+      } else {
+        selectedGender = genderFilter
+      }
+      setCurrentGender(selectedGender)
 
-        for (const layerType of layerTypes) {
-          try {
-            // For bases, clothing, and accessories, filter by gender prefix
-            const isGenderSpecific = ['bases', 'clothing', 'accessories'].includes(layerType)
+      // Load manifest
+      const manifest = await loadLayersManifest()
+      console.log('Loaded manifest:', manifest)
 
-            if (isGenderSpecific) {
-              // Try to load gender-specific files
-              const genderPrefix = selectedGender.toLowerCase()
-              const testFiles = [
-                `${genderPrefix}-yankees-hat.png`,
-                `${genderPrefix}-cigarette.png`,
-                `${genderPrefix}.png` // for bases
-              ]
+      // Select layers based on probability, requirements, and compatibility
+      const selectedLayers: Record<string, string | null> = {}
 
-              const validFiles: string[] = []
+      // First pass: select required layers without compatibility checking
+      for (const [layerType, config] of Object.entries(LAYER_CONFIG)) {
+        if (config.required) {
+          const availableAssets = getLayerAssets(manifest, layerType, selectedGender)
+          if (availableAssets.length > 0) {
+            selectedLayers[layerType] = availableAssets[Math.floor(Math.random() * availableAssets.length)]
+          }
+        }
+      }
 
-              for (const file of testFiles) {
-                try {
-                  // Test if file exists by trying to load it
-                  const testImg = new Image()
-                  const fileExists = await new Promise((resolve) => {
-                    testImg.onload = () => resolve(true)
-                    testImg.onerror = () => resolve(false)
-                    testImg.src = `/layers/${layerType}/${file}`
-                  })
-
-                  if (fileExists) {
-                    validFiles.push(file)
-                  }
-                } catch (error) {
-                  // File doesn't exist, skip it
-                }
-              }
-
-              availableLayers[layerType] = validFiles
-            } else {
-              // For non-gender specific layers (backgrounds, overlays)
-              const commonFiles = [
-                'cyber-city.png',
-                'desert-outpost.png',
-                'mining-plains.png',
-                'glitch-vibe.png',
-                'glow-red.png',
-                'rain-fog.png'
-              ]
-
-              const validFiles: string[] = []
-
-              for (const file of commonFiles) {
-                try {
-                  const testImg = new Image()
-                  const fileExists = await new Promise((resolve) => {
-                    testImg.onload = () => resolve(true)
-                    testImg.onerror = () => resolve(false)
-                    testImg.src = `/layers/${layerType}/${file}`
-                  })
-
-                  if (fileExists) {
-                    validFiles.push(file)
-                  }
-                } catch (error) {
-                  // File doesn't exist, skip it
-                }
-              }
-
-              availableLayers[layerType] = validFiles
-            }
-          } catch (error) {
-            console.warn(`Could not load ${layerType} directory`)
-            availableLayers[layerType] = []
+      // Second pass: select optional layers with compatibility checking
+      for (const [layerType, config] of Object.entries(LAYER_CONFIG)) {
+        if (!config.required && Math.random() < config.probability) {
+          const compatibleAssets = getCompatibleAssets(manifest, layerType, selectedLayers, selectedGender)
+          if (compatibleAssets.length > 0) {
+            selectedLayers[layerType] = compatibleAssets[Math.floor(Math.random() * compatibleAssets.length)]
           }
         }
 
-        return availableLayers
-      }
-
-      const layers = await loadAvailableLayers()
-      console.log('Dynamically loaded layers:', layers)
-
-      // Random selection from available files
-      const selectedLayers = {
-        background: layers.backgrounds?.length > 0 ?
-          layers.backgrounds[Math.floor(Math.random() * layers.backgrounds.length)] : null,
-        base: layers.bases?.length > 0 ?
-          layers.bases[Math.floor(Math.random() * layers.bases.length)] : null,
-        clothing: (layers.clothing?.length > 0 && Math.random() > 0.2) ?
-          layers.clothing[Math.floor(Math.random() * layers.clothing.length)] : null,
-        accessory: (layers.accessories?.length > 0 && Math.random() > 0.4) ?
-          layers.accessories[Math.floor(Math.random() * layers.accessories.length)] : null,
-        overlay: (layers.overlays?.length > 0 && Math.random() > 0.7) ?
-          layers.overlays[Math.floor(Math.random() * layers.overlays.length)] : null
+        // Set null for layers not selected
+        if (!selectedLayers[layerType]) {
+          selectedLayers[layerType] = null
+        }
       }
 
       console.log('Selected layers for', selectedGender + ':', selectedLayers)
 
-      // Load and draw layers
+      // Load image helper
       const loadImage = (src: string): Promise<HTMLImageElement> => {
         return new Promise((resolve, reject) => {
           const img = new Image()
           img.crossOrigin = 'anonymous'
           img.onload = () => resolve(img)
           img.onerror = reject
-          img.src = `/layers/${src}`
+          img.src = src
         })
       }
 
-      // Draw layers in order (background → base → clothing → accessories → overlay)
-      const layerOrder = [
-        ...(selectedLayers.background ? [{ type: 'backgrounds', file: selectedLayers.background }] : []),
-        ...(selectedLayers.base ? [{ type: 'bases', file: selectedLayers.base }] : []),
-        ...(selectedLayers.clothing ? [{ type: 'clothing', file: selectedLayers.clothing }] : []),
-        ...(selectedLayers.accessory ? [{ type: 'accessories', file: selectedLayers.accessory }] : []),
-        ...(selectedLayers.overlay ? [{ type: 'overlays', file: selectedLayers.overlay }] : [])
-      ]
+      // Draw layers in proper order
+      const layerOrder = Object.keys(LAYER_CONFIG)
 
-      for (const layer of layerOrder) {
+      for (const layerType of layerOrder) {
+        const selectedFile = selectedLayers[layerType]
+        if (!selectedFile) continue
+
         try {
-          const img = await loadImage(`${layer.type}/${layer.file}`)
+          const img = await loadImage(`/layers/${layerType}/${selectedFile}`)
           ctx.drawImage(img, 0, 0, 400, 400)
-          console.log(`✓ Loaded: ${layer.type}/${layer.file}`)
+          console.log(`✓ Loaded: ${layerType}/${selectedFile}`)
         } catch (error) {
-          console.warn(`✗ Failed to load layer: ${layer.type}/${layer.file}`, error)
+          console.warn(`✗ Failed to load layer: ${layerType}/${selectedFile}`, error)
         }
       }
 
@@ -187,6 +286,12 @@ export const SandboxView: React.FC<SandboxViewProps> = ({ character, onCharacter
     } finally {
       setImageLoading(false)
     }
+  }
+
+  // Handle gender filter change
+  const handleGenderFilterChange = (newFilter: GenderFilter) => {
+    setGenderFilter(newFilter)
+    generateCharacterImage()
   }
 
   // Create character with NFT
@@ -211,8 +316,8 @@ export const SandboxView: React.FC<SandboxViewProps> = ({ character, onCharacter
         },
         body: JSON.stringify({
           walletAddress: wallet.publicKey.toString(),
-          gender: selectedGender,
-          imageBlob: generatedImage // Send base64 image data
+          gender: currentGender,
+          imageBlob: generatedImage
         })
       })
 
@@ -225,15 +330,13 @@ export const SandboxView: React.FC<SandboxViewProps> = ({ character, onCharacter
         console.log('Image URL:', result.imageUrl)
         console.log('Metadata URI:', result.metadataUri)
 
-        // Reset form
         setGeneratedImage(null)
 
-        // Call the callback to refresh character data
+        // Auto-generate a new character after successful creation
+        generateCharacterImage()
+
         if (onCharacterCreated) {
           onCharacterCreated()
-        } else {
-          // Fallback to page reload if no callback provided
-          window.location.reload()
         }
 
       } else {
@@ -252,7 +355,6 @@ export const SandboxView: React.FC<SandboxViewProps> = ({ character, onCharacter
 
   return (
     <div className='space-y-6'>
-
       {/* Character Creation Section */}
       {walletInfo.connected && !character && (
         <div className='bg-card border rounded-lg p-6'>
@@ -262,47 +364,51 @@ export const SandboxView: React.FC<SandboxViewProps> = ({ character, onCharacter
           </h3>
 
           <div className='space-y-4'>
-            {/* Gender Selection */}
+            {/* Gender Filter */}
             <div>
-              <label className='text-sm font-medium mb-2 block'>Gender</label>
+              <label className='text-sm font-medium mb-2 block'>Character Type</label>
               <div className='flex gap-2'>
                 <Button
-                  variant={selectedGender === 'MALE' ? 'default' : 'outline'}
+                  variant={genderFilter === 'ALL' ? 'default' : 'outline'}
                   size='sm'
-                  onClick={() => {
-                    setSelectedGender('MALE')
-                    // Clear generated image when switching gender
-                    setGeneratedImage(null)
-                  }}
+                  onClick={() => handleGenderFilterChange('ALL')}
+                  disabled={imageLoading}
+                >
+                  All
+                </Button>
+                <Button
+                  variant={genderFilter === 'MALE' ? 'default' : 'outline'}
+                  size='sm'
+                  onClick={() => handleGenderFilterChange('MALE')}
+                  disabled={imageLoading}
                 >
                   Male
                 </Button>
                 <Button
-                  variant={selectedGender === 'FEMALE' ? 'default' : 'outline'}
+                  variant={genderFilter === 'FEMALE' ? 'default' : 'outline'}
                   size='sm'
-                  onClick={() => {
-                    setSelectedGender('FEMALE')
-                    // Clear generated image when switching gender
-                    setGeneratedImage(null)
-                  }}
+                  onClick={() => handleGenderFilterChange('FEMALE')}
+                  disabled={imageLoading}
                 >
                   Female
                 </Button>
               </div>
               <p className='text-xs text-muted-foreground mt-1'>
-                Each gender has unique clothing and accessory options
+                Filter character types or choose "All" for random
               </p>
             </div>
 
-            {/* Image Generation */}
+            {/* Character Display */}
             <div>
-              <label className='text-sm font-medium mb-2 block'>Character Appearance</label>
+              <label className='text-sm font-medium mb-2 block'>
+                Character Appearance {currentGender && `(${currentGender.toLowerCase()})`}
+              </label>
 
               {generatedImage ? (
                 <div className='space-y-2'>
                   <img
                     src={generatedImage}
-                    alt={`Generated ${selectedGender.toLowerCase()} character`}
+                    alt={`Generated ${currentGender.toLowerCase()} character`}
                     className='w-64 h-64 rounded border'
                   />
                   <Button
@@ -319,29 +425,25 @@ export const SandboxView: React.FC<SandboxViewProps> = ({ character, onCharacter
                     ) : (
                       <>
                         <RefreshCw className="w-4 h-4 mr-2" />
-                        Regenerate {selectedGender.toLowerCase()}
+                        Generate Another
                       </>
                     )}
                   </Button>
                 </div>
               ) : (
-                <Button
-                  variant='outline'
-                  onClick={generateCharacterImage}
-                  disabled={imageLoading}
-                >
+                <div className='w-64 h-64 rounded border flex items-center justify-center bg-muted'>
                   {imageLoading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Generating...
-                    </>
+                    <div className="flex flex-col items-center gap-2">
+                      <Loader2 className="w-8 h-8 animate-spin" />
+                      <span className="text-sm text-muted-foreground">Generating...</span>
+                    </div>
                   ) : (
-                    <>
-                      <ImageIcon className="w-4 h-4 mr-2" />
-                      Generate {selectedGender.toLowerCase()} character
-                    </>
+                    <div className="flex flex-col items-center gap-2">
+                      <ImageIcon className="w-8 h-8 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">No character yet</span>
+                    </div>
                   )}
-                </Button>
+                </div>
               )}
             </div>
 
@@ -362,9 +464,9 @@ export const SandboxView: React.FC<SandboxViewProps> = ({ character, onCharacter
               )}
             </Button>
 
-            {!generatedImage && (
+            {!generatedImage && !imageLoading && (
               <p className='text-sm text-muted-foreground text-center'>
-                Generate a character image first
+                Character will generate automatically
               </p>
             )}
           </div>
@@ -380,18 +482,13 @@ export const SandboxView: React.FC<SandboxViewProps> = ({ character, onCharacter
       {/* Character exists - show existing character info */}
       {character && (
         <div className='bg-card border rounded-lg p-6'>
-          <h3 className='text-lg font-semibold mb-4 flex items-center gap-2'>
-            <User className='w-5 h-5' />
-            Your Character
-          </h3>
-
           <div className='space-y-4'>
             <div className='flex items-center gap-4'>
               {character.currentImageUrl && (
                 <img
                   src={character.currentImageUrl}
                   alt={character.name}
-                  className='w-16 h-16 rounded border'
+                  className='w-48 h-48 rounded border'
                 />
               )}
               <div>
@@ -422,7 +519,6 @@ export const SandboxView: React.FC<SandboxViewProps> = ({ character, onCharacter
           </div>
         </div>
       )}
-
     </div>
   )
 }
