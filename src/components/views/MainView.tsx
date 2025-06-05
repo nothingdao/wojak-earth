@@ -42,7 +42,6 @@ interface MainViewProps {
   onMarketClick: () => void
   onChatClick: () => void
   onNPCActivityClick: () => void
-  // Removed navigation props since they're now handled by LocationNavbar in App.tsx
 }
 
 export const MainView: React.FC<MainViewProps> = ({
@@ -52,7 +51,6 @@ export const MainView: React.FC<MainViewProps> = ({
   onMarketClick,
   onChatClick,
   onNPCActivityClick
-  // Removed navigation props since they're now handled by LocationNavbar in App.tsx
 }) => {
   const locationId = character.currentLocation.id
   const chatParticipants = useChatParticipantCount(locationId)

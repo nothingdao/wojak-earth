@@ -1,4 +1,4 @@
-// netlify/functions/mint-nft.js
+// netlify/functions/mint-nft.js - FIXED VERSION
 import { Metaplex, keypairIdentity } from "@metaplex-foundation/js"
 import { Connection, Keypair, PublicKey } from "@solana/web3.js"
 import { createClient } from '@supabase/supabase-js'
@@ -28,7 +28,9 @@ export const handler = async (event, context) => {
     }
   }
 
-  let characterId = null
+  // Generate the character ID ONCE at the top level
+  const characterId = randomUUID()
+  console.log('🆔 Generated character ID:', characterId)
 
   try {
     const { walletAddress, gender, imageBlob } = JSON.parse(event.body)
@@ -81,31 +83,33 @@ export const handler = async (event, context) => {
     // 3. Generate random character data
     const characterData = await generateRandomCharacter(characterName, gender, walletAddress)
 
-    // 4. Create character record first (DB-first approach)
+    // 4. Create character record first (DB-first approach) - USE THE SINGLE characterId
     const { data: character, error: createError } = await supabase
       .from('characters')
       .insert({
-        id: randomUUID(),
+        id: characterId, // ← Use the single generated ID
         ...characterData,
         nftAddress: null, // Will be filled after successful mint
         tokenId: null,
         status: 'PENDING_MINT',
-        updatedAt: new Date().toISOString() // Add this to satisfy NOT NULL constraint
+        updatedAt: new Date().toISOString()
       })
       .select()
       .single()
 
     if (createError) throw createError
-    characterId = character.id
+
+    console.log('✅ Character created in DB with ID:', character.id)
+    console.log('✅ Character ID matches expected:', character.id === characterId)
 
     // 5. Upload character image to Supabase Storage
-    const imageUrl = await uploadCharacterImage(character.id, imageBlob)
+    const imageUrl = await uploadCharacterImage(characterId, imageBlob) // Use characterId directly
 
     // 6. Update character with image URL
     await supabase
       .from('characters')
       .update({ currentImageUrl: imageUrl })
-      .eq('id', character.id)
+      .eq('id', characterId) // Use characterId directly
 
     // 7. Set up Solana connection and keypair
     const connection = new Connection(
@@ -124,8 +128,9 @@ export const handler = async (event, context) => {
     const metaplex = Metaplex.make(connection)
       .use(keypairIdentity(serverKeypair))
 
-    // 8. Mint NFT with dynamic metadata
-    const metadataUri = `https://earth.ndao.computer/.netlify/functions/metadata/${character.id}`
+    // 8. Mint NFT with dynamic metadata - USE characterId directly
+    const metadataUri = `https://earth.ndao.computer/.netlify/functions/metadata/${characterId}`
+    console.log('📝 Generated metadata URI:', metadataUri)
 
     const nft = await metaplex.nfts().create({
       uri: metadataUri,
@@ -142,7 +147,7 @@ export const handler = async (event, context) => {
       tokenOwner: userWallet, // NFT goes directly to user
     })
 
-    // 9. Update character with NFT details and mark as active
+    // 9. Update character with NFT details and mark as active - USE characterId directly
     const { data: finalCharacter, error: updateError } = await supabase
       .from('characters')
       .update({
@@ -150,16 +155,22 @@ export const handler = async (event, context) => {
         tokenId: nft.mintAddress.toBase58(),
         status: 'ACTIVE'
       })
-      .eq('id', character.id)
+      .eq('id', characterId) // Use characterId directly
       .select()
       .single()
 
-    if (updateError) throw updateError
+    if (updateError) {
+      console.error('❌ Failed to update character with NFT details:', updateError)
+      throw updateError
+    }
+
+    console.log('✅ Character updated to ACTIVE status')
 
     // 10. Create starting inventory
-    await createStartingInventory(character.id)
+    await createStartingInventory(characterId) // Use characterId directly
 
-    console.log('Character minted successfully:', characterName, nft.mintAddress.toBase58())
+    console.log('✅ Character minted successfully:', characterName, nft.mintAddress.toBase58())
+    console.log('✅ Metadata URI:', metadataUri)
 
     return {
       statusCode: 200,
@@ -176,19 +187,17 @@ export const handler = async (event, context) => {
     }
 
   } catch (error) {
-    console.error('Error minting character:', error)
+    console.error('❌ Error minting character:', error)
 
-    // Cleanup: Delete incomplete character record
-    if (characterId) {
-      try {
-        await supabase
-          .from('characters')
-          .delete()
-          .eq('id', characterId)
-        console.log('Cleaned up incomplete character record:', characterId)
-      } catch (cleanupError) {
-        console.error('Failed to cleanup character record:', cleanupError)
-      }
+    // Cleanup: Delete incomplete character record - USE characterId directly
+    try {
+      await supabase
+        .from('characters')
+        .delete()
+        .eq('id', characterId)
+      console.log('🧹 Cleaned up incomplete character record:', characterId)
+    } catch (cleanupError) {
+      console.error('❌ Failed to cleanup character record:', cleanupError)
     }
 
     return {
@@ -203,9 +212,8 @@ export const handler = async (event, context) => {
   }
 }
 
-// Helper: Get next Wojak number, handling zombies
+// Helper functions remain the same...
 async function getNextWojakNumber() {
-  // Get ALL characters with Wojak # pattern
   const { data: characters, error } = await supabase
     .from('characters')
     .select('name')
@@ -213,34 +221,26 @@ async function getNextWojakNumber() {
 
   if (error) throw error
 
-  // If no characters exist, start from 1337
   if (!characters || characters.length === 0) {
     return 1337
   }
 
-  // Extract all numbers from Wojak names
   const wojakNumbers = characters
     .map(char => {
       const match = char.name.match(/Wojak #(\d+)/)
       return match ? parseInt(match[1]) : null
     })
-    .filter(num => num !== null) // Remove any failed matches
+    .filter(num => num !== null)
 
-  // Find the highest number
   const highestNumber = Math.max(...wojakNumbers)
-
-  // Return next number
   return highestNumber + 1
 }
 
-// Helper: Upload character image to Supabase Storage
 async function uploadCharacterImage(characterId, imageBlob) {
   const fileName = `wojak-${characterId}.png`
 
-  // Convert base64 to buffer if needed
   let imageBuffer
   if (typeof imageBlob === 'string') {
-    // Remove data:image/png;base64, prefix if present
     const base64Data = imageBlob.replace(/^data:image\/[a-z]+;base64,/, '')
     imageBuffer = Buffer.from(base64Data, 'base64')
   } else {
@@ -263,9 +263,7 @@ async function uploadCharacterImage(characterId, imageBlob) {
   return publicUrl
 }
 
-// Helper: Generate random character data
 async function generateRandomCharacter(name, gender, walletAddress) {
-  // Get random starting location
   const startingLocations = [
     'Frostpine Reaches',
     'Crystal Caverns',
@@ -296,9 +294,7 @@ async function generateRandomCharacter(name, gender, walletAddress) {
   }
 }
 
-// Helper: Create starting inventory
 async function createStartingInventory(characterId) {
-  // Get some basic starting items
   const { data: items, error } = await supabase
     .from('items')
     .select('id, name, category')
@@ -307,11 +303,9 @@ async function createStartingInventory(characterId) {
 
   if (error) throw error
 
-  // Create starting inventory entries
   const startingItems = []
   const now = new Date().toISOString()
 
-  // Add a basic tool (like pickaxe)
   const tool = items.find(item => item.category === 'TOOL')
   if (tool) {
     startingItems.push({
@@ -325,14 +319,13 @@ async function createStartingInventory(characterId) {
     })
   }
 
-  // Add some consumables
   const consumables = items.filter(item => item.category === 'CONSUMABLE').slice(0, 2)
   for (const consumable of consumables) {
     startingItems.push({
       id: randomUUID(),
       characterId: characterId,
       itemId: consumable.id,
-      quantity: Math.floor(Math.random() * 3) + 2, // 2-4 items
+      quantity: Math.floor(Math.random() * 3) + 2,
       isEquipped: false,
       createdAt: now,
       updatedAt: now

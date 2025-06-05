@@ -21,7 +21,8 @@ interface GlobalNavbarProps {
   onMapClick?: () => void
   onSandboxClick?: () => void
   onInventoryClick?: () => void
-  onAdminClick?: () => void // Optional admin click handler
+  onAdminClick?: () => void
+  networkSwitcher?: React.ReactNode //
 }
 
 export function GlobalNavbar({
