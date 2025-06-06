@@ -493,6 +493,8 @@ export async function removeMiningResource(resourceId: string) {
 
 // ===== MARKET MANAGEMENT =====
 
+// ===== MARKET MANAGEMENT FUNCTIONS =====
+
 export async function createMarketListing(listingData: {
   locationId: string
   itemId: string
@@ -511,7 +513,7 @@ export async function createMarketListing(listingData: {
       itemId: listingData.itemId,
       price: listingData.price,
       quantity: listingData.quantity || 1,
-      sellerId: listingData.sellerId,
+      sellerId: listingData.sellerId || null,
       isSystemItem: listingData.isSystemItem || false,
       createdAt: now,
       updatedAt: now,
@@ -519,7 +521,7 @@ export async function createMarketListing(listingData: {
     .select(
       `
       *,
-      item:items(name),
+      item:items(name, category),
       location:locations(name),
       seller:characters(name)
     `
@@ -544,7 +546,14 @@ export async function updateMarketListing(
       updatedAt: new Date().toISOString(),
     })
     .eq('id', listingId)
-    .select()
+    .select(
+      `
+      *,
+      item:items(name, category),
+      location:locations(name),
+      seller:characters(name)
+    `
+    )
     .single()
 
   if (error) throw error
@@ -559,6 +568,83 @@ export async function deleteMarketListing(listingId: string) {
 
   if (error) throw error
   return true
+}
+
+export async function getMarketListings() {
+  const { data, error } = await supabase
+    .from('market_listings')
+    .select(
+      `
+      id,
+      locationId,
+      itemId,
+      sellerId,
+      quantity,
+      price,
+      isSystemItem,
+      createdAt,
+      updatedAt,
+      location:locations(name),
+      item:items(name, category),
+      seller:characters(name)
+    `
+    )
+    .order('updatedAt', { ascending: false })
+
+  if (error) throw error
+
+  return (data || []).map((listing) => ({
+    id: listing.id,
+    locationId: listing.locationId,
+    locationName: listing.location?.name || 'Unknown Location',
+    itemId: listing.itemId,
+    itemName: listing.item?.name || 'Unknown Item',
+    sellerId: listing.sellerId,
+    sellerName: listing.seller?.name || null,
+    quantity: listing.quantity,
+    price: listing.price,
+    isSystemItem: listing.isSystemItem,
+    createdAt: new Date(listing.createdAt).toLocaleDateString(),
+    updatedAt: new Date(listing.updatedAt).toLocaleDateString(),
+  }))
+}
+
+export async function bulkUpdateMarketPrices(
+  itemId: string,
+  newPrice: number,
+  locationIds?: string[]
+) {
+  let query = supabase
+    .from('market_listings')
+    .update({
+      price: newPrice,
+      updatedAt: new Date().toISOString(),
+    })
+    .eq('itemId', itemId)
+
+  if (locationIds && locationIds.length > 0) {
+    query = query.in('locationId', locationIds)
+  }
+
+  const { data, error } = await query.select()
+
+  if (error) throw error
+  return data
+}
+
+export async function restockSystemItems() {
+  // Restock all system items to their default quantities
+  const { data, error } = await supabase
+    .from('market_listings')
+    .update({
+      quantity: 99, // or whatever default stock you want
+      updatedAt: new Date().toISOString(),
+    })
+    .eq('isSystemItem', true)
+    .select()
+
+  if (error) throw error
+  return data
 }
 
 // ===== UTILITY FUNCTIONS =====

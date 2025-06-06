@@ -58,45 +58,11 @@ import {
   addMiningResource,
   deleteMarketListing,
   validateWorldData,
-  resetWorldDay
+  resetWorldDay,
+  createMarketListing
 } from '@/lib/admin/adminTools'
 
 import type { Location, Character, Item } from '@/types'
-
-// interface Character {
-//   id: string;
-//   name: string;
-//   locationName: string;
-//   status: string;
-//   level: number;
-//   health: number;
-//   energy: number;
-//   coins: number;
-// }
-
-// interface Location {
-//   id: string;
-//   name: string;
-//   biome: string;
-//   description: string;
-//   difficulty: number;
-//   hasMarket: boolean;
-//   hasMining: boolean;
-//   hasTravel: boolean;
-//   hasChat: boolean;
-//   parentLocationId?: string | null;
-// }
-
-// interface Item {
-//   id: string;
-//   name: string;
-//   category: string;
-//   rarity: string;
-//   description: string;
-//   energyEffect?: number;
-//   healthEffect?: number;
-//   durability?: number;
-// }
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<string>('overview')
@@ -113,6 +79,9 @@ export default function AdminDashboard() {
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null)
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null)
   const [selectedItem, setSelectedItem] = useState<Item | null>(null)
+  const [showCreateMarketListingModal, setShowCreateMarketListingModal] = useState(false)
+  const [showEditMarketListingModal, setShowEditMarketListingModal] = useState(false)
+  const [selectedMarketListing, setSelectedMarketListing] = useState(null)
 
   // Data hooks
   const { stats, loading: statsLoading, error: statsError, refetch: refetchStats } = useAdminStats()
@@ -121,6 +90,7 @@ export default function AdminDashboard() {
   const { items, loading: itemsLoading, error: itemsError } = useAdminItems()
   const { marketListings, loading: marketLoading, error: marketError, getMarketStats } = useAdminMarket()
   const { activity, loading: activityLoading } = useAdminActivity()
+
 
   const tabs = [
     { id: 'overview', label: 'Overview', icon: Activity },
@@ -548,29 +518,50 @@ export default function AdminDashboard() {
         {/* Market Stats */}
         <div className="grid grid-cols-2 gap-3">
           <StatCard
-            title="Listings"
+            title="Active Listings"
             value={marketStats.totalListings}
-            subtitle={`${marketStats.activeListings} active`}
+            subtitle={`${marketStats.systemListings} system`}
             icon={Package}
+            loading={marketLoading}
           />
           <StatCard
-            title="Value"
+            title="Total Value"
             value={marketStats.totalValue.toLocaleString()}
             subtitle="coins"
             icon={TrendingUp}
+            loading={marketLoading}
           />
           <StatCard
             title="Avg Price"
             value={marketStats.avgPrice}
             subtitle="per item"
             icon={Database}
+            loading={marketLoading}
           />
           <StatCard
-            title="Markets"
+            title="Locations"
             value={Object.keys(marketStats.locationBreakdown).length}
-            subtitle="locations"
+            subtitle="with markets"
             icon={MapPin}
+            loading={marketLoading}
           />
+        </div>
+
+        {/* Search and Filter */}
+        <div className="flex justify-between items-center gap-3">
+          <div className="relative flex-1">
+            <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search listings..."
+              className="pl-9"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <Button size="sm" onClick={() => setShowCreateMarketListingModal(true)}>
+            <Plus className="h-4 w-4 mr-1" />
+            Add Listing
+          </Button>
         </div>
 
         {marketError && (
@@ -580,15 +571,10 @@ export default function AdminDashboard() {
           </Alert>
         )}
 
+        {/* Market Listings */}
         <Card>
           <CardHeader className="pb-3">
-            <div className="flex justify-between items-center">
-              <CardTitle className="text-base">Market Listings</CardTitle>
-              <Button size="sm">
-                <Plus className="h-4 w-4 mr-1" />
-                Add Listing
-              </Button>
-            </div>
+            <CardTitle className="text-base">Market Listings ({marketListings.length})</CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
             <ScrollArea className="h-80">
@@ -599,57 +585,75 @@ export default function AdminDashboard() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {marketListings.map((listing) => (
-                    <div key={listing.id} className="border rounded-lg p-3 hover:bg-muted/50 transition-colors">
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-2 mb-2">
-                            <h4 className="font-medium text-sm">{listing.itemName}</h4>
-                            <Badge variant={listing.isAvailable ? 'default' : 'secondary'}>
-                              {listing.isAvailable ? 'Available' : 'Sold Out'}
-                            </Badge>
+                  {marketListings
+                    .filter(listing =>
+                      !searchTerm ||
+                      listing.itemName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      listing.locationName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      listing.sellerName?.toLowerCase().includes(searchTerm.toLowerCase())
+                    )
+                    .map((listing) => (
+                      <div key={listing.id} className="border rounded-lg p-3 hover:bg-muted/50 transition-colors">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-2 mb-2">
+                              <h4 className="font-medium text-sm">{listing.itemName}</h4>
+                              <Badge variant={listing.isSystemItem ? 'secondary' : 'default'}>
+                                {listing.isSystemItem ? 'System' : 'Player'}
+                              </Badge>
+                              <Badge variant="outline" className="text-xs">
+                                {listing.quantity > 0 ? 'Available' : 'Sold Out'}
+                              </Badge>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2 text-xs mb-2">
+                              <div>
+                                <span className="text-muted-foreground">Location:</span>
+                                <p className="font-medium">{listing.locationName}</p>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">Seller:</span>
+                                <p className="font-medium">{listing.sellerName || 'System'}</p>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">Price:</span>
+                                <p className="font-medium text-green-600">{listing.price} coins</p>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">Quantity:</span>
+                                <p className="font-medium">{listing.quantity}</p>
+                              </div>
+                            </div>
+
+                            <div className="text-xs text-muted-foreground">
+                              Created: {listing.createdAt} • Updated: {listing.updatedAt}
+                            </div>
                           </div>
 
-                          <div className="grid grid-cols-2 gap-2 text-xs">
-                            <div>
-                              <span className="text-muted-foreground">Location:</span>
-                              <p className="font-medium">{listing.locationName}</p>
-                            </div>
-                            <div>
-                              <span className="text-muted-foreground">Quantity:</span>
-                              <p className="font-medium">{listing.quantity}</p>
-                            </div>
-                            <div>
-                              <span className="text-muted-foreground">Price:</span>
-                              <p className="font-medium">{listing.price} coins</p>
-                            </div>
-                            <div>
-                              <span className="text-muted-foreground">Updated:</span>
-                              <p className="font-medium">{listing.lastUpdated}</p>
-                            </div>
+                          <div className="flex space-x-1 ml-2">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                setSelectedMarketListing(listing)
+                                setShowEditMarketListingModal(true)
+                              }}
+                              disabled={isProcessing}
+                            >
+                              <Edit className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleDeleteMarketListing(listing.id, listing.itemName)}
+                              disabled={isProcessing}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
                           </div>
-                        </div>
-
-                        <div className="flex space-x-1 ml-2">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            disabled={isProcessing}
-                          >
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleDeleteMarketListing(listing.id, listing.itemName)}
-                            disabled={isProcessing}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
 
                   {marketListings.length === 0 && (
                     <div className="text-center py-8 text-muted-foreground">
@@ -661,6 +665,94 @@ export default function AdminDashboard() {
             </ScrollArea>
           </CardContent>
         </Card>
+
+        {/* Market Stats Breakdown */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">By Location</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="space-y-2">
+                {Object.entries(marketStats.locationBreakdown)
+                  .sort(([, a], [, b]) => b - a)
+                  .slice(0, 5)
+                  .map(([location, count]) => (
+                    <div key={location} className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">{location}</span>
+                      <span className="font-medium">{count} listings</span>
+                    </div>
+                  ))}
+                {Object.keys(marketStats.locationBreakdown).length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-4">No data</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Quick Actions</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0 space-y-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowCreateMarketListingModal(true)}
+                disabled={isProcessing}
+                className="w-full justify-start"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add System Listing
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  setIsProcessing(true)
+                  try {
+                    // Remove sold out listings
+                    const soldOutListings = marketListings.filter(l => l.quantity === 0)
+                    for (const listing of soldOutListings) {
+                      await deleteMarketListing(listing.id)
+                    }
+                    toast.success(`Removed ${soldOutListings.length} sold out listings`)
+                  } catch (error) {
+                    toast.error('Failed to clean up listings')
+                  } finally {
+                    setIsProcessing(false)
+                  }
+                }}
+                disabled={isProcessing}
+                className="w-full justify-start"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Remove Sold Out
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  setIsProcessing(true)
+                  try {
+                    // Refresh market data - you'd implement this in your hook
+                    await refetchMarketListings()
+                    toast.success('Market data refreshed')
+                  } catch (error) {
+                    toast.error('Failed to refresh market data')
+                  } finally {
+                    setIsProcessing(false)
+                  }
+                }}
+                disabled={isProcessing}
+                className="w-full justify-start"
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${isProcessing ? 'animate-spin' : ''}`} />
+                Refresh Data
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     )
   }
@@ -1770,6 +1862,231 @@ export default function AdminDashboard() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Create Market Listing Modal */}
+      <Dialog open={showCreateMarketListingModal} onOpenChange={setShowCreateMarketListingModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create Market Listing</DialogTitle>
+            <DialogDescription>
+              Add a new item listing to a location's market.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={async (e) => {
+            e.preventDefault()
+            setIsProcessing(true)
+            try {
+              const formData = new FormData(e.target)
+              await createMarketListing({
+                locationId: formData.get('locationId') as string,
+                itemId: formData.get('itemId') as string,
+                price: parseInt(formData.get('price') as string),
+                quantity: parseInt(formData.get('quantity') as string) || 1,
+                isSystemItem: formData.get('isSystemItem') === 'on',
+              })
+              toast.success('Market listing created successfully!')
+              setShowCreateMarketListingModal(false)
+            } catch (error) {
+              toast.error('Failed to create market listing')
+            } finally {
+              setIsProcessing(false)
+            }
+          }}>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="marketLocation">Location</Label>
+                <Select name="locationId" required>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select location" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {locations?.filter(l => l.hasMarket).map((location) => (
+                      <SelectItem key={location.id} value={location.id}>
+                        {location.name} ({location.biome})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="marketItem">Item</Label>
+                <Select name="itemId" required>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select item" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {items?.map((item) => (
+                      <SelectItem key={item.id} value={item.id}>
+                        {item.name} ({item.category})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label htmlFor="price">Price (coins)</Label>
+                  <Input
+                    id="price"
+                    name="price"
+                    type="number"
+                    min="1"
+                    required
+                    placeholder="100"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="quantity">Quantity</Label>
+                  <Input
+                    id="quantity"
+                    name="quantity"
+                    type="number"
+                    min="1"
+                    defaultValue="1"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox id="isSystemItem" name="isSystemItem" defaultChecked />
+                <Label htmlFor="isSystemItem">System Item (infinite stock)</Label>
+              </div>
+
+              <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded">
+                <strong>Note:</strong> System items have unlimited stock and automatically restock.
+                Player items are limited to the quantity specified.
+              </div>
+            </div>
+
+            <DialogFooter className="mt-6">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowCreateMarketListingModal(false)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isProcessing}>
+                {isProcessing ? 'Creating...' : 'Create Listing'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Market Listing Modal */}
+      <Dialog open={showEditMarketListingModal} onOpenChange={setShowEditMarketListingModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Market Listing</DialogTitle>
+            <DialogDescription>
+              Modify the price and quantity of this market listing.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedMarketListing && (
+            <form onSubmit={async (e) => {
+              e.preventDefault()
+              setIsProcessing(true)
+              try {
+                const formData = new FormData(e.target)
+                await updateMarketListing(selectedMarketListing.id, {
+                  price: parseInt(formData.get('price') as string),
+                  quantity: parseInt(formData.get('quantity') as string),
+                })
+                toast.success('Market listing updated successfully!')
+                setShowEditMarketListingModal(false)
+                setSelectedMarketListing(null)
+              } catch (error) {
+                toast.error('Failed to update market listing')
+              } finally {
+                setIsProcessing(false)
+              }
+            }}>
+              <div className="space-y-4">
+                <div className="text-sm font-medium text-muted-foreground bg-muted/50 p-3 rounded">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <span className="text-muted-foreground">Item:</span>
+                      <p className="font-medium">{selectedMarketListing.itemName}</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Location:</span>
+                      <p className="font-medium">{selectedMarketListing.locationName}</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Seller:</span>
+                      <p className="font-medium">{selectedMarketListing.sellerName || 'System'}</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Type:</span>
+                      <Badge variant={selectedMarketListing.isSystemItem ? 'secondary' : 'default'}>
+                        {selectedMarketListing.isSystemItem ? 'System' : 'Player'}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="editPrice">Price (coins)</Label>
+                    <Input
+                      id="editPrice"
+                      name="price"
+                      type="number"
+                      min="1"
+                      defaultValue={selectedMarketListing.price}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="editQuantity">Quantity</Label>
+                    <Input
+                      id="editQuantity"
+                      name="quantity"
+                      type="number"
+                      min="0"
+                      defaultValue={selectedMarketListing.quantity}
+                      required
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Set to 0 to mark as sold out
+                    </p>
+                  </div>
+                </div>
+
+                {selectedMarketListing.isSystemItem && (
+                  <div className="text-xs text-muted-foreground bg-blue-50 dark:bg-blue-950/20 p-3 rounded border border-blue-200 dark:border-blue-800">
+                    <strong>System Item:</strong> This item will automatically restock when purchased.
+                    Quantity mainly affects display and purchase limits.
+                  </div>
+                )}
+              </div>
+
+              <DialogFooter className="mt-6">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowEditMarketListingModal(false)
+                    setSelectedMarketListing(null)
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isProcessing}>
+                  {isProcessing ? 'Updating...' : 'Update Listing'}
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
     </div>
   )
 }

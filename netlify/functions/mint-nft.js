@@ -353,7 +353,7 @@ async function generateRandomCharacter(name, gender, walletAddress) {
     energy: 100,
     health: 100,
     level: 1,
-    coins: 0,
+    coins: 1200,
     currentVersion: 1
   }
 }

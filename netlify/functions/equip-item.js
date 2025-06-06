@@ -1,10 +1,25 @@
-// netlify/functions/equip-item.js - UPDATED
+// netlify/functions/equip-item.js - UPDATED FOR 6-SLOT SYSTEM
 import { createClient } from '@supabase/supabase-js'
 import { randomUUID } from 'crypto'
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
+
+// Define slot mapping for each item type
+const getSlotForItem = (item) => {
+  // Tools use category, others use layerType
+  if (item.category === 'TOOL') return 'tool'
+
+  switch (item.layerType) {
+    case 'CLOTHING': return 'clothing'
+    case 'OUTERWEAR': return 'outerwear'
+    case 'FACE_ACCESSORY': return 'face_accessory'
+    case 'HAT': return 'headwear'
+    case 'ACCESSORY': return 'misc_accessory'
+    default: return null
+  }
+}
 
 export const handler = async (event, context) => {
   const headers = {
@@ -26,7 +41,7 @@ export const handler = async (event, context) => {
   }
 
   try {
-    const { walletAddress, inventoryId, equip = true } = JSON.parse(event.body || '{}')
+    const { walletAddress, inventoryId, equip = true, targetSlot } = JSON.parse(event.body || '{}')
 
     if (!walletAddress || !inventoryId) {
       return {
@@ -55,10 +70,13 @@ export const handler = async (event, context) => {
       }
     }
 
-    // Get inventory item
+    // Get inventory item with item details
     const { data: inventoryItem, error: inventoryError } = await supabase
       .from('character_inventory')
-      .select('*')
+      .select(`
+        *,
+        item:items(*)
+      `)
       .eq('id', inventoryId)
       .single()
 
@@ -72,17 +90,6 @@ export const handler = async (event, context) => {
       }
     }
 
-    // Get item details
-    const { data: item, error: itemError } = await supabase
-      .from('items')
-      .select('*')
-      .eq('id', inventoryItem.itemId)
-      .single()
-
-    if (itemError) throw itemError
-
-    inventoryItem.item = item
-
     // Verify ownership
     if (inventoryItem.characterId !== character.id) {
       return {
@@ -92,9 +99,11 @@ export const handler = async (event, context) => {
       }
     }
 
+    // Determine the slot for this item
+    const itemSlot = getSlotForItem(inventoryItem.item)
+
     // Check if item is equippable
-    const equipableCategories = ['HAT', 'CLOTHING', 'ACCESSORY', 'TOOL']
-    if (!equipableCategories.includes(inventoryItem.item.category)) {
+    if (!itemSlot) {
       return {
         statusCode: 400,
         headers,
@@ -105,11 +114,14 @@ export const handler = async (event, context) => {
       }
     }
 
+    // Use provided targetSlot or auto-detect
+    const finalTargetSlot = targetSlot || itemSlot
+
     let replacedItems = []
     let result
 
     if (equip) {
-      // Find conflicting items in the same category to auto-unequip
+      // Check for conflicting items in the target slot
       const { data: conflictingItems, error: conflictError } = await supabase
         .from('character_inventory')
         .select(`
@@ -118,19 +130,20 @@ export const handler = async (event, context) => {
         `)
         .eq('characterId', character.id)
         .eq('isEquipped', true)
+        .eq('equippedSlot', finalTargetSlot)
         .neq('id', inventoryId)
 
       if (conflictError) throw conflictError
 
-      // Filter for same category items
-      const sameCategory = conflictingItems?.filter(ci => ci.item.category === inventoryItem.item.category) || []
-
-      // Unequip conflicting items
-      if (sameCategory.length > 0) {
-        for (const conflictItem of sameCategory) {
+      // Unequip conflicting items in the same slot
+      if (conflictingItems && conflictingItems.length > 0) {
+        for (const conflictItem of conflictingItems) {
           const { error: unequipError } = await supabase
             .from('character_inventory')
-            .update({ isEquipped: false })
+            .update({
+              isEquipped: false,
+              equippedSlot: null
+            })
             .eq('id', conflictItem.id)
 
           if (unequipError) throw unequipError
@@ -149,20 +162,24 @@ export const handler = async (event, context) => {
           if (unequipTxError) throw unequipTxError
         }
 
-        replacedItems = sameCategory.map(item => item.item.name)
+        replacedItems = conflictingItems.map(item => item.item.name)
       }
 
-      // Equip the new item
+      // Equip the new item in the target slot
       const { data: updatedItem, error: equipError } = await supabase
         .from('character_inventory')
-        .update({ isEquipped: true })
+        .update({
+          isEquipped: true,
+          equippedSlot: finalTargetSlot
+        })
         .eq('id', inventoryId)
-        .select('*')
+        .select(`
+          *,
+          item:items(*)
+        `)
         .single()
 
       if (equipError) throw equipError
-
-      updatedItem.item = item
 
       const equipTransactionId = randomUUID()
       const { error: equipTxError } = await supabase
@@ -172,7 +189,7 @@ export const handler = async (event, context) => {
           characterId: character.id,
           type: 'EQUIP',
           itemId: inventoryItem.itemId,
-          description: `Equipped ${inventoryItem.item.name}`
+          description: `Equipped ${inventoryItem.item.name} in ${finalTargetSlot} slot`
         })
 
       if (equipTxError) throw equipTxError
@@ -180,21 +197,26 @@ export const handler = async (event, context) => {
       result = {
         action: 'equipped',
         item: updatedItem,
-        replacedItems: replacedItems
+        replacedItems: replacedItems,
+        slot: finalTargetSlot
       }
 
     } else {
       // Unequip the item
       const { data: updatedItem, error: unequipError } = await supabase
         .from('character_inventory')
-        .update({ isEquipped: false })
+        .update({
+          isEquipped: false,
+          equippedSlot: null
+        })
         .eq('id', inventoryId)
-        .select('*')
+        .select(`
+          *,
+          item:items(*)
+        `)
         .single()
 
       if (unequipError) throw unequipError
-
-      updatedItem.item = item
 
       const unequipTransactionId = randomUUID()
       const { error: unequipTxError } = await supabase
@@ -204,12 +226,17 @@ export const handler = async (event, context) => {
           characterId: character.id,
           type: 'UNEQUIP',
           itemId: inventoryItem.itemId,
-          description: `Unequipped ${inventoryItem.item.name}`
+          description: `Unequipped ${inventoryItem.item.name} from ${inventoryItem.equippedSlot || 'unknown'} slot`
         })
 
       if (unequipTxError) throw unequipTxError
 
-      result = { action: 'unequipped', item: updatedItem, replacedItems: [] }
+      result = {
+        action: 'unequipped',
+        item: updatedItem,
+        replacedItems: [],
+        slot: null
+      }
     }
 
     const statEffects = {
@@ -231,10 +258,12 @@ export const handler = async (event, context) => {
         category: result.item.item.category,
         rarity: result.item.item.rarity,
         isEquipped: result.item.isEquipped,
-        layerType: result.item.item.layerType
+        layerType: result.item.item.layerType,
+        equippedSlot: result.item.equippedSlot
       },
       action: result.action,
       replacedItems: result.replacedItems,
+      slot: result.slot,
       statEffects: equip ? statEffects : { energy: -statEffects.energy, health: -statEffects.health }
     }
 

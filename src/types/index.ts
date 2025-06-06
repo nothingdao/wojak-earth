@@ -36,10 +36,12 @@ export interface Character {
     welcomeMessage?: string
   }
   inventory: Array<{
+    equippedSlot: string
     id: string
     quantity: number
     isEquipped: boolean
     item: {
+      layerType: any
       id: string
       name: string
       description: string

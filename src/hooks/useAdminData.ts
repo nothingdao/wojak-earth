@@ -502,12 +502,14 @@ export function useAdminMarket() {
         itemId: listing.itemId,
         itemName: listing.item?.name || 'Unknown Item',
         sellerId: listing.sellerId,
-        sellerName: listing.seller?.name || 'System',
+        sellerName: listing.seller?.name || null,
         quantity: listing.quantity,
         price: listing.price,
         isSystemItem: listing.isSystemItem,
-        createdAt: new Date(listing.createdAt).toLocaleString(),
-        updatedAt: new Date(listing.updatedAt).toLocaleString(),
+        createdAt: new Date(listing.createdAt).toLocaleDateString(),
+        updatedAt: new Date(listing.updatedAt).toLocaleDateString(),
+        isAvailable: listing.quantity > 0,
+        lastUpdated: new Date(listing.updatedAt).toLocaleDateString(),
       }))
 
       setMarketListings(formattedListings)
@@ -524,7 +526,6 @@ export function useAdminMarket() {
     updates: {
       quantity?: number
       price?: number
-      isAvailable?: boolean
     }
   ) => {
     try {
@@ -532,7 +533,7 @@ export function useAdminMarket() {
         .from('market_listings')
         .update({
           ...updates,
-          lastUpdated: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         })
         .eq('id', listingId)
 
@@ -565,7 +566,8 @@ export function useAdminMarket() {
 
   const getMarketStats = () => {
     const totalListings = marketListings.length
-    const activeListings = marketListings.filter((l) => l.isAvailable).length
+    const activeListings = marketListings.filter((l) => l.quantity > 0).length
+    const systemListings = marketListings.filter((l) => l.isSystemItem).length
     const totalValue = marketListings.reduce(
       (sum, l) => sum + l.price * l.quantity,
       0
@@ -583,12 +585,19 @@ export function useAdminMarket() {
       return acc
     }, {} as Record<string, number>)
 
+    const itemBreakdown = marketListings.reduce((acc, listing) => {
+      acc[listing.itemName] = (acc[listing.itemName] || 0) + 1
+      return acc
+    }, {} as Record<string, number>)
+
     return {
       totalListings,
       activeListings,
+      systemListings,
       totalValue,
       avgPrice,
       locationBreakdown,
+      itemBreakdown,
     }
   }
 
@@ -601,6 +610,7 @@ export function useAdminMarket() {
     loading,
     error,
     refetch: fetchMarketListings,
+    refetchMarketListings: fetchMarketListings, // Alias for consistency
     updateMarketListing,
     deleteMarketListing,
     getMarketStats,
