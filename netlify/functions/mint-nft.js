@@ -410,7 +410,7 @@ async function generateRandomCharacter(name, gender, walletAddress) {
 async function createStartingInventoryWithLayers(characterId, selectedLayers = null) {
   console.log('🎒 Creating starting inventory...')
   console.log('📋 Selected layers received:', selectedLayers)
-  console.log('🚨 SELECTED LAYERS DEBUG:', JSON.stringify(selectedLayers, null, 2))
+
   const startingItems = []
   const now = new Date().toISOString()
 
@@ -430,17 +430,31 @@ async function createStartingInventoryWithLayers(characterId, selectedLayers = n
 
       console.log(`  🔍 Looking for item: ${layerType}/${selectedFile}`)
 
-      // For genderless items, we need to strip the gender prefix and look up by base name
-      const baseFile = selectedFile.replace(/^(male-|female-)/, '') // Strip gender prefix
-      console.log(`  🔍 Base filename: ${baseFile}`)
-
-      // Try multiple queries to find the item:
-      // 1. Exact layerfile match (for gendered items)
-      // 2. Genderless items by base filename pattern
-      const { data: layerItems, error: itemError } = await supabase
+      // First try: exact layerfile match (for gendered items)
+      let { data: layerItems, error: itemError } = await supabase
         .from('items')
-        .select('id, name, category, layerfile, layergender')
-        .or(`layerfile.eq.${selectedFile},and(layerfile.is.null,name.ilike.%${baseFile.replace('.png', '')}%)`)
+        .select('id, name, category, layerfile, layergender, baselayerfile')
+        .eq('layerfile', selectedFile)
+
+      console.log(`  📊 Exact layerfile match:`, layerItems?.length || 0, 'found')
+
+      // If no exact match, look for genderless items by baselayerfile
+      if (!layerItems || layerItems.length === 0) {
+        // Extract base filename: "female-solana-seeker.png" -> "solana-seeker.png"
+        const baseLayerFile = selectedFile.replace(/^(male-|female-)/, '')
+        console.log(`  🔍 Looking for genderless item with baselayerfile: "${baseLayerFile}"`)
+
+        const { data: genderlessItems, error: genderlessError } = await supabase
+          .from('items')
+          .select('id, name, category, layerfile, layergender, baselayerfile')
+          .eq('baselayerfile', baseLayerFile)
+          .is('layerfile', null)
+          .is('layergender', null)
+
+        console.log(`  📊 Genderless item result:`, genderlessItems)
+        layerItems = genderlessItems
+        itemError = genderlessError
+      }
 
       console.log(`  📊 Query result for ${selectedFile}:`, {
         found: layerItems?.length || 0,
