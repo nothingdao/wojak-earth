@@ -1,10 +1,10 @@
-// components/views/WorldMapView.tsx
+// Updated components/views/WorldMapView.tsx for Fullscreen
 import { useState } from 'react'
 import Earth from '../map/Earth'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
-import { Map, List, MapPin, Users, Shield, Coins } from 'lucide-react'
+import { Map, List, MapPin, Users, Shield, Coins, X } from 'lucide-react'
 import type { DatabaseLocation, Character } from '@/types'
 
 interface WorldMapViewProps {
@@ -15,6 +15,7 @@ interface WorldMapViewProps {
 
 export function WorldMapView({ locations = [], character, onTravel }: WorldMapViewProps) {
   const [expandedRegions, setExpandedRegions] = useState<Set<string>>(new Set())
+  const [activeTab, setActiveTab] = useState('map')
 
   // Organize locations into hierarchy
   const organizeLocations = () => {
@@ -23,13 +24,11 @@ export function WorldMapView({ locations = [], character, onTravel }: WorldMapVi
 
     locations.forEach(location => {
       if (location.parentLocationId) {
-        // This is a sub-location
         if (!subLocations[location.parentLocationId]) {
           subLocations[location.parentLocationId] = []
         }
         subLocations[location.parentLocationId].push(location)
       } else {
-        // This is a main location
         const biome = location.biome || 'Unknown'
         if (!regions[biome]) {
           regions[biome] = []
@@ -167,84 +166,86 @@ export function WorldMapView({ locations = [], character, onTravel }: WorldMapVi
   }
 
   const renderLocationsList = () => (
-    <ScrollArea className="h-96">
-      <div className="space-y-4">
-        {Object.entries(regions).map(([biome, regionLocations]) => (
-          <div key={biome}>
-            {/* Biome Header */}
-            <div
-              className="flex items-center gap-2 p-2 bg-muted/20 rounded-lg cursor-pointer mb-2"
-              onClick={() => toggleRegion(biome)}
-            >
-              <span className="text-lg">{getBiomeIcon(biome)}</span>
-              <h3 className="font-semibold capitalize flex-1">{biome} Region</h3>
-              <span className="text-xs text-muted-foreground">
-                {regionLocations.length} location{regionLocations.length !== 1 ? 's' : ''}
-              </span>
-              <Button size="sm" variant="ghost" className="text-xs">
-                {expandedRegions.has(biome) ? '▼' : '▶'}
-              </Button>
+    <div className="space-y-4">
+      {Object.entries(regions).map(([biome, regionLocations]) => (
+        <div key={biome}>
+          {/* Biome Header */}
+          <div
+            className="flex items-center gap-2 p-2 bg-muted/20 rounded-lg cursor-pointer mb-2"
+            onClick={() => toggleRegion(biome)}
+          >
+            <span className="text-lg">{getBiomeIcon(biome)}</span>
+            <h3 className="font-semibold capitalize flex-1">{biome} Region</h3>
+            <span className="text-xs text-muted-foreground">
+              {regionLocations.length} location{regionLocations.length !== 1 ? 's' : ''}
+            </span>
+            <Button size="sm" variant="ghost" className="text-xs">
+              {expandedRegions.has(biome) ? '▼' : '▶'}
+            </Button>
+          </div>
+
+          {/* Region Locations */}
+          {expandedRegions.has(biome) && (
+            <div className="space-y-2">
+              {regionLocations.map(location => (
+                <div key={location.id}>
+                  {renderLocationCard(location)}
+
+                  {/* Sub-locations */}
+                  {expandedRegions.has(location.id) && subLocations[location.id] && (
+                    <div className="mt-2 space-y-2">
+                      {subLocations[location.id].map(subLoc =>
+                        renderLocationCard(subLoc, true)
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
+          )}
+        </div>
+      ))}
 
-            {/* Region Locations */}
-            {expandedRegions.has(biome) && (
-              <div className="space-y-2">
-                {regionLocations.map(location => (
-                  <div key={location.id}>
-                    {renderLocationCard(location)}
-
-                    {/* Sub-locations */}
-                    {expandedRegions.has(location.id) && subLocations[location.id] && (
-                      <div className="mt-2 space-y-2">
-                        {subLocations[location.id].map(subLoc =>
-                          renderLocationCard(subLoc, true)
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
-
-        {Object.keys(regions).length === 0 && (
-          <div className="bg-muted/30 p-8 rounded-lg text-center text-muted-foreground">
-            <MapPin className="w-12 h-12 mx-auto mb-2" />
-            No locations available.<br />
-            <span className="text-xs">Locations are still being discovered...</span>
-          </div>
-        )}
-      </div>
-    </ScrollArea>
+      {Object.keys(regions).length === 0 && (
+        <div className="bg-muted/30 p-8 rounded-lg text-center text-muted-foreground">
+          <MapPin className="w-12 h-12 mx-auto mb-2" />
+          No locations available.<br />
+          <span className="text-xs">Locations are still being discovered...</span>
+        </div>
+      )}
+    </div>
   )
 
   return (
-    <div className="w-full">
-      <Tabs defaultValue="map" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="map" className="text-xs">
-            <Map className="w-3 h-3 mr-1" />
-            Map
-            {locations.length > 0 && (
-              <span className="ml-1 text-xs bg-primary/20 text-primary px-1 rounded">
-                {locations.length}
-              </span>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="list" className="text-xs">
-            <List className="w-3 h-3 mr-1" />
-            List
-            {Object.keys(regions).length > 0 && (
-              <span className="ml-1 text-xs bg-primary/20 text-primary px-1 rounded">
-                {Object.keys(regions).length} regions
-              </span>
-            )}
-          </TabsTrigger>
-        </TabsList>
+    <div className="w-full h-full relative">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full h-full">
 
-        {/* Map Tab Content */}
-        <TabsContent value="map" className="mt-4">
+        {/* Floating Tab Selector - Top Left */}
+        <div className="absolute top-4 left-4 z-50">
+          <TabsList className="bg-card/95 backdrop-blur-sm border shadow-lg">
+            <TabsTrigger value="map" className="text-sm">
+              <Map className="w-4 h-4 mr-2" />
+              Map
+              {locations.length > 0 && (
+                <span className="ml-2 text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded">
+                  {locations.length}
+                </span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="list" className="text-sm">
+              <List className="w-4 h-4 mr-2" />
+              List
+              {Object.keys(regions).length > 0 && (
+                <span className="ml-2 text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded">
+                  {Object.keys(regions).length}
+                </span>
+              )}
+            </TabsTrigger>
+          </TabsList>
+        </div>
+
+        {/* Map Tab - Fullscreen */}
+        <TabsContent value="map" className="w-full h-full m-0 p-0 data-[state=active]:block">
           <Earth
             locations={locations}
             character={character || undefined}
@@ -252,19 +253,39 @@ export function WorldMapView({ locations = [], character, onTravel }: WorldMapVi
           />
         </TabsContent>
 
-        {/* List Tab Content */}
-        <TabsContent value="list" className="mt-4">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">All Locations</h3>
-              <div className="text-sm text-muted-foreground">
-                {locations.length} total locations
+        {/* List Tab - Overlay */}
+        <TabsContent value="list" className="absolute inset-0 m-0 p-0 data-[state=active]:block">
+          <div className="w-full h-full bg-background/95 backdrop-blur-sm">
+            {/* Header with close button */}
+            <div className="flex items-center justify-between p-4 border-b bg-card/95 backdrop-blur-sm">
+              <div>
+                <h3 className="text-lg font-semibold">All Locations</h3>
+                <div className="text-sm text-muted-foreground">
+                  {locations.length} total locations across {Object.keys(regions).length} regions
+                </div>
               </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setActiveTab('map')}
+                className="ml-4"
+              >
+                <X className="w-4 h-4 mr-2" />
+                Close
+              </Button>
             </div>
 
-            {renderLocationsList()}
+            {/* Scrollable locations list */}
+            <div className="h-full pb-16">
+              <ScrollArea className="h-full">
+                <div className="p-4">
+                  {renderLocationsList()}
+                </div>
+              </ScrollArea>
+            </div>
           </div>
         </TabsContent>
+
       </Tabs>
     </div>
   )

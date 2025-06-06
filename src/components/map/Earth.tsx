@@ -1,4 +1,4 @@
-// components/Earth.tsx - Enhanced with zoom and pan functionality
+// components/Earth.tsx - Enhanced with zoom and pan functionality + FULLSCREEN SUPPORT
 import { useState, useCallback, useMemo, useRef, useEffect } from "react"
 import {
   GiCrossedSwords,
@@ -34,11 +34,11 @@ const ZOOM_CONFIG = {
   transition: 'transform 0.2s ease-out'
 }
 
-// Viewport configuration
+// UPDATED: Viewport configuration for fullscreen
 const VIEWPORT = {
-  maxWidth: '500px',
-  aspectRatio: '3/4', // Portrait ratio that works well for the SVG
-  minHeight: '400px'
+  maxWidth: 'none', // CHANGED: Remove width constraint
+  aspectRatio: 'none', // CHANGED: Remove aspect ratio constraint  
+  minHeight: '100%' // CHANGED: Fill available height
 }
 
 // Helper function to get distance between two touch points
@@ -458,13 +458,13 @@ export default function Earth({
 
   return (
     <div className="w-full flex items-center justify-center relative">
-      {/* Responsive Viewport Container */}
+      {/* UPDATED: Fullscreen Viewport Container */}
       <div
-        className="relative w-full bg-background border rounded-lg overflow-hidden"
+        className="relative w-full h-full bg-background overflow-hidden"
         style={{
-          maxWidth: VIEWPORT.maxWidth,
-          aspectRatio: VIEWPORT.aspectRatio,
-          minHeight: VIEWPORT.minHeight
+          // CHANGED: Remove all size constraints for fullscreen
+          width: '100%',
+          height: '100%'
         }}
       >
         {/* Zoom Controls */}
@@ -737,11 +737,7 @@ export default function Earth({
             outline: 'none',
             overscrollBehavior: 'none' // Prevent overscroll on trackpads
           }}
-          onWheel={(e) => {
-            // This is just a backup - the native listener should handle it
-            e.preventDefault()
-            e.stopPropagation()
-          }}
+          onWheel={handleWheel}
           onScroll={(e) => {
             // Block any scroll events that slip through
             e.preventDefault()

@@ -1,8 +1,5 @@
-// Updated src/components/AppShell.tsx with Better Responsive Design
 import React, { type ReactNode } from 'react'
-import { GlobalNavbar } from './global-navbar'
-// import { LocalRadio } from './LocalRadio'
-import { NetworkSwitcher } from './NetworkSwitcher'
+import { BottomDrawerNav } from './BottomDrawerNav'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { isAdmin } from '@/config/admins'
 import type { Character, GameView } from '@/types'
@@ -31,38 +28,39 @@ export const AppShell: React.FC<AppShellProps> = ({
   onAdminClick
 }) => {
   const wallet = useWallet()
+  const userIsAdmin = wallet.publicKey && isAdmin(wallet.publicKey.toString())
+
+  // Check if current view should be fullscreen
+  const isFullscreenView = currentView === 'map'
 
   return (
     <div className="min-h-screen bg-background">
-      <GlobalNavbar
+      <BottomDrawerNav
         character={character}
-        currentLocation={character?.currentLocation?.name || "Earth"}
+        currentView={currentView}
         onProfileClick={onProfileClick}
         onHomeClick={onHomeClick}
         onMapClick={onMapClick}
         onSandboxClick={onSandboxClick}
         onInventoryClick={onInventoryClick}
-        onAdminClick={
-          wallet.publicKey && isAdmin(wallet.publicKey.toString())
-            ? onAdminClick
-            : undefined
-        }
-        networkSwitcher={<NetworkSwitcher />}
+        onAdminClick={userIsAdmin ? onAdminClick : undefined}
+        isAdmin={!!userIsAdmin}
       />
 
-      <div className="container mx-auto px-4 py-6">
-        {/* Improved max-width: good for mobile, better for desktop half-screen */}
-        <div className="max-w-2xl mx-auto">
-          {/* Persistent Radio Bar */}
-          {character && (
-            <div className="mb-4">
-              {/* <LocalRadio locationId={character.currentLocation.id} /> */}
-            </div>
-          )}
-
+      {/* Conditional container based on view */}
+      {isFullscreenView ? (
+        // Fullscreen for map view - no container, no padding, fill viewport
+        <main className="w-full h-screen pt-16">
           {children}
-        </div>
-      </div>
+        </main>
+      ) : (
+        // Normal container for other views
+        <main className="container mx-auto px-4 py-6">
+          <div className="max-w-2xl mx-auto">
+            {children}
+          </div>
+        </main>
+      )}
     </div>
   )
 }
