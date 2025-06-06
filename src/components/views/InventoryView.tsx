@@ -210,31 +210,31 @@ export function InventoryView({
         </div>
 
         <Tabs defaultValue="clothing" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 h-auto p-1">
-            {Object.entries(EQUIPMENT_SLOTS).map(([categoryKey, slotConfig]) => {
-              const equippedItems = getEquippedByCategory(categoryKey)
-              const IconComponent = slotConfig.icon
+          {/* Equipment Category Tabs - Horizontal scroll */}
+          <div className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+            <TabsList className="flex w-max h-12 p-1">
+              {Object.entries(EQUIPMENT_SLOTS).map(([categoryKey, slotConfig]) => {
+                const equippedItems = getEquippedByCategory(categoryKey)
+                const IconComponent = slotConfig.icon
 
-              return (
-                <TabsTrigger
-                  key={categoryKey}
-                  value={categoryKey}
-                  className="text-xs sm:text-sm p-2 sm:p-3 flex flex-col items-center gap-1 h-auto"
-                >
-                  <IconComponent className="w-4 h-4 sm:w-5 sm:h-5" />
-                  <span className="text-xs leading-none hidden sm:block">{slotConfig.name}</span>
-                  <span className="text-xs leading-none sm:hidden">
-                    {slotConfig.name.length > 4 ? slotConfig.name.slice(0, 4) : slotConfig.name}
-                  </span>
-                  {equippedItems.length > 0 && (
-                    <span className="text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded">
-                      {equippedItems.length}
-                    </span>
-                  )}
-                </TabsTrigger>
-              )
-            })}
-          </TabsList>
+                return (
+                  <TabsTrigger
+                    key={categoryKey}
+                    value={categoryKey}
+                    className="text-sm flex-shrink-0 px-4 flex items-center gap-2"
+                  >
+                    <IconComponent className="w-4 h-4" />
+                    <span>{slotConfig.name}</span>
+                    {equippedItems.length > 0 && (
+                      <span className="text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded">
+                        {equippedItems.length}
+                      </span>
+                    )}
+                  </TabsTrigger>
+                )
+              })}
+            </TabsList>
+          </div>
 
           {Object.entries(EQUIPMENT_SLOTS).map(([categoryKey, slotConfig]) => {
             const equippedItems = getEquippedByCategory(categoryKey)
@@ -258,19 +258,23 @@ export function InventoryView({
                   )}
                 </div>
 
-                {/* Improved Slots Grid - Single row on mobile, 2x2 on larger screens */}
-                <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+                {/* Equipment Slots - Horizontal scroll layout */}
+                <div className="flex gap-3 sm:gap-4 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
                   {Array.from({ length: 4 }, (_, index) => {
                     const slotIndex = index + 1
                     const isUnlocked = slotIndex <= unlockedSlots
                     const equippedItem = getEquippedBySlot(categoryKey, slotIndex)
 
-                    return renderSlot(
-                      categoryKey,
-                      slotIndex,
-                      equippedItem,
-                      isUnlocked,
-                      slotConfig
+                    return (
+                      <div key={`slot-${slotIndex}`} className="flex-shrink-0 w-28 sm:w-32">
+                        {renderSlot(
+                          categoryKey,
+                          slotIndex,
+                          equippedItem,
+                          isUnlocked,
+                          slotConfig
+                        )}
+                      </div>
                     )
                   })}
                 </div>
@@ -293,11 +297,11 @@ export function InventoryView({
     const isPrimary = equippedItem?.is_primary || false
 
     if (!isUnlocked) {
-      // Locked slot - improved size
+      // Locked slot - horizontal scroll friendly
       return (
         <div
           key={`${category}-${slotIndex}`}
-          className="aspect-square border-2 border-dashed border-muted-foreground/20 rounded-lg flex flex-col items-center justify-center bg-muted/10 min-h-[100px] sm:min-h-[120px]"
+          className="h-32 sm:h-36 border-2 border-dashed border-muted-foreground/20 rounded-lg flex flex-col items-center justify-center bg-muted/10"
         >
           <Lock className="w-5 h-5 sm:w-6 sm:h-6 text-muted-foreground/50 mb-2" />
           <div className="text-sm text-muted-foreground/50 text-center leading-tight">
@@ -308,11 +312,11 @@ export function InventoryView({
     }
 
     if (!equippedItem) {
-      // Empty unlocked slot - improved size
+      // Empty unlocked slot - horizontal scroll friendly
       return (
         <div
           key={`${category}-${slotIndex}`}
-          className="aspect-square border-2 border-dashed border-muted-foreground/30 rounded-lg flex flex-col items-center justify-center bg-muted/20 hover:bg-muted/30 transition-colors min-h-[100px] sm:min-h-[120px]"
+          className="h-32 sm:h-36 border-2 border-dashed border-muted-foreground/30 rounded-lg flex flex-col items-center justify-center bg-muted/20 hover:bg-muted/30 transition-colors"
         >
           <slotConfig.icon className="w-5 h-5 sm:w-6 sm:h-6 text-muted-foreground/50 mb-2" />
           <div className="text-sm text-muted-foreground text-center leading-tight">
@@ -323,11 +327,11 @@ export function InventoryView({
       )
     }
 
-    // Equipped item slot - improved size and layout
+    // Equipped item slot - horizontal scroll friendly
     return (
       <div
         key={`${category}-${slotIndex}`}
-        className={`aspect-square border-2 rounded-lg p-3 transition-all min-h-[100px] sm:min-h-[120px] ${isPrimary
+        className={`h-32 sm:h-36 border-2 rounded-lg p-3 transition-all ${isPrimary
           ? 'border-yellow-400 bg-yellow-50 dark:bg-yellow-950/20'
           : 'border-primary bg-primary/5'
           }`}
@@ -538,50 +542,48 @@ export function InventoryView({
         </div>
       </div>
 
-      {/* Tabs with improved sizing */}
+      {/* Main Inventory Tabs - Horizontal scroll */}
       <Tabs defaultValue="all" className="w-full">
-        <TabsList className="grid w-full grid-cols-4 h-12">
-          <TabsTrigger value="all" className="text-sm">
-            <GiCube className="w-4 h-4 mr-1" />
-            <span className="hidden sm:inline">All</span>
-            <span className="sm:hidden">All</span>
-            {character.inventory?.length > 0 && (
-              <span className="ml-1 text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded">
-                {character.inventory.length}
-              </span>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="equipment" className="text-sm">
-            <GiSpade className="w-4 h-4 mr-1" />
-            <span className="hidden sm:inline">Equipment</span>
-            <span className="sm:hidden">Gear</span>
-            {equipmentItems.length > 0 && (
-              <span className="ml-1 text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded">
-                {equipmentItems.length}
-              </span>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="consumables" className="text-sm">
-            <GiWaterBottle className="w-4 h-4 mr-1" />
-            <span className="hidden sm:inline">Consumables</span>
-            <span className="sm:hidden">Use</span>
-            {consumableItems.length > 0 && (
-              <span className="ml-1 text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded">
-                {consumableItems.length}
-              </span>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="materials" className="text-sm">
-            <GiRock className="w-4 h-4 mr-1" />
-            <span className="hidden sm:inline">Materials</span>
-            <span className="sm:hidden">Mats</span>
-            {materialItems.length > 0 && (
-              <span className="ml-1 text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded">
-                {materialItems.length}
-              </span>
-            )}
-          </TabsTrigger>
-        </TabsList>
+        <div className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+          <TabsList className="flex w-max h-12 p-1">
+            <TabsTrigger value="all" className="text-sm flex-shrink-0 px-4">
+              <GiCube className="w-4 h-4 mr-2" />
+              <span>All Items</span>
+              {character.inventory?.length > 0 && (
+                <span className="ml-2 text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded">
+                  {character.inventory.length}
+                </span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="equipment" className="text-sm flex-shrink-0 px-4">
+              <GiSpade className="w-4 h-4 mr-2" />
+              <span>Equipment</span>
+              {equipmentItems.length > 0 && (
+                <span className="ml-2 text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded">
+                  {equipmentItems.length}
+                </span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="consumables" className="text-sm flex-shrink-0 px-4">
+              <GiWaterBottle className="w-4 h-4 mr-2" />
+              <span>Consumables</span>
+              {consumableItems.length > 0 && (
+                <span className="ml-2 text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded">
+                  {consumableItems.length}
+                </span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="materials" className="text-sm flex-shrink-0 px-4">
+              <GiRock className="w-4 h-4 mr-2" />
+              <span>Materials</span>
+              {materialItems.length > 0 && (
+                <span className="ml-2 text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded">
+                  {materialItems.length}
+                </span>
+              )}
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* All Tab Content */}
         <TabsContent value="all" className="mt-4 sm:mt-6">
