@@ -446,7 +446,7 @@ export default function Earth({
   const transformStyle = {
     transform: `scale(${zoom}) translate(${panX}px, ${panY}px)`,
     transition: isTransitioning ? ZOOM_CONFIG.transition : 'none',
-    transformOrigin: 'center center',
+    transformOrigin: '50% 50%', // FIXED: Always zoom toward viewport center
     cursor: isDragging ? 'grabbing' : zoom > 1 ? 'grab' : 'default'
   }
 
@@ -457,7 +457,7 @@ export default function Earth({
   }
 
   return (
-    <div className="w-full flex items-center justify-center relative">
+    <div className="w-full flex items-center justify-center relative border-t">
       {/* UPDATED: Fullscreen Viewport Container */}
       <div
         className="relative w-full h-full bg-background overflow-hidden"
@@ -468,13 +468,32 @@ export default function Earth({
         }}
       >
         {/* Zoom Controls */}
-        <div className="absolute top-4 left-4 z-50 flex flex-col gap-2">
+        <div className="absolute top-4 right-4 z-50 flex flex-col gap-2">
           <Button
             size="sm"
             variant="outline"
             onClick={() => {
               const newZoom = clampZoom(zoom + 0.5)
-              setZoom(newZoom)
+              if (newZoom !== zoom) {
+                // Zoom toward viewport center when using buttons
+                const rect = containerRef.current?.getBoundingClientRect()
+                if (rect) {
+                  const viewportCenterX = 0 // Center of viewport
+                  const viewportCenterY = 0 // Center of viewport
+
+                  const zoomRatio = newZoom / zoom
+                  const newPanX = viewportCenterX * (1 - zoomRatio) + panX * zoomRatio
+                  const newPanY = viewportCenterY * (1 - zoomRatio) + panY * zoomRatio
+
+                  const clampedPan = clampPan(newPanX, newPanY, newZoom)
+
+                  setZoom(newZoom)
+                  setPanX(clampedPan.x)
+                  setPanY(clampedPan.y)
+                } else {
+                  setZoom(newZoom)
+                }
+              }
             }}
             disabled={zoom >= ZOOM_CONFIG.max}
             className="w-8 h-8 p-0"
@@ -486,7 +505,27 @@ export default function Earth({
             variant="outline"
             onClick={() => {
               const newZoom = clampZoom(zoom - 0.5)
-              setZoom(newZoom)
+              if (newZoom !== zoom) {
+                // Zoom toward viewport center when using buttons
+                const rect = containerRef.current?.getBoundingClientRect()
+                if (rect) {
+                  const viewportCenterX = 0 // Center of viewport
+                  const viewportCenterY = 0 // Center of viewport
+
+                  const zoomRatio = newZoom / zoom
+                  const newPanX = viewportCenterX * (1 - zoomRatio) + panX * zoomRatio
+                  const newPanY = viewportCenterY * (1 - zoomRatio) + panY * zoomRatio
+
+                  const clampedPan = clampPan(newPanX, newPanY, newZoom)
+
+                  setZoom(newZoom)
+                  setPanX(clampedPan.x)
+                  setPanY(clampedPan.y)
+                } else {
+                  setZoom(newZoom)
+                }
+              }
+
               if (newZoom <= 1.1) {
                 setPanX(0)
                 setPanY(0)
@@ -511,7 +550,7 @@ export default function Earth({
 
         {/* Zoom Level Indicator */}
         {zoom !== 1 && (
-          <div className="absolute top-4 right-4 z-50 bg-card/95 backdrop-blur-sm text-card-foreground px-2 py-1 rounded text-xs border">
+          <div className="absolute top-4 right-14 z-50 bg-card/95 backdrop-blur-sm text-card-foreground px-2 py-1 rounded text-xs border">
             {Math.round(zoom * 100)}%
           </div>
         )}

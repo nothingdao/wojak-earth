@@ -50,7 +50,7 @@ export const AppShell: React.FC<AppShellProps> = ({
       {/* Conditional container based on view */}
       {isFullscreenView ? (
         // Fullscreen for map view - no container, no padding, fill viewport
-        <main className="w-full h-screen pt-16">
+        <main className="w-full h-screen">
           {children}
         </main>
       ) : (
