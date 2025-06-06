@@ -33,6 +33,9 @@ interface ProfileViewProps {
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({ character, onCharacterUpdated }) => {
+  console.log('🖼️ ProfileView render - coins:', character.coins, 'character ID:', character.id, 'object ref:', character)
+
+
   const walletInfo = useWalletInfo()
   const [imageError, setImageError] = useState(false)
   const [imageLoading, setImageLoading] = useState(true)

@@ -1,7 +1,7 @@
-// src/components/AppShell.tsx
+// Updated src/components/AppShell.tsx with Better Responsive Design
 import React, { type ReactNode } from 'react'
 import { GlobalNavbar } from './global-navbar'
-import { LocalRadio } from './LocalRadio'
+// import { LocalRadio } from './LocalRadio'
 import { NetworkSwitcher } from './NetworkSwitcher'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { isAdmin } from '@/config/admins'
@@ -51,11 +51,12 @@ export const AppShell: React.FC<AppShellProps> = ({
       />
 
       <div className="container mx-auto px-4 py-6">
-        <div className="max-w-md mx-auto">
+        {/* Improved max-width: good for mobile, better for desktop half-screen */}
+        <div className="max-w-2xl mx-auto">
           {/* Persistent Radio Bar */}
           {character && (
             <div className="mb-4">
-              <LocalRadio locationId={character.currentLocation.id} />
+              {/* <LocalRadio locationId={character.currentLocation.id} /> */}
             </div>
           )}
 

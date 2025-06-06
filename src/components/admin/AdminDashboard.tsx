@@ -85,7 +85,8 @@ export default function AdminDashboard() {
 
   // Data hooks
   const { stats, loading: statsLoading, error: statsError, refetch: refetchStats } = useAdminStats()
-  const { characters, loading: charactersLoading, error: charactersError } = useAdminCharacters()
+  const { characters, loading: charactersLoading, error: charactersError, refetch: refetchCharacters } = useAdminCharacters()
+
   const { locations, loading: locationsLoading, error: locationsError } = useAdminLocations()
   const { items, loading: itemsLoading, error: itemsError } = useAdminItems()
   const { marketListings, loading: marketLoading, error: marketError, getMarketStats } = useAdminMarket()
@@ -222,6 +223,10 @@ export default function AdminDashboard() {
     try {
       await updateCharacterStats(characterId, updates)
       toast.success('Character updated successfully!')
+
+      // Now you can use refetchCharacters here
+      await refetchCharacters()
+
       setShowEditCharacterModal(false)
       setSelectedCharacter(null)
     } catch (error) {

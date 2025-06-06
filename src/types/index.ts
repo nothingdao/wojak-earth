@@ -14,6 +14,7 @@ export type GameView =
   | 'admin'
 
 export interface Character {
+  walletAddress: any
   createdAt: string | number | Date
   id: string
   name: string

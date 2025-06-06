@@ -1,4 +1,4 @@
-// src/components/global-navbar.tsx - Updated with admin button
+// src/components/global-navbar.tsx - Updated with better responsive design
 import { Button } from '@/components/ui/button'
 import { Map, Backpack, MapPin, BoxIcon, Menu, Shield } from 'lucide-react'
 import { ModeToggle } from './mode-toggle'
@@ -22,7 +22,7 @@ interface GlobalNavbarProps {
   onSandboxClick?: () => void
   onInventoryClick?: () => void
   onAdminClick?: () => void
-  networkSwitcher?: React.ReactNode //
+  networkSwitcher?: React.ReactNode
 }
 
 export function GlobalNavbar({
@@ -33,7 +33,7 @@ export function GlobalNavbar({
   onMapClick,
   onSandboxClick,
   onInventoryClick,
-  onAdminClick // Add this to the destructuring
+  onAdminClick
 }: GlobalNavbarProps) {
   const [imageError, setImageError] = useState(false)
 
@@ -56,14 +56,14 @@ export function GlobalNavbar({
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="flex h-14 items-center justify-between px-2 sm:px-4 w-full">
+      <div className="flex h-16 sm:h-14 items-center justify-between px-3 sm:px-4 lg:px-6 w-full">
         {/* Left: Character Image + Location Button */}
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
           {character && (
             <Button
               variant="outline"
               size="sm"
-              className="h-8 w-8 p-0 overflow-hidden"
+              className="h-10 w-10 sm:h-9 sm:w-9 p-0 overflow-hidden"
               onClick={onProfileClick}
               aria-label={`${character.name} profile`}
             >
@@ -80,50 +80,54 @@ export function GlobalNavbar({
           <Button
             variant="outline"
             size="sm"
-            className="text-sm font-thin p-0 flex items-center"
+            className="text-sm font-thin p-0 flex items-center h-10 sm:h-9"
             onClick={onHomeClick}
           >
-            <div className="px-2 py-1">
-              <MapPin className="w-4 h-4" />
+            <div className="px-3 py-2 sm:px-2 sm:py-1">
+              <MapPin className="w-4 h-4 sm:w-4 sm:h-4" />
             </div>
             <div className="w-px h-full bg-border" />
-            <div className="px-2 py-1">
-              <span className="hidden sm:inline">{currentLocation}</span>
-              <span className="sm:hidden">{currentLocation.length > 8 ? currentLocation.slice(0, 8) + '...' : currentLocation}</span>
+            <div className="px-3 py-2 sm:px-2 sm:py-1">
+              <span className="hidden sm:inline text-sm">
+                {currentLocation.length > 12 ? currentLocation.slice(0, 12) + '...' : currentLocation}
+              </span>
+              <span className="sm:hidden text-sm">
+                {currentLocation.length > 8 ? currentLocation.slice(0, 8) + '...' : currentLocation}
+              </span>
             </div>
           </Button>
         </div>
 
         {/* Center: Action Buttons (Desktop/Tablet only) */}
-        <div className="hidden md:flex items-center justify-center flex-1">
+        <div className="hidden lg:flex items-center justify-center flex-1">
           {character && (
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
-                className="h-8 px-3"
+                className="h-9 px-4"
                 onClick={onSandboxClick}
               >
                 <BoxIcon className="w-4 h-4 mr-2" />
-                Sandbox
+                <span className="text-sm">Sandbox</span>
               </Button>
               <Button
                 variant="outline"
                 size="sm"
-                className="h-8 px-3"
+                className="h-9 px-4"
                 onClick={onMapClick}
               >
                 <Map className="w-4 h-4 mr-2" />
-                Map
+                <span className="text-sm">Map</span>
               </Button>
               <Button
                 variant="outline"
                 size="sm"
-                className="h-8 px-3"
+                className="h-9 px-4"
                 onClick={onInventoryClick}
               >
                 <Backpack className="w-4 h-4 mr-2" />
-                Inventory
+                <span className="text-sm">Inventory</span>
               </Button>
 
               {/* Desktop Admin Button - only show if onAdminClick is provided */}
@@ -131,52 +135,54 @@ export function GlobalNavbar({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-8 px-3 text-red-500 border-red-500/30 hover:bg-red-500/10 hover:text-red-400"
+                  className="h-9 px-4 text-red-500 border-red-500/30 hover:bg-red-500/10 hover:text-red-400"
                   onClick={onAdminClick}
                 >
                   <Shield className="w-4 h-4 mr-2" />
-                  Admin
+                  <span className="text-sm">Admin</span>
                 </Button>
               )}
             </div>
           )}
         </div>
 
-        {/* Right: Theme Toggle + Wallet + Hamburger (mobile only) */}
-        <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-          <ModeToggle />
-          <WalletConnectButton />
+        {/* Right: Theme Toggle + Wallet + Hamburger */}
+        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+          <div className="flex items-center gap-1 sm:gap-2">
+            <ModeToggle />
+            <WalletConnectButton />
+          </div>
 
-          {/* Mobile Hamburger Menu */}
+          {/* Mobile/Tablet Hamburger Menu */}
           {character && (
-            <div className="md:hidden">
+            <div className="lg:hidden">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-8 px-2">
-                    <Menu className="w-4 h-4" />
+                  <Button variant="outline" size="sm" className="h-10 w-10 sm:h-9 sm:w-9 p-0">
+                    <Menu className="w-5 h-5 sm:w-4 sm:h-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={onSandboxClick}>
-                    <BoxIcon className="w-4 h-4 mr-2" />
-                    Sandbox
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuItem onClick={onSandboxClick} className="py-3">
+                    <BoxIcon className="w-5 h-5 mr-3" />
+                    <span className="text-base">Sandbox</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={onMapClick}>
-                    <Map className="w-4 h-4 mr-2" />
-                    Map
+                  <DropdownMenuItem onClick={onMapClick} className="py-3">
+                    <Map className="w-5 h-5 mr-3" />
+                    <span className="text-base">Map</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={onInventoryClick}>
-                    <Backpack className="w-4 h-4 mr-2" />
-                    Inventory
+                  <DropdownMenuItem onClick={onInventoryClick} className="py-3">
+                    <Backpack className="w-5 h-5 mr-3" />
+                    <span className="text-base">Inventory</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={onProfileClick}>
+                  <DropdownMenuItem onClick={onProfileClick} className="py-3">
                     <img
                       src={getCharacterImageUrl()}
                       alt={character.name}
-                      className="w-4 h-4 mr-2 rounded object-cover"
+                      className="w-5 h-5 mr-3 rounded object-cover"
                       onError={handleImageError}
                     />
-                    Profile
+                    <span className="text-base">Profile</span>
                   </DropdownMenuItem>
 
                   {/* Mobile Admin Menu Item - only show if onAdminClick is provided */}
@@ -185,10 +191,10 @@ export function GlobalNavbar({
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
                         onClick={onAdminClick}
-                        className="text-red-500 focus:text-red-400 focus:bg-red-500/10"
+                        className="text-red-500 focus:text-red-400 focus:bg-red-500/10 py-3"
                       >
-                        <Shield className="w-4 h-4 mr-2" />
-                        Admin Panel
+                        <Shield className="w-5 h-5 mr-3" />
+                        <span className="text-base">Admin Panel</span>
                       </DropdownMenuItem>
                     </>
                   )}

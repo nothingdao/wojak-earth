@@ -146,6 +146,9 @@ function App() {
     )
   }
 
+  console.log('📱 App character before passing to GameContent:', character?.coins)
+
+
   // Main game content
   return (
     <>
