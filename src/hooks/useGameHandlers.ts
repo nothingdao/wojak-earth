@@ -1,4 +1,4 @@
-// src/hooks/useGameHandlers.ts
+// src/hooks/useGameHandlers.ts - FIXED VERSION
 import { toast } from 'sonner'
 import type { Location, MarketItem, Character, GameView } from '@/types'
 
@@ -50,7 +50,6 @@ interface UseGameHandlersProps {
   refetchCharacter: () => Promise<void>
   setLoadingItems: React.Dispatch<React.SetStateAction<Set<string>>>
   setMarketItems: React.Dispatch<React.SetStateAction<MarketItem[]>>
-  // Remove setChatInput from here since ChatView manages it internally
   setTravelingTo: React.Dispatch<React.SetStateAction<Location | null>>
   setCurrentView: React.Dispatch<React.SetStateAction<GameView>>
   loadGameData: () => Promise<void>
@@ -211,7 +210,6 @@ export function useGameHandlers({
         'CHAT'
       )
 
-      // Remove setChatInput('') since ChatView handles this internally
       await loadChatMessages(
         selectedLocation?.id || character.currentLocation.id
       )
@@ -221,13 +219,15 @@ export function useGameHandlers({
     }
   }
 
+  // FIXED: Made event parameter optional and added proper type checking
   const handleEquipItem = async (
     inventoryId: string,
     isEquipped: boolean,
+    targetSlot?: string,
     event?: React.MouseEvent
   ) => {
-    // Prevent default behavior that might cause page reload
-    if (event) {
+    // Only call preventDefault if event exists and has the method
+    if (event && typeof event.preventDefault === 'function') {
       event.preventDefault()
       event.stopPropagation()
     }
@@ -274,6 +274,7 @@ export function useGameHandlers({
     }
   }
 
+  // FIXED: Made event parameter optional and added proper type checking
   const handleUseItem = async (
     inventoryId: string,
     itemName: string,
@@ -281,8 +282,8 @@ export function useGameHandlers({
     healthEffect?: number,
     event?: React.MouseEvent
   ) => {
-    // Prevent default behavior that might cause page reload
-    if (event) {
+    // Only call preventDefault if event exists and has the method
+    if (event && typeof event.preventDefault === 'function') {
       event.preventDefault()
       event.stopPropagation()
     }

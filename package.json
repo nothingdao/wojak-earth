@@ -10,8 +10,7 @@
     "preview": "vite preview",
     "functions:dev": "netlify dev",
     "functions:build": "netlify build",
-    "postinstall": "prisma generate",
-    "seed:layers": "node scripts/seed-layer-items.js"
+    "postinstall": "prisma generate"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

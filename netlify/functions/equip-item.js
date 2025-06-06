@@ -130,7 +130,7 @@ export const handler = async (event, context) => {
         `)
         .eq('characterId', character.id)
         .eq('isEquipped', true)
-        .eq('equippedSlot', finalTargetSlot)
+        .eq('equippedslot', finalTargetSlot)
         .neq('id', inventoryId)
 
       if (conflictError) throw conflictError
@@ -142,7 +142,7 @@ export const handler = async (event, context) => {
             .from('character_inventory')
             .update({
               isEquipped: false,
-              equippedSlot: null
+              equippedslot: null
             })
             .eq('id', conflictItem.id)
 
@@ -170,7 +170,7 @@ export const handler = async (event, context) => {
         .from('character_inventory')
         .update({
           isEquipped: true,
-          equippedSlot: finalTargetSlot
+          equippedslot: finalTargetSlot
         })
         .eq('id', inventoryId)
         .select(`
@@ -207,7 +207,7 @@ export const handler = async (event, context) => {
         .from('character_inventory')
         .update({
           isEquipped: false,
-          equippedSlot: null
+          equippedslot: null
         })
         .eq('id', inventoryId)
         .select(`
@@ -226,7 +226,7 @@ export const handler = async (event, context) => {
           characterId: character.id,
           type: 'UNEQUIP',
           itemId: inventoryItem.itemId,
-          description: `Unequipped ${inventoryItem.item.name} from ${inventoryItem.equippedSlot || 'unknown'} slot`
+          description: `Unequipped ${inventoryItem.item.name} from ${inventoryItem.equippedslot || 'unknown'} slot`
         })
 
       if (unequipTxError) throw unequipTxError
@@ -259,7 +259,7 @@ export const handler = async (event, context) => {
         rarity: result.item.item.rarity,
         isEquipped: result.item.isEquipped,
         layerType: result.item.item.layerType,
-        equippedSlot: result.item.equippedSlot
+        equippedslot: result.item.equippedslot
       },
       action: result.action,
       replacedItems: result.replacedItems,

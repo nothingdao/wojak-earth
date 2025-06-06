@@ -36,7 +36,7 @@ export interface Character {
     welcomeMessage?: string
   }
   inventory: Array<{
-    equippedSlot: string
+    equippedslot: string
     id: string
     quantity: number
     isEquipped: boolean

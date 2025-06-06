@@ -28,8 +28,8 @@ import type { Character } from '@/types'
 interface InventoryViewProps {
   character: Character
   loadingItems: Set<string>
-  onUseItem: (inventoryId: string, itemName: string, energyEffect?: number, healthEffect?: number) => void
-  onEquipItem: (inventoryId: string, isEquipped: boolean, targetSlot?: string) => void
+  onUseItem: (inventoryId: string, itemName: string, energyEffect?: number, healthEffect?: number, event?: React.MouseEvent) => void
+  onEquipItem: (inventoryId: string, isEquipped: boolean, targetSlot?: string, event?: React.MouseEvent) => void
 }
 
 // Updated 6-slot equipment mapping
@@ -84,18 +84,18 @@ export function InventoryView({
     inv.item.category === 'MATERIAL'
   ) || []
 
-  // Get equipped item by slot using equippedSlot field
+  // Get equipped item by slot using equippedslot field
   const getEquippedBySlot = (slot: string) => {
     return character.inventory?.find(inv =>
-      inv.isEquipped && inv.equippedSlot === slot
+      inv.isEquipped && inv.equippedslot === slot
     )
   }
 
   // Enhanced equip handler with 6-slot conflict detection
-  const handleEquipWithConflictCheck = (item: Character['inventory'][0]) => {
+  const handleEquipWithConflictCheck = (item: Character['inventory'][0], event?: React.MouseEvent) => {
     if (item.isEquipped) {
-      // Simple unequip
-      onEquipItem(item.id, true)
+      // Simple unequip - pass the event
+      onEquipItem(item.id, true, undefined, event)
       return
     }
 
@@ -118,8 +118,8 @@ export function InventoryView({
       })
       setShowReplaceDialog(true)
     } else {
-      // No conflict, equip normally
-      onEquipItem(item.id, false, targetSlot)
+      // No conflict, equip normally - pass the event
+      onEquipItem(item.id, false, targetSlot, event)
     }
   }
 
@@ -219,7 +219,7 @@ export function InventoryView({
                 <Button
                   size="sm"
                   variant="ghost"
-                  onClick={() => onEquipItem(equippedItem.id, true)}
+                  onClick={(e) => onEquipItem(equippedItem.id, true, undefined, e)} // Pass event
                   className="mt-1 h-6 text-xs px-1"
                   disabled={loadingItems.has(equippedItem.id)}
                 >
@@ -308,9 +308,8 @@ export function InventoryView({
               size="sm"
               variant={inv.isEquipped ? "default" : "outline"}
               onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                handleEquipWithConflictCheck(inv)
+                // Pass the event to the handler
+                handleEquipWithConflictCheck(inv, e)
               }}
               disabled={isLoading}
               className="text-xs px-1 py-1 h-7 w-full"
@@ -330,13 +329,13 @@ export function InventoryView({
               size="sm"
               variant="outline"
               onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
+                // Pass the event to the handler
                 onUseItem(
                   inv.id,
                   inv.item.name,
                   inv.item.energyEffect,
-                  inv.item.healthEffect
+                  inv.item.healthEffect,
+                  e  // Pass the event here
                 )
               }}
               disabled={wouldBeWasted || isLoading}
