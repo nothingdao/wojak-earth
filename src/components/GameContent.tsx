@@ -1,5 +1,6 @@
 // src/components/GameContent.tsx
 import React from 'react'
+import { toast } from 'sonner'
 import { AppShell } from './AppShell'
 import {
   InventoryView,
@@ -57,6 +58,64 @@ export const GameContent: React.FC<GameContentProps> = ({
   const handleInventoryClick = () => onViewChange('inventory')
   const handleAdminClick = () => onViewChange('admin')
 
+  // NEW: Handler to set an item as primary for visual rendering
+  const handleSetPrimary = async (inventoryId: string, category: string) => {
+    if (!character) return
+
+    try {
+      const response = await fetch('/netlify/functions/equip-item', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          walletAddress: character.walletAddress,
+          inventoryId: inventoryId,
+          equip: true,
+          setPrimary: true
+        })
+      })
+
+      if (!response.ok) throw new Error('Failed to set primary')
+
+      const result = await response.json()
+      toast.success(`${result.item.name} set as primary for visual display!`)
+
+      // Refresh character data to update UI
+      await refetchCharacter()
+    } catch (error) {
+      console.error('Failed to set primary:', error)
+      toast.error('Failed to set as primary')
+    }
+  }
+
+  // NEW: Handler to replace a specific slot when all slots are full
+  const handleReplaceSlot = async (inventoryId: string, category: string, slotIndex: number) => {
+    if (!character) return
+
+    try {
+      const response = await fetch('/netlify/functions/equip-item', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          walletAddress: character.walletAddress,
+          inventoryId: inventoryId,
+          equip: true,
+          replaceSlot: slotIndex
+        })
+      })
+
+      if (!response.ok) throw new Error('Failed to replace slot')
+
+      const result = await response.json()
+      toast.success(result.message)
+
+      // Refresh character data to update UI
+      await refetchCharacter()
+    } catch (error) {
+      console.error('Failed to replace slot:', error)
+      toast.error('Failed to replace item')
+    }
+  }
+
   const renderCurrentView = () => {
     switch (currentView) {
       case 'main':
@@ -108,6 +167,8 @@ export const GameContent: React.FC<GameContentProps> = ({
             loadingItems={loadingItems}
             onUseItem={onUseItem}
             onEquipItem={onEquipItem}
+            onSetPrimary={handleSetPrimary}      // ← ADD THIS
+            onReplaceSlot={handleReplaceSlot}    // ← ADD THIS
           />
         )
       case 'chat':
