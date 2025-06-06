@@ -65,6 +65,8 @@ export const SandboxView: React.FC<SandboxViewProps> = ({ character, onCharacter
   const walletInfo = useWalletInfo()
   const wallet = useWallet()
   const [loading, setLoading] = useState(false)
+  const [selectedLayers, setSelectedLayers] = useState<Record<string, string | null> | null>(null)
+
   const [genderFilter, setGenderFilter] = useState<GenderFilter>('ALL')
   const [generatedImage, setGeneratedImage] = useState<string | null>(null)
   const [imageLoading, setImageLoading] = useState(false)
@@ -189,6 +191,7 @@ export const SandboxView: React.FC<SandboxViewProps> = ({ character, onCharacter
   }
 
   // Generate random character image using proper layer system
+  // Modified character generation function to track selected layers
   const generateCharacterImage = async () => {
     setImageLoading(true)
 
@@ -247,6 +250,9 @@ export const SandboxView: React.FC<SandboxViewProps> = ({ character, onCharacter
 
       console.log('Selected layers for', selectedGender + ':', selectedLayers)
 
+      // STORE SELECTED LAYERS FOR INVENTORY CREATION
+      setSelectedLayers(selectedLayers) // Add this state variable
+
       // Load image helper
       const loadImage = (src: string): Promise<HTMLImageElement> => {
         return new Promise((resolve, reject) => {
@@ -288,6 +294,7 @@ export const SandboxView: React.FC<SandboxViewProps> = ({ character, onCharacter
     }
   }
 
+
   // Handle gender filter change
   const handleGenderFilterChange = (newFilter: GenderFilter) => {
     setGenderFilter(newFilter)
@@ -317,7 +324,9 @@ export const SandboxView: React.FC<SandboxViewProps> = ({ character, onCharacter
         body: JSON.stringify({
           walletAddress: wallet.publicKey.toString(),
           gender: currentGender,
-          imageBlob: generatedImage
+          imageBlob: generatedImage,
+          selectedLayers: selectedLayers // Pass the selected layers
+
         })
       })
 
@@ -331,6 +340,7 @@ export const SandboxView: React.FC<SandboxViewProps> = ({ character, onCharacter
         console.log('Metadata URI:', result.metadataUri)
 
         setGeneratedImage(null)
+        setSelectedLayers(null) // Reset selected layers
 
         // Auto-generate a new character after successful creation
         generateCharacterImage()

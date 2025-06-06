@@ -54,8 +54,28 @@
     "neutral": []
   },
   "9-misc-accessories": {
-    "male": ["male-cigarette.png"],
-    "female": ["female-cigarette.png", "female-solana-seeker.png"],
+    "male": [
+      "male-cigarette.png",
+      {
+        "file": "male-solana-seeker.png",
+        "itemName": "Solana Seeker",
+        "itemId": "solana-seeker",
+        "itemDescription": "Revolutionary phone built for the Solana ecosystem",
+        "rarity": "LEGENDARY",
+        "energyEffect": 15
+      }
+    ],
+    "female": [
+      "female-cigarette.png",
+      {
+        "file": "female-solana-seeker.png",
+        "itemName": "Solana Seeker",
+        "itemId": "solana-seeker",
+        "itemDescription": "Revolutionary phone built for the Solana ecosystem",
+        "rarity": "LEGENDARY",
+        "energyEffect": 15
+      }
+    ],
     "neutral": []
   },
   "backgrounds": {

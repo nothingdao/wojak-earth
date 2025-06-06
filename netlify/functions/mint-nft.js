@@ -32,7 +32,7 @@ export const handler = async (event, context) => {
   console.log('🆔 Generated character ID:', characterId)
 
   try {
-    const { walletAddress, gender, imageBlob } = JSON.parse(event.body)
+    const { walletAddress, gender, imageBlob, selectedLayers } = JSON.parse(event.body)
 
     // Enhanced collection debugging
     console.log('🔍 COLLECTION DEBUG START')
@@ -228,7 +228,7 @@ export const handler = async (event, context) => {
 
     if (updateError) throw updateError
 
-    await createStartingInventory(characterId)
+    await createStartingInventoryWithLayers(characterId, selectedLayers)
 
     console.log('🎉 Character creation complete!')
     console.log('🔍 COLLECTION DEBUG END')
@@ -276,7 +276,7 @@ export const handler = async (event, context) => {
   }
 }
 
-// Helper functions (same as before)
+// Helper functions
 async function getNextWojakNumber() {
   const { data: characters, error } = await supabase
     .from('characters')
@@ -358,49 +358,208 @@ async function generateRandomCharacter(name, gender, walletAddress) {
   }
 }
 
-async function createStartingInventory(characterId) {
-  const { data: items, error } = await supabase
-    .from('items')
-    .select('id, name, category')
-    .in('category', ['TOOL', 'CONSUMABLE'])
-    .limit(10)
+// async function createStartingInventory(characterId) {
+//   const { data: items, error } = await supabase
+//     .from('items')
+//     .select('id, name, category')
+//     .in('category', ['TOOL', 'CONSUMABLE'])
+//     .limit(10)
 
-  if (error) throw error
+//   if (error) throw error
 
+//   const startingItems = []
+//   const now = new Date().toISOString()
+
+//   const tool = items.find(item => item.category === 'TOOL')
+//   if (tool) {
+//     startingItems.push({
+//       id: randomUUID(),
+//       characterId: characterId,
+//       itemId: tool.id,
+//       quantity: 1,
+//       isEquipped: false,
+//       createdAt: now,
+//       updatedAt: now
+//     })
+//   }
+
+//   const consumables = items.filter(item => item.category === 'CONSUMABLE').slice(0, 2)
+//   for (const consumable of consumables) {
+//     startingItems.push({
+//       id: randomUUID(),
+//       characterId: characterId,
+//       itemId: consumable.id,
+//       quantity: Math.floor(Math.random() * 3) + 2,
+//       isEquipped: false,
+//       createdAt: now,
+//       updatedAt: now
+//     })
+//   }
+
+//   if (startingItems.length > 0) {
+//     const { error: invError } = await supabase
+//       .from('character_inventory')
+//       .insert(startingItems)
+
+//     if (invError) throw invError
+//   }
+// }
+
+
+// Add this new helper function after your existing helper functions
+async function createStartingInventoryWithLayers(characterId, selectedLayers = null) {
+  console.log('🎒 Creating starting inventory...')
+  console.log('📋 Selected layers received:', selectedLayers)
+  console.log('🚨 SELECTED LAYERS DEBUG:', JSON.stringify(selectedLayers, null, 2))
   const startingItems = []
   const now = new Date().toISOString()
 
-  const tool = items.find(item => item.category === 'TOOL')
-  if (tool) {
-    startingItems.push({
-      id: randomUUID(),
-      characterId: characterId,
-      itemId: tool.id,
-      quantity: 1,
-      isEquipped: false,
-      createdAt: now,
-      updatedAt: now
-    })
+  // LAYER-BASED ITEMS: Add items for equipped visual layers
+  if (selectedLayers) {
+    console.log('👕 Processing layer-based items...')
+
+    const ITEM_LAYER_TYPES = ['3-undergarments', '4-clothing', '5-outerwear', '7-face-accessories', '8-headwear', '9-misc-accessories']
+
+    for (const layerType of ITEM_LAYER_TYPES) {
+      const selectedFile = selectedLayers[layerType]
+
+      if (!selectedFile) {
+        console.log(`  ⏭️  No ${layerType} selected`)
+        continue
+      }
+
+      console.log(`  🔍 Looking for item: ${layerType}/${selectedFile}`)
+
+      // For genderless items, we need to strip the gender prefix and look up by base name
+      const baseFile = selectedFile.replace(/^(male-|female-)/, '') // Strip gender prefix
+      console.log(`  🔍 Base filename: ${baseFile}`)
+
+      // Try multiple queries to find the item:
+      // 1. Exact layerfile match (for gendered items)
+      // 2. Genderless items by base filename pattern
+      const { data: layerItems, error: itemError } = await supabase
+        .from('items')
+        .select('id, name, category, layerfile, layergender')
+        .or(`layerfile.eq.${selectedFile},and(layerfile.is.null,name.ilike.%${baseFile.replace('.png', '')}%)`)
+
+      console.log(`  📊 Query result for ${selectedFile}:`, {
+        found: layerItems?.length || 0,
+        error: itemError,
+        items: layerItems
+      })
+
+      if (itemError) {
+        console.error(`  ❌ Database error for ${layerType}/${selectedFile}:`, itemError)
+        continue
+      }
+
+      if (!layerItems || layerItems.length === 0) {
+        console.log(`  ⏭️  No item found for ${layerType}/${selectedFile} - visual only`)
+        continue
+      }
+
+      // For genderless items (layergender: null), or find matching gender
+      let selectedItem = layerItems.find(item => item.layergender === null) // Prefer genderless
+      if (!selectedItem) {
+        // Fallback to any item if no genderless version
+        selectedItem = layerItems[0]
+        console.log(`  ℹ️  Using gendered item: ${selectedItem.name} (${selectedItem.layergender})`)
+      } else {
+        console.log(`  ✅ Using genderless item: ${selectedItem.name}`)
+      }
+
+      // Add to starting inventory as equipped
+      startingItems.push({
+        id: randomUUID(),
+        characterId: characterId,
+        itemId: selectedItem.id,
+        quantity: 1,
+        isEquipped: true, // Layer items start equipped since they're visually shown
+        createdAt: now,
+        updatedAt: now
+      })
+
+      console.log(`  ✅ Added equipped ${selectedItem.category}: ${selectedItem.name}`)
+    }
+  } else {
+    console.log('⚠️  No selectedLayers provided')
   }
 
-  const consumables = items.filter(item => item.category === 'CONSUMABLE').slice(0, 2)
-  for (const consumable of consumables) {
-    startingItems.push({
-      id: randomUUID(),
-      characterId: characterId,
-      itemId: consumable.id,
-      quantity: Math.floor(Math.random() * 3) + 2,
-      isEquipped: false,
-      createdAt: now,
-      updatedAt: now
-    })
+  // BASIC ITEMS: Add some basic tools and consumables (existing logic)
+  console.log('🔧 Adding basic starter items...')
+  const { data: basicItems, error: basicError } = await supabase
+    .from('items')
+    .select('id, name, category')
+    .in('category', ['TOOL', 'CONSUMABLE'])
+    .is('layerfile', null) // Only non-layer items
+    .limit(10)
+
+  if (basicError) {
+    console.warn('⚠️  Failed to load basic items:', basicError)
+  } else if (basicItems && basicItems.length > 0) {
+    // Add a basic tool (like pickaxe)
+    const tool = basicItems.find(item => item.category === 'TOOL')
+    if (tool) {
+      startingItems.push({
+        id: randomUUID(),
+        characterId: characterId,
+        itemId: tool.id,
+        quantity: 1,
+        isEquipped: false,
+        createdAt: now,
+        updatedAt: now
+      })
+      console.log(`  🔧 Added tool: ${tool.name}`)
+    }
+
+    // Add some consumables
+    const consumables = basicItems.filter(item => item.category === 'CONSUMABLE').slice(0, 2)
+    for (const consumable of consumables) {
+      const quantity = Math.floor(Math.random() * 3) + 2 // 2-4 items
+      startingItems.push({
+        id: randomUUID(),
+        characterId: characterId,
+        itemId: consumable.id,
+        quantity: quantity,
+        isEquipped: false,
+        createdAt: now,
+        updatedAt: now
+      })
+      console.log(`  🍎 Added consumable: ${consumable.name} (${quantity}x)`)
+    }
+  } else {
+    console.log('⚠️  No basic items found in database')
   }
 
+  // Insert all inventory items
   if (startingItems.length > 0) {
+    console.log(`💾 Inserting ${startingItems.length} items into character_inventory...`)
+
     const { error: invError } = await supabase
       .from('character_inventory')
       .insert(startingItems)
 
-    if (invError) throw invError
+    if (invError) {
+      console.error('❌ Failed to create starting inventory:', invError)
+      throw invError
+    }
+
+    console.log(`✅ Created starting inventory with ${startingItems.length} items`)
+    console.log(`  📦 Equipped items: ${startingItems.filter(i => i.isEquipped).length}`)
+    console.log(`  📦 Unequipped items: ${startingItems.filter(i => !i.isEquipped).length}`)
+
+    // Summary of what was added
+    const equipped = startingItems.filter(i => i.isEquipped)
+    const unequipped = startingItems.filter(i => !i.isEquipped)
+
+    if (equipped.length > 0) {
+      console.log(`  👕 Equipped layer items: ${equipped.length}`)
+    }
+    if (unequipped.length > 0) {
+      console.log(`  🎒 Basic starter items: ${unequipped.length}`)
+    }
+  } else {
+    console.log('⚠️  No items added to starting inventory')
   }
 }
+
