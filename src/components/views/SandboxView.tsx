@@ -1,5 +1,5 @@
 // src/components/views/SandboxView.tsx - CLEAN FIXED VERSION
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   RefreshCw,
@@ -25,6 +25,8 @@ interface AssetEntry {
   incompatible_headwear?: string[]
   requires_hair?: string[]
   incompatible_hair?: string[]
+  incompatible_base?: string[]
+
   compatible_outerwear?: string[]
   incompatible_outerwear?: string[]
   rules?: Record<string, unknown>
@@ -37,7 +39,7 @@ interface LayerManifest {
 }
 
 interface Manifest {
-  [layerType: string]: LayerManifest
+  [layerType: string]: LayerManifest | any  // Allow any for compatibility_rules
   compatibility_rules?: {
     hair_headwear_conflicts?: Record<string, { blocks?: string[]; allows?: string[] }>
     outerwear_combinations?: Record<string, { blocks_headwear?: string[]; allows_headwear?: string[] }>
@@ -60,6 +62,181 @@ const LAYER_CONFIG = {
   '9-misc-accessories': { required: false, probability: 0.2 },
   'backgrounds': { required: true, probability: 1.0 },
   'overlays': { required: false, probability: 0.3 }
+}
+
+// Parse asset entry
+const parseAssetEntry = (entry: string | AssetEntry): { file: string; rules?: AssetEntry } => {
+  if (typeof entry === 'string') {
+    return { file: entry }
+  }
+  if (typeof entry === 'object' && entry.file) {
+    return { file: entry.file, rules: entry }
+  }
+  return { file: '' }
+}
+
+// Get available assets for a layer based on gender and manifest
+const getLayerAssets = (manifest: Manifest, layerType: string, gender: 'MALE' | 'FEMALE'): string[] => {
+  const layerData = manifest[layerType] as LayerManifest | undefined
+  if (!layerData || layerType === 'compatibility_rules') return []
+
+  const genderKey = gender.toLowerCase() as 'male' | 'female'
+  const availableAssets: string[] = []
+
+  // Add gender-specific assets
+  if (layerData[genderKey]) {
+    for (const entry of layerData[genderKey]) {
+      const parsed = parseAssetEntry(entry)
+      if (parsed.file) {
+        availableAssets.push(parsed.file)
+      }
+    }
+  }
+
+  // Add neutral assets
+  if (layerData.neutral) {
+    for (const entry of layerData.neutral) {
+      const parsed = parseAssetEntry(entry)
+      if (parsed.file) {
+        availableAssets.push(parsed.file)
+      }
+    }
+  }
+
+  return availableAssets
+}
+
+// Check compatibility
+// Updated areAssetsCompatible function to check asset-level rules
+const areAssetsCompatible = (manifest: Manifest, selectedLayers: Record<string, string | null>): boolean => {
+  const rules = manifest.compatibility_rules || {}
+
+  // Check hair-headwear conflicts (existing global rules)
+  const selectedHair = selectedLayers['6-hair']
+  const selectedHeadwear = selectedLayers['8-headwear']
+  const selectedBase = selectedLayers['1-base']
+
+  console.log('🔍 Checking compatibility:', {
+    base: selectedBase,
+    hair: selectedHair,
+    headwear: selectedHeadwear
+  })
+
+  // Check base/hair compatibility FIRST
+  if (selectedBase && selectedHair) {
+    console.log('🧠 Checking base/hair compatibility...')
+
+    // Check if base has incompatible_hair restrictions
+    const baseAsset = findAssetEntry(manifest, '1-base', selectedBase)
+    console.log('📦 Base asset found:', baseAsset)
+
+    if (baseAsset && baseAsset.incompatible_hair) {
+      console.log('❌ Base has incompatible_hair:', baseAsset.incompatible_hair)
+      if (baseAsset.incompatible_hair.includes(selectedHair)) {
+        console.log('🚫 BLOCKING: Base incompatible with hair!')
+        return false
+      }
+    }
+
+    // Check if hair has incompatible_base restrictions
+    const hairAsset = findAssetEntry(manifest, '6-hair', selectedHair)
+    console.log('💇 Hair asset found:', hairAsset)
+
+    if (hairAsset && hairAsset.incompatible_base) {
+      console.log('❌ Hair has incompatible_base:', hairAsset.incompatible_base)
+      if (hairAsset.incompatible_base.includes(selectedBase)) {
+        console.log('🚫 BLOCKING: Hair incompatible with base!')
+        return false
+      }
+    }
+  }
+
+  // Rest of your existing compatibility checks...
+  if (selectedHair && selectedHeadwear && rules.hair_headwear_conflicts) {
+    const hairConflicts = rules.hair_headwear_conflicts[selectedHair]
+    if (hairConflicts) {
+      if (hairConflicts.blocks && hairConflicts.blocks.includes(selectedHeadwear)) {
+        return false
+      }
+      if (hairConflicts.allows && !hairConflicts.allows.includes(selectedHeadwear)) {
+        return false
+      }
+    }
+  }
+
+  if (selectedHair && selectedHeadwear) {
+    const headwearAsset = findAssetEntry(manifest, '8-headwear', selectedHeadwear)
+    if (headwearAsset && headwearAsset.incompatible_hair) {
+      if (headwearAsset.incompatible_hair.includes(selectedHair)) {
+        return false
+      }
+    }
+
+    if (headwearAsset && headwearAsset.requires_hair) {
+      if (headwearAsset.requires_hair.length > 0 && !headwearAsset.requires_hair.includes(selectedHair)) {
+        return false
+      }
+    }
+
+    const hairAsset = findAssetEntry(manifest, '6-hair', selectedHair)
+    if (hairAsset && hairAsset.incompatible_headwear) {
+      if (hairAsset.incompatible_headwear.includes(selectedHeadwear)) {
+        return false
+      }
+    }
+  }
+
+  const selectedOuterwear = selectedLayers['5-outerwear']
+  if (selectedOuterwear && selectedHeadwear && rules.outerwear_combinations) {
+    const outerwearConflicts = rules.outerwear_combinations[selectedOuterwear]
+    if (outerwearConflicts) {
+      if (outerwearConflicts.blocks_headwear && outerwearConflicts.blocks_headwear.includes(selectedHeadwear)) {
+        return false
+      }
+      if (outerwearConflicts.allows_headwear && !outerwearConflicts.allows_headwear.includes(selectedHeadwear)) {
+        return false
+      }
+    }
+  }
+
+  console.log('✅ Combination allowed')
+  return true
+}
+
+// Helper function to find asset entry with rules
+const findAssetEntry = (manifest: Manifest, layerType: string, fileName: string): AssetEntry | null => {
+  const layerData = manifest[layerType] as LayerManifest | undefined
+  if (!layerData || layerType === 'compatibility_rules') return null
+
+  // Search in all gender categories
+  const allEntries = [
+    ...(layerData.male || []),
+    ...(layerData.female || []),
+    ...(layerData.neutral || [])
+  ]
+
+  for (const entry of allEntries) {
+    if (typeof entry === 'object' && entry.file === fileName) {
+      return entry
+    }
+  }
+
+  return null
+}
+
+// Get compatible assets
+const getCompatibleAssets = (manifest: Manifest, layerType: string, selectedLayers: Record<string, string | null>, gender: 'MALE' | 'FEMALE'): string[] => {
+  const layerAssets = getLayerAssets(manifest, layerType, gender)
+  const compatibleAssets: string[] = []
+
+  for (const asset of layerAssets) {
+    const testSelection = { ...selectedLayers, [layerType]: asset }
+    if (areAssetsCompatible(manifest, testSelection)) {
+      compatibleAssets.push(asset)
+    }
+  }
+
+  return compatibleAssets
 }
 
 export const SandboxView: React.FC<SandboxViewProps> = ({ character, onCharacterCreated }) => {
@@ -92,88 +269,9 @@ export const SandboxView: React.FC<SandboxViewProps> = ({ character, onCharacter
     }
   }
 
-  // Parse asset entry
-  const parseAssetEntry = (entry: string | AssetEntry): { file: string; rules?: AssetEntry } => {
-    if (typeof entry === 'string') {
-      return { file: entry }
-    }
-    if (typeof entry === 'object' && entry.file) {
-      return { file: entry.file, rules: entry }
-    }
-    return { file: '' }
-  }
-
-  // Get available assets for a layer based on gender and manifest
-  const getLayerAssets = (manifest: Manifest, layerType: string, gender: 'MALE' | 'FEMALE'): string[] => {
-    const layerData = manifest[layerType]
-    if (!layerData) return []
-
-    const genderKey = gender.toLowerCase() as 'male' | 'female'
-    const availableAssets: string[] = []
-
-    // Add gender-specific assets
-    if (layerData[genderKey]) {
-      for (const entry of layerData[genderKey]) {
-        const parsed = parseAssetEntry(entry)
-        if (parsed.file) {
-          availableAssets.push(parsed.file)
-        }
-      }
-    }
-
-    // Add neutral assets
-    if (layerData.neutral) {
-      for (const entry of layerData.neutral) {
-        const parsed = parseAssetEntry(entry)
-        if (parsed.file) {
-          availableAssets.push(parsed.file)
-        }
-      }
-    }
-
-    return availableAssets
-  }
-
-  // Check compatibility
-  const areAssetsCompatible = (manifest: Manifest, selectedLayers: Record<string, string | null>): boolean => {
-    const rules = manifest.compatibility_rules || {}
-
-    // Check hair-headwear conflicts
-    const selectedHair = selectedLayers['6-hair']
-    const selectedHeadwear = selectedLayers['8-headwear']
-
-    if (selectedHair && selectedHeadwear && rules.hair_headwear_conflicts) {
-      const hairConflicts = rules.hair_headwear_conflicts[selectedHair]
-      if (hairConflicts) {
-        if (hairConflicts.blocks && hairConflicts.blocks.includes(selectedHeadwear)) {
-          return false
-        }
-        if (hairConflicts.allows && !hairConflicts.allows.includes(selectedHeadwear)) {
-          return false
-        }
-      }
-    }
-
-    return true
-  }
-
-  // Get compatible assets
-  const getCompatibleAssets = (manifest: Manifest, layerType: string, selectedLayers: Record<string, string | null>, gender: 'MALE' | 'FEMALE'): string[] => {
-    const layerAssets = getLayerAssets(manifest, layerType, gender)
-    const compatibleAssets: string[] = []
-
-    for (const asset of layerAssets) {
-      const testSelection = { ...selectedLayers, [layerType]: asset }
-      if (areAssetsCompatible(manifest, testSelection)) {
-        compatibleAssets.push(asset)
-      }
-    }
-
-    return compatibleAssets
-  }
-
   // Generate character image
-  const generateCharacterImage = async () => {
+  // Generate character image - SIMPLE FIX
+  const generateCharacterImage = useCallback(async () => {
     setImageLoading(true)
 
     try {
@@ -205,17 +303,32 @@ export const SandboxView: React.FC<SandboxViewProps> = ({ character, onCharacter
       // Select layers
       const newSelectedLayers: Record<string, string | null> = {}
 
-      // First pass: required layers
+      // First pass: required layers (but check compatibility for hair)
       for (const [layerType, config] of Object.entries(LAYER_CONFIG)) {
         if (config.required) {
-          const availableAssets = getLayerAssets(manifest, layerType, selectedGender)
-          if (availableAssets.length > 0) {
-            newSelectedLayers[layerType] = availableAssets[Math.floor(Math.random() * availableAssets.length)]
+          if (layerType === '6-hair') {
+            // For hair, check compatibility with already selected base
+            const compatibleAssets = getCompatibleAssets(manifest, layerType, newSelectedLayers, selectedGender)
+            if (compatibleAssets.length > 0) {
+              newSelectedLayers[layerType] = compatibleAssets[Math.floor(Math.random() * compatibleAssets.length)]
+            } else {
+              // Fallback to any hair if no compatible ones
+              const availableAssets = getLayerAssets(manifest, layerType, selectedGender)
+              if (availableAssets.length > 0) {
+                newSelectedLayers[layerType] = availableAssets[Math.floor(Math.random() * availableAssets.length)]
+              }
+            }
+          } else {
+            // For other required layers (like base), just pick randomly
+            const availableAssets = getLayerAssets(manifest, layerType, selectedGender)
+            if (availableAssets.length > 0) {
+              newSelectedLayers[layerType] = availableAssets[Math.floor(Math.random() * availableAssets.length)]
+            }
           }
         }
       }
 
-      // Second pass: optional layers
+      // Second pass: optional layers (with compatibility checking)
       for (const [layerType, config] of Object.entries(LAYER_CONFIG)) {
         if (!config.required && Math.random() < config.probability) {
           const compatibleAssets = getCompatibleAssets(manifest, layerType, newSelectedLayers, selectedGender)
@@ -269,7 +382,7 @@ export const SandboxView: React.FC<SandboxViewProps> = ({ character, onCharacter
     } finally {
       setImageLoading(false)
     }
-  }
+  }, [genderFilter])
 
   // Handle gender filter change
   const handleGenderFilterChange = (newFilter: GenderFilter) => {
@@ -360,7 +473,7 @@ export const SandboxView: React.FC<SandboxViewProps> = ({ character, onCharacter
     if (walletInfo.connected && !character) {
       generateCharacterImage()
     }
-  }, [walletInfo.connected, character, genderFilter])
+  }, [walletInfo.connected, character, generateCharacterImage])
 
   return (
     <div className='space-y-6'>
@@ -511,14 +624,14 @@ export const SandboxView: React.FC<SandboxViewProps> = ({ character, onCharacter
                     size="sm"
                     onClick={() => {
                       // Generate multiple characters rapidly
-                      for (let i = 0; i < 3; i++) {
+                      for (let i = 0; i < 30; i++) {
                         setTimeout(() => generateCharacterImage(), i * 500)
                       }
                     }}
                     disabled={imageLoading}
                     className="text-xs"
                   >
-                    3x Generate
+                    30x Generate
                   </Button>
                 </div>
               </div>

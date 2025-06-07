@@ -1,10 +1,26 @@
 {
   "1-base": {
-    "male": ["male.png"],
-    "female": ["female.png"]
+    "male": [
+      "male.png",
+      {
+        "file": "male-2.png",
+        "incompatible_hair": ["male-long-black-hair.png"]
+      },
+      "male-blue.png",
+      "male-red.png"
+    ],
+    "female": [
+      "female.png",
+      "female-rare-pink-face.png",
+      "female-black.png",
+      "female-ivory.png",
+      "female-saffron.png",
+      "female-blonde.png",
+      "female-pale.png"
+    ]
   },
   "2-skin": {
-    "male": [],
+    "male": ["male-reindeer-tattoo.png"],
     "female": [],
     "neutral": []
   },
@@ -14,7 +30,11 @@
     "neutral": []
   },
   "4-clothing": {
-    "male": ["male-black-t-shirt.png", "male-tie-dye-t-shirt.png"],
+    "male": [
+      "male-black-t-shirt.png",
+      "male-tie-dye-t-shirt.png",
+      "male-dirty-white-t-shirt.png"
+    ],
     "female": [
       "female-underland-t-shirt.png",
       "female-tiger-tank.png",
@@ -23,12 +43,17 @@
     "neutral": []
   },
   "5-outerwear": {
-    "male": [],
-    "female": ["female-leather-jacket.png"],
+    "male": [
+      "male-jean-jacket.png",
+      "male-orange-winter-coat.png",
+      "male-cigarette-butt-jacket.png",
+      "male-leather-jacket.png"
+    ],
+    "female": ["female-leather-jacket.png", "female-white-fir-coat.png"],
     "neutral": []
   },
   "6-hair": {
-    "male": ["male-bald.png"],
+    "male": ["male-bald.png", "male-long-black-hair.png"],
     "female": [],
     "neutral": []
   },
@@ -42,12 +67,24 @@
       {
         "file": "male-sun-hat.png",
         "requires_hair": [],
-        "incompatible_hair": []
+        "incompatible_hair": ["male-long-black-hair.png"]
+      },
+      {
+        "file": "male-blue-ball-cap.png",
+        "incompatible_hair": ["male-long-black-hair.png"]
       }
     ],
     "female": [
       {
         "file": "female-yankees-hat.png",
+        "requires_hair": []
+      },
+      {
+        "file": "female-leather-fur-hat.png",
+        "requires_hair": []
+      },
+      {
+        "file": "female-fbi-beanie.png",
         "requires_hair": []
       }
     ],
@@ -62,7 +99,8 @@
         "itemId": "solana-seeker",
         "itemDescription": "Revolutionary phone built for the Solana ecosystem",
         "rarity": "LEGENDARY",
-        "energyEffect": 15
+        "energyEffect": 15,
+        "incompatible_base": ["male-2.png", "male-blue.png", "male-red.png"]
       }
     ],
     "female": [
@@ -74,6 +112,9 @@
         "itemDescription": "Revolutionary phone built for the Solana ecosystem",
         "rarity": "LEGENDARY",
         "energyEffect": 15
+      },
+      {
+        "file": "female-baseball-bat.png"
       }
     ],
     "neutral": []
@@ -93,6 +134,9 @@
       "female-long.png": {
         "blocks": [],
         "allows": []
+      },
+      "male-long-black-hair.png": {
+        "blocks": ["male-sun-hat.png"]
       }
     },
     "outerwear_combinations": {
