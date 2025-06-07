@@ -1,8 +1,9 @@
 // netlify/functions/create-payment-request.js
-import { encodeURL, createQR } from '@solana/pay'
+import { encodeURL } from '@solana/pay'
 import { PublicKey, Keypair } from '@solana/web3.js'
 import { randomUUID } from 'crypto'
 import { createClient } from '@supabase/supabase-js'
+import BigNumber from 'bignumber.js'
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -10,7 +11,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 // Your treasury wallet public key - set this in your environment variables
 const TREASURY_WALLET = new PublicKey(process.env.TREASURY_WALLET_ADDRESS || 'YourTreasuryWalletAddressHere')
-const NFT_PRICE_SOL = 2 // 2 SOL for NFT minting
+const NFT_PRICE_SOL = 0.1 // 0.1 SOL for NFT minting
 
 export const handler = async (event, context) => {
   const headers = {
@@ -69,18 +70,39 @@ export const handler = async (event, context) => {
     const referenceKeypair = Keypair.generate()
     const reference = referenceKeypair.publicKey
 
-    // Create Solana Pay URL using the correct API
-    const transferRequestUrl = encodeURL({
-      recipient: TREASURY_WALLET,
+    console.log('Creating Solana Pay URL with:', {
+      recipient: TREASURY_WALLET.toString(),
       amount: NFT_PRICE_SOL,
-      reference: reference, // Use generated keypair public key as reference
-      label: 'Wojak Earth NFT',
-      message: 'Payment for Wojak Earth character NFT',
+      reference: reference.toString(),
       memo: memo
     })
 
-    // Generate QR code for the payment request
-    const qrCode = await createQR(transferRequestUrl, 400) // 400x400 QR code
+    // Create Solana Pay URL using the correct API
+    let transferRequestUrl
+    try {
+      transferRequestUrl = encodeURL({
+        recipient: TREASURY_WALLET,
+        amount: new BigNumber(NFT_PRICE_SOL),
+        reference: reference,
+        label: 'Wojak Earth NFT',
+        message: 'Payment for Wojak Earth character NFT',
+        memo: memo
+      })
+      console.log('Generated Solana Pay URL:', transferRequestUrl.toString())
+    } catch (encodeError) {
+      console.error('Error encoding Solana Pay URL:', encodeError)
+      // Fallback: create manual Solana Pay URL
+      const params = new URLSearchParams({
+        recipient: TREASURY_WALLET.toString(),
+        amount: NFT_PRICE_SOL.toString(),
+        reference: reference.toString(),
+        label: 'Wojak Earth NFT',
+        message: 'Payment for Wojak Earth character NFT',
+        memo: memo
+      })
+      transferRequestUrl = new URL(`solana:${TREASURY_WALLET.toString()}?${params.toString()}`)
+      console.log('Fallback URL generated:', transferRequestUrl.toString())
+    }
 
     // Store pending payment in database
     const { data: pendingPayment, error: paymentError } = await supabase
@@ -111,7 +133,7 @@ export const handler = async (event, context) => {
         success: true,
         paymentId: paymentId,
         paymentUrl: transferRequestUrl.toString(),
-        qrCode: qrCode,
+        // QR code will be generated on frontend
         amount: NFT_PRICE_SOL,
         treasuryWallet: TREASURY_WALLET.toString(),
         memo: memo,

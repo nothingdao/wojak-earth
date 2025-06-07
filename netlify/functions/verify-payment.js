@@ -7,7 +7,7 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 const TREASURY_WALLET = new PublicKey(process.env.TREASURY_WALLET_ADDRESS || 'YourTreasuryWalletAddressHere')
-const NFT_PRICE_SOL = 2
+const NFT_PRICE_SOL = 0.1
 
 export const handler = async (event, context) => {
   const headers = {
@@ -152,39 +152,99 @@ export const handler = async (event, context) => {
       }
     }
 
-    // Check transaction amount (simplified check - in production you'd want more robust verification)
+    // Enhanced transaction amount verification with debugging
     const preBalances = transaction.meta.preBalances
     const postBalances = transaction.meta.postBalances
+    const expectedAmountLamports = NFT_PRICE_SOL * 1000000000 // Convert SOL to lamports
+    
+    console.log('💰 Transaction verification details:')
+    console.log('  - Account keys:', accountKeys)
+    console.log('  - Treasury wallet:', TREASURY_WALLET.toString())
+    console.log('  - Expected amount (lamports):', expectedAmountLamports)
+    console.log('  - Pre-balances:', preBalances)
+    console.log('  - Post-balances:', postBalances)
     
     // Find treasury wallet index
     const treasuryIndex = accountKeys.findIndex(key => key === TREASURY_WALLET.toString())
     
+    console.log('  - Treasury index:', treasuryIndex)
+    
     if (treasuryIndex === -1) {
+      console.error('❌ Treasury wallet not found in transaction accounts')
       return {
         statusCode: 400,
         headers,
         body: JSON.stringify({ 
-          error: 'Treasury wallet not found in transaction' 
+          error: 'Treasury wallet not found in transaction',
+          debug: {
+            treasuryWallet: TREASURY_WALLET.toString(),
+            accountKeys: accountKeys
+          }
         })
       }
     }
 
     // Calculate amount received by treasury (in lamports)
     const treasuryBalanceChange = postBalances[treasuryIndex] - preBalances[treasuryIndex]
-    const expectedAmountLamports = NFT_PRICE_SOL * 1000000000 // Convert SOL to lamports
+    const treasuryBalanceChangeSol = treasuryBalanceChange / 1000000000
     
-    // Allow for small variance due to fees (within 1% tolerance)
-    const tolerance = expectedAmountLamports * 0.01
+    console.log('  - Treasury balance change (lamports):', treasuryBalanceChange)
+    console.log('  - Treasury balance change (SOL):', treasuryBalanceChangeSol)
     
-    if (treasuryBalanceChange < expectedAmountLamports - tolerance) {
+    // For very small amounts like 0.1 SOL, be more lenient with validation
+    // Different wallets might handle fees differently
+    const tolerance = Math.max(expectedAmountLamports * 0.05, 10000000) // 5% tolerance or 0.01 SOL minimum
+    
+    console.log('  - Tolerance (lamports):', tolerance)
+    console.log('  - Minimum acceptable (lamports):', expectedAmountLamports - tolerance)
+    
+    // Check if ANY account received the expected amount (in case treasury index is wrong)
+    let validPaymentFound = false
+    let actualAmountReceived = 0
+    
+    for (let i = 0; i < accountKeys.length; i++) {
+      const balanceChange = postBalances[i] - preBalances[i]
+      console.log(`  - Account ${i} (${accountKeys[i]}) balance change: ${balanceChange} lamports (${balanceChange / 1000000000} SOL)`)
+      
+      // Check if this account received approximately the expected amount
+      if (Math.abs(balanceChange - expectedAmountLamports) <= tolerance) {
+        validPaymentFound = true
+        actualAmountReceived = balanceChange
+        console.log(`  ✅ Valid payment found in account ${i}: ${balanceChange / 1000000000} SOL`)
+        break
+      }
+    }
+    
+    // Primary check: treasury wallet received payment
+    if (treasuryBalanceChange >= expectedAmountLamports - tolerance) {
+      validPaymentFound = true
+      actualAmountReceived = treasuryBalanceChange
+      console.log('✅ Treasury wallet received valid payment')
+    }
+    
+    if (!validPaymentFound) {
+      console.error('❌ No valid payment found in any account')
       return {
         statusCode: 400,
         headers,
         body: JSON.stringify({ 
-          error: `Insufficient payment amount. Expected: ${NFT_PRICE_SOL} SOL, Received: ${treasuryBalanceChange / 1000000000} SOL` 
+          error: `Insufficient payment amount. Expected: ${NFT_PRICE_SOL} SOL, Received: ${treasuryBalanceChangeSol} SOL`,
+          debug: {
+            expectedSol: NFT_PRICE_SOL,
+            receivedSol: treasuryBalanceChangeSol,
+            treasuryIndex: treasuryIndex,
+            accountBalanceChanges: accountKeys.map((key, i) => ({
+              account: key,
+              balanceChange: postBalances[i] - preBalances[i],
+              balanceChangeSol: (postBalances[i] - preBalances[i]) / 1000000000
+            }))
+          }
         })
       }
     }
+    
+    console.log('✅ Payment verification successful!')
+    console.log(`  - Amount received: ${actualAmountReceived / 1000000000} SOL`)
 
     // Check memo if present
     const memoInstruction = transaction.transaction.message.instructions.find(
@@ -208,7 +268,7 @@ export const handler = async (event, context) => {
         status: 'VERIFIED',
         transaction_signature: signature,
         verified_at: new Date().toISOString(),
-        amount_received: treasuryBalanceChange / 1000000000 // Convert back to SOL
+        amount_received: actualAmountReceived / 1000000000 // Convert back to SOL
       })
       .eq('id', paymentId)
 

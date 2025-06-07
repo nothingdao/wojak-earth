@@ -63,6 +63,9 @@ export const handler = async (event, context) => {
       // Delete character inventory
       supabase.from('character_inventory').delete().eq('characterId', characterId),
 
+      // Clear character_id reference in pending_payments (don't delete the payment record)
+      supabase.from('pending_payments').update({ character_id: null }).eq('character_id', characterId),
+
       // Delete any other character-related records
       // Add more tables here as needed based on your schema
 

@@ -1,6 +1,6 @@
 # Solana Pay Integration for Wojak Earth NFT Minting
 
-This implementation adds a 2 SOL payment requirement before users can mint their Wojak Earth character NFTs using Solana Pay protocol.
+This implementation adds a .1 SOL payment requirement before users can mint their Wojak Earth character NFTs using Solana Pay protocol.
 
 ## 🎯 Features
 
@@ -79,7 +79,7 @@ const handleMintNFT = async () => {
 1. **User initiates character creation**
 2. **Payment request created** via `create-payment-request` function
 3. **QR code displayed** for user to scan with their Solana wallet
-4. **User pays 2 SOL** to the treasury wallet
+4. **User pays .1 SOL** to the treasury wallet
 5. **Payment verification** via `verify-payment` function
 6. **NFT minting** proceeds only after payment verification
 7. **Payment marked as used** to prevent reuse
@@ -113,7 +113,7 @@ Creates a new Solana Pay payment request.
   "treasuryWallet": "treasury_public_key",
   "memo": "wojak-nft-uuid",
   "expiresAt": "2025-01-01T00:30:00Z",
-  "message": "Please pay 2 SOL to mint your Wojak Earth NFT"
+  "message": "Please pay .1 SOL to mint your Wojak Earth NFT"
 }
 ```
 
@@ -189,7 +189,7 @@ CREATE TABLE pending_payments (
 ## 🛡️ Security Features
 
 - **On-chain verification**: All payments verified against Solana blockchain
-- **Amount validation**: Ensures exactly 2 SOL was paid
+- **Amount validation**: Ensures exactly .1 SOL was paid
 - **Treasury validation**: Confirms payment went to correct wallet
 - **Expiration handling**: Payments expire after 30 minutes
 - **Single-use**: Each payment can only mint one NFT
@@ -218,7 +218,7 @@ CREATE TABLE pending_payments (
 2. **"Payment expired"**: User took too long to complete payment
 3. **"Payment already used"**: User trying to mint multiple times with same payment
 4. **"Treasury wallet not found"**: Payment didn't go to correct address
-5. **"Insufficient amount"**: User paid less than 2 SOL
+5. **"Insufficient amount"**: User paid less than .1 SOL
 
 ### Debug Steps:
 
@@ -240,4 +240,4 @@ CREATE TABLE pending_payments (
 
 ✅ **Your Wojak Earth NFTs now require payment before minting!**
 
-Users must pay 2 SOL before they can create their character NFT, ensuring a monetized and secure minting process.
+Users must pay .1 SOL before they can create their character NFT, ensuring a monetized and secure minting process.

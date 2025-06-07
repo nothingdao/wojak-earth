@@ -505,7 +505,7 @@ export const SandboxView: React.FC<SandboxViewProps> = ({ character, onCharacter
                   Creating Character...
                 </>
               ) : (
-                'Pay 2 SOL & Create Character'
+                'Pay .1 SOL & Create Character'
               )}
             </Button>
 
