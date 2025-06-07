@@ -10,6 +10,7 @@ import {
 import { useWalletInfo } from '@/hooks/useWalletInfo'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { toast } from 'sonner'
+import SolanaPayment from '@/components/SolanaPayment'
 import type { Character } from '@/types'
 
 interface SandboxViewProps {
@@ -72,6 +73,9 @@ export const SandboxView: React.FC<SandboxViewProps> = ({ character, onCharacter
   const [imageLoading, setImageLoading] = useState(false)
   const [currentGender, setCurrentGender] = useState<'MALE' | 'FEMALE'>('MALE')
   const canvasRef = useRef<HTMLCanvasElement>(null)
+
+  // 💰 Payment state variables
+  const [showPayment, setShowPayment] = useState(false)
 
   // Auto-generate character on component mount
   useEffect(() => {
@@ -301,8 +305,8 @@ export const SandboxView: React.FC<SandboxViewProps> = ({ character, onCharacter
     generateCharacterImage()
   }
 
-  // Create character with NFT
-  const createCharacter = async () => {
+  // Handle payment verification and start character creation
+  const handleStartCreation = () => {
     if (!wallet.connected || !wallet.publicKey) {
       toast.error('Connect wallet first')
       return
@@ -313,6 +317,25 @@ export const SandboxView: React.FC<SandboxViewProps> = ({ character, onCharacter
       return
     }
 
+    // Show payment component
+    setShowPayment(true)
+  }
+
+  // Handle payment verified - proceed with minting
+  const handlePaymentVerified = (verifiedPaymentId: string) => {
+    setShowPayment(false)
+    // Now proceed with character creation using the paymentId
+    createCharacterWithPayment(verifiedPaymentId)
+  }
+
+  // Handle payment cancelled
+  const handlePaymentCancelled = () => {
+    setShowPayment(false)
+    toast.info('Character creation cancelled')
+  }
+
+  // Create character with verified payment
+  const createCharacterWithPayment = async (verifiedPaymentId: string) => {
     setLoading(true)
 
     try {
@@ -322,11 +345,11 @@ export const SandboxView: React.FC<SandboxViewProps> = ({ character, onCharacter
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          walletAddress: wallet.publicKey.toString(),
+          walletAddress: wallet.publicKey!.toString(),
           gender: currentGender,
           imageBlob: generatedImage,
-          selectedLayers: selectedLayers // Pass the selected layers
-
+          selectedLayers: selectedLayers,
+          paymentId: verifiedPaymentId // 🆔 Include verified payment ID
         })
       })
 
@@ -340,7 +363,7 @@ export const SandboxView: React.FC<SandboxViewProps> = ({ character, onCharacter
         console.log('Metadata URI:', result.metadataUri)
 
         setGeneratedImage(null)
-        setSelectedLayers(null) // Reset selected layers
+        setSelectedLayers(null)
 
         // Auto-generate a new character after successful creation
         generateCharacterImage()
@@ -365,8 +388,20 @@ export const SandboxView: React.FC<SandboxViewProps> = ({ character, onCharacter
 
   return (
     <div className='space-y-6'>
+      {/* 💰 Solana Payment Modal */}
+      {showPayment && (
+        <SolanaPayment
+          characterData={{
+            gender: currentGender,
+            selectedLayers: selectedLayers
+          }}
+          onPaymentVerified={handlePaymentVerified}
+          onCancel={handlePaymentCancelled}
+        />
+      )}
+
       {/* Character Creation Section */}
-      {walletInfo.connected && !character && (
+      {walletInfo.connected && !character && !showPayment && (
         <div className='bg-card border rounded-lg p-6'>
           <h3 className='text-lg font-semibold mb-4 flex items-center gap-2'>
             <User className='w-5 h-5' />
@@ -459,7 +494,7 @@ export const SandboxView: React.FC<SandboxViewProps> = ({ character, onCharacter
 
             {/* Create Character Button */}
             <Button
-              onClick={createCharacter}
+              onClick={handleStartCreation}
               disabled={loading || !generatedImage}
               className="w-full"
               size='lg'
@@ -470,7 +505,7 @@ export const SandboxView: React.FC<SandboxViewProps> = ({ character, onCharacter
                   Creating Character...
                 </>
               ) : (
-                'Create Character & Mint NFT'
+                'Pay 2 SOL & Create Character'
               )}
             </Button>
 

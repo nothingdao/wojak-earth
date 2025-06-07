@@ -32,23 +32,87 @@ export const handler = async (event, context) => {
   console.log('🆔 Generated character ID:', characterId)
 
   try {
-    const { walletAddress, gender, imageBlob, selectedLayers } = JSON.parse(event.body)
+    const { walletAddress, gender, imageBlob, selectedLayers, paymentId } = JSON.parse(event.body)
 
     // Enhanced collection debugging
     console.log('🔍 COLLECTION DEBUG START')
     console.log('🔍 Environment check:')
     console.log('  - WOJAK_COLLECTION_ADDRESS:', process.env.WOJAK_COLLECTION_ADDRESS || 'NOT SET')
     console.log('  - SERVER_KEYPAIR_SECRET:', process.env.SERVER_KEYPAIR_SECRET ? 'SET' : 'NOT SET')
+    console.log('  - PAYMENT_ID:', paymentId || 'NOT PROVIDED')
 
-    if (!walletAddress || !gender || !imageBlob) {
+    if (!walletAddress || !gender || !imageBlob || !paymentId) {
       return {
         statusCode: 400,
         headers,
         body: JSON.stringify({
-          error: 'Missing required fields: walletAddress, gender, imageBlob'
+          error: 'Missing required fields: walletAddress, gender, imageBlob, paymentId'
         })
       }
     }
+
+    // 🆔 PAYMENT VERIFICATION - NEW REQUIREMENT
+    console.log('💰 Verifying payment before minting...')
+
+    // Check if payment exists and is verified
+    const { data: payment, error: paymentError } = await supabase
+      .from('pending_payments')
+      .select('*')
+      .eq('id', paymentId)
+      .eq('wallet_address', walletAddress)
+      .single()
+
+    if (paymentError || !payment) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({
+          error: 'Payment not found or invalid. Please complete payment first.',
+          code: 'PAYMENT_NOT_FOUND'
+        })
+      }
+    }
+
+    if (payment.status !== 'VERIFIED') {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({
+          error: `Payment not verified. Status: ${payment.status}. Please wait for payment confirmation.`,
+          code: 'PAYMENT_NOT_VERIFIED',
+          paymentStatus: payment.status
+        })
+      }
+    }
+
+    // Check if payment has already been used for minting
+    if (payment.nft_minted) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({
+          error: 'Payment has already been used to mint an NFT.',
+          code: 'PAYMENT_ALREADY_USED'
+        })
+      }
+    }
+
+    // Check if payment has expired
+    if (new Date() > new Date(payment.expires_at)) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({
+          error: 'Payment has expired. Please create a new payment request.',
+          code: 'PAYMENT_EXPIRED'
+        })
+      }
+    }
+
+    console.log('✅ Payment verified! Proceeding with NFT minting...')
+    console.log(`  - Payment ID: ${paymentId}`)
+    console.log(`  - Amount: ${payment.amount} SOL`)
+    console.log(`  - Transaction: ${payment.transaction_signature}`)
 
     let userWallet
     try {
@@ -230,6 +294,18 @@ export const handler = async (event, context) => {
 
     await createStartingInventoryWithLayers(characterId, selectedLayers)
 
+    // 💰 Mark payment as used to prevent reuse
+    await supabase
+      .from('pending_payments')
+      .update({
+        nft_minted: true,
+        character_id: characterId,
+        nft_address: nft.mintAddress.toBase58(),
+        minted_at: new Date().toISOString()
+      })
+      .eq('id', paymentId)
+
+    console.log('💰 Payment marked as used')
     console.log('🎉 Character creation complete!')
     console.log('🔍 COLLECTION DEBUG END')
 
