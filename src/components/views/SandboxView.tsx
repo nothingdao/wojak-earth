@@ -10,7 +10,7 @@ import {
 import { useWalletInfo } from '@/hooks/useWalletInfo'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { toast } from 'sonner'
-import SolanaPayment from '@/components/SolanaPayment'
+import SimplePayment from '@/components/SimplePayment'
 import type { Character } from '@/types'
 
 interface SandboxViewProps {
@@ -388,14 +388,15 @@ export const SandboxView: React.FC<SandboxViewProps> = ({ character, onCharacter
 
   return (
     <div className='space-y-6'>
-      {/* 💰 Solana Payment Modal */}
+
+      {/* Simple Payment Modal } Fuck Solana Pay Edition */}
       {showPayment && (
-        <SolanaPayment
+        <SimplePayment
           characterData={{
             gender: currentGender,
             selectedLayers: selectedLayers
           }}
-          onPaymentVerified={handlePaymentVerified}
+          onPaymentSuccess={handlePaymentVerified}
           onCancel={handlePaymentCancelled}
         />
       )}

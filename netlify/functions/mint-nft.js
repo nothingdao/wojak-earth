@@ -1,4 +1,4 @@
-// netlify/functions/mint-nft.js - DEBUG VERSION
+// netlify/functions/mint-nft.js - SIMPLIFIED VERSION (FUCK SOLANA PAY)
 import { Metaplex, keypairIdentity } from "@metaplex-foundation/js"
 import { Connection, Keypair, PublicKey } from "@solana/web3.js"
 import { createClient } from '@supabase/supabase-js'
@@ -7,6 +7,9 @@ import { randomUUID } from 'crypto'
 const supabaseUrl = process.env.VITE_SUPABASE_URL
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
+
+const TREASURY_WALLET = process.env.TREASURY_WALLET_ADDRESS
+const NFT_PRICE_SOL = 0.1
 
 export const handler = async (event, context) => {
   const headers = {
@@ -32,100 +35,169 @@ export const handler = async (event, context) => {
   console.log('🆔 Generated character ID:', characterId)
 
   try {
-    const { walletAddress, gender, imageBlob, selectedLayers, paymentId } = JSON.parse(event.body)
+    const { walletAddress, gender, imageBlob, selectedLayers, paymentSignature } = JSON.parse(event.body)
 
-    // Enhanced collection debugging
-    console.log('🔍 COLLECTION DEBUG START')
-    console.log('🔍 Environment check:')
-    console.log('  - WOJAK_COLLECTION_ADDRESS:', process.env.WOJAK_COLLECTION_ADDRESS || 'NOT SET')
-    console.log('  - SERVER_KEYPAIR_SECRET:', process.env.SERVER_KEYPAIR_SECRET ? 'SET' : 'NOT SET')
-    console.log('  - PAYMENT_ID:', paymentId || 'NOT PROVIDED')
+    console.log('📋 Request data:', {
+      walletAddress,
+      gender,
+      hasImageBlob: !!imageBlob,
+      hasSelectedLayers: !!selectedLayers,
+      paymentSignature: paymentSignature || 'NOT PROVIDED'
+    })
 
-    if (!walletAddress || !gender || !imageBlob || !paymentId) {
+    if (!walletAddress || !gender || !imageBlob || !paymentSignature) {
       return {
         statusCode: 400,
         headers,
         body: JSON.stringify({
-          error: 'Missing required fields: walletAddress, gender, imageBlob, paymentId'
+          error: 'Missing required fields: walletAddress, gender, imageBlob, paymentSignature'
         })
       }
     }
 
-    // 🆔 PAYMENT VERIFICATION - NEW REQUIREMENT
-    console.log('💰 Verifying payment before minting...')
+    // 🔍 PAYMENT VERIFICATION - SIMPLE VERSION
+    console.log('💰 Verifying payment signature:', paymentSignature)
 
-    // Check if payment exists and is verified
-    const { data: payment, error: paymentError } = await supabase
-      .from('pending_payments')
-      .select('*')
-      .eq('id', paymentId)
-      .eq('wallet_address', walletAddress)
-      .single()
+    const connection = new Connection(
+      process.env.SOLANA_RPC_URL || "https://api.devnet.solana.com",
+      "confirmed"
+    )
 
-    if (paymentError || !payment) {
+    // Get transaction details
+    let transaction
+    try {
+      transaction = await connection.getTransaction(paymentSignature, {
+        commitment: 'confirmed',
+        maxSupportedTransactionVersion: 0
+      })
+    } catch (txError) {
+      console.error('❌ Failed to fetch transaction:', txError)
       return {
         statusCode: 400,
         headers,
         body: JSON.stringify({
-          error: 'Payment not found or invalid. Please complete payment first.',
+          error: 'Could not find payment transaction. Please wait a moment and try again.',
           code: 'PAYMENT_NOT_FOUND'
         })
       }
     }
 
-    if (payment.status !== 'VERIFIED') {
+    if (!transaction) {
       return {
         statusCode: 400,
         headers,
         body: JSON.stringify({
-          error: `Payment not verified. Status: ${payment.status}. Please wait for payment confirmation.`,
-          code: 'PAYMENT_NOT_VERIFIED',
-          paymentStatus: payment.status
+          error: 'Payment transaction not found on blockchain',
+          code: 'PAYMENT_NOT_FOUND'
         })
       }
     }
 
-    // Check if payment has already been used for minting
-    if (payment.nft_minted) {
+    if (transaction.meta?.err) {
       return {
         statusCode: 400,
         headers,
         body: JSON.stringify({
-          error: 'Payment has already been used to mint an NFT.',
+          error: 'Payment transaction failed',
+          code: 'PAYMENT_FAILED',
+          details: transaction.meta.err
+        })
+      }
+    }
+
+    // Verify payment went to treasury wallet
+    const accountKeys = transaction.transaction.message.accountKeys.map(key =>
+      typeof key === 'string' ? key : key.toString()
+    )
+
+    const treasuryIndex = accountKeys.findIndex(key => key === TREASURY_WALLET)
+
+    if (treasuryIndex === -1) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({
+          error: 'Payment did not go to treasury wallet',
+          code: 'INVALID_RECIPIENT',
+          debug: {
+            treasuryWallet: TREASURY_WALLET,
+            accountKeys: accountKeys
+          }
+        })
+      }
+    }
+
+    // Verify payment amount
+    const preBalances = transaction.meta.preBalances
+    const postBalances = transaction.meta.postBalances
+    const balanceChange = postBalances[treasuryIndex] - preBalances[treasuryIndex]
+    const expectedLamports = NFT_PRICE_SOL * 1000000000
+
+    console.log('💰 Payment verification:', {
+      treasuryIndex,
+      balanceChange,
+      expectedLamports,
+      balanceChangeSol: balanceChange / 1000000000,
+      expectedSol: NFT_PRICE_SOL
+    })
+
+    if (balanceChange < expectedLamports * 0.95) { // 5% tolerance for potential fees
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({
+          error: `Insufficient payment. Expected: ${NFT_PRICE_SOL} SOL, Received: ${balanceChange / 1000000000} SOL`,
+          code: 'INSUFFICIENT_PAYMENT'
+        })
+      }
+    }
+
+    // Verify sender is the wallet requesting the mint
+    const senderIndex = 0 // Usually the first account is the sender
+    const senderPubkey = accountKeys[senderIndex]
+
+    if (senderPubkey !== walletAddress) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({
+          error: 'Payment sender does not match wallet address',
+          code: 'WALLET_MISMATCH',
+          debug: {
+            paymentFrom: senderPubkey,
+            requestFrom: walletAddress
+          }
+        })
+      }
+    }
+
+    console.log('✅ Payment verified successfully:', {
+      signature: paymentSignature,
+      amount: balanceChange / 1000000000,
+      from: senderPubkey,
+      to: TREASURY_WALLET
+    })
+
+    // Check if this signature was already used
+    const { data: existingCharacter } = await supabase
+      .from('characters')
+      .select('id, name')
+      .eq('payment_signature', paymentSignature)
+      .single()
+
+    if (existingCharacter) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({
+          error: 'Payment signature already used for another character',
+          existingCharacter: existingCharacter.name,
           code: 'PAYMENT_ALREADY_USED'
         })
       }
     }
 
-    // Check if payment has expired
-    if (new Date() > new Date(payment.expires_at)) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({
-          error: 'Payment has expired. Please create a new payment request.',
-          code: 'PAYMENT_EXPIRED'
-        })
-      }
-    }
-
-    console.log('✅ Payment verified! Proceeding with NFT minting...')
-    console.log(`  - Payment ID: ${paymentId}`)
-    console.log(`  - Amount: ${payment.amount} SOL`)
-    console.log(`  - Transaction: ${payment.transaction_signature}`)
-
-    let userWallet
-    try {
-      userWallet = new PublicKey(walletAddress)
-    } catch (error) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({ error: 'Invalid wallet address' })
-      }
-    }
-
-    // 1. Check existing character
+    // Check if wallet already has a character
     const { data: existingChar } = await supabase
       .from('characters')
       .select('id, name')
@@ -138,21 +210,24 @@ export const handler = async (event, context) => {
         headers,
         body: JSON.stringify({
           error: 'Wallet already has a character',
-          existingCharacter: existingChar.name
+          existingCharacter: existingChar.name,
+          code: 'WALLET_HAS_CHARACTER'
         })
       }
     }
 
-    // 2-6. Character creation and image upload (same as before)
+    // 📝 CHARACTER CREATION - Same as before but with payment signature
     const wojakNumber = await getNextWojakNumber()
     const characterName = `Wojak #${wojakNumber}`
     const characterData = await generateRandomCharacter(characterName, gender, walletAddress)
 
+    // Create character record with payment signature
     const { data: character, error: createError } = await supabase
       .from('characters')
       .insert({
         id: characterId,
         ...characterData,
+        payment_signature: paymentSignature, // Store payment proof
         nftAddress: null,
         tokenId: null,
         status: 'PENDING_MINT',
@@ -161,20 +236,20 @@ export const handler = async (event, context) => {
       .select()
       .single()
 
-    if (createError) throw createError
+    if (createError) {
+      console.error('❌ Failed to create character:', createError)
+      throw createError
+    }
 
+    // Upload character image
     const imageUrl = await uploadCharacterImage(characterId, imageBlob)
     await supabase
       .from('characters')
       .update({ currentImageUrl: imageUrl })
       .eq('id', characterId)
 
-    // 7. Enhanced Solana setup with collection debugging
-    console.log('🔧 Setting up Solana connection...')
-    const connection = new Connection(
-      process.env.SOLANA_RPC_URL || "https://api.devnet.solana.com",
-      "confirmed"
-    )
+    // 🎨 NFT MINTING - Same as before
+    console.log('🎨 Starting NFT mint...')
 
     const serverKeypair = Keypair.fromSecretKey(
       new Uint8Array(JSON.parse(process.env.SERVER_KEYPAIR_SECRET))
@@ -185,45 +260,22 @@ export const handler = async (event, context) => {
     const metaplex = Metaplex.make(connection)
       .use(keypairIdentity(serverKeypair))
 
-    // 8. Collection verification and setup
+    // Collection handling
     let collectionMint = null
     if (process.env.WOJAK_COLLECTION_ADDRESS) {
       try {
         collectionMint = new PublicKey(process.env.WOJAK_COLLECTION_ADDRESS)
-        console.log('🗂️  Collection mint address:', collectionMint.toBase58())
-
-        // Verify collection exists
-        console.log('🔍 Verifying collection exists...')
-        const collectionNft = await metaplex.nfts().findByMint({
-          mintAddress: collectionMint
-        })
-        console.log('✅ Collection found:', collectionNft.name)
-        console.log('🔍 Collection details:')
-        console.log('  - Name:', collectionNft.name)
-        console.log('  - Symbol:', collectionNft.symbol)
-        console.log('  - Is Collection:', collectionNft.collectionDetails ? 'YES' : 'NO')
-        console.log('  - Owner:', collectionNft.tokenStandard)
-
+        console.log('🗂️ Using collection:', collectionMint.toBase58())
       } catch (collectionError) {
-        console.error('❌ Collection validation failed:', collectionError)
-        console.log('⚠️  Proceeding without collection...')
+        console.warn('⚠️ Collection setup failed:', collectionError)
         collectionMint = null
       }
-    } else {
-      console.log('⚠️  No collection address set')
     }
 
-    // 9. NFT creation with enhanced debugging
+    // Create NFT
     const metadataUri = `https://earth.ndao.computer/.netlify/functions/metadata/${characterId}`
     console.log('📝 Metadata URI:', metadataUri)
 
-    console.log('🎨 Creating NFT...')
-    console.log('  - Name:', characterName)
-    console.log('  - Symbol: WOJAK')
-    console.log('  - Owner:', userWallet.toBase58())
-    console.log('  - Collection:', collectionMint?.toBase58() || 'None')
-
-    // Create NFT with or without collection
     let nftParams = {
       uri: metadataUri,
       name: characterName,
@@ -236,13 +288,11 @@ export const handler = async (event, context) => {
           share: 100
         }
       ],
-      tokenOwner: userWallet,
+      tokenOwner: new PublicKey(walletAddress),
       isMutable: true,
     }
 
-    // Add collection if available
     if (collectionMint) {
-      console.log('🔗 Adding collection to NFT params...')
       nftParams.collection = collectionMint
     }
 
@@ -253,32 +303,22 @@ export const handler = async (event, context) => {
     console.log('  - Mint address:', nft.mintAddress.toBase58())
     console.log('  - Transaction:', nft.response.signature)
 
-    // 10. Collection verification (separate step)
+    // Collection verification if needed
     if (collectionMint) {
       try {
-        console.log('🔐 Starting collection verification...')
-        console.log('  - NFT mint:', nft.mintAddress.toBase58())
-        console.log('  - Collection mint:', collectionMint.toBase58())
-        console.log('  - Authority:', serverKeypair.publicKey.toBase58())
-
-        const verifyResult = await metaplex.nfts().verifyCollection({
+        console.log('🔐 Verifying collection...')
+        await metaplex.nfts().verifyCollection({
           mintAddress: nft.mintAddress,
           collectionMintAddress: collectionMint,
           collectionAuthority: serverKeypair,
         })
-
-        console.log('✅ Collection verification successful!')
-        console.log('  - Verification transaction:', verifyResult.response.signature)
-
+        console.log('✅ Collection verified!')
       } catch (verifyError) {
-        console.error('❌ Collection verification failed:')
-        console.error('  - Error:', verifyError.message)
-        console.error('  - Stack:', verifyError.stack)
-        console.log('⚠️  NFT created but not verified in collection')
+        console.warn('⚠️ Collection verification failed:', verifyError)
       }
     }
 
-    // 11. Final steps (same as before)
+    // Update character with NFT info
     const { data: finalCharacter, error: updateError } = await supabase
       .from('characters')
       .update({
@@ -292,22 +332,10 @@ export const handler = async (event, context) => {
 
     if (updateError) throw updateError
 
+    // Create starting inventory
     await createStartingInventoryWithLayers(characterId, selectedLayers)
 
-    // 💰 Mark payment as used to prevent reuse
-    await supabase
-      .from('pending_payments')
-      .update({
-        nft_minted: true,
-        character_id: characterId,
-        nft_address: nft.mintAddress.toBase58(),
-        minted_at: new Date().toISOString()
-      })
-      .eq('id', paymentId)
-
-    console.log('💰 Payment marked as used')
     console.log('🎉 Character creation complete!')
-    console.log('🔍 COLLECTION DEBUG END')
 
     return {
       statusCode: 200,
@@ -320,22 +348,22 @@ export const handler = async (event, context) => {
         imageUrl: imageUrl,
         metadataUri: metadataUri,
         collectionAddress: collectionMint?.toBase58() || null,
-        collectionLinked: !!collectionMint,
+        paymentVerified: true,
+        paymentSignature: paymentSignature,
         message: `${characterName} created and minted to your wallet!`
       })
     }
 
   } catch (error) {
     console.error('❌ FATAL ERROR:', error)
-    console.error('❌ Stack trace:', error.stack)
 
-    // Cleanup
+    // Cleanup failed character
     try {
       await supabase
         .from('characters')
         .delete()
         .eq('id', characterId)
-      console.log('🧹 Cleaned up incomplete character record')
+      console.log('🧹 Cleaned up failed character record')
     } catch (cleanupError) {
       console.error('❌ Cleanup failed:', cleanupError)
     }
@@ -352,7 +380,7 @@ export const handler = async (event, context) => {
   }
 }
 
-// Helper functions
+// 🛠️ HELPER FUNCTIONS (Same as before)
 async function getNextWojakNumber() {
   const { data: characters, error } = await supabase
     .from('characters')
@@ -434,63 +462,13 @@ async function generateRandomCharacter(name, gender, walletAddress) {
   }
 }
 
-// async function createStartingInventory(characterId) {
-//   const { data: items, error } = await supabase
-//     .from('items')
-//     .select('id, name, category')
-//     .in('category', ['TOOL', 'CONSUMABLE'])
-//     .limit(10)
-
-//   if (error) throw error
-
-//   const startingItems = []
-//   const now = new Date().toISOString()
-
-//   const tool = items.find(item => item.category === 'TOOL')
-//   if (tool) {
-//     startingItems.push({
-//       id: randomUUID(),
-//       characterId: characterId,
-//       itemId: tool.id,
-//       quantity: 1,
-//       isEquipped: false,
-//       createdAt: now,
-//       updatedAt: now
-//     })
-//   }
-
-//   const consumables = items.filter(item => item.category === 'CONSUMABLE').slice(0, 2)
-//   for (const consumable of consumables) {
-//     startingItems.push({
-//       id: randomUUID(),
-//       characterId: characterId,
-//       itemId: consumable.id,
-//       quantity: Math.floor(Math.random() * 3) + 2,
-//       isEquipped: false,
-//       createdAt: now,
-//       updatedAt: now
-//     })
-//   }
-
-//   if (startingItems.length > 0) {
-//     const { error: invError } = await supabase
-//       .from('character_inventory')
-//       .insert(startingItems)
-
-//     if (invError) throw invError
-//   }
-// }
-
-
-// Add this new helper function after your existing helper functions
 async function createStartingInventoryWithLayers(characterId, selectedLayers = null) {
   console.log('🎒 Creating starting inventory...')
-  console.log('📋 Selected layers received:', selectedLayers)
 
   const startingItems = []
   const now = new Date().toISOString()
 
-  // LAYER-BASED ITEMS: Add items for equipped visual layers
+  // LAYER-BASED ITEMS
   if (selectedLayers) {
     console.log('👕 Processing layer-based items...')
 
@@ -500,25 +478,22 @@ async function createStartingInventoryWithLayers(characterId, selectedLayers = n
       const selectedFile = selectedLayers[layerType]
 
       if (!selectedFile) {
-        console.log(`  ⏭️  No ${layerType} selected`)
+        console.log(`  ⏭️ No ${layerType} selected`)
         continue
       }
 
       console.log(`  🔍 Looking for item: ${layerType}/${selectedFile}`)
 
-      // First try: exact layerfile match (for gendered items)
+      // Try exact match first
       let { data: layerItems, error: itemError } = await supabase
         .from('items')
         .select('id, name, category, layerfile, layergender, baselayerfile')
         .eq('layerfile', selectedFile)
 
-      console.log(`  📊 Exact layerfile match:`, layerItems?.length || 0, 'found')
-
-      // If no exact match, look for genderless items by baselayerfile
+      // If no exact match, try genderless items
       if (!layerItems || layerItems.length === 0) {
-        // Extract base filename: "female-solana-seeker.png" -> "solana-seeker.png"
         const baseLayerFile = selectedFile.replace(/^(male-|female-)/, '')
-        console.log(`  🔍 Looking for genderless item with baselayerfile: "${baseLayerFile}"`)
+        console.log(`  🔍 Looking for genderless item: "${baseLayerFile}"`)
 
         const { data: genderlessItems, error: genderlessError } = await supabase
           .from('items')
@@ -527,16 +502,9 @@ async function createStartingInventoryWithLayers(characterId, selectedLayers = n
           .is('layerfile', null)
           .is('layergender', null)
 
-        console.log(`  📊 Genderless item result:`, genderlessItems)
         layerItems = genderlessItems
         itemError = genderlessError
       }
-
-      console.log(`  📊 Query result for ${selectedFile}:`, {
-        found: layerItems?.length || 0,
-        error: itemError,
-        items: layerItems
-      })
 
       if (itemError) {
         console.error(`  ❌ Database error for ${layerType}/${selectedFile}:`, itemError)
@@ -544,18 +512,14 @@ async function createStartingInventoryWithLayers(characterId, selectedLayers = n
       }
 
       if (!layerItems || layerItems.length === 0) {
-        console.log(`  ⏭️  No item found for ${layerType}/${selectedFile} - visual only`)
+        console.log(`  ⏭️ No item found for ${layerType}/${selectedFile}`)
         continue
       }
 
-      // For genderless items (layergender: null), or find matching gender
-      let selectedItem = layerItems.find(item => item.layergender === null) // Prefer genderless
+      // Prefer genderless items
+      let selectedItem = layerItems.find(item => item.layergender === null)
       if (!selectedItem) {
-        // Fallback to any item if no genderless version
         selectedItem = layerItems[0]
-        console.log(`  ℹ️  Using gendered item: ${selectedItem.name} (${selectedItem.layergender})`)
-      } else {
-        console.log(`  ✅ Using genderless item: ${selectedItem.name}`)
       }
 
       // Add to starting inventory as equipped
@@ -564,7 +528,7 @@ async function createStartingInventoryWithLayers(characterId, selectedLayers = n
         characterId: characterId,
         itemId: selectedItem.id,
         quantity: 1,
-        isEquipped: true, // Layer items start equipped since they're visually shown
+        isEquipped: true,
         createdAt: now,
         updatedAt: now
       })
@@ -572,22 +536,22 @@ async function createStartingInventoryWithLayers(characterId, selectedLayers = n
       console.log(`  ✅ Added equipped ${selectedItem.category}: ${selectedItem.name}`)
     }
   } else {
-    console.log('⚠️  No selectedLayers provided')
+    console.log('⚠️ No selectedLayers provided')
   }
 
-  // BASIC ITEMS: Add some basic tools and consumables (existing logic)
+  // BASIC ITEMS
   console.log('🔧 Adding basic starter items...')
   const { data: basicItems, error: basicError } = await supabase
     .from('items')
     .select('id, name, category')
     .in('category', ['TOOL', 'CONSUMABLE'])
-    .is('layerfile', null) // Only non-layer items
+    .is('layerfile', null)
     .limit(10)
 
   if (basicError) {
-    console.warn('⚠️  Failed to load basic items:', basicError)
+    console.warn('⚠️ Failed to load basic items:', basicError)
   } else if (basicItems && basicItems.length > 0) {
-    // Add a basic tool (like pickaxe)
+    // Add a basic tool
     const tool = basicItems.find(item => item.category === 'TOOL')
     if (tool) {
       startingItems.push({
@@ -605,7 +569,7 @@ async function createStartingInventoryWithLayers(characterId, selectedLayers = n
     // Add some consumables
     const consumables = basicItems.filter(item => item.category === 'CONSUMABLE').slice(0, 2)
     for (const consumable of consumables) {
-      const quantity = Math.floor(Math.random() * 3) + 2 // 2-4 items
+      const quantity = Math.floor(Math.random() * 3) + 2
       startingItems.push({
         id: randomUUID(),
         characterId: characterId,
@@ -617,8 +581,6 @@ async function createStartingInventoryWithLayers(characterId, selectedLayers = n
       })
       console.log(`  🍎 Added consumable: ${consumable.name} (${quantity}x)`)
     }
-  } else {
-    console.log('⚠️  No basic items found in database')
   }
 
   // Insert all inventory items
@@ -635,21 +597,7 @@ async function createStartingInventoryWithLayers(characterId, selectedLayers = n
     }
 
     console.log(`✅ Created starting inventory with ${startingItems.length} items`)
-    console.log(`  📦 Equipped items: ${startingItems.filter(i => i.isEquipped).length}`)
-    console.log(`  📦 Unequipped items: ${startingItems.filter(i => !i.isEquipped).length}`)
-
-    // Summary of what was added
-    const equipped = startingItems.filter(i => i.isEquipped)
-    const unequipped = startingItems.filter(i => !i.isEquipped)
-
-    if (equipped.length > 0) {
-      console.log(`  👕 Equipped layer items: ${equipped.length}`)
-    }
-    if (unequipped.length > 0) {
-      console.log(`  🎒 Basic starter items: ${unequipped.length}`)
-    }
   } else {
-    console.log('⚠️  No items added to starting inventory')
+    console.log('⚠️ No items added to starting inventory')
   }
 }
-
