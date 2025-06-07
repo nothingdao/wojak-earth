@@ -1,4 +1,4 @@
-// src/components/views/SandboxView.tsx
+// src/components/views/SandboxView.tsx - CLEAN FIXED VERSION
 import React, { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import {
@@ -68,21 +68,15 @@ export const SandboxView: React.FC<SandboxViewProps> = ({ character, onCharacter
   const [loading, setLoading] = useState(false)
   const [selectedLayers, setSelectedLayers] = useState<Record<string, string | null> | null>(null)
 
-  const [genderFilter, setGenderFilter] = useState<GenderFilter>('ALL')
+  // State with proper defaults
+  const [genderFilter, setGenderFilter] = useState<GenderFilter>('MALE')
   const [generatedImage, setGeneratedImage] = useState<string | null>(null)
   const [imageLoading, setImageLoading] = useState(false)
   const [currentGender, setCurrentGender] = useState<'MALE' | 'FEMALE'>('MALE')
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
-  // 💰 Payment state variables
+  // Payment state
   const [showPayment, setShowPayment] = useState(false)
-
-  // Auto-generate character on component mount
-  useEffect(() => {
-    if (walletInfo.connected && !character) {
-      generateCharacterImage()
-    }
-  }, [walletInfo.connected, character])
 
   // Load and parse the layers manifest
   const loadLayersManifest = async (): Promise<Manifest> => {
@@ -98,7 +92,7 @@ export const SandboxView: React.FC<SandboxViewProps> = ({ character, onCharacter
     }
   }
 
-  // Parse asset entry (can be string or object with compatibility rules)
+  // Parse asset entry
   const parseAssetEntry = (entry: string | AssetEntry): { file: string; rules?: AssetEntry } => {
     if (typeof entry === 'string') {
       return { file: entry }
@@ -127,7 +121,7 @@ export const SandboxView: React.FC<SandboxViewProps> = ({ character, onCharacter
       }
     }
 
-    // Add neutral assets (work for all genders)
+    // Add neutral assets
     if (layerData.neutral) {
       for (const entry of layerData.neutral) {
         const parsed = parseAssetEntry(entry)
@@ -140,7 +134,7 @@ export const SandboxView: React.FC<SandboxViewProps> = ({ character, onCharacter
     return availableAssets
   }
 
-  // Check if two assets are compatible based on manifest rules
+  // Check compatibility
   const areAssetsCompatible = (manifest: Manifest, selectedLayers: Record<string, string | null>): boolean => {
     const rules = manifest.compatibility_rules || {}
 
@@ -160,32 +154,16 @@ export const SandboxView: React.FC<SandboxViewProps> = ({ character, onCharacter
       }
     }
 
-    // Check outerwear-headwear combinations
-    const selectedOuterwear = selectedLayers['5-outerwear']
-    if (selectedOuterwear && selectedHeadwear && rules.outerwear_combinations) {
-      const outerwearRules = rules.outerwear_combinations[selectedOuterwear]
-      if (outerwearRules) {
-        if (outerwearRules.blocks_headwear && outerwearRules.blocks_headwear.includes(selectedHeadwear)) {
-          return false
-        }
-        if (outerwearRules.allows_headwear && !outerwearRules.allows_headwear.includes(selectedHeadwear)) {
-          return false
-        }
-      }
-    }
-
     return true
   }
 
-  // Get compatible assets for a layer considering already selected items
+  // Get compatible assets
   const getCompatibleAssets = (manifest: Manifest, layerType: string, selectedLayers: Record<string, string | null>, gender: 'MALE' | 'FEMALE'): string[] => {
     const layerAssets = getLayerAssets(manifest, layerType, gender)
     const compatibleAssets: string[] = []
 
     for (const asset of layerAssets) {
-      // Create temporary selection to test compatibility
       const testSelection = { ...selectedLayers, [layerType]: asset }
-
       if (areAssetsCompatible(manifest, testSelection)) {
         compatibleAssets.push(asset)
       }
@@ -194,8 +172,7 @@ export const SandboxView: React.FC<SandboxViewProps> = ({ character, onCharacter
     return compatibleAssets
   }
 
-  // Generate random character image using proper layer system
-  // Modified character generation function to track selected layers
+  // Generate character image
   const generateCharacterImage = async () => {
     setImageLoading(true)
 
@@ -216,48 +193,45 @@ export const SandboxView: React.FC<SandboxViewProps> = ({ character, onCharacter
       if (genderFilter === 'ALL') {
         selectedGender = Math.random() < 0.5 ? 'MALE' : 'FEMALE'
       } else {
-        selectedGender = genderFilter
+        selectedGender = genderFilter as 'MALE' | 'FEMALE'
       }
+
       setCurrentGender(selectedGender)
+      console.log('🎯 Generating character:', selectedGender)
 
       // Load manifest
       const manifest = await loadLayersManifest()
-      console.log('Loaded manifest:', manifest)
 
-      // Select layers based on probability, requirements, and compatibility
-      const selectedLayers: Record<string, string | null> = {}
+      // Select layers
+      const newSelectedLayers: Record<string, string | null> = {}
 
-      // First pass: select required layers without compatibility checking
+      // First pass: required layers
       for (const [layerType, config] of Object.entries(LAYER_CONFIG)) {
         if (config.required) {
           const availableAssets = getLayerAssets(manifest, layerType, selectedGender)
           if (availableAssets.length > 0) {
-            selectedLayers[layerType] = availableAssets[Math.floor(Math.random() * availableAssets.length)]
+            newSelectedLayers[layerType] = availableAssets[Math.floor(Math.random() * availableAssets.length)]
           }
         }
       }
 
-      // Second pass: select optional layers with compatibility checking
+      // Second pass: optional layers
       for (const [layerType, config] of Object.entries(LAYER_CONFIG)) {
         if (!config.required && Math.random() < config.probability) {
-          const compatibleAssets = getCompatibleAssets(manifest, layerType, selectedLayers, selectedGender)
+          const compatibleAssets = getCompatibleAssets(manifest, layerType, newSelectedLayers, selectedGender)
           if (compatibleAssets.length > 0) {
-            selectedLayers[layerType] = compatibleAssets[Math.floor(Math.random() * compatibleAssets.length)]
+            newSelectedLayers[layerType] = compatibleAssets[Math.floor(Math.random() * compatibleAssets.length)]
           }
         }
 
-        // Set null for layers not selected
-        if (!selectedLayers[layerType]) {
-          selectedLayers[layerType] = null
+        if (!newSelectedLayers[layerType]) {
+          newSelectedLayers[layerType] = null
         }
       }
 
-      console.log('Selected layers for', selectedGender + ':', selectedLayers)
+      setSelectedLayers(newSelectedLayers)
 
-      // STORE SELECTED LAYERS FOR INVENTORY CREATION
-      setSelectedLayers(selectedLayers) // Add this state variable
-
-      // Load image helper
+      // Load and draw images
       const loadImage = (src: string): Promise<HTMLImageElement> => {
         return new Promise((resolve, reject) => {
           const img = new Image()
@@ -268,11 +242,10 @@ export const SandboxView: React.FC<SandboxViewProps> = ({ character, onCharacter
         })
       }
 
-      // Draw layers in proper order
       const layerOrder = Object.keys(LAYER_CONFIG)
 
       for (const layerType of layerOrder) {
-        const selectedFile = selectedLayers[layerType]
+        const selectedFile = newSelectedLayers[layerType]
         if (!selectedFile) continue
 
         try {
@@ -298,14 +271,24 @@ export const SandboxView: React.FC<SandboxViewProps> = ({ character, onCharacter
     }
   }
 
-
   // Handle gender filter change
   const handleGenderFilterChange = (newFilter: GenderFilter) => {
     setGenderFilter(newFilter)
-    generateCharacterImage()
   }
 
-  // Handle payment verification and start character creation
+  // Handle payment success
+  const handlePaymentSuccess = (paymentSignature: string) => {
+    setShowPayment(false)
+    createCharacterWithPayment(paymentSignature)
+  }
+
+  // Handle payment cancelled
+  const handlePaymentCancelled = () => {
+    setShowPayment(false)
+    toast.info('Character creation cancelled')
+  }
+
+  // Handle start creation
   const handleStartCreation = () => {
     if (!wallet.connected || !wallet.publicKey) {
       toast.error('Connect wallet first')
@@ -317,25 +300,11 @@ export const SandboxView: React.FC<SandboxViewProps> = ({ character, onCharacter
       return
     }
 
-    // Show payment component
     setShowPayment(true)
   }
 
-  // Handle payment verified - proceed with minting
-  const handlePaymentVerified = (verifiedPaymentId: string) => {
-    setShowPayment(false)
-    // Now proceed with character creation using the paymentId
-    createCharacterWithPayment(verifiedPaymentId)
-  }
-
-  // Handle payment cancelled
-  const handlePaymentCancelled = () => {
-    setShowPayment(false)
-    toast.info('Character creation cancelled')
-  }
-
-  // Create character with verified payment
-  const createCharacterWithPayment = async (verifiedPaymentId: string) => {
+  // Create character with payment
+  const createCharacterWithPayment = async (paymentSignature: string) => {
     setLoading(true)
 
     try {
@@ -349,29 +318,29 @@ export const SandboxView: React.FC<SandboxViewProps> = ({ character, onCharacter
           gender: currentGender,
           imageBlob: generatedImage,
           selectedLayers: selectedLayers,
-          paymentId: verifiedPaymentId // 🆔 Include verified payment ID
+          paymentSignature: paymentSignature
         })
       })
 
       const result = await response.json()
 
       if (result.success) {
-        toast.success(`Character created! ${result.character.name}`)
-        console.log('Character:', result.character)
-        console.log('NFT Address:', result.nftAddress)
-        console.log('Image URL:', result.imageUrl)
-        console.log('Metadata URI:', result.metadataUri)
+        toast.success(`${result.character.name} created successfully! 🎉`)
 
-        setGeneratedImage(null)
-        setSelectedLayers(null)
+        // Instead of clearing everything, show success state briefly
+        setLoading(false)
+        setShowPayment(false)
 
-        // Auto-generate a new character after successful creation
-        generateCharacterImage()
+        // Auto-generate new character after 2 seconds for rapid testing
+        setTimeout(() => {
+          setGeneratedImage(null)
+          setSelectedLayers(null)
+          generateCharacterImage()
+        }, 2000)
 
         if (onCharacterCreated) {
           onCharacterCreated()
         }
-
       } else {
         throw new Error(result.error)
       }
@@ -386,17 +355,23 @@ export const SandboxView: React.FC<SandboxViewProps> = ({ character, onCharacter
     }
   }
 
+  // Auto-generate on mount and gender change
+  useEffect(() => {
+    if (walletInfo.connected && !character) {
+      generateCharacterImage()
+    }
+  }, [walletInfo.connected, character, genderFilter])
+
   return (
     <div className='space-y-6'>
-
-      {/* Simple Payment Modal } Fuck Solana Pay Edition */}
+      {/* Simple Payment Modal */}
       {showPayment && (
         <SimplePayment
           characterData={{
             gender: currentGender,
             selectedLayers: selectedLayers
           }}
-          onPaymentSuccess={handlePaymentVerified}
+          onPaymentSuccess={handlePaymentSuccess}
           onCancel={handlePaymentCancelled}
         />
       )}
@@ -457,24 +432,41 @@ export const SandboxView: React.FC<SandboxViewProps> = ({ character, onCharacter
                     alt={`Generated ${currentGender.toLowerCase()} character`}
                     className='w-64 h-64 rounded border'
                   />
-                  <Button
-                    variant='outline'
-                    size='sm'
-                    onClick={generateCharacterImage}
-                    disabled={imageLoading}
-                  >
-                    {imageLoading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Generating...
-                      </>
-                    ) : (
-                      <>
-                        <RefreshCw className="w-4 h-4 mr-2" />
-                        Generate Another
-                      </>
-                    )}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant='outline'
+                      size='sm'
+                      onClick={generateCharacterImage}
+                      disabled={imageLoading}
+                      className="flex-1"
+                    >
+                      {imageLoading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCw className="w-4 h-4 mr-2" />
+                          New Look
+                        </>
+                      )}
+                    </Button>
+
+                    {/* Quick gender swap */}
+                    <Button
+                      variant='ghost'
+                      size='sm'
+                      onClick={() => {
+                        const newGender = currentGender === 'MALE' ? 'FEMALE' : 'MALE'
+                        setGenderFilter(newGender)
+                      }}
+                      disabled={imageLoading}
+                      title="Switch gender"
+                    >
+                      ♂♀
+                    </Button>
+                  </div>
                 </div>
               ) : (
                 <div className='w-64 h-64 rounded border flex items-center justify-center bg-muted'>
@@ -492,6 +484,45 @@ export const SandboxView: React.FC<SandboxViewProps> = ({ character, onCharacter
                 </div>
               )}
             </div>
+
+            {/* Dev Mode Shortcuts */}
+            {process.env.NODE_ENV === 'development' && (
+              <div className="bg-orange-50 dark:bg-orange-950 p-3 rounded border-l-4 border-orange-400">
+                <div className="text-xs font-medium text-orange-800 dark:text-orange-200 mb-2">
+                  🛠️ Dev Shortcuts
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      // Skip payment entirely in dev
+                      const fakeSignature = 'dev-mode-' + Date.now()
+                      createCharacterWithPayment(fakeSignature)
+                    }}
+                    disabled={loading || !generatedImage}
+                    className="text-xs"
+                  >
+                    Skip Payment
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      // Generate multiple characters rapidly
+                      for (let i = 0; i < 3; i++) {
+                        setTimeout(() => generateCharacterImage(), i * 500)
+                      }
+                    }}
+                    disabled={imageLoading}
+                    className="text-xs"
+                  >
+                    3x Generate
+                  </Button>
+                </div>
+              </div>
+            )}
 
             {/* Create Character Button */}
             <Button

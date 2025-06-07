@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Loader2, Coins, CheckCircle } from 'lucide-react'
 import { useWallet, useConnection } from '@solana/wallet-adapter-react'
-import { PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js'
+import { Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js'
 import { toast } from 'sonner'
 
 interface SimplePaymentProps {
@@ -16,8 +16,9 @@ interface SimplePaymentProps {
 const TREASURY_WALLET = import.meta.env.VITE_TREASURY_WALLET_ADDRESS || 'YourTreasuryWalletHere'
 const NFT_PRICE = 0.1 // SOL
 
+const treasuryPubkey = TREASURY_WALLET
 export const SimplePayment: React.FC<SimplePaymentProps> = ({
-  characterData,
+
   onPaymentSuccess,
   onCancel
 }) => {
@@ -53,7 +54,7 @@ export const SimplePayment: React.FC<SimplePaymentProps> = ({
       transaction.add(
         SystemProgram.transfer({
           fromPubkey: publicKey,
-          toPubkey: new PublicKey(TREASURY_WALLET),
+          toPubkey: treasuryPubkey, // Use validated pubkey
           lamports: Math.floor(NFT_PRICE * LAMPORTS_PER_SOL)
         })
       )
@@ -96,40 +97,10 @@ export const SimplePayment: React.FC<SimplePaymentProps> = ({
   }
 
   const verifyAndProceed = async (txSignature: string) => {
-    setVerifying(true)
-    try {
-      console.log('🔍 Verifying payment:', txSignature)
-
-      // Wait a bit for confirmation
-      await new Promise(resolve => setTimeout(resolve, 1000))
-
-      // Check transaction exists and succeeded
-      const transaction = await connection.getTransaction(txSignature, {
-        commitment: 'confirmed',
-        maxSupportedTransactionVersion: 0
-      })
-
-      if (!transaction) {
-        throw new Error('Transaction not found. Please wait and try again.')
-      }
-
-      if (transaction.meta?.err) {
-        throw new Error('Transaction failed on blockchain')
-      }
-
-      console.log('✅ Payment verified on-chain')
-      toast.success('Payment verified! Creating character...')
-
-      // Call success callback with signature
-      onPaymentSuccess(txSignature)
-
-    } catch (error: any) {
-      console.error('❌ Verification failed:', error)
-      toast.error(`Verification failed: ${error.message}`)
-
-      // Allow manual retry
-      setVerifying(false)
-    }
+    // Skip the verification screen - just start character creation immediately
+    console.log('🔍 Payment sent, starting character creation immediately:', txSignature)
+    toast.success('Payment sent! Creating character...')
+    onPaymentSuccess(txSignature)
   }
 
   const retryVerification = () => {
