@@ -97,6 +97,57 @@ export const handler = async (event, context) => {
       }
     }
 
+    // Check level requirement
+    if (destination.minLevel && character.level < destination.minLevel) {
+      return {
+        statusCode: 403,
+        headers,
+        body: JSON.stringify({
+          error: 'Level requirement not met',
+          message: `${destination.name} requires level ${destination.minLevel}. You are level ${character.level}.`,
+          required: destination.minLevel,
+          current: character.level
+        })
+      }
+    }
+
+    // Check entry cost
+    if (destination.entryCost && character.coins < destination.entryCost) {
+      return {
+        statusCode: 402,
+        headers,
+        body: JSON.stringify({
+          error: 'Insufficient funds for entry',
+          message: `${destination.name} costs ${destination.entryCost} coins to enter. You have ${character.coins}.`,
+          cost: destination.entryCost,
+          available: character.coins
+        })
+      }
+    }
+
+    // Check if private location (could require special access)
+    if (destination.isPrivate) {
+      // For now, block all private locations
+      return {
+        statusCode: 403,
+        headers,
+        body: JSON.stringify({
+          error: 'Private location',
+          message: `${destination.name} is a private location. Access restricted.`
+        })
+      }
+    }
+
+    // Deduct entry cost if required
+    if (destination.entryCost > 0) {
+      const newCoins = character.coins - destination.entryCost
+
+      await supabase
+        .from('characters')
+        .update({ coins: newCoins })
+        .eq('id', character.id)
+    }
+
     // Update character location
     const { data: updatedCharacter, error: updateError } = await supabase
       .from('characters')
@@ -145,6 +196,18 @@ export const handler = async (event, context) => {
     // Attach current location to character for response
     updatedCharacter.currentLocation = destination
 
+    // Calculate travel difficulty/distance health cost
+    const travelHealthCost = Math.max(1, destination.difficulty - currentLocation.difficulty)
+    const newHealth = Math.max(0, character.health - travelHealthCost)
+
+    await supabase
+      .from('characters')
+      .update({
+        currentLocationId: destinationId,
+        health: newHealth
+      })
+      .eq('id', character.id)
+
     const responseData = {
       success: true,
       message: `Welcome to ${destination.name}!`,
@@ -167,8 +230,9 @@ export const handler = async (event, context) => {
       costs: {
         time: 0,
         energy: 0,
-        money: 0,
-        status: []
+        money: destination.entryCost || 0,
+        health: travelHealthCost,
+        status: travelHealthCost > 0 ? [`Lost ${travelHealthCost} health from travel`] : []
       }
     }
 

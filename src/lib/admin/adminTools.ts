@@ -794,3 +794,101 @@ export async function getEconomyStats() {
     return null
   }
 }
+
+// ===== SVG MAPPING FUNCTIONS =====
+
+export async function getAllLocationsForMapping() {
+  const { data, error } = await supabase
+    .from('locations')
+    .select('*')
+    .order('name', { ascending: true })
+
+  if (error) throw error
+  return data || []
+}
+
+export async function createLocationFromSvgPath(
+  pathId: string,
+  locationData: {
+    name: string
+    description: string
+    biome?: string
+    difficulty?: number
+    hasMarket?: boolean
+    hasMining?: boolean
+    hasTravel?: boolean
+    hasChat?: boolean
+    theme?: string
+  }
+) {
+  return await createLocation({
+    ...locationData,
+    svgpathid: pathId,
+    name:
+      locationData.name ||
+      pathId
+        .split('-')
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' '),
+    description:
+      locationData.description ||
+      `A location in Earth 2089 mapped from ${pathId}`,
+    biome: locationData.biome || 'unknown',
+    difficulty: locationData.difficulty || 1,
+    hasMarket: locationData.hasMarket ?? false,
+    hasMining: locationData.hasMining ?? false,
+    hasTravel: locationData.hasTravel ?? true,
+    hasChat: locationData.hasChat ?? true,
+    theme: locationData.theme || 'default',
+  })
+}
+
+export async function linkPathToLocation(
+  locationId: string,
+  svgPathId: string
+) {
+  const { data, error } = await supabase
+    .from('locations')
+    .update({
+      svgpathid: svgPathId,
+      updatedAt: new Date().toISOString(),
+    })
+    .eq('id', locationId)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function unlinkPathFromLocation(locationId: string) {
+  const { data, error } = await supabase
+    .from('locations')
+    .update({
+      svgpathid: null,
+      updatedAt: new Date().toISOString(),
+    })
+    .eq('id', locationId)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function bulkUpdateLocationMappings(
+  mappings: Array<{ locationId: string; svgPathId: string | null }>
+) {
+  const updates = mappings.map(async ({ locationId, svgPathId }) => {
+    return supabase
+      .from('locations')
+      .update({
+        svgpathid: svgPathId,
+        updatedAt: new Date().toISOString(),
+      })
+      .eq('id', locationId)
+  })
+
+  const results = await Promise.all(updates)
+  return results
+}

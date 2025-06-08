@@ -13,9 +13,11 @@ import {
   Users,
   Shield,
   Gem,
-  Loader2
+  Loader2,
+  Search
 } from 'lucide-react'
 import { useChatParticipantCount } from '@/hooks/useChatPresence'
+import { ActivityMonitor } from '@/components/ActivityMonitor'
 import type { Character, Player, DatabaseLocation } from '@/types'
 
 // Types for the new data we'll be fetching
@@ -41,7 +43,6 @@ interface MainViewProps {
   onMineClick: () => void
   onMarketClick: () => void
   onChatClick: () => void
-  onNPCActivityClick: () => void
 }
 
 export const MainView: React.FC<MainViewProps> = ({
@@ -49,11 +50,13 @@ export const MainView: React.FC<MainViewProps> = ({
   playersAtLocation,
   onMineClick,
   onMarketClick,
-  onChatClick,
-  onNPCActivityClick
+  onChatClick
 }) => {
   const locationId = character.currentLocation.id
   const chatParticipants = useChatParticipantCount(locationId)
+
+  // State for showing activity monitor
+  const [showActivityMonitor, setShowActivityMonitor] = useState(false)
 
   // State for additional location data
   const [locationResources, setLocationResources] = useState<LocationResource[]>([])
@@ -187,7 +190,6 @@ export const MainView: React.FC<MainViewProps> = ({
 
   const ActionPreviewButtons = () => (
     <div className="grid grid-cols-2 gap-3">
-
       {/* mine */}
       <Button
         variant="outline"
@@ -223,6 +225,7 @@ export const MainView: React.FC<MainViewProps> = ({
           </div>
         )}
       </Button>
+
       {/* market */}
       <Button
         variant="outline"
@@ -258,26 +261,46 @@ export const MainView: React.FC<MainViewProps> = ({
           </div>
         )}
       </Button>
+
       {/* scavenge */}
-      {/* todo: make items that can be found that are not typical mining itmes so this would be things like flppy disk, walkman, mobile phone, etc... */}
       <Button
         variant="outline"
         className="h-auto p-4 flex-col items-start"
         disabled={!location.hasScaveging}
       >
         <div className="flex items-center gap-2 mb-1 self-start">
-          <Store className="w-4 h-4" />
+          <Search className="w-4 h-4" />
           <span>Scavenge</span>
         </div>
-        {location.hasMarket ? (
-
+        {location.hasScaveging ? (
           <div className="text-xs text-muted-foreground">
             Look around for useful items
           </div>
-
         ) : (
           <div className="text-xs text-muted-foreground">
-            Remote location
+            Scavenger abilites are not available
+          </div>
+        )}
+      </Button>
+
+      {/* chat */}
+      <Button
+        variant="outline"
+        className="h-auto p-4 flex-col items-start"
+        disabled={!location.hasChat}
+        onClick={onChatClick}
+      >
+        <div className="flex items-center gap-2 mb-1 self-start">
+          <MessageCircle className="w-4 h-4" />
+          <span>Chat</span>
+        </div>
+        {location.hasChat ? (
+          <div className="text-xs text-muted-foreground">
+            {chatParticipants > 0 ? `${chatParticipants} active` : 'Join the conversation'}
+          </div>
+        ) : (
+          <div className="text-xs text-muted-foreground">
+            Chat unavailable
           </div>
         )}
       </Button>
@@ -327,32 +350,27 @@ export const MainView: React.FC<MainViewProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* LocationNavbar is now in App.tsx, so we removed it from here */}
-
       <AtmosphericHeader />
       <ActionPreviewButtons />
       <DetailedResourcePreview />
 
+      {/* Activity Monitor Toggle */}
       <div className="space-y-2">
         <Button
-          onClick={onChatClick}
+          onClick={() => setShowActivityMonitor(!showActivityMonitor)}
           variant="outline"
           className="w-full"
-          disabled={!location.hasChat}
         >
-          <MessageCircle className="w-4 h-4 mr-2" />
-          {location.hasChat ? (
-            `Local Chat (${chatParticipants} active)`
-          ) : (
-            'Chat Unavailable'
-          )}
+          <Activity className="w-4 h-4 mr-2" />
+          {showActivityMonitor ? 'Hide Activity Monitor' : 'Show Live Activity'}
         </Button>
 
-        {process.env.NODE_ENV === 'development' && (
-          <Button onClick={onNPCActivityClick} variant="outline" className="w-full">
-            <Activity className="w-4 h-4 mr-2" />
-            NPC Activity Monitor
-          </Button>
+        {/* Live Activity Monitor */}
+        {showActivityMonitor && (
+          <ActivityMonitor
+            className="w-full"
+            maxHeight="h-64"
+          />
         )}
       </div>
     </div>

@@ -1,5 +1,5 @@
 // src/components/LocationPreview.tsx
-import { EarthSVG } from './map/EarthSVG'
+// import { EarthSVG } from './map/EarthSVG'
 import type { DatabaseLocation } from '@/types'
 
 interface LocationPreviewProps {
@@ -74,13 +74,14 @@ export function LocationPreview({
 
         {/* Clipped EarthSVG */}
         <g clipPath={`url(#${clipId})`}>
-          <EarthSVG
+          {/* we need to do smoething cool using the map here for travel */}
+          {/* <EarthSVG
             onMouseOver={() => { }}
             onMouseOut={() => { }}
             onClick={() => { }}
             getPathStyling={() => ''} // Return empty string to not override existing fill
             getPathAttributes={() => ({ fillOpacity: 1, style: {} })}
-          />
+          /> */}
         </g>
 
         {/* Animated indicator dot for center */}

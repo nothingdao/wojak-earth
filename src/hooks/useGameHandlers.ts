@@ -1,4 +1,4 @@
-// src/hooks/useGameHandlers.ts - FIXED VERSION
+// src/hooks/useGameHandlers.ts
 import { toast } from 'sonner'
 import type { Location, MarketItem, Character, GameView } from '@/types'
 

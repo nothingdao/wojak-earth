@@ -18,7 +18,8 @@ import {
   Shield,
   Loader2,
   AlertTriangle,
-  RefreshCw
+  RefreshCw,
+  Map
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -62,6 +63,9 @@ import {
   createMarketListing
 } from '@/lib/admin/adminTools'
 
+import { SVGMapperPage } from './SVGMapperPage'
+
+
 import type { Location, Character, Item } from '@/types'
 
 export default function AdminDashboard() {
@@ -97,6 +101,7 @@ export default function AdminDashboard() {
     { id: 'overview', label: 'Overview', icon: Activity },
     { id: 'characters', label: 'Characters', icon: Users },
     { id: 'locations', label: 'Locations', icon: MapPin },
+    { id: 'svg-mapper', label: 'SVG Mapper', icon: Map },
     { id: 'items', label: 'Items', icon: Package },
     { id: 'mining', label: 'Mining', icon: Pickaxe },
     { id: 'economy', label: 'Economy', icon: TrendingUp },
@@ -158,6 +163,10 @@ export default function AdminDashboard() {
         </div>
       </div>
     )
+  }
+
+  const renderSvgMapper = () => {
+    return <SVGMapperPage />
   }
 
   const handleRefreshData = async () => {
@@ -1199,6 +1208,8 @@ export default function AdminDashboard() {
         return renderCharacters()
       case 'locations':
         return renderLocations()
+      case 'svg-mapper': // New case
+        return renderSvgMapper()
       case 'items':
         return renderItems()
       case 'mining':

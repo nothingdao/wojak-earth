@@ -1,4 +1,8 @@
 // netlify/functions/generate-npc-activity.js
+
+
+// we are discontiuing the use of Prisma as we are working directly with supabase in most places in the codebase. The function serves as an example of how we are thinking about NPC activity. 
+
 import { PrismaClient } from '@prisma/client'
 
 let prisma

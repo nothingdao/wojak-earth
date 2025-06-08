@@ -1,5 +1,6 @@
 import React, { type ReactNode } from 'react'
 import { BottomDrawerNav } from './BottomDrawerNav'
+import { PlayerFastNav } from './PlayerFastNav' // Add this import
 import { useWallet } from '@solana/wallet-adapter-react'
 import { isAdmin } from '@/config/admins'
 import type { Character, GameView } from '@/types'
@@ -47,10 +48,22 @@ export const AppShell: React.FC<AppShellProps> = ({
         isAdmin={!!userIsAdmin}
       />
 
+      {/* Add PlayerFastNav here - only show when character is loaded */}
+      {character && (
+        <PlayerFastNav
+          character={character}
+          currentView={currentView}
+          onProfileClick={onProfileClick}
+          onHomeClick={onHomeClick}
+          onMapClick={onMapClick}
+          onInventoryClick={onInventoryClick}
+        />
+      )}
+
       {/* Conditional container based on view */}
       {isFullscreenView ? (
         // Fullscreen for map view - no container, no padding, fill viewport
-        <main className="w-full h-screen">
+        <main className="w-full h-[calc(100vh-64px)]">
           {children}
         </main>
       ) : (

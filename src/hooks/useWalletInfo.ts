@@ -1,4 +1,4 @@
-// hooks/useWalletInfo.ts
+// src/hooks/useWalletInfo.ts
 import { useWallet, useConnection } from '@solana/wallet-adapter-react'
 import { useState, useEffect } from 'react'
 import { LAMPORTS_PER_SOL } from '@solana/web3.js'

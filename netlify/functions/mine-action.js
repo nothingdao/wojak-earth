@@ -99,6 +99,8 @@ export const handler = async (event, context) => {
       }
     }
 
+
+
     // Deduct energy
     const newEnergyLevel = character.energy - energyCost
     const { data: updatedCharacter, error: updateError } = await supabase
@@ -201,11 +203,65 @@ export const handler = async (event, context) => {
       }
     }
 
+    // Calculate health risk
+    const healthRisk = Math.random() < 0.1 ? 5 : 0 // 10% chance of 5 health loss
+    const newHealthLevel = Math.max(0, character.health - healthRisk)
+
+    await supabase
+      .from('characters')
+      .update({
+        energy: newEnergyLevel,
+        health: newHealthLevel
+      })
+      .eq('id', character.id)
+
+
+
+
+    let xpGained = 10 // Base mining XP
+
+    if (foundItem) {
+      xpGained += 15 // Item found bonus
+      const rarityBonuses = { COMMON: 0, UNCOMMON: 5, RARE: 15, EPIC: 40, LEGENDARY: 100 }
+      xpGained += rarityBonuses[foundItem.rarity] || 0
+    }
+
+    // Grant XP
+    try {
+      const xpResponse = await fetch(`${API_BASE}/grant-experience`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          walletAddress,
+          experience: xpGained,
+          source: 'MINING',
+          details: { foundItem: foundItem?.name, rarity: foundItem?.rarity }
+        })
+      })
+
+      if (xpResponse.ok) {
+        const xpData = await xpResponse.json()
+        if (xpData.leveledUp) {
+          console.log(`🎉 Level up! ${xpData.oldLevel} → ${xpData.newLevel}`)
+        }
+      }
+    } catch (xpError) {
+      console.warn('Failed to grant XP:', xpError)
+    }
+
+
+
+
+
+
+
     // Prepare response
     const responseData = {
       success: true,
       message: foundItem ? `Found ${foundItem.name}!` : 'Nothing found this time...',
       newEnergyLevel: newEnergyLevel,
+      newHealthLevel: newHealthLevel,
+      healthLoss: healthRisk,
       energyCost: energyCost,
       foundItem: foundItem ? {
         id: foundItem.id,

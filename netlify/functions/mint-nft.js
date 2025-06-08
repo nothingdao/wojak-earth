@@ -9,7 +9,7 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 const TREASURY_WALLET = process.env.TREASURY_WALLET_ADDRESS
-const NFT_PRICE_SOL = 0.1
+const NFT_PRICE_SOL = 0.01
 
 export const handler = async (event, context) => {
   const headers = {
@@ -35,7 +35,7 @@ export const handler = async (event, context) => {
   console.log('🆔 Generated character ID:', characterId)
 
   try {
-    const { walletAddress, gender, imageBlob, selectedLayers, paymentSignature } = JSON.parse(event.body)
+    const { walletAddress, gender, imageBlob, selectedLayers, paymentSignature, isNPC = false } = JSON.parse(event.body)
 
     console.log('📋 Request data:', {
       walletAddress,
@@ -55,149 +55,176 @@ export const handler = async (event, context) => {
       }
     }
 
-    // 🔍 PAYMENT VERIFICATION - SIMPLE VERSION
+    // 🔍 PAYMENT VERIFICATION - SIMPLE VERSION WITH NPC SKIP
     console.log('💰 Verifying payment signature:', paymentSignature)
 
+    // REAL PLAYER PAYMENT VERIFICATION
     const connection = new Connection(
       process.env.SOLANA_RPC_URL || "https://api.devnet.solana.com",
       "confirmed"
     )
 
-    // Get transaction details
-    let transaction
-    try {
-      transaction = await connection.getTransaction(paymentSignature, {
-        commitment: 'confirmed',
-        maxSupportedTransactionVersion: 0
+    // Skip payment verification for NPCs
+    if (paymentSignature.startsWith('npc_mint_')) {
+      console.log('🤖 Skipping payment verification for NPC')
+
+      // Check if this NPC signature was already used
+      const { data: existingNPC } = await supabase
+        .from('characters')
+        .select('id, name')
+        .eq('payment_signature', paymentSignature)
+        .single()
+
+      if (existingNPC) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            error: 'NPC signature already used',
+            existingCharacter: existingNPC.name,
+            code: 'PAYMENT_ALREADY_USED'
+          })
+        }
+      }
+    } else {
+
+
+      // Get transaction details
+      let transaction
+      try {
+        transaction = await connection.getTransaction(paymentSignature, {
+          commitment: 'confirmed',
+          maxSupportedTransactionVersion: 0
+        })
+      } catch (txError) {
+        console.error('❌ Failed to fetch transaction:', txError)
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            error: 'Could not find payment transaction. Please wait a moment and try again.',
+            code: 'PAYMENT_NOT_FOUND'
+          })
+        }
+      }
+
+      if (!transaction) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            error: 'Payment transaction not found on blockchain',
+            code: 'PAYMENT_NOT_FOUND'
+          })
+        }
+      }
+
+      if (transaction.meta?.err) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            error: 'Payment transaction failed',
+            code: 'PAYMENT_FAILED',
+            details: transaction.meta.err
+          })
+        }
+      }
+
+      // Verify payment went to treasury wallet
+      const accountKeys = transaction.transaction.message.accountKeys.map(key =>
+        typeof key === 'string' ? key : key.toString()
+      )
+
+      const treasuryIndex = accountKeys.findIndex(key => key === TREASURY_WALLET)
+
+      if (treasuryIndex === -1) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            error: 'Payment did not go to treasury wallet',
+            code: 'INVALID_RECIPIENT',
+            debug: {
+              treasuryWallet: TREASURY_WALLET,
+              accountKeys: accountKeys
+            }
+          })
+        }
+      }
+
+      // Verify payment amount
+      const preBalances = transaction.meta.preBalances
+      const postBalances = transaction.meta.postBalances
+      const balanceChange = postBalances[treasuryIndex] - preBalances[treasuryIndex]
+      const expectedLamports = NFT_PRICE_SOL * 1000000000
+
+      console.log('💰 Payment verification:', {
+        treasuryIndex,
+        balanceChange,
+        expectedLamports,
+        balanceChangeSol: balanceChange / 1000000000,
+        expectedSol: NFT_PRICE_SOL
       })
-    } catch (txError) {
-      console.error('❌ Failed to fetch transaction:', txError)
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({
-          error: 'Could not find payment transaction. Please wait a moment and try again.',
-          code: 'PAYMENT_NOT_FOUND'
-        })
+
+      if (balanceChange < expectedLamports * 0.95) { // 5% tolerance for potential fees
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            error: `Insufficient payment. Expected: ${NFT_PRICE_SOL} SOL, Received: ${balanceChange / 1000000000} SOL`,
+            code: 'INSUFFICIENT_PAYMENT'
+          })
+        }
+      }
+
+      // Verify sender is the wallet requesting the mint
+      const senderIndex = 0 // Usually the first account is the sender
+      const senderPubkey = accountKeys[senderIndex]
+
+      if (senderPubkey !== walletAddress) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            error: 'Payment sender does not match wallet address',
+            code: 'WALLET_MISMATCH',
+            debug: {
+              paymentFrom: senderPubkey,
+              requestFrom: walletAddress
+            }
+          })
+        }
+      }
+
+      console.log('✅ Payment verified successfully:', {
+        signature: paymentSignature,
+        amount: balanceChange / 1000000000,
+        from: senderPubkey,
+        to: TREASURY_WALLET
+      })
+
+      // Check if this signature was already used
+      const { data: existingCharacter } = await supabase
+        .from('characters')
+        .select('id, name')
+        .eq('payment_signature', paymentSignature)
+        .single()
+
+      if (existingCharacter) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            error: 'Payment signature already used for another character',
+            existingCharacter: existingCharacter.name,
+            code: 'PAYMENT_ALREADY_USED'
+          })
+        }
       }
     }
 
-    if (!transaction) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({
-          error: 'Payment transaction not found on blockchain',
-          code: 'PAYMENT_NOT_FOUND'
-        })
-      }
-    }
-
-    if (transaction.meta?.err) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({
-          error: 'Payment transaction failed',
-          code: 'PAYMENT_FAILED',
-          details: transaction.meta.err
-        })
-      }
-    }
-
-    // Verify payment went to treasury wallet
-    const accountKeys = transaction.transaction.message.accountKeys.map(key =>
-      typeof key === 'string' ? key : key.toString()
-    )
-
-    const treasuryIndex = accountKeys.findIndex(key => key === TREASURY_WALLET)
-
-    if (treasuryIndex === -1) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({
-          error: 'Payment did not go to treasury wallet',
-          code: 'INVALID_RECIPIENT',
-          debug: {
-            treasuryWallet: TREASURY_WALLET,
-            accountKeys: accountKeys
-          }
-        })
-      }
-    }
-
-    // Verify payment amount
-    const preBalances = transaction.meta.preBalances
-    const postBalances = transaction.meta.postBalances
-    const balanceChange = postBalances[treasuryIndex] - preBalances[treasuryIndex]
-    const expectedLamports = NFT_PRICE_SOL * 1000000000
-
-    console.log('💰 Payment verification:', {
-      treasuryIndex,
-      balanceChange,
-      expectedLamports,
-      balanceChangeSol: balanceChange / 1000000000,
-      expectedSol: NFT_PRICE_SOL
-    })
-
-    if (balanceChange < expectedLamports * 0.95) { // 5% tolerance for potential fees
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({
-          error: `Insufficient payment. Expected: ${NFT_PRICE_SOL} SOL, Received: ${balanceChange / 1000000000} SOL`,
-          code: 'INSUFFICIENT_PAYMENT'
-        })
-      }
-    }
-
-    // Verify sender is the wallet requesting the mint
-    const senderIndex = 0 // Usually the first account is the sender
-    const senderPubkey = accountKeys[senderIndex]
-
-    if (senderPubkey !== walletAddress) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({
-          error: 'Payment sender does not match wallet address',
-          code: 'WALLET_MISMATCH',
-          debug: {
-            paymentFrom: senderPubkey,
-            requestFrom: walletAddress
-          }
-        })
-      }
-    }
-
-    console.log('✅ Payment verified successfully:', {
-      signature: paymentSignature,
-      amount: balanceChange / 1000000000,
-      from: senderPubkey,
-      to: TREASURY_WALLET
-    })
-
-    // Check if this signature was already used
-    const { data: existingCharacter } = await supabase
-      .from('characters')
-      .select('id, name')
-      .eq('payment_signature', paymentSignature)
-      .single()
-
-    if (existingCharacter) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({
-          error: 'Payment signature already used for another character',
-          existingCharacter: existingCharacter.name,
-          code: 'PAYMENT_ALREADY_USED'
-        })
-      }
-    }
-
-    // Check if wallet already has a character
+    // Check if wallet already has a character (for both NPCs and players)
     const { data: existingChar } = await supabase
       .from('characters')
       .select('id, name')
@@ -219,7 +246,7 @@ export const handler = async (event, context) => {
     // 📝 CHARACTER CREATION - Same as before but with payment signature
     const wojakNumber = await getNextWojakNumber()
     const characterName = `Wojak #${wojakNumber}`
-    const characterData = await generateRandomCharacter(characterName, gender, walletAddress)
+    const characterData = await generateRandomCharacter(characterName, gender, walletAddress, isNPC)
 
     // Create character record with payment signature
     const { data: character, error: createError } = await supabase
@@ -431,7 +458,8 @@ async function uploadCharacterImage(characterId, imageBlob) {
   return publicUrl
 }
 
-async function generateRandomCharacter(name, gender, walletAddress) {
+async function generateRandomCharacter(name, gender, walletAddress, isNPC = false) {
+
   const startingLocations = [
     'Frostpine Reaches',
     'Crystal Caverns',
@@ -451,7 +479,7 @@ async function generateRandomCharacter(name, gender, walletAddress) {
   return {
     name: name,
     gender: gender,
-    characterType: 'HUMAN',
+    characterType: isNPC ? 'NPC' : 'HUMAN', // Use the isNPC flag here
     walletAddress: walletAddress,
     currentLocationId: startingLocation.id,
     energy: 100,

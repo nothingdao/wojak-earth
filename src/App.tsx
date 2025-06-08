@@ -39,6 +39,29 @@ function App() {
     locations: gameData.locations
   })
 
+  // Add this useEffect to your App component or AppShell
+  useEffect(() => {
+    const preventZoom = (e: WheelEvent) => {
+      if (e.ctrlKey) {
+        e.preventDefault()
+      }
+    }
+
+    const preventKeyboardZoom = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '-' || e.key === '0')) {
+        e.preventDefault()
+      }
+    }
+
+    document.addEventListener('wheel', preventZoom, { passive: false })
+    document.addEventListener('keydown', preventKeyboardZoom)
+
+    return () => {
+      document.removeEventListener('wheel', preventZoom)
+      document.removeEventListener('keydown', preventKeyboardZoom)
+    }
+  }, [])
+
   // Handle initial loading sequence
   useEffect(() => {
     if (wallet.connected && !characterLoading) {
