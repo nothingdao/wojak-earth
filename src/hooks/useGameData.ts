@@ -1,4 +1,4 @@
-// src/hooks/useGameData.ts
+// src/hooks/useGameData.ts - Optimized version
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import type {
@@ -37,16 +37,16 @@ interface UseGameDataReturn {
 export function useGameData(
   character: Character | null,
   currentView: GameView,
-  selectedLocation: DatabaseLocation | null // Changed from Location to DatabaseLocation
+  selectedLocation: DatabaseLocation | null
 ): UseGameDataReturn {
-  const [locations, setLocations] = useState<DatabaseLocation[]>([]) // Changed type
+  const [locations, setLocations] = useState<DatabaseLocation[]>([])
   const [marketItems, setMarketItems] = useState<MarketItem[]>([])
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
   const [playersAtLocation, setPlayersAtLocation] = useState<Player[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Keep track of current subscriptions
+  // Keep track of current subscriptions and prevent duplicate calls
   const chatSubscriptionRef = useRef<ReturnType<
     typeof realtimeSupabase.channel
   > | null>(null)
@@ -54,21 +54,14 @@ export function useGameData(
     typeof realtimeSupabase.channel
   > | null>(null)
   const currentLocationIdRef = useRef<string | null>(null)
+  const loadingPlayersRef = useRef<boolean>(false)
 
   const loadGameData = useCallback(async () => {
     try {
       setLoading(true)
-      // Make sure your get-locations API returns locations with svgpathid field
       const locationsResponse = await fetch(`${API_BASE}/get-locations`)
       if (!locationsResponse.ok) throw new Error('Failed to load locations')
       const locationsData = await locationsResponse.json()
-
-      // Debug log to see what we're getting
-      console.log(
-        '🗂️ Loaded locations from API:',
-        locationsData.locations?.length || 0
-      )
-      // console.log('📋 Sample location:', locationsData.locations?.[0])
 
       setLocations(locationsData.locations || [])
       setError(null)
@@ -96,7 +89,6 @@ export function useGameData(
   }, [])
 
   const loadChatMessages = useCallback(async (locationId: string) => {
-    console.log('Loading chat messages for locationId:', locationId)
     try {
       const response = await fetch(
         `${API_BASE}/get-chat?locationId=${locationId}&limit=50`
@@ -111,18 +103,36 @@ export function useGameData(
     }
   }, [])
 
+  // Optimized loadPlayersAtLocation with debouncing
   const loadPlayersAtLocation = useCallback(async (locationId: string) => {
+    // Prevent multiple simultaneous calls
+    if (loadingPlayersRef.current) {
+      console.log('🚫 Already loading players, skipping duplicate call')
+      return
+    }
+
     try {
+      loadingPlayersRef.current = true
+      console.log('🔄 Loading players for location:', locationId)
+
       const response = await fetch(
         `${API_BASE}/get-players-at-location?locationId=${locationId}`
       )
+
       if (response.ok) {
         const data = await response.json()
         setPlayersAtLocation(data.players || [])
+        console.log(`✅ Loaded ${data.players?.length || 0} players`)
+      } else {
+        const errorText = await response.text()
+        console.error('❌ Failed to load players:', response.status, errorText)
+        setPlayersAtLocation([])
       }
     } catch (error) {
-      console.error('Failed to load players:', error)
+      console.error('❌ Failed to load players:', error)
       setPlayersAtLocation([])
+    } finally {
+      loadingPlayersRef.current = false
     }
   }, [])
 
@@ -142,8 +152,6 @@ export function useGameData(
       isSystem: boolean
       createdAt: string
     }): Promise<ChatMessage | null> => {
-      console.log('Transform function called with:', rawMessage)
-
       try {
         // Get character details if not a system message
         let character = null
@@ -215,8 +223,6 @@ export function useGameData(
         chatSubscriptionRef.current.unsubscribe()
       }
 
-      console.log('Subscribing to chat for location:', locationId)
-
       chatSubscriptionRef.current = realtimeSupabase
         .channel(`chat_${locationId}`)
         .on(
@@ -231,7 +237,6 @@ export function useGameData(
             console.log('New chat message received:', payload)
 
             const transformedMessage = await transformRealtimeMessage(
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               payload.new as any
             )
             if (transformedMessage) {
@@ -248,7 +253,7 @@ export function useGameData(
     [transformRealtimeMessage]
   )
 
-  // Subscribe to realtime player changes for current location
+  // Debounced player subscription to prevent excessive API calls
   const subscribeToPlayers = useCallback(
     (locationId: string) => {
       // Unsubscribe from previous location if exists
@@ -256,7 +261,7 @@ export function useGameData(
         playersSubscriptionRef.current.unsubscribe()
       }
 
-      console.log('Subscribing to players for location:', locationId)
+      let debounceTimer: NodeJS.Timeout | null = null
 
       playersSubscriptionRef.current = realtimeSupabase
         .channel(`players_${locationId}`)
@@ -271,8 +276,14 @@ export function useGameData(
           async (payload) => {
             console.log('Player movement detected:', payload.eventType, payload)
 
-            // Refresh the players list when someone arrives/leaves/updates
-            await loadPlayersAtLocation(locationId)
+            // Debounce the API call to prevent spam
+            if (debounceTimer) {
+              clearTimeout(debounceTimer)
+            }
+
+            debounceTimer = setTimeout(async () => {
+              await loadPlayersAtLocation(locationId)
+            }, 500) // 500ms debounce
           }
         )
         .subscribe((status) => {
@@ -417,7 +428,7 @@ export function useGameData(
   }
 }
 
-// Helper function to calculate time ago (same as in your get-chat.js)
+// Helper function to calculate time ago
 function getTimeAgo(date: Date) {
   const now = new Date()
   const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)

@@ -1,12 +1,10 @@
-// Updated InventoryView.tsx with Better Responsive Design
-
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, Zap, Heart, AlertTriangle, Star, Lock, Crown } from 'lucide-react'
+import { Loader2, Zap, Heart, AlertTriangle, Star, Lock, Crown, Database, Activity, Package } from 'lucide-react'
 import {
   GiBackpack,
   GiCrown,
@@ -37,12 +35,12 @@ interface InventoryViewProps {
 
 // Updated equipment slots with progression
 const EQUIPMENT_SLOTS = {
-  clothing: { name: 'Clothing', icon: GiShirt, layerType: 'CLOTHING' },
-  outerwear: { name: 'Outerwear', icon: GiCloak, layerType: 'OUTERWEAR' },
-  face_accessory: { name: 'Face', icon: GiSunglasses, layerType: 'FACE_ACCESSORY' },
-  headwear: { name: 'Head', icon: GiCrown, layerType: 'HAT' },
-  misc_accessory: { name: 'Accessory', icon: GiGemNecklace, layerType: 'ACCESSORY' },
-  tool: { name: 'Tool', icon: GiSpade, category: 'TOOL' },
+  clothing: { name: 'CLOTHING', icon: GiShirt, layerType: 'CLOTHING' },
+  outerwear: { name: 'OUTERWEAR', icon: GiCloak, layerType: 'OUTERWEAR' },
+  face_accessory: { name: 'FACE_GEAR', icon: GiSunglasses, layerType: 'FACE_ACCESSORY' },
+  headwear: { name: 'HEADGEAR', icon: GiCrown, layerType: 'HAT' },
+  misc_accessory: { name: 'ACCESSORY', icon: GiGemNecklace, layerType: 'ACCESSORY' },
+  tool: { name: 'TOOL', icon: GiSpade, category: 'TOOL' },
 } as const
 
 // Calculate max slots based on character level
@@ -193,26 +191,42 @@ export function InventoryView({
     }
   }
 
-  // Render multi-slot equipment grid with improved spacing
+  const getRarityColor = (rarity: string) => {
+    switch (rarity) {
+      case 'COMMON': return 'text-muted-foreground'
+      case 'UNCOMMON': return 'text-green-500 dark:text-green-400'
+      case 'RARE': return 'text-blue-500 dark:text-blue-400'
+      case 'EPIC': return 'text-purple-500 dark:text-purple-400'
+      case 'LEGENDARY': return 'text-yellow-500 dark:text-yellow-400'
+      default: return 'text-muted-foreground'
+    }
+  }
+
+  // Render multi-slot equipment grid
   const renderEquipmentSlots = () => {
     const maxSlots = getMaxSlotsForCategory(character.level)
 
     return (
-      <div className="bg-muted/30 p-4 sm:p-6 rounded-lg mb-4 sm:mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h4 className="font-medium text-base flex items-center gap-2">
-            <GiSpade className="w-5 h-5" />
-            Equipment
-            <Badge variant="outline" className="text-sm">
-              Level {character.level}
+      <div className="bg-background border border-primary/30 rounded-lg p-4 font-mono mb-4">
+        {/* Terminal Header */}
+        <div className="flex items-center justify-between mb-4 border-b border-primary/20 pb-2">
+          <div className="flex items-center gap-2">
+            <Package className="w-4 h-4" />
+            <span className="text-primary font-bold">EQUIPMENT MANIFEST v2.089</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="text-xs font-mono">
+              LVL.{character.level}
             </Badge>
-          </h4>
+            <Activity className="w-3 h-3 animate-pulse" />
+            <span className="text-primary text-xs">ACTIVE</span>
+          </div>
         </div>
 
         <Tabs defaultValue="clothing" className="w-full">
-          {/* Equipment Category Tabs - Horizontal scroll */}
-          <div className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
-            <TabsList className="flex w-max h-12 p-1">
+          {/* Equipment Category Tabs */}
+          <div className="w-full overflow-x-auto">
+            <TabsList className="flex w-max h-10 p-1 bg-muted/50">
               {Object.entries(EQUIPMENT_SLOTS).map(([categoryKey, slotConfig]) => {
                 const equippedItems = getEquippedByCategory(categoryKey)
                 const IconComponent = slotConfig.icon
@@ -221,12 +235,12 @@ export function InventoryView({
                   <TabsTrigger
                     key={categoryKey}
                     value={categoryKey}
-                    className="text-sm flex-shrink-0 px-4 flex items-center gap-2"
+                    className="text-xs font-mono flex-shrink-0 px-3 flex items-center gap-2"
                   >
-                    <IconComponent className="w-4 h-4" />
+                    <IconComponent className="w-3 h-3" />
                     <span>{slotConfig.name}</span>
                     {equippedItems.length > 0 && (
-                      <span className="text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded">
+                      <span className="text-xs bg-primary/20 text-primary px-1 rounded">
                         {equippedItems.length}
                       </span>
                     )}
@@ -242,39 +256,37 @@ export function InventoryView({
 
             return (
               <TabsContent key={categoryKey} value={categoryKey} className="mt-4">
-                {/* Category Info Header */}
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <slotConfig.icon className="w-5 h-5 text-primary" />
-                    <span className="font-medium text-base">{slotConfig.name}</span>
-                    <Badge variant="secondary" className="text-sm">
-                      {equippedItems.length}/{unlockedSlots}
-                    </Badge>
-                  </div>
-                  {unlockedSlots < 4 && (
-                    <div className="text-sm text-muted-foreground">
-                      Next: Level {getLevelForSlot(unlockedSlots + 1)}
+                {/* Category Status */}
+                <div className="bg-muted/30 border border-primary/20 rounded p-3 mb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <slotConfig.icon className="w-4 h-4 text-primary" />
+                      <span className="text-primary font-bold text-sm">{slotConfig.name}_MODULE</span>
+                      <Badge variant="secondary" className="text-xs font-mono">
+                        {equippedItems.length}/{unlockedSlots}
+                      </Badge>
                     </div>
-                  )}
+                    {unlockedSlots < 4 && (
+                      <div className="text-xs text-muted-foreground font-mono">
+                        NEXT_UNLOCK: LVL.{getLevelForSlot(unlockedSlots + 1)}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                {/* Equipment Slots - Horizontal scroll layout */}
-                <div className="flex gap-3 sm:gap-4 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+                {/* Equipment Slots */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {Array.from({ length: 4 }, (_, index) => {
                     const slotIndex = index + 1
                     const isUnlocked = slotIndex <= unlockedSlots
                     const equippedItem = getEquippedBySlot(categoryKey, slotIndex)
 
-                    return (
-                      <div key={`slot-${slotIndex}`} className="flex-shrink-0 w-28 sm:w-32">
-                        {renderSlot(
-                          categoryKey,
-                          slotIndex,
-                          equippedItem,
-                          isUnlocked,
-                          slotConfig
-                        )}
-                      </div>
+                    return renderSlot(
+                      categoryKey,
+                      slotIndex,
+                      equippedItem,
+                      isUnlocked,
+                      slotConfig
                     )
                   })}
                 </div>
@@ -297,68 +309,68 @@ export function InventoryView({
     const isPrimary = equippedItem?.is_primary || false
 
     if (!isUnlocked) {
-      // Locked slot - horizontal scroll friendly
+      // Locked slot
       return (
         <div
           key={`${category}-${slotIndex}`}
-          className="h-32 sm:h-36 border-2 border-dashed border-muted-foreground/20 rounded-lg flex flex-col items-center justify-center bg-muted/10"
+          className="h-32 border-2 border-dashed border-muted-foreground/20 rounded bg-muted/10 flex flex-col items-center justify-center"
         >
-          <Lock className="w-5 h-5 sm:w-6 sm:h-6 text-muted-foreground/50 mb-2" />
-          <div className="text-sm text-muted-foreground/50 text-center leading-tight">
-            Level<br />{getLevelForSlot(slotIndex)}
+          <Lock className="w-5 h-5 text-muted-foreground/50 mb-2" />
+          <div className="text-xs text-muted-foreground/50 text-center font-mono">
+            LOCKED<br />LVL.{getLevelForSlot(slotIndex)}
           </div>
         </div>
       )
     }
 
     if (!equippedItem) {
-      // Empty unlocked slot - horizontal scroll friendly
+      // Empty unlocked slot
       return (
         <div
           key={`${category}-${slotIndex}`}
-          className="h-32 sm:h-36 border-2 border-dashed border-muted-foreground/30 rounded-lg flex flex-col items-center justify-center bg-muted/20 hover:bg-muted/30 transition-colors"
+          className="h-32 border-2 border-dashed border-primary/30 rounded bg-muted/20 hover:bg-muted/30 transition-colors flex flex-col items-center justify-center"
         >
-          <slotConfig.icon className="w-5 h-5 sm:w-6 sm:h-6 text-muted-foreground/50 mb-2" />
-          <div className="text-sm text-muted-foreground text-center leading-tight">
-            Slot {slotIndex}<br />
-            <span className="text-xs text-muted-foreground/70">Empty</span>
+          <slotConfig.icon className="w-5 h-5 text-muted-foreground/50 mb-2" />
+          <div className="text-xs text-muted-foreground text-center font-mono">
+            SLOT_{slotIndex}<br />
+            <span className="text-xs text-muted-foreground/70">EMPTY</span>
           </div>
         </div>
       )
     }
 
-    // Equipped item slot - horizontal scroll friendly
+    // Equipped item slot
     return (
       <div
         key={`${category}-${slotIndex}`}
-        className={`h-32 sm:h-36 border-2 rounded-lg p-3 transition-all ${isPrimary
+        className={`h-32 border-2 rounded p-3 transition-all ${isPrimary
           ? 'border-yellow-400 bg-yellow-50 dark:bg-yellow-950/20'
           : 'border-primary bg-primary/5'
           }`}
       >
         <div className="h-full flex flex-col items-center justify-between text-center">
-          {/* Item Info - better sized */}
+          {/* Item Info */}
           <div className="flex-1 flex flex-col items-center justify-center">
             {isPrimary && (
-              <Crown className="w-4 h-4 text-yellow-500 mb-1" />
+              <Crown className="w-3 h-3 text-yellow-500 mb-1" />
             )}
-            <slotConfig.icon className={`w-5 h-5 sm:w-6 sm:h-6 mb-2 ${isPrimary ? 'text-yellow-600' : 'text-primary'}`} />
-            <div className="text-sm font-medium truncate max-w-full leading-tight mb-1">
-              {equippedItem.item.name}
+            <slotConfig.icon className={`w-5 h-5 mb-2 ${isPrimary ? 'text-yellow-600' : 'text-primary'}`} />
+            <div className="text-xs font-bold font-mono truncate max-w-full leading-tight mb-1">
+              {equippedItem.item.name.toUpperCase()}
             </div>
-            <div className="text-xs text-muted-foreground capitalize">
+            <div className={`text-xs font-mono ${getRarityColor(equippedItem.item.rarity)}`}>
               {equippedItem.item.rarity}
             </div>
           </div>
 
-          {/* Action Buttons - better sized */}
+          {/* Action Buttons */}
           <div className="w-full space-y-1">
             {!isPrimary && onSetPrimary && (
               <Button
                 size="sm"
                 variant="ghost"
                 onClick={() => handleSetPrimary(equippedItem)}
-                className="w-full h-6 text-xs px-2 py-0"
+                className="w-full h-5 text-xs px-1 py-0 font-mono"
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -373,13 +385,13 @@ export function InventoryView({
               size="sm"
               variant="ghost"
               onClick={(e) => onEquipItem(equippedItem.id, true, undefined, e)}
-              className="w-full h-6 text-xs px-2 py-0"
+              className="w-full h-5 text-xs px-1 py-0 font-mono"
               disabled={isLoading}
             >
               {isLoading ? (
                 <Loader2 className="w-3 h-3 animate-spin" />
               ) : (
-                'Remove'
+                'REMOVE'
               )}
             </Button>
           </div>
@@ -388,7 +400,7 @@ export function InventoryView({
     )
   }
 
-  // Enhanced renderInventoryItem with better mobile layout
+  // Enhanced renderInventoryItem with terminal styling
   const renderInventoryItem = (inv: Character['inventory'][0]) => {
     const isConsumable = inv.item.category === 'CONSUMABLE'
     const energyEffect = inv.item.energyEffect || 0
@@ -406,178 +418,207 @@ export function InventoryView({
     const isEquippable = !!targetSlot
 
     return (
-      <div key={inv.id} className="grid grid-cols-[50px_1fr_auto] gap-3 sm:gap-4 p-4 sm:p-5 bg-muted/50 rounded-lg items-center">
-        {/* Icon - larger */}
-        <div className="w-12 h-12 sm:w-14 sm:h-14 bg-muted rounded-lg flex items-center justify-center text-lg">
-          {getCategoryIcon(inv.item.category)}
-        </div>
+      <div key={inv.id} className="bg-muted/30 border border-primary/20 rounded p-3 font-mono">
+        <div className="grid grid-cols-[40px_1fr_auto] gap-3 items-center">
+          {/* Icon */}
+          <div className="w-10 h-10 bg-muted/50 border border-primary/20 rounded flex items-center justify-center text-primary">
+            {getCategoryIcon(inv.item.category)}
+          </div>
 
-        {/* Content - improved spacing */}
-        <div className="min-w-0 overflow-hidden">
-          <div className="font-medium flex items-center gap-2 mb-2">
-            <span className="truncate text-base">{inv.item.name}</span>
-            {inv.isEquipped && (
-              <div className="flex items-center gap-1">
-                <Badge variant="secondary" className="text-xs flex items-center gap-1">
-                  {inv.is_primary && <Crown className="w-3 h-3" />}
-                  Slot {inv.slot_index}
-                </Badge>
-                {inv.is_primary && (
-                  <Badge variant="default" className="text-xs bg-yellow-500">
-                    Primary
+          {/* Content */}
+          <div className="min-w-0 overflow-hidden">
+            <div className="font-bold text-primary flex items-center gap-2 mb-1">
+              <span className="truncate text-sm">{inv.item.name.toUpperCase()}</span>
+              {inv.isEquipped && (
+                <div className="flex items-center gap-1">
+                  <Badge variant="secondary" className="text-xs font-mono flex items-center gap-1">
+                    {inv.is_primary && <Crown className="w-3 h-3" />}
+                    SLOT_{inv.slot_index}
                   </Badge>
+                  {inv.is_primary && (
+                    <Badge variant="default" className="text-xs bg-yellow-500 font-mono">
+                      PRIMARY
+                    </Badge>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="text-xs text-muted-foreground mb-2 line-clamp-2">{inv.item.description}</div>
+
+            {/* Show consumable effects */}
+            {isConsumable && (energyEffect > 0 || healthEffect > 0) && (
+              <div className="text-xs text-green-500 mb-2 flex items-center gap-3 font-mono">
+                {energyEffect > 0 && (
+                  <span className="flex items-center gap-1">
+                    <Zap className="w-3 h-3" />
+                    +{energyEffect}_ENERGY
+                  </span>
+                )}
+                {healthEffect > 0 && (
+                  <span className="flex items-center gap-1">
+                    <Heart className="w-3 h-3" />
+                    +{healthEffect}_HEALTH
+                  </span>
                 )}
               </div>
             )}
-          </div>
-          <div className="text-sm text-muted-foreground mb-2 line-clamp-2">{inv.item.description}</div>
 
-          {/* Show consumable effects */}
-          {isConsumable && (energyEffect > 0 || healthEffect > 0) && (
-            <div className="text-sm text-green-600 mb-2 flex items-center gap-3">
-              {energyEffect > 0 && (
-                <span className="flex items-center gap-1">
-                  <Zap className="w-4 h-4" />
-                  +{energyEffect}
-                </span>
-              )}
-              {healthEffect > 0 && (
-                <span className="flex items-center gap-1">
-                  <Heart className="w-4 h-4" />
-                  +{healthEffect}
-                </span>
-              )}
+            <div className={`text-xs font-mono ${getRarityColor(inv.item.rarity)}`}>
+              {inv.item.rarity} • QTY:{inv.quantity}
+              {targetSlot && ` • ${EQUIPMENT_SLOTS[targetSlot as keyof typeof EQUIPMENT_SLOTS]?.name}`}
             </div>
-          )}
-
-          <div className="text-sm text-muted-foreground capitalize">
-            {inv.item.rarity} • Qty: {inv.quantity}
-            {targetSlot && ` • ${EQUIPMENT_SLOTS[targetSlot as keyof typeof EQUIPMENT_SLOTS]?.name}`}
           </div>
-        </div>
 
-        {/* Buttons - improved layout */}
-        <div className="flex flex-col gap-2 min-w-[100px]">
-          {/* Equipment Button */}
-          {isEquippable && (
-            <Button
-              type="button"
-              size="sm"
-              variant={inv.isEquipped ? "default" : "outline"}
-              onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                handleEquipWithConflictCheck(inv, e)
-              }}
-              disabled={isLoading}
-              className="text-sm px-3 py-2 h-8 w-full"
-            >
-              {isLoading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                inv.isEquipped ? 'Unequip' : 'Equip'
-              )}
-            </Button>
-          )}
+          {/* Buttons */}
+          <div className="flex flex-col gap-1 min-w-[80px]">
+            {/* Equipment Button */}
+            {isEquippable && (
+              <Button
+                type="button"
+                size="sm"
+                variant={inv.isEquipped ? "default" : "outline"}
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  handleEquipWithConflictCheck(inv, e)
+                }}
+                disabled={isLoading}
+                className="text-xs px-2 py-1 h-6 w-full font-mono"
+              >
+                {isLoading ? (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                ) : (
+                  inv.isEquipped ? 'UNEQUIP' : 'EQUIP'
+                )}
+              </Button>
+            )}
 
-          {/* Set Primary Button for equipped non-primary items */}
-          {inv.isEquipped && !inv.is_primary && onSetPrimary && (
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              onClick={() => handleSetPrimary(inv)}
-              disabled={isLoading}
-              className="text-sm px-3 py-1 h-7 w-full"
-            >
-              <Star className="w-3 h-3 mr-1" />
-              Primary
-            </Button>
-          )}
+            {/* Set Primary Button for equipped non-primary items */}
+            {inv.isEquipped && !inv.is_primary && onSetPrimary && (
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={() => handleSetPrimary(inv)}
+                disabled={isLoading}
+                className="text-xs px-2 py-1 h-6 w-full font-mono"
+              >
+                <Star className="w-3 h-3 mr-1" />
+                PRIMARY
+              </Button>
+            )}
 
-          {/* Use Button for Consumables */}
-          {isConsumable && (
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                onUseItem(
-                  inv.id,
-                  inv.item.name,
-                  inv.item.energyEffect,
-                  inv.item.healthEffect,
-                  e
-                )
-              }}
-              disabled={wouldBeWasted || isLoading}
-              title={wouldBeWasted ?
-                `Already at full ${wouldWasteEnergy ? 'energy' : 'health'}` :
-                `Use ${inv.item.name}`
-              }
-              className="text-sm px-3 py-2 h-8 w-full"
-            >
-              {isLoading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : wouldBeWasted ? 'Full' : 'Use'}
-            </Button>
-          )}
+            {/* Use Button for Consumables */}
+            {isConsumable && (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  onUseItem(
+                    inv.id,
+                    inv.item.name,
+                    inv.item.energyEffect,
+                    inv.item.healthEffect,
+                    e
+                  )
+                }}
+                disabled={wouldBeWasted || isLoading}
+                title={wouldBeWasted ?
+                  `Already at full ${wouldWasteEnergy ? 'energy' : 'health'}` :
+                  `Use ${inv.item.name}`
+                }
+                className="text-xs px-2 py-1 h-6 w-full font-mono"
+              >
+                {isLoading ? (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                ) : wouldBeWasted ? 'FULL' : 'USE'}
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6 max-w-full">
-      <div className="flex items-center justify-between">
-        <h3 className="text-xl sm:text-2xl font-semibold flex items-center gap-2">
-          <GiBackpack className="w-6 h-6" />
-          Inventory
-        </h3>
-        <div className="text-sm sm:text-base text-muted-foreground flex items-center gap-2">
-          <span>{character.inventory?.length || 0} items</span>
-          <Badge variant="outline">Level {character.level}</Badge>
+    <div className="w-full max-w-4xl mx-auto bg-background border border-primary/30 rounded-lg p-4 font-mono text-primary">
+      {/* Terminal Header */}
+      <div className="flex items-center justify-between mb-4 border-b border-primary/20 pb-2">
+        <div className="flex items-center gap-2">
+          <Database className="w-4 h-4" />
+          <span className="text-primary font-bold">STORAGE MANIFEST v2.089</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="text-xs font-mono">
+            {character.inventory?.length || 0}_ITEMS
+          </Badge>
+          <Activity className="w-3 h-3 animate-pulse" />
+          <span className="text-primary text-xs">CATALOGED</span>
         </div>
       </div>
 
-      {/* Main Inventory Tabs - Horizontal scroll */}
+      {/* Survivor Info */}
+      <div className="bg-muted/30 border border-primary/20 rounded p-3 mb-4">
+        <div className="grid grid-cols-4 gap-4 text-xs">
+          <div>
+            <div className="text-muted-foreground">OPERATOR</div>
+            <div className="text-primary font-bold">{character.name.toUpperCase()}</div>
+          </div>
+          <div>
+            <div className="text-muted-foreground">ACCESS_LVL</div>
+            <div className="text-primary font-bold">LEVEL_{character.level}</div>
+          </div>
+          <div>
+            <div className="text-muted-foreground">CAPACITY</div>
+            <div className="text-primary font-bold">{character.inventory?.length || 0}/999</div>
+          </div>
+          <div>
+            <div className="text-muted-foreground">STATUS</div>
+            <div className="text-green-500 font-bold">AUTHORIZED</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Inventory Tabs */}
       <Tabs defaultValue="all" className="w-full">
-        <div className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
-          <TabsList className="flex w-max h-12 p-1">
-            <TabsTrigger value="all" className="text-sm flex-shrink-0 px-4">
-              <GiCube className="w-4 h-4 mr-2" />
-              <span>All Items</span>
+        <div className="w-full overflow-x-auto">
+          <TabsList className="flex w-max h-10 p-1 bg-muted/50">
+            <TabsTrigger value="all" className="text-xs font-mono flex-shrink-0 px-3">
+              <GiCube className="w-3 h-3 mr-2" />
+              <span>ALL_ITEMS</span>
               {character.inventory?.length > 0 && (
-                <span className="ml-2 text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded">
+                <span className="ml-2 text-xs bg-primary/20 text-primary px-1 rounded">
                   {character.inventory.length}
                 </span>
               )}
             </TabsTrigger>
-            <TabsTrigger value="equipment" className="text-sm flex-shrink-0 px-4">
-              <GiSpade className="w-4 h-4 mr-2" />
-              <span>Equipment</span>
+            <TabsTrigger value="equipment" className="text-xs font-mono flex-shrink-0 px-3">
+              <GiSpade className="w-3 h-3 mr-2" />
+              <span>EQUIPMENT</span>
               {equipmentItems.length > 0 && (
-                <span className="ml-2 text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded">
+                <span className="ml-2 text-xs bg-primary/20 text-primary px-1 rounded">
                   {equipmentItems.length}
                 </span>
               )}
             </TabsTrigger>
-            <TabsTrigger value="consumables" className="text-sm flex-shrink-0 px-4">
-              <GiWaterBottle className="w-4 h-4 mr-2" />
-              <span>Consumables</span>
+            <TabsTrigger value="consumables" className="text-xs font-mono flex-shrink-0 px-3">
+              <GiWaterBottle className="w-3 h-3 mr-2" />
+              <span>CONSUMABLES</span>
               {consumableItems.length > 0 && (
-                <span className="ml-2 text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded">
+                <span className="ml-2 text-xs bg-primary/20 text-primary px-1 rounded">
                   {consumableItems.length}
                 </span>
               )}
             </TabsTrigger>
-            <TabsTrigger value="materials" className="text-sm flex-shrink-0 px-4">
-              <GiRock className="w-4 h-4 mr-2" />
-              <span>Materials</span>
+            <TabsTrigger value="materials" className="text-xs font-mono flex-shrink-0 px-3">
+              <GiRock className="w-3 h-3 mr-2" />
+              <span>MATERIALS</span>
               {materialItems.length > 0 && (
-                <span className="ml-2 text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded">
+                <span className="ml-2 text-xs bg-primary/20 text-primary px-1 rounded">
                   {materialItems.length}
                 </span>
               )}
@@ -586,17 +627,19 @@ export function InventoryView({
         </div>
 
         {/* All Tab Content */}
-        <TabsContent value="all" className="mt-4 sm:mt-6">
+        <TabsContent value="all" className="mt-4">
           {renderEquipmentSlots()}
-          <ScrollArea className="h-[500px] sm:h-[600px]">
-            <div className="space-y-3">
+          <ScrollArea className="h-[400px]">
+            <div className="space-y-2">
               {character.inventory?.length > 0 ? (
                 character.inventory.map(renderInventoryItem)
               ) : (
-                <div className="bg-muted/50 p-8 sm:p-12 rounded-lg text-center text-muted-foreground">
-                  <GiBackpack className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4" />
-                  <div className="text-lg sm:text-xl mb-2">Your bag is empty</div>
-                  <div className="text-sm sm:text-base">Start mining or visit the market!</div>
+                <div className="bg-muted/30 border border-primary/20 rounded p-8 text-center">
+                  <GiBackpack className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+                  <div className="text-muted-foreground font-mono">
+                    <div className="text-lg mb-2">STORAGE_EMPTY</div>
+                    <div className="text-sm">ACQUIRE_RESOURCES_TO_POPULATE</div>
+                  </div>
                 </div>
               )}
             </div>
@@ -604,50 +647,55 @@ export function InventoryView({
         </TabsContent>
 
         {/* Equipment Tab Content */}
-        <TabsContent value="equipment" className="mt-4 sm:mt-6">
+        <TabsContent value="equipment" className="mt-4">
           {renderEquipmentSlots()}
-          <ScrollArea className="h-[500px] sm:h-[600px]">
-            <div className="space-y-3">
+          <ScrollArea className="h-[400px]">
+            <div className="space-y-2">
               {equipmentItems.length > 0 ? (
                 equipmentItems.map(renderInventoryItem)
               ) : (
-                <div className="bg-muted/50 p-8 sm:p-12 rounded-lg text-center text-muted-foreground">
-                  <GiSpade className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4" />
-                  <div className="text-lg sm:text-xl mb-2">No equipment items found</div>
-                  <div className="text-sm sm:text-base">Try mining or visit the market!</div>
+                <div className="bg-muted/30 border border-primary/20 rounded p-8 text-center">
+                  <GiSpade className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+                  <div className="text-muted-foreground font-mono">
+                    <div className="text-lg mb-2">NO_EQUIPMENT_FOUND</div>
+                    <div className="text-sm">ACCESS_TRADE_NETWORK</div>
+                  </div>
                 </div>
               )}
             </div>
           </ScrollArea>
         </TabsContent>
 
-        {/* Other tabs with improved empty states */}
-        <TabsContent value="consumables" className="mt-4 sm:mt-6">
-          <ScrollArea className="h-[500px] sm:h-[600px]">
-            <div className="space-y-3">
+        <TabsContent value="consumables" className="mt-4">
+          <ScrollArea className="h-[400px]">
+            <div className="space-y-2">
               {consumableItems.length > 0 ? (
                 consumableItems.map(renderInventoryItem)
               ) : (
-                <div className="bg-muted/50 p-8 sm:p-12 rounded-lg text-center text-muted-foreground">
-                  <GiWaterBottle className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4" />
-                  <div className="text-lg sm:text-xl mb-2">No consumable items found</div>
-                  <div className="text-sm sm:text-base">Visit the market for energy drinks!</div>
+                <div className="bg-muted/30 border border-primary/20 rounded p-8 text-center">
+                  <GiWaterBottle className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+                  <div className="text-muted-foreground font-mono">
+                    <div className="text-lg mb-2">NO_CONSUMABLES_FOUND</div>
+                    <div className="text-sm">ACQUIRE_SUPPLIES_FOR_SURVIVAL</div>
+                  </div>
                 </div>
               )}
             </div>
           </ScrollArea>
         </TabsContent>
 
-        <TabsContent value="materials" className="mt-4 sm:mt-6">
-          <ScrollArea className="h-[500px] sm:h-[600px]">
-            <div className="space-y-3">
+        <TabsContent value="materials" className="mt-4">
+          <ScrollArea className="h-[400px]">
+            <div className="space-y-2">
               {materialItems.length > 0 ? (
                 materialItems.map(renderInventoryItem)
               ) : (
-                <div className="bg-muted/50 p-8 sm:p-12 rounded-lg text-center text-muted-foreground">
-                  <GiRock className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4" />
-                  <div className="text-lg sm:text-xl mb-2">No material items found</div>
-                  <div className="text-sm sm:text-base">Go mining to find materials!</div>
+                <div className="bg-muted/30 border border-primary/20 rounded p-8 text-center">
+                  <GiRock className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+                  <div className="text-muted-foreground font-mono">
+                    <div className="text-lg mb-2">NO_MATERIALS_FOUND</div>
+                    <div className="text-sm">INITIATE_EXTRACTION_PROTOCOL</div>
+                  </div>
                 </div>
               )}
             </div>
@@ -655,42 +703,42 @@ export function InventoryView({
         </TabsContent>
       </Tabs>
 
-      {/* Equipment Replacement Dialog - unchanged but improved sizing */}
+      {/* Equipment Replacement Dialog */}
       <Dialog open={showReplaceDialog} onOpenChange={setShowReplaceDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md font-mono">
           <DialogHeader>
-            <DialogTitle>Replace Equipment?</DialogTitle>
-            <DialogDescription>
-              All slots in this category are full. Replace an item?
+            <DialogTitle className="font-mono">EQUIPMENT_CONFLICT_DETECTED</DialogTitle>
+            <DialogDescription className="font-mono">
+              ALL_SLOTS_OCCUPIED - REPLACEMENT_REQUIRED
             </DialogDescription>
           </DialogHeader>
 
           {equipCandidate && (
             <div className="space-y-4">
-              <Alert>
+              <Alert className="border-yellow-500/50">
                 <AlertTriangle className="h-4 w-4" />
-                <AlertDescription>
-                  Equipping <strong>{equipCandidate.newItem.item.name}</strong> will replace{' '}
-                  <strong>{equipCandidate.conflictingItem.item.name}</strong> in slot {equipCandidate.slotIndex}.
+                <AlertDescription className="font-mono text-xs">
+                  INSTALLING <strong>{equipCandidate.newItem.item.name.toUpperCase()}</strong> WILL_REPLACE{' '}
+                  <strong>{equipCandidate.conflictingItem.item.name.toUpperCase()}</strong> IN_SLOT_{equipCandidate.slotIndex}
                 </AlertDescription>
               </Alert>
 
-              <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="grid grid-cols-2 gap-4 text-xs">
                 <div>
-                  <h4 className="font-medium text-red-600 mb-2">Removing:</h4>
-                  <div className="border rounded p-2 bg-red-50 dark:bg-red-950/20">
-                    <div className="font-medium">{equipCandidate.conflictingItem.item.name}</div>
-                    <div className="text-muted-foreground capitalize">
-                      {equipCandidate.conflictingItem.item.rarity} • Slot {equipCandidate.slotIndex}
+                  <h4 className="font-bold text-red-500 mb-2 font-mono">REMOVING:</h4>
+                  <div className="border border-red-500/50 rounded p-2 bg-red-950/20">
+                    <div className="font-bold font-mono">{equipCandidate.conflictingItem.item.name.toUpperCase()}</div>
+                    <div className="text-muted-foreground font-mono">
+                      {equipCandidate.conflictingItem.item.rarity} • SLOT_{equipCandidate.slotIndex}
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <h4 className="font-medium text-green-600 mb-2">Equipping:</h4>
-                  <div className="border rounded p-2 bg-green-50 dark:bg-green-950/20">
-                    <div className="font-medium">{equipCandidate.newItem.item.name}</div>
-                    <div className="text-muted-foreground capitalize">
+                  <h4 className="font-bold text-green-500 mb-2 font-mono">INSTALLING:</h4>
+                  <div className="border border-green-500/50 rounded p-2 bg-green-950/20">
+                    <div className="font-bold font-mono">{equipCandidate.newItem.item.name.toUpperCase()}</div>
+                    <div className="text-muted-foreground font-mono">
                       {equipCandidate.newItem.item.rarity}
                     </div>
                   </div>
@@ -700,15 +748,21 @@ export function InventoryView({
           )}
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowReplaceDialog(false)}>
-              Cancel
+            <Button variant="outline" onClick={() => setShowReplaceDialog(false)} className="font-mono">
+              CANCEL
             </Button>
-            <Button onClick={confirmReplacement}>
-              Replace Equipment
+            <Button onClick={confirmReplacement} className="font-mono">
+              CONFIRM_REPLACEMENT
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Footer */}
+      <div className="border-t border-primary/20 pt-2 mt-4 flex justify-between text-xs text-muted-foreground/60">
+        <span>STORAGE_MANIFEST_v2089 | REAL_TIME_INVENTORY</span>
+        <span>LAST_SCAN: {new Date().toLocaleTimeString()}</span>
+      </div>
     </div>
   )
 }

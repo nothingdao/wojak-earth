@@ -7,11 +7,14 @@ export type GameView =
   | 'market'
   | 'inventory'
   | 'chat'
-  | 'npc-activity'
+  | 'characters'
   | 'gamemaster'
   | 'profile'
-  | 'sandbox'
+  | 'character-creation-view'
   | 'admin'
+  | 'economy'
+  | 'leaderboards'
+  | 'rust-market'
 
 export interface Character {
   walletAddress: any

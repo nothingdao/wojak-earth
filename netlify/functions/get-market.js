@@ -1,5 +1,6 @@
-// netlify/functions/get-market.js
+// netlify/functions/get-market.js - FIXED: Added UUID generation
 import { createClient } from '@supabase/supabase-js'
+import { randomUUID } from 'crypto' // ADD THIS IMPORT
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -105,6 +106,8 @@ export const handler = async (event, context) => {
 
     // If no listings exist at all, create some default items
     if (combinedListings.length === 0) {
+      console.log(`🏪 No market listings found for ${location.name}, creating system items...`)
+
       // Get some items to create system listings for
       const { data: availableItems, error: itemsError } = await supabase
         .from('items')
@@ -125,14 +128,24 @@ export const handler = async (event, context) => {
           case 'LEGENDARY': price = 250; break
         }
 
+        // CRITICAL FIX: Generate unique ID for the listing
+        const listingId = randomUUID()
+
+        console.log(`🆕 Creating system listing: ${item.name} for ${price} coins (ID: ${listingId})`)
+
         const { data: listing, error: listingError } = await supabase
           .from('market_listings')
           .insert({
+            id: listingId, // ADD THIS LINE
             locationId: locationId,
             itemId: item.id,
+            sellerId: null, // Explicitly set for system items
             price: price,
             quantity: item.category === 'CONSUMABLE' ? 5 : 1,
-            isSystemItem: true
+            isSystemItem: true,
+            createdAt: new Date().toISOString(), // Add timestamp for consistency
+            updatedAt: new Date().toISOString() // ADD THIS LINE
+
           })
           .select(`
             *,
@@ -145,11 +158,17 @@ export const handler = async (event, context) => {
           `)
           .single()
 
-        if (listingError) throw listingError
+        if (listingError) {
+          console.error(`❌ Failed to create listing for ${item.name}:`, listingError)
+          throw listingError
+        }
+
+        console.log(`✅ Created system listing: ${item.name}`)
         return listing
       })
 
       const systemListings = await Promise.all(systemListingsPromises)
+      console.log(`🏪 Created ${systemListings.length} system listings for ${location.name}`)
 
       // Use the newly created listings
       allMarketListings = systemListings.map(listing => ({ ...listing, isLocalSpecialty: true }))
@@ -159,6 +178,7 @@ export const handler = async (event, context) => {
 
     // Transform listings for frontend
     const transformedListings = allMarketListings
+      .filter(listing => listing.quantity > 0) // Filter out sold-out items
       .sort((a, b) => {
         // Sort: local specialties first, then by creation date
         if (a.isLocalSpecialty && !b.isLocalSpecialty) return -1
@@ -191,6 +211,8 @@ export const handler = async (event, context) => {
         createdAt: listing.createdAt
       }))
 
+    console.log(`🏪 Returning ${transformedListings.length} market items for ${location.name}`)
+
     return {
       statusCode: 200,
       headers,
@@ -213,7 +235,8 @@ export const handler = async (event, context) => {
       headers,
       body: JSON.stringify({
         error: 'Internal server error',
-        message: 'Failed to fetch market items'
+        message: 'Failed to fetch market items',
+        details: error.message
       })
     }
   }

@@ -16,7 +16,8 @@
       "female-ivory.png",
       "female-saffron.png",
       "female-blonde.png",
-      "female-pale.png"
+      "female-pale.png",
+      "female-black-tank-top.png"
     ]
   },
   "2-skin": {
@@ -38,7 +39,8 @@
     "female": [
       "female-underland-t-shirt.png",
       "female-tiger-tank.png",
-      "female-404-not-found-t-shirt.png"
+      "female-404-not-found-t-shirt.png",
+      "female-rekt-t-shirt.png"
     ],
     "neutral": []
   },
@@ -49,7 +51,11 @@
       "male-cigarette-butt-jacket.png",
       "male-leather-jacket.png"
     ],
-    "female": ["female-leather-jacket.png", "female-white-fir-coat.png"],
+    "female": [
+      "female-leather-jacket.png",
+      "female-white-fir-coat.png",
+      "female-gray-parka.png"
+    ],
     "neutral": []
   },
   "6-hair": {
@@ -59,7 +65,7 @@
   },
   "7-face-accessories": {
     "male": [],
-    "female": [],
+    "female": ["female-red-lipstick.png"],
     "neutral": []
   },
   "8-headwear": {
@@ -114,7 +120,12 @@
         "energyEffect": 15
       },
       {
-        "file": "female-baseball-bat.png"
+        "file": "female-baseball-bat.png",
+        "incompatible_outerwear": [
+          "female-leather-jacket.png",
+          "female-white-fir-coat.png",
+          "female-gray-parka.png"
+        ]
       }
     ],
     "neutral": []

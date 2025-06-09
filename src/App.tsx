@@ -1,27 +1,42 @@
-// Updated src/App.tsx
+// src/App.tsx - Restructured for better layout stability
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { Toaster } from 'sonner'
 import { usePlayerCharacter, useCharacterActions } from '@/hooks/usePlayerCharacter'
 import { useGameData } from '@/hooks/useGameData'
 import { useGameHandlers } from '@/hooks/useGameHandlers'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { WalletConnectButton } from './components/wallet-connect-button'
+import { AppShell } from './components/AppShell'
 import { LoadingScreen } from './components/LoadingScreen'
-import { WelcomeScreen } from './components/WelcomeScreen'
-import { TravelScreen } from './components/TravelScreen'
+import { CharacterCreationView } from './components/views'
 import { GameContent } from './components/GameContent'
 import type { GameView, DatabaseLocation } from '@/types'
 
+// Define app states clearly
+type AppState =
+  | 'wallet-disconnected'
+  | 'initial-loading'
+  | 'character-loading'
+  | 'no-character'
+  | 'game-loading'
+  | 'ready'
+  | 'error'
+
 function App() {
   const wallet = useWallet()
-  const { character, loading: characterLoading, hasCharacter, refetchCharacter } = usePlayerCharacter()
+  const { character, loading: characterLoading, hasCharacter, refetchCharacter, error: characterError } = usePlayerCharacter()
   const characterActions = useCharacterActions()
+
+  // Stable state management
   const [currentView, setCurrentView] = useState<GameView>('main')
-  const [selectedLocation, setSelectedLocation] = useState<DatabaseLocation | null>(null)
+  const [selectedLocation] = useState<DatabaseLocation | null>(null)
   const [loadingItems, setLoadingItems] = useState<Set<string>>(new Set())
   const [travelingTo, setTravelingTo] = useState<DatabaseLocation | null>(null)
-  const [initialLoading, setInitialLoading] = useState(true)
+  const [appError, setAppError] = useState<string | null>(null)
+
+  // App state derived from conditions
+  const [appState, setAppState] = useState<AppState>('wallet-disconnected')
+
   const gameData = useGameData(character, currentView, selectedLocation)
 
   // Initialize game handlers
@@ -39,185 +54,249 @@ function App() {
     locations: gameData.locations
   })
 
-  // Add this useEffect to your App component or AppShell
+  // Centralized state management
   useEffect(() => {
-    const preventZoom = (e: WheelEvent) => {
-      if (e.ctrlKey) {
-        e.preventDefault()
-      }
+    if (!wallet.connected) {
+      setAppState('wallet-disconnected')
+      setAppError(null)
+      setCurrentView('main')
+      return
     }
 
+    if (characterError || appError) {
+      setAppState('error')
+      return
+    }
+
+    if (characterLoading) {
+      setAppState('character-loading')
+      return
+    }
+
+    if (!hasCharacter) {
+      setAppState('no-character')
+      return
+    }
+
+    if (!character) {
+      setAppState('initial-loading')
+      return
+    }
+
+    if (gameData.loading && !gameData.locations.length) {
+      setAppState('game-loading')
+      return
+    }
+
+    if (gameData.error) {
+      setAppError(gameData.error)
+      setAppState('error')
+      return
+    }
+
+    setAppState('ready')
+  }, [
+    wallet.connected,
+    characterLoading,
+    hasCharacter,
+    character,
+    characterError,
+    appError,
+    gameData.loading,
+    gameData.locations.length,
+    gameData.error
+  ])
+
+  // Prevent zoom
+  useEffect(() => {
+    const preventZoom = (e: WheelEvent) => {
+      if (e.ctrlKey) e.preventDefault()
+    }
     const preventKeyboardZoom = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '-' || e.key === '0')) {
         e.preventDefault()
       }
     }
-
     document.addEventListener('wheel', preventZoom, { passive: false })
     document.addEventListener('keydown', preventKeyboardZoom)
-
     return () => {
       document.removeEventListener('wheel', preventZoom)
       document.removeEventListener('keydown', preventKeyboardZoom)
     }
   }, [])
 
-  // Handle initial loading sequence
-  useEffect(() => {
-    if (wallet.connected && !characterLoading) {
-      // Add a small delay to prevent flash, then determine state
-      const timer = setTimeout(() => {
-        setInitialLoading(false)
-      }, 300) // Small delay to prevent flash
-
-      return () => clearTimeout(timer)
+  // Character creation callback
+  const handleCharacterCreated = async () => {
+    console.log('🎉 Character creation completed, refreshing data...')
+    try {
+      setAppState('initial-loading')
+      await refetchCharacter()
+      setTimeout(() => setCurrentView('main'), 500)
+    } catch (error) {
+      console.error('Failed to refresh character after creation:', error)
+      setAppError('Failed to load character after creation. Please refresh the page.')
     }
-  }, [wallet.connected, characterLoading])
+  }
 
-  // Reset initial loading when wallet disconnects
-  useEffect(() => {
-    if (!wallet.connected) {
-      setInitialLoading(true)
+  // Error retry handlers
+  const handleRetry = () => {
+    setAppError(null)
+    refetchCharacter()
+  }
+
+  const handleRefresh = () => {
+    window.location.reload()
+  }
+
+  // Adapter functions for GameContent
+  const handleMiningAdapter = (_itemId: string) => gameHandlers.handleMining()
+  const handleTravelAdapter = (location: DatabaseLocation) => gameHandlers.handleTravel(location.id)
+  const handlePurchaseAdapter = (itemId: string, cost: number) => {
+    const marketItem = gameData.marketItems.find((item: any) => item.id === itemId)
+    const itemName = marketItem?.name || 'Unknown Item'
+    gameHandlers.handlePurchase(itemId, cost, itemName)
+  }
+  const handleEquipItemAdapter = (inventoryId: string) => {
+    const isCurrentlyEquipped = character?.equippedItems?.some(
+      (equipped: any) => equipped.inventoryId === inventoryId
+    ) || false
+    gameHandlers.handleEquipItem(inventoryId, isCurrentlyEquipped)
+  }
+  const handleUseItemAdapter = (inventoryId: string) => {
+    const inventoryItem = character?.inventory?.find((item: any) => item.id === inventoryId)
+    const itemName = inventoryItem?.name || 'Unknown Item'
+    const energyEffect = inventoryItem?.effects?.energy
+    const healthEffect = inventoryItem?.effects?.health
+    gameHandlers.handleUseItem(inventoryId, itemName, energyEffect, healthEffect)
+  }
+
+  // Navigation handlers
+  const navHandlers = {
+    onProfileClick: () => setCurrentView('profile'),
+    onHomeClick: () => setCurrentView('main'),
+    onMapClick: () => setCurrentView('map'),
+    onInventoryClick: () => setCurrentView('inventory'),
+    onAdminClick: () => setCurrentView('admin'),
+    onCharactersClick: () => setCurrentView('characters'),
+    onEconomyClick: () => setCurrentView('economy'),
+    onLeaderboardsClick: () => setCurrentView('leaderboards'),
+    onRustMarketClick: () => setCurrentView('rust-market'),
+
+  }
+
+  // Render based on app state
+  const renderContent = () => {
+    switch (appState) {
+      case 'wallet-disconnected':
+        return (
+          <div className="min-h-screen bg-background flex items-center justify-center">
+            <div className="text-center max-w-md mx-auto p-6">
+              <h2 className="text-2xl font-bold mb-4">Connect Your Wallet</h2>
+              <p className="text-muted-foreground mb-6">Connect your Solana wallet to play Wojak Earth</p>
+              <WalletConnectButton />
+              <p className="text-xs text-muted-foreground mt-4">
+                Make sure you have some SOL for character creation and transactions
+              </p>
+            </div>
+          </div>
+        )
+
+      case 'error':
+        return (
+          <div className="min-h-screen bg-background flex items-center justify-center p-4">
+            <div className="text-center max-w-md mx-auto">
+              <div className="text-2xl mb-4">❌</div>
+              <h2 className="text-xl font-semibold mb-2">Application Error</h2>
+              <div className="text-red-500 mb-4 text-sm">{appError || characterError}</div>
+              <div className="space-y-2">
+                <Button onClick={handleRetry} className="w-full">Retry</Button>
+                <Button variant="outline" onClick={handleRefresh} className="w-full">
+                  Refresh Page
+                </Button>
+              </div>
+            </div>
+          </div>
+        )
+
+      case 'initial-loading':
+      case 'character-loading':
+        return (
+          <LoadingScreen
+            title={appState === 'initial-loading' ? "Loading Wojak Earth..." : "Loading your character..."}
+            subtitle={appState === 'initial-loading' ? "Preparing your adventure..." : "Checking your account..."}
+          />
+        )
+
+      case 'game-loading':
+        return (
+          <LoadingScreen
+            title="Loading game world..."
+            subtitle="Setting up your adventure..."
+          />
+        )
+
+      case 'no-character':
+        return (
+          <AppShell
+            character={null}
+            currentView={currentView}
+            showNavigation={false} // Hide navigation during character creation
+            {...navHandlers}
+          >
+            <div className="text-center mb-6">
+              <h2 className="text-2xl font-bold mb-2">Welcome to Earth</h2>
+              <p className="text-muted-foreground">Create your character to start playing</p>
+            </div>
+            <CharacterCreationView
+              character={null}
+              onCharacterCreated={handleCharacterCreated}
+            />
+          </AppShell>
+        )
+
+      case 'ready':
+        if (travelingTo) {
+          return <TravelScreen destination={travelingTo} locations={gameData.locations} />
+        }
+
+        return (
+          <AppShell
+            character={character}
+            currentView={currentView}
+            showNavigation={true}
+            {...navHandlers}
+          >
+            <GameContent
+              character={character!}
+              currentView={currentView}
+              selectedLocation={selectedLocation}
+              gameData={gameData}
+              loadingItems={loadingItems}
+              playersAtLocation={gameData.playersAtLocation}
+              chatMessages={gameData.chatMessages}
+              onViewChange={setCurrentView}
+              onMining={handleMiningAdapter}
+              onTravel={handleTravelAdapter}
+              onPurchase={handlePurchaseAdapter}
+              onSendMessage={gameHandlers.handleSendMessage}
+              onEquipItem={handleEquipItemAdapter}
+              onUseItem={handleUseItemAdapter}
+              refetchCharacter={refetchCharacter}
+            />
+          </AppShell>
+        )
+
+      default:
+        return (
+          <LoadingScreen
+            title="Initializing..."
+            subtitle="Please wait..."
+          />
+        )
     }
-  }, [wallet.connected])
-
-  // Wallet not connected - simple state
-  if (!wallet.connected) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4">Connect Your Wallet</h2>
-          <p className="text-muted-foreground mb-6">Connect your Solana wallet to play Wojak Earth</p>
-          <WalletConnectButton />
-        </div>
-      </div>
-    )
   }
 
-  // Initial loading or character loading - prevent flash
-  if (initialLoading || characterLoading) {
-    return (
-      <LoadingScreen
-        title="Loading your character..."
-        subtitle="Preparing your adventure..."
-      />
-    )
-  }
-
-  // Travel animation - full screen state
-  if (travelingTo) {
-    return <TravelScreen destination={travelingTo} locations={gameData.locations} />
-  }
-
-  // No character - show welcome/character creation (only after initial loading is done)
-  if (!hasCharacter && !characterLoading) {
-    return (
-      <WelcomeScreen
-        onCharacterCreated={refetchCharacter}
-        currentView={currentView}
-        onProfileClick={() => setCurrentView('profile')}
-        onHomeClick={() => setCurrentView('main')}
-        onMapClick={() => setCurrentView('map')}
-        onSandboxClick={() => setCurrentView('sandbox')}
-        onInventoryClick={() => setCurrentView('inventory')}
-        onAdminClick={() => setCurrentView('admin')}
-      />
-    )
-  }
-
-  // Game data loading for initial load
-  if (gameData.loading && !character) {
-    return (
-      <LoadingScreen
-        title="Loading Wojak Earth..."
-        subtitle="Preparing your adventure..."
-      />
-    )
-  }
-
-  // Error state
-  if (gameData.error) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="text-center">
-          <div className="text-2xl mb-4">❌</div>
-          <div className="text-red-500 mb-4">{gameData.error}</div>
-          <Button onClick={gameData.actions.loadGameData}>Retry</Button>
-        </div>
-      </div>
-    )
-  }
-
-  // No character data (safety check)
-  if (!character && hasCharacter) {
-    return (
-      <LoadingScreen
-        title="Loading character data..."
-        subtitle="Almost ready..."
-      />
-    )
-  }
-
-  // Final safety check
-  if (!character) {
-    return (
-      <LoadingScreen
-        title="Character not found"
-        subtitle="Please try refreshing the page"
-        showSpinner={false}
-      />
-    )
-  }
-
-  console.log('📱 App character before passing to GameContent:', character?.coins)
-
-
-  // Main game content
-  return (
-    <>
-      <Toaster
-        position="bottom-left"
-        expand={false}
-        richColors={true}
-        closeButton={false}
-        offset={16}
-        toastOptions={{
-          duration: 7000,
-          style: {
-            background: 'hsl(var(--card))',
-            color: 'hsl(var(--card-foreground))',
-            border: '1px solid hsl(var(--border))',
-            borderRadius: '8px',
-            fontSize: '14px',
-            padding: '12px 16px',
-            zIndex: 99999,
-            backdropFilter: 'none',
-            WebkitBackdropFilter: 'none',
-            opacity: 1,
-          },
-          className: 'solid-toast',
-        }}
-      />
-
-      <GameContent
-        character={character}
-        currentView={currentView}
-        selectedLocation={selectedLocation}
-        gameData={gameData}
-        loadingItems={loadingItems}
-        playersAtLocation={gameData.playersAtLocation}
-        chatMessages={gameData.chatMessages}
-        onViewChange={setCurrentView}
-        onMining={gameHandlers.handleMining}
-        onTravel={gameHandlers.handleTravel}
-        onPurchase={gameHandlers.handlePurchase}
-        onSendMessage={gameHandlers.handleSendMessage}
-        onEquipItem={gameHandlers.handleEquipItem}
-        onUseItem={gameHandlers.handleUseItem}
-        refetchCharacter={refetchCharacter}
-      />
-    </>
-  )
+  return renderContent()
 }
 
 export default App

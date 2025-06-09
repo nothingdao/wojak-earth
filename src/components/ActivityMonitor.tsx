@@ -24,7 +24,7 @@ import {
 import supabase from '@/utils/supabase'
 
 // Transaction types from your schema
-type TransactionType = 'TRAVEL' | 'MINE' | 'BUY' | 'SELL' | 'EQUIP' | 'UNEQUIP' | 'SPAWN' | 'CHAT' | 'IDLE'
+type TransactionType = 'TRAVEL' | 'MINE' | 'BUY' | 'SELL' | 'EQUIP' | 'UNEQUIP' | 'SPAWN' | 'CHAT' | 'IDLE' | 'EXCHANGE'
 
 interface Transaction {
   id: string
@@ -38,7 +38,9 @@ interface Transaction {
     name: string
     id: string
     characterType: string
-    currentImageUrl?: string // Add avatar URL
+    level?: number
+    experience?: number
+    currentImageUrl?: string
   }
 }
 
@@ -56,6 +58,7 @@ export function ActivityMonitor({ className = "", maxHeight = "h-96" }: Activity
   const [isAutoRefreshing, setIsAutoRefreshing] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [filterMode, setFilterMode] = useState<FilterMode>('ALL')
+  const [typeFilter, setTypeFilter] = useState<TransactionType | 'ALL'>('ALL')
   const [showConfig, setShowConfig] = useState(false)
   const [recentActivityHighlight, setRecentActivityHighlight] = useState<string | null>(null)
 
@@ -68,9 +71,9 @@ export function ActivityMonitor({ className = "", maxHeight = "h-96" }: Activity
       const { data: transactions, error } = await supabase
         .from('transactions')
         .select(`
-          *,
-          character:characters(name, id, characterType, currentImageUrl)
-        `)
+    *,
+    character:characters(name, id, characterType, level, experience, currentImageUrl)
+  `)
         .order('createdAt', { ascending: false })
         .limit(50)
 
@@ -116,7 +119,7 @@ export function ActivityMonitor({ className = "", maxHeight = "h-96" }: Activity
             // Fetch character data for the new transaction
             const { data: character } = await supabase
               .from('characters')
-              .select('name, id, characterType, currentImageUrl')
+              .select('name, id, characterType, level, experience, currentImageUrl')
               .eq('id', payload.new.characterId)
               .single()
 
@@ -159,16 +162,24 @@ export function ActivityMonitor({ className = "", maxHeight = "h-96" }: Activity
 
   // Filter transactions based on mode
   const filteredTransactions = transactions.filter(transaction => {
+    // Character type filter
     switch (filterMode) {
       case 'NPCS_ONLY':
-        // Proper way: check characterType field
-        return transaction.character.characterType === 'NPC'
+        if (transaction.character.characterType !== 'NPC') return false
+        break
       case 'PLAYERS_ONLY':
-        // Real players have characterType 'HUMAN' or other non-NPC types
-        return transaction.character.characterType !== 'NPC'
+        if (transaction.character.characterType === 'NPC') return false
+        break
       default:
-        return true
+        break
     }
+
+    // Transaction type filter
+    if (typeFilter !== 'ALL' && transaction.type !== typeFilter) {
+      return false
+    }
+
+    return true
   })
 
   const getTransactionIcon = (type: TransactionType) => {
@@ -182,6 +193,7 @@ export function ActivityMonitor({ className = "", maxHeight = "h-96" }: Activity
       case 'SPAWN': return <Sparkles className="w-4 h-4" />
       case 'CHAT': return <Users className="w-4 h-4" />
       case 'IDLE': return <Clock className="w-4 h-4" />
+      case 'EXCHANGE': return <RefreshCw className="w-4 h-4" />
       default: return <Activity className="w-4 h-4" />
     }
   }
@@ -196,7 +208,8 @@ export function ActivityMonitor({ className = "", maxHeight = "h-96" }: Activity
       'UNEQUIP': 'text-gray-500',
       'SPAWN': 'text-pink-500',
       'CHAT': 'text-cyan-500',
-      'IDLE': 'text-slate-500'
+      'IDLE': 'text-slate-500',
+      'EXCHANGE': 'text-emerald-500'
     }
 
     // Dim NPC actions slightly
@@ -312,35 +325,98 @@ export function ActivityMonitor({ className = "", maxHeight = "h-96" }: Activity
         </div>
 
         {/* Filter Controls */}
-        <div className="flex items-center gap-2">
-          <Filter className="w-4 h-4 text-muted-foreground" />
-          <div className="flex gap-1">
-            <Button
-              size="sm"
-              variant={filterMode === 'ALL' ? 'default' : 'outline'}
-              onClick={() => setFilterMode('ALL')}
-              className="text-xs"
-            >
-              All ({stats.total})
-            </Button>
-            <Button
-              size="sm"
-              variant={filterMode === 'NPCS_ONLY' ? 'default' : 'outline'}
-              onClick={() => setFilterMode('NPCS_ONLY')}
-              className="text-xs"
-            >
-              <Bot className="w-3 h-3 mr-1" />
-              NPCs ({stats.npcs})
-            </Button>
-            <Button
-              size="sm"
-              variant={filterMode === 'PLAYERS_ONLY' ? 'default' : 'outline'}
-              onClick={() => setFilterMode('PLAYERS_ONLY')}
-              className="text-xs"
-            >
-              <User className="w-3 h-3 mr-1" />
-              Players ({stats.players})
-            </Button>
+        <div className="space-y-2">
+          {/* Character Type Filters */}
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-muted-foreground" />
+            <div className="flex gap-1">
+              <Button
+                size="sm"
+                variant={filterMode === 'ALL' ? 'default' : 'outline'}
+                onClick={() => setFilterMode('ALL')}
+                className="text-xs"
+              >
+                All ({stats.total})
+              </Button>
+              <Button
+                size="sm"
+                variant={filterMode === 'NPCS_ONLY' ? 'default' : 'outline'}
+                onClick={() => setFilterMode('NPCS_ONLY')}
+                className="text-xs"
+              >
+                <Bot className="w-3 h-3 mr-1" />
+                NPCs ({stats.npcs})
+              </Button>
+              <Button
+                size="sm"
+                variant={filterMode === 'PLAYERS_ONLY' ? 'default' : 'outline'}
+                onClick={() => setFilterMode('PLAYERS_ONLY')}
+                className="text-xs"
+              >
+                <User className="w-3 h-3 mr-1" />
+                Players ({stats.players})
+              </Button>
+            </div>
+          </div>
+
+          {/* Transaction Type Filters */}
+          <div className="flex items-center gap-2">
+            <Activity className="w-4 h-4 text-muted-foreground" />
+            <div className="flex gap-1 flex-wrap">
+              <Button
+                size="sm"
+                variant={typeFilter === 'ALL' ? 'default' : 'outline'}
+                onClick={() => setTypeFilter('ALL')}
+                className="text-xs"
+              >
+                All Types
+              </Button>
+              <Button
+                size="sm"
+                variant={typeFilter === 'EXCHANGE' ? 'default' : 'outline'}
+                onClick={() => setTypeFilter('EXCHANGE')}
+                className="text-xs"
+              >
+                <RefreshCw className="w-3 h-3 mr-1" />
+                Exchange
+              </Button>
+              <Button
+                size="sm"
+                variant={typeFilter === 'MINE' ? 'default' : 'outline'}
+                onClick={() => setTypeFilter('MINE')}
+                className="text-xs"
+              >
+                <Pickaxe className="w-3 h-3 mr-1" />
+                Mining
+              </Button>
+              <Button
+                size="sm"
+                variant={typeFilter === 'TRAVEL' ? 'default' : 'outline'}
+                onClick={() => setTypeFilter('TRAVEL')}
+                className="text-xs"
+              >
+                <MapPin className="w-3 h-3 mr-1" />
+                Travel
+              </Button>
+              <Button
+                size="sm"
+                variant={typeFilter === 'BUY' ? 'default' : 'outline'}
+                onClick={() => setTypeFilter('BUY')}
+                className="text-xs"
+              >
+                <Store className="w-3 h-3 mr-1" />
+                Buy
+              </Button>
+              <Button
+                size="sm"
+                variant={typeFilter === 'SELL' ? 'default' : 'outline'}
+                onClick={() => setTypeFilter('SELL')}
+                className="text-xs"
+              >
+                <Store className="w-3 h-3 mr-1" />
+                Sell
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -369,6 +445,7 @@ export function ActivityMonitor({ className = "", maxHeight = "h-96" }: Activity
       )}
 
       {/* Activity Feed */}
+      {/* Activity Feed */}
       <ScrollArea className={maxHeight}>
         <div className="p-4 space-y-2">
           {isLoading && filteredTransactions.length === 0 ? (
@@ -389,7 +466,7 @@ export function ActivityMonitor({ className = "", maxHeight = "h-96" }: Activity
                     : 'hover:bg-accent'
                     }`}
                 >
-                  {/* Character Avatar */}
+                  {/* Character Avatar with Level Badge */}
                   <div className="flex-shrink-0 relative">
                     {transaction.character.currentImageUrl ? (
                       <>
@@ -410,7 +487,7 @@ export function ActivityMonitor({ className = "", maxHeight = "h-96" }: Activity
                         />
                         {/* Fallback avatar (hidden by default) */}
                         <div
-                          className="w-8 h-8 rounded-full bg-muted flex items-center justify-center absolute top-0 left-0"
+                          className="w-16 h-16 rounded-sm bg-muted flex items-center justify-center absolute top-0 left-0"
                           style={{ display: 'none' }}
                         >
                           <span className="text-xs font-medium">
@@ -419,15 +496,26 @@ export function ActivityMonitor({ className = "", maxHeight = "h-96" }: Activity
                         </div>
                       </>
                     ) : (
-                      <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                      <div className="w-16 h-16 rounded-sm bg-muted flex items-center justify-center">
                         <span className="text-xs font-medium">
                           {transaction.character.name.charAt(0).toUpperCase()}
                         </span>
                       </div>
                     )}
+
+                    {/* Level Badge on Image */}
+                    <div className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white shadow-sm ${transaction.character.level >= 20 ? 'bg-yellow-500' :
+                      transaction.character.level >= 15 ? 'bg-purple-500' :
+                        transaction.character.level >= 10 ? 'bg-blue-500' :
+                          transaction.character.level >= 5 ? 'bg-green-500' :
+                            'bg-gray-500'
+                      }`}>
+                      {transaction.character.level}
+                    </div>
+
                     {/* Debug info */}
                     {process.env.NODE_ENV === 'development' && (
-                      <div className="absolute -bottom-1 -right-1 text-xs" title={`Image URL: ${transaction.character.currentImageUrl || 'None'}`}>
+                      <div className="absolute -bottom-1 -left-1 text-xs" title={`Image URL: ${transaction.character.currentImageUrl || 'None'}`}>
                         {transaction.character.currentImageUrl ? '🖼️' : '❌'}
                       </div>
                     )}
@@ -463,12 +551,18 @@ export function ActivityMonitor({ className = "", maxHeight = "h-96" }: Activity
                       {transaction.description}
                     </p>
 
-                    {transaction.quantity && (
-                      <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                        <span>Quantity:</span>
-                        <span className="font-mono">{transaction.quantity}</span>
-                      </div>
-                    )}
+                    {/* XP and Quantity Display */}
+                    <div className="text-[10px] text-muted-foreground mt-1 flex items-center gap-2">
+                      <span className="font-mono bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded">
+                        {(transaction.character.experience || 0).toLocaleString()} XP
+                      </span>
+                      {transaction.quantity && (
+                        <span className="flex items-center gap-1">
+                          <span>Qty:</span>
+                          <span className="font-mono">{transaction.quantity}</span>
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   {/* Timestamp */}
@@ -481,7 +575,7 @@ export function ActivityMonitor({ className = "", maxHeight = "h-96" }: Activity
             })
           ) : (
             <div className="text-center py-8 text-muted-foreground">
-              <Activity className="w-12 h-12 mx-auto mb-2" />
+              <Activity className="w-12 w-12 mx-auto mb-2" />
               {filterMode === 'NPCS_ONLY' ? 'No NPC activity found' :
                 filterMode === 'PLAYERS_ONLY' ? 'No player activity found' :
                   'No activity yet...'}

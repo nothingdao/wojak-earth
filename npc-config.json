@@ -1,9 +1,10 @@
 {
-  "npcCount": 70,
+  "npcCount": 10,
   "resumeExisting": true,
+  "spawnReplacements": true,
   "personalities": ["casual", "hardcore", "social", "merchant", "explorer"],
-  "spawnDelay": 2000,
-  "activityInterval": 150000,
+  "spawnDelay": 20000,
+  "activityInterval": 70000,
   "globalActivityRate": 1000,
   "activityVariance": 0.4,
   "energyRestThreshold": 15,
@@ -11,7 +12,6 @@
   "restEnergyGain": 5,
   "enableLogs": true,
   "logLevel": "info",
-
   "chat": {
     "enabled": true,
     "showContext": true

@@ -1,12 +1,16 @@
 import { Moon, Sun } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useTheme } from "@/components/theme-provider"
+import { flushSync } from "react-dom"
 
 export function ModeToggle() {
   const { theme, setTheme } = useTheme()
 
   const toggleTheme = () => {
-    setTheme(theme === "dark" ? "light" : "dark")
+    // Force synchronous update
+    flushSync(() => {
+      setTheme(theme === "dark" ? "light" : "dark")
+    })
   }
 
   return (

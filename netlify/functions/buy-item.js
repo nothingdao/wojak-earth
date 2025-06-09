@@ -1,4 +1,4 @@
-// netlify/functions/buy-item.js - UPDATED
+// netlify/functions/buy-item.js - FIXED: Actually deduct coins!
 import { createClient } from '@supabase/supabase-js'
 import { randomUUID } from 'crypto'
 
@@ -124,6 +124,36 @@ export const handler = async (event, context) => {
     // Calculate total cost
     const totalCost = marketListing.price * quantity
 
+    // CRITICAL FIX: Check if character has enough coins
+    if (character.coins < totalCost) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({
+          error: 'Insufficient funds',
+          message: `You need ${totalCost} coins but only have ${character.coins}`,
+          required: totalCost,
+          available: character.coins
+        })
+      }
+    }
+
+    // CRITICAL FIX: Deduct coins from character
+    const newCoinBalance = character.coins - totalCost
+    const { data: updatedCharacter, error: coinDeductError } = await supabase
+      .from('characters')
+      .update({ coins: newCoinBalance })
+      .eq('id', character.id)
+      .select('*')
+      .single()
+
+    if (coinDeductError) {
+      console.error('Failed to deduct coins:', coinDeductError)
+      throw coinDeductError
+    }
+
+    console.log(`💰 Deducted ${totalCost} coins from ${character.name}: ${character.coins} → ${newCoinBalance}`)
+
     // Add item to character inventory
     const { data: existingInventory } = await supabase
       .from('character_inventory')
@@ -215,12 +245,21 @@ export const handler = async (event, context) => {
         itemRarity: marketListing.item.rarity,
         quantity: quantity,
         totalCost: totalCost,
-        newInventoryQuantity: inventoryItem.quantity
+        newInventoryQuantity: inventoryItem.quantity,
+        // ADDED: Return new coin balance
+        newCoinBalance: newCoinBalance,
+        previousCoinBalance: character.coins
       },
       marketListing: {
         id: marketListingId,
         remainingQuantity: remainingQuantity,
         wasRemoved: remainingQuantity === 0 && !marketListing.isSystemItem
+      },
+      // ADDED: Character status after purchase
+      character: {
+        id: character.id,
+        coins: newCoinBalance,
+        coinsSpent: totalCost
       }
     }
 
@@ -238,7 +277,8 @@ export const handler = async (event, context) => {
       headers,
       body: JSON.stringify({
         error: 'Internal server error',
-        message: 'Purchase failed'
+        message: 'Purchase failed',
+        details: error.message
       })
     }
   }

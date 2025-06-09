@@ -1,7 +1,8 @@
-// src/components/BottomDrawerNav.tsx - COMPACT VERSION
-import React, { useState } from 'react'
+// src/components/BottomDrawerNav.tsx - Terminal Style Navigation
+import { useState } from 'react'
+import { useWallet } from '@solana/wallet-adapter-react'
 import { Button } from '@/components/ui/button'
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from '@/components/ui/drawer'
+import { Drawer, DrawerContent, DrawerHeader, DrawerTrigger } from '@/components/ui/drawer'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
@@ -10,19 +11,29 @@ import { WalletConnectButton } from './wallet-connect-button'
 import {
   Menu,
   Map,
+  TrendingUp,
   Backpack,
   MapPin,
-  Box,
   Shield,
   User,
   ChevronRight,
   Home,
-  Coins,
+  Wallet,
+  Users,
+  Copy,
+  LogOut,
+  BarChart3,
+  Activity,
+  Signal,
+  Database,
   Zap,
   Heart,
-  Sun,
-  Wallet
+  Coins,
+  Terminal,
+  Hash,
+  Eye
 } from 'lucide-react'
+import { toast } from 'sonner'
 import type { Character, GameView } from '@/types'
 
 interface BottomDrawerNavProps {
@@ -31,10 +42,13 @@ interface BottomDrawerNavProps {
   onProfileClick: () => void
   onHomeClick: () => void
   onMapClick: () => void
-  onSandboxClick: () => void
   onInventoryClick: () => void
   onAdminClick?: () => void
   isAdmin?: boolean
+  onCharactersClick?: () => void
+  onEconomyClick?: () => void
+  onLeaderboardsClick?: () => void
+  onRustMarketClick?: () => void
 }
 
 export function BottomDrawerNav({
@@ -43,15 +57,26 @@ export function BottomDrawerNav({
   onProfileClick,
   onHomeClick,
   onMapClick,
-  onSandboxClick,
   onInventoryClick,
+  onCharactersClick,
+  onEconomyClick,
+  onLeaderboardsClick,
+  onRustMarketClick,
   onAdminClick,
   isAdmin = false
 }: BottomDrawerNavProps) {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [imageError, setImageError] = useState(false)
+  const { publicKey, disconnect, wallet, connected } = useWallet()
 
   const handleImageError = () => setImageError(true)
+
+  const copyAddress = async () => {
+    if (publicKey) {
+      await navigator.clipboard.writeText(publicKey.toBase58())
+      toast.success('WALLET_ADDRESS_COPIED')
+    }
+  }
 
   const getCharacterImageUrl = () => {
     if (!character) return '/wojak.png'
@@ -64,13 +89,73 @@ export function BottomDrawerNav({
     action()
   }
 
-  // Build navigation items
+  // Build navigation items with terminal styling
   const navItems = [
-    { id: 'home', icon: Home, label: 'Home Base', action: onHomeClick, current: currentView === 'main' },
-    { id: 'map', icon: Map, label: 'World Map', action: onMapClick, current: currentView === 'map' },
-    { id: 'inventory', icon: Backpack, label: 'Inventory', action: onInventoryClick, current: currentView === 'inventory', badge: character?.inventory?.length },
-    { id: 'sandbox', icon: Box, label: 'Sandbox', action: onSandboxClick, current: currentView === 'sandbox' },
-    { id: 'profile', icon: User, label: 'Profile', action: onProfileClick, current: currentView === 'profile' }
+    {
+      id: 'home',
+      icon: Home,
+      label: 'HOME_BASE',
+      action: onHomeClick,
+      current: currentView === 'main',
+      color: 'text-green-500'
+    },
+    {
+      id: 'map',
+      icon: Map,
+      label: 'WORLD_MAP',
+      action: onMapClick,
+      current: currentView === 'map',
+      color: 'text-blue-500'
+    },
+    {
+      id: 'inventory',
+      icon: Backpack,
+      label: 'INVENTORY',
+      action: onInventoryClick,
+      current: currentView === 'inventory',
+      badge: character?.inventory?.length,
+      color: 'text-purple-500'
+    },
+    {
+      id: 'characters',
+      icon: Users,
+      label: 'SPECIMENS',
+      action: onCharactersClick,
+      current: currentView === 'characters',
+      color: 'text-orange-500'
+    },
+    {
+      id: 'leaderboards',
+      icon: TrendingUp,
+      label: 'RANKINGS',
+      action: onLeaderboardsClick,
+      current: currentView === 'leaderboards',
+      color: 'text-yellow-500'
+    },
+    {
+      id: 'rust-market',
+      icon: BarChart3,
+      label: 'EXCHANGE',
+      action: onRustMarketClick,
+      current: currentView === 'rust-market',
+      color: 'text-cyan-500'
+    },
+    {
+      id: 'profile',
+      icon: User,
+      label: 'PROFILE',
+      action: onProfileClick,
+      current: currentView === 'profile',
+      color: 'text-pink-500'
+    },
+    {
+      id: 'economy',
+      icon: TrendingUp,
+      label: 'ECONOMY',
+      action: onEconomyClick,
+      current: currentView === 'economy',
+      color: 'text-emerald-500'
+    }
   ]
 
   // Add admin if applicable
@@ -78,27 +163,32 @@ export function BottomDrawerNav({
     navItems.push({
       id: 'admin',
       icon: Shield,
-      label: 'Admin Panel',
+      label: 'ADMIN_PANEL',
       action: onAdminClick,
-      current: currentView === 'admin'
+      current: currentView === 'admin',
+      color: 'text-red-500'
     })
   }
 
   if (!character) {
     return (
-      <div className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur border-b">
+      <div className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur border-b border-primary/30 font-mono">
         <div className="flex items-center justify-between p-4">
+          {/* Terminal Header - No Character */}
           <div className="flex items-center gap-3">
-            <Avatar className="w-8 h-8">
-              <AvatarImage src="/wojak.png" />
-              <AvatarFallback>W</AvatarFallback>
-            </Avatar>
+            <div className="w-8 h-8 bg-muted/50 border border-primary/20 rounded flex items-center justify-center">
+              <Terminal className="w-4 h-4 text-primary" />
+            </div>
             <div>
-              <div className="font-medium text-sm">Wojak Earth</div>
-              <div className="text-xs text-muted-foreground">Connect to play</div>
+              <div className="font-bold text-sm text-primary font-mono">EARTH.NDAO.COMPUTER</div>
+              <div className="text-xs text-muted-foreground font-mono">CONNECTION_REQUIRED</div>
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Badge variant="outline" className="text-xs font-mono">
+              <Signal className="w-3 h-3 mr-1" />
+              OFFLINE
+            </Badge>
             <ModeToggle />
             <WalletConnectButton />
           </div>
@@ -109,161 +199,283 @@ export function BottomDrawerNav({
 
   return (
     <>
-      {/* Top Status Bar */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur border-b">
+      {/* Terminal Status Bar */}
+      <div className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur border-b border-primary/30 font-mono">
         <div className="flex items-center justify-between p-3">
-          {/* Desktop: Compact Player Card */}
+          {/* Desktop: Terminal Status Display */}
           <div className="hidden md:flex items-center gap-4 flex-1">
             <div className="flex items-center gap-3">
-              <Avatar className="w-8 h-8">
+              <Avatar className="w-8 h-8 border border-primary/20">
                 <AvatarImage
                   src={getCharacterImageUrl()}
                   alt={character.name}
                   onError={handleImageError}
                   onLoad={() => setImageError(false)}
                 />
-                <AvatarFallback>{character.name.charAt(0).toUpperCase()}</AvatarFallback>
+                <AvatarFallback className="bg-muted/50 font-mono text-xs">
+                  {character.name.charAt(0).toUpperCase()}
+                </AvatarFallback>
               </Avatar>
               <div>
-                <div className="font-medium text-sm">{character.name}</div>
-                <div className="text-xs text-muted-foreground flex items-center gap-1">
+                <div className="font-bold text-sm text-primary font-mono">{character.name.toUpperCase()}</div>
+                <div className="text-xs text-muted-foreground flex items-center gap-1 font-mono">
                   <MapPin className="w-3 h-3" />
-                  {character.currentLocation?.name || "Unknown"}
+                  {character.currentLocation?.name?.toUpperCase() || "UNKNOWN_ZONE"}
                 </div>
+              </div>
+            </div>
+
+            {/* Status Indicators */}
+            <div className="flex items-center gap-3 text-xs">
+              <div className="flex items-center gap-1">
+                <Zap className="w-3 h-3 text-yellow-500" />
+                <span className="text-primary font-mono">{character.energy || 0}%</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Heart className="w-3 h-3 text-red-500" />
+                <span className="text-primary font-mono">{character.health || 0}%</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Coins className="w-3 h-3 text-yellow-500" />
+                <span className="text-primary font-mono">{character.coins || 0}</span>
               </div>
             </div>
           </div>
 
-          {/* Mobile: Character Info */}
+          {/* Mobile: Character Status */}
           <div className="flex md:hidden items-center gap-3 flex-1 min-w-0">
-            <Avatar className="w-9 h-9 flex-shrink-0">
+            <Avatar className="w-10 h-10 flex-shrink-0 border border-primary/20">
               <AvatarImage
                 src={getCharacterImageUrl()}
                 alt={character.name}
                 onError={handleImageError}
                 onLoad={() => setImageError(false)}
               />
-              <AvatarFallback>{character.name.charAt(0).toUpperCase()}</AvatarFallback>
+              <AvatarFallback className="bg-muted/50 font-mono text-xs">
+                {character.name.charAt(0).toUpperCase()}
+              </AvatarFallback>
             </Avatar>
             <div className="min-w-0 flex-1">
-              <div className="font-medium text-sm truncate">{character.name}</div>
-              <div className="text-xs text-muted-foreground flex items-center gap-1">
+              <div className="font-bold text-sm truncate text-primary font-mono">{character.name.toUpperCase()}</div>
+              <div className="text-xs text-muted-foreground flex items-center gap-1 font-mono">
                 <MapPin className="w-3 h-3 flex-shrink-0" />
-                <span className="truncate">{character.currentLocation?.name || "Unknown"}</span>
+                <span className="truncate">{character.currentLocation?.name?.toUpperCase() || "UNKNOWN"}</span>
               </div>
             </div>
           </div>
 
-          {/* Desktop: Direct Navigation + Settings */}
-          <div className="hidden md:flex items-center gap-2">
+          {/* Desktop: Terminal Navigation */}
+          <div className="hidden md:flex items-center gap-1">
             {navItems.map((item) => {
               const IconComponent = item.icon
               const isAdmin = item.id === 'admin'
+
+              if (!item.action) return null
 
               return (
                 <Button
                   key={item.id}
                   size="sm"
-                  variant={item.current ? "default" : "outline"}
+                  variant={item.current ? "default" : "ghost"}
                   onClick={item.action}
-                  className={`h-8 px-3${isAdmin ? 'text-red-600 hover:text-red- ' : ''}`}
+                  className={`h-7 px-2 font-mono text-xs ${item.current
+                    ? 'bg-primary/20 text-primary border border-primary/30'
+                    : 'hover:bg-muted/50'
+                    } ${isAdmin ? 'text-red-500 hover:text-red-400' : ''}`}
                   title={item.label}
                 >
-                  <IconComponent className="w-4 h-4" />
+                  <IconComponent className={`w-3 h-3 ${item.current ? 'text-primary' : item.color}`} />
                   {item.badge && (
-                    <Badge variant="secondary" className="ml-1 h-4 px-1 text-xs">{item.badge}</Badge>
+                    <Badge variant="secondary" className="ml-1 h-3 px-1 text-xs font-mono">{item.badge}</Badge>
                   )}
                 </Button>
               )
             })}
-            <Separator orientation="vertical" className="h-6 mx-1" />
-            <ModeToggle />
-            <WalletConnectButton />
+
+            <Separator orientation="vertical" className="h-6 mx-2 border-primary/20" />
+
+            <div className="flex items-center gap-1">
+              <Badge variant="outline" className="text-xs font-mono h-7 px-2">
+                <Activity className="w-3 h-3 mr-1 animate-pulse" />
+                ONLINE
+              </Badge>
+              <ModeToggle />
+              <WalletConnectButton />
+            </div>
           </div>
 
-          {/* Mobile: Menu Button */}
+          {/* Mobile: Terminal Menu */}
           <div className="flex md:hidden items-center gap-2">
+            <Badge variant="outline" className="text-xs font-mono h-7 px-2">
+              <Activity className="w-3 h-3 mr-1 animate-pulse" />
+              ACTIVE
+            </Badge>
             <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
               <DrawerTrigger asChild>
-                <Button size="sm" variant="outline" className="h-9 px-3">
-                  <Menu className="w-4 h-4" />
+                <Button size="sm" variant="outline" className="h-10 px-3 font-mono border-primary/30">
+                  <Terminal className="w-4 h-4" />
                 </Button>
               </DrawerTrigger>
-              <DrawerContent className="h-[70vh]">
-                {/* Mobile Drawer Header */}
-                <DrawerHeader className="pb-4">
-                  <DrawerTitle className="flex items-center gap-3">
-                    <Avatar className="w-10 h-10">
-                      <AvatarImage src={getCharacterImageUrl()} alt={character.name} onError={handleImageError} />
-                      <AvatarFallback>{character.name.charAt(0).toUpperCase()}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <div className="font-semibold">{character.name}</div>
-                      <div className="text-sm text-muted-foreground">Level {character.level || 1}</div>
+              <DrawerContent className="h-[75vh] bg-background border-t border-primary/30 font-mono">
+                {/* Terminal Drawer Header */}
+                <DrawerHeader className="pb-4 border-b border-primary/20">
+                  <div className="space-y-4">
+                    {/* System Header */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Database className="w-4 h-4 text-primary" />
+                        <span className="text-primary font-bold font-mono">MOBILE_INTERFACE v2.089</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Activity className="w-3 h-3 animate-pulse text-green-500" />
+                        <span className="text-green-500 text-xs font-mono">ACTIVE</span>
+                      </div>
                     </div>
-                  </DrawerTitle>
+
+                    {/* Character Status Panel */}
+                    <div className="bg-muted/30 border border-primary/20 rounded p-3">
+                      <div className="flex items-center gap-3 mb-3">
+                        <Avatar className="w-12 h-12 border border-primary/20">
+                          <AvatarImage src={getCharacterImageUrl()} alt={character.name} onError={handleImageError} />
+                          <AvatarFallback className="bg-muted/50 font-mono">
+                            {character.name.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <div className="font-bold text-primary font-mono">{character.name.toUpperCase()}</div>
+                          <div className="text-xs text-muted-foreground font-mono">CLEARANCE_LVL_{character.level || 1}</div>
+                          <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1 font-mono">
+                            <MapPin className="w-3 h-3" />
+                            {character.currentLocation?.name?.toUpperCase() || "UNKNOWN_SECTOR"}
+                          </div>
+                        </div>
+                        <ModeToggle />
+                      </div>
+
+                      {/* Vital Stats Grid */}
+                      <div className="grid grid-cols-3 gap-3 text-xs">
+                        <div className="bg-muted/20 border border-primary/10 rounded p-2 text-center">
+                          <div className="flex items-center justify-center gap-1 mb-1">
+                            <Coins className="w-3 h-3 text-yellow-500" />
+                            <span className="text-muted-foreground font-mono">RUST</span>
+                          </div>
+                          <div className="font-bold text-primary font-mono">{character.coins || 0}</div>
+                        </div>
+                        <div className="bg-muted/20 border border-primary/10 rounded p-2 text-center">
+                          <div className="flex items-center justify-center gap-1 mb-1">
+                            <Zap className="w-3 h-3 text-yellow-500" />
+                            <span className="text-muted-foreground font-mono">ENERGY</span>
+                          </div>
+                          <div className="font-bold text-primary font-mono">{character.energy || 0}%</div>
+                        </div>
+                        <div className="bg-muted/20 border border-primary/10 rounded p-2 text-center">
+                          <div className="flex items-center justify-center gap-1 mb-1">
+                            <Heart className="w-3 h-3 text-red-500" />
+                            <span className="text-muted-foreground font-mono">HEALTH</span>
+                          </div>
+                          <div className="font-bold text-primary font-mono">{character.health || 0}%</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Wallet Terminal */}
+                    {connected && publicKey && wallet ? (
+                      <div className="bg-muted/30 border border-primary/20 rounded p-3">
+                        <div className="flex items-center gap-2 mb-3 border-b border-primary/20 pb-2">
+                          <Wallet className="w-4 h-4 text-primary" />
+                          <span className="text-primary font-bold text-sm font-mono">WALLET_INTERFACE</span>
+                        </div>
+
+                        <div className="flex items-center gap-3 mb-3">
+                          <Avatar className="w-10 h-10 border border-primary/20">
+                            <AvatarImage src={wallet.adapter.icon} alt={wallet.adapter.name} />
+                            <AvatarFallback className="bg-muted/50">
+                              <Wallet className="w-5 h-5" />
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-primary font-mono">{wallet.adapter.name.toUpperCase()}</span>
+                              <Badge variant="secondary" className="text-xs font-mono">LINKED</Badge>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="bg-muted/20 border border-primary/10 rounded p-2 mb-3">
+                          <div className="text-xs text-muted-foreground mb-1 font-mono">WALLET_ADDRESS</div>
+                          <div className="text-xs font-mono text-primary break-all">
+                            {publicKey.toBase58()}
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                          <Button variant="outline" size="sm" onClick={copyAddress} className="font-mono text-xs">
+                            <Copy className="w-3 h-3 mr-2" />
+                            COPY_ADDR
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-red-500 hover:text-red-400 font-mono text-xs"
+                            onClick={disconnect}
+                          >
+                            <LogOut className="w-3 h-3 mr-2" />
+                            DISCONNECT
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-muted/30 border border-primary/20 rounded p-4 text-center">
+                        <div className="text-muted-foreground font-mono mb-3">
+                          <div className="text-sm mb-1">WALLET_INTERFACE_OFFLINE</div>
+                          <div className="text-xs">CONNECTION_REQUIRED</div>
+                        </div>
+                        <WalletConnectButton />
+                      </div>
+                    )}
+                  </div>
                 </DrawerHeader>
 
-                {/* Mobile Drawer Content */}
-                <div className="flex-1 overflow-y-auto px-6 pb-6">
-                  {/* Quick Stats */}
-                  <div className="flex justify-between text-sm mb-6 p-3 bg-muted/30 rounded-lg">
-                    <div className="text-center">
-                      <div className="font-semibold">{character.coins || 0}</div>
-                      <div className="text-xs text-muted-foreground">Coins</div>
+                {/* Terminal Navigation Menu */}
+                <div className="flex-1 overflow-y-auto px-4 pb-6">
+                  <div className="bg-muted/30 border border-primary/20 rounded p-3">
+                    <div className="flex items-center gap-2 mb-3 border-b border-primary/20 pb-2">
+                      <Terminal className="w-4 h-4 text-primary" />
+                      <span className="text-primary font-bold text-sm font-mono">NAVIGATION_MENU</span>
                     </div>
-                    <div className="text-center">
-                      <div className="font-semibold">{character.energy || 0}%</div>
-                      <div className="text-xs text-muted-foreground">Energy</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="font-semibold">{character.health || 0}%</div>
-                      <div className="text-xs text-muted-foreground">Health</div>
-                    </div>
-                  </div>
 
-                  {/* Navigation */}
-                  <div className="space-y-1 mb-6">
-                    {navItems.map((item) => {
-                      const IconComponent = item.icon
-                      const isAdmin = item.id === 'admin'
+                    <div className="space-y-1">
+                      {navItems.map((item) => {
+                        const IconComponent = item.icon
+                        const isAdmin = item.id === 'admin'
 
-                      return (
-                        <Button
-                          key={item.id}
-                          className={`w-full justify-start h-11 ${item.current ? (isAdmin ? 'bg-red-50 dark:bg-red-950/20' : 'bg-primary/10') : ''
-                            } ${isAdmin ? 'text-red-600' : ''}`}
-                          variant={item.current ? "outline" : "ghost"}
-                          onClick={() => handleNavigation(item.action)}
-                        >
-                          <IconComponent className="w-5 h-5 mr-3" />
-                          <span className="font-medium">{item.label}</span>
-                          {item.badge && (
-                            <Badge variant="secondary" className="ml-auto mr-2">{item.badge}</Badge>
-                          )}
-                          <ChevronRight className="w-4 h-4 ml-auto" />
-                        </Button>
-                      )
-                    })}
-                  </div>
+                        if (!item.action) return null
 
-                  <Separator className="my-4" />
-
-                  {/* Settings */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between p-3 rounded-lg border">
-                      <div className="flex items-center gap-3">
-                        <Sun className="w-5 h-5" />
-                        <span className="font-medium">Theme</span>
-                      </div>
-                      <ModeToggle />
-                    </div>
-                    <div className="flex items-center justify-between p-3 rounded-lg border">
-                      <div className="flex items-center gap-3">
-                        <Wallet className="w-5 h-5" />
-                        <span className="font-medium">Wallet</span>
-                      </div>
-                      <WalletConnectButton />
+                        return (
+                          <Button
+                            key={item.id}
+                            className={`w-full justify-start h-10 font-mono text-xs ${item.current
+                              ? (isAdmin
+                                ? 'bg-red-500/20 border-red-500/30 text-red-500'
+                                : 'bg-primary/20 border-primary/30 text-primary'
+                              )
+                              : 'hover:bg-muted/50'
+                              } ${isAdmin && !item.current ? 'text-red-500 hover:text-red-400' : ''}`}
+                            variant={item.current ? "outline" : "ghost"}
+                            onClick={() => handleNavigation(item.action)}
+                          >
+                            <IconComponent className={`w-4 h-4 mr-3 ${item.current ? (isAdmin ? 'text-red-500' : 'text-primary') : item.color
+                              }`} />
+                            <span className="font-mono">{item.label}</span>
+                            {item.badge && (
+                              <Badge variant="secondary" className="ml-auto mr-2 font-mono text-xs">
+                                {item.badge}
+                              </Badge>
+                            )}
+                            <ChevronRight className="w-3 h-3 ml-auto" />
+                          </Button>
+                        )
+                      })}
                     </div>
                   </div>
                 </div>
@@ -273,7 +485,7 @@ export function BottomDrawerNav({
         </div>
       </div>
 
-      {/* Spacer */}
+      {/* Terminal Spacer */}
       <div className="h-16" />
     </>
   )

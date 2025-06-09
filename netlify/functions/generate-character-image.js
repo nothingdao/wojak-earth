@@ -19,7 +19,7 @@ const LAYER_CONFIG = {
   '1-base': { required: true, probability: 1.0 },
   '2-skin': { required: false, probability: 0.3 },
   '3-undergarments': { required: false, probability: 0.4 },
-  '4-clothing': { required: false, probability: 0.8 },
+  '4-clothing': { required: false, probability: 0.4 },
   '5-outerwear': { required: false, probability: 0.6 },
   '6-hair': { required: true, probability: 1.0 },
   '7-face-accessories': { required: false, probability: 0.3 },

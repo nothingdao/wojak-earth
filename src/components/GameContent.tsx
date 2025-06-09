@@ -1,7 +1,6 @@
-// src/components/GameContent.tsx
+// src/components/GameContent.tsx - Simplified, no longer uses AppShell
 import React from 'react'
 import { toast } from 'sonner'
-import { AppShell } from './AppShell'
 import {
   InventoryView,
   MarketView,
@@ -11,16 +10,20 @@ import {
   MainView,
   ChatView,
   AdminView,
-  SandboxView
+  CharacterCreationView,
+  CharactersView,
+  LeaderboardsView,
+  RustMarket,
+  EconomyView
 } from './views'
-import { NPCActivity } from './NPCActivity'
 import type { Character, GameView, DatabaseLocation } from '@/types'
+
 
 interface GameContentProps {
   character: Character
   currentView: GameView
   selectedLocation: DatabaseLocation | null
-  gameData: any // Type this properly based on your useGameData return type
+  gameData: any
   loadingItems: Set<string>
   playersAtLocation: any[]
   chatMessages: any[]
@@ -51,13 +54,6 @@ export const GameContent: React.FC<GameContentProps> = ({
   onUseItem,
   refetchCharacter
 }) => {
-  const handleProfileClick = () => onViewChange('profile')
-  const handleHomeClick = () => onViewChange('main')
-  const handleMapClick = () => onViewChange('map')
-  const handleSandboxClick = () => onViewChange('sandbox')
-  const handleInventoryClick = () => onViewChange('inventory')
-  const handleAdminClick = () => onViewChange('admin')
-
   // NEW: Handler to set an item as primary for visual rendering
   const handleSetPrimary = async (inventoryId: string, category: string) => {
     if (!character) return
@@ -116,102 +112,106 @@ export const GameContent: React.FC<GameContentProps> = ({
     }
   }
 
-  const renderCurrentView = () => {
-    switch (currentView) {
-      case 'main':
-        return (
-          <MainView
-            character={character}
-            playersAtLocation={playersAtLocation}
-            onMineClick={() => onViewChange('mine')}
-            onMarketClick={() => onViewChange('market')}
-            onChatClick={() => onViewChange('chat')}
-            onNPCActivityClick={() => onViewChange('npc-activity')}
-          />
-        )
-      case 'profile':
-        return <ProfileView character={character} onCharacterUpdated={refetchCharacter} />
-      case 'sandbox':
-        return <SandboxView character={character} />
-      case 'map':
-        return (
-          <WorldMapView
-            locations={gameData.locations}
-            character={character}
-            onTravel={onTravel}
-          />
-        )
-      case 'mine':
-        return (
-          <MiningView
-            character={character}
-            loadingItems={loadingItems}
-            onMine={onMining}
-          />
-        )
-      case 'market':
-        return (
-          <MarketView
-            character={character}
-            selectedLocation={selectedLocation}
-            locations={gameData.locations}
-            marketItems={gameData.marketItems}
-            loadingItems={loadingItems}
-            onPurchase={onPurchase}
-          />
-        )
-      case 'inventory':
-        return (
-          <InventoryView
-            character={character}
-            loadingItems={loadingItems}
-            onUseItem={onUseItem}
-            onEquipItem={onEquipItem}
-            onSetPrimary={handleSetPrimary}      // ← ADD THIS
-            onReplaceSlot={handleReplaceSlot}    // ← ADD THIS
-          />
-        )
-      case 'chat':
-        return (
-          <ChatView
-            character={character}
-            selectedLocation={selectedLocation}
-            chatMessages={chatMessages}
-            onSendMessage={onSendMessage}
-            onAddPresenceMessage={gameData.actions.addPresenceMessage}
-            loading={gameData.loading}
-          />
-        )
-      case 'npc-activity':
-        return <NPCActivity />
-      case 'admin':
-        return <AdminView character={character} />
-      default:
-        return (
-          <MainView
-            character={character}
-            playersAtLocation={playersAtLocation}
-            onMineClick={() => onViewChange('mine')}
-            onMarketClick={() => onViewChange('market')}
-            onChatClick={() => onViewChange('chat')}
-            onNPCActivityClick={() => onViewChange('npc-activity')}
-          />
-        )
-    }
-  }
+  // Simple view renderer without shell wrapper
+  switch (currentView) {
+    case 'main':
+      return (
+        <MainView
+          character={character}
+          playersAtLocation={playersAtLocation}
+          onMineClick={() => onViewChange('mine')}
+          onMarketClick={() => onViewChange('market')}
+          onChatClick={() => onViewChange('chat')}
+          onEconomyClick={() => onViewChange('economy')}
+          onLeaderboardsClick={() => onViewChange('leaderboards')}
+          onRustMarketClick={() => onViewChange('rust-market')}
+        />
+      )
 
-  return (
-    <AppShell
-      character={character}
-      currentView={currentView}
-      onProfileClick={handleProfileClick}
-      onHomeClick={handleHomeClick}
-      onMapClick={handleMapClick}
-      onSandboxClick={handleSandboxClick}
-      onInventoryClick={handleInventoryClick}
-      onAdminClick={handleAdminClick}
-    >
-      {renderCurrentView()}
-    </AppShell>
-  )
+    case 'profile':
+      return <ProfileView character={character} onCharacterUpdated={refetchCharacter} />
+
+    case 'character-creation-view':
+      return <CharacterCreationView character={character} />
+
+    case 'map':
+      return (
+        <WorldMapView
+          locations={gameData.locations}
+          character={character}
+          onTravel={onTravel}
+        />
+      )
+
+    case 'characters':
+      return <CharactersView />
+
+    case 'economy':
+      return <EconomyView />
+
+    case 'leaderboards':
+      return <LeaderboardsView />
+
+    case 'mine':
+      return (
+        <MiningView
+          character={character}
+          loadingItems={loadingItems}
+          onMine={onMining}
+        />
+      )
+
+    case 'market':
+      return (
+        <MarketView
+          character={character}
+          selectedLocation={selectedLocation}
+          locations={gameData.locations}
+          marketItems={gameData.marketItems}
+          loadingItems={loadingItems}
+          onPurchase={onPurchase}
+        />
+      )
+
+    case 'inventory':
+      return (
+        <InventoryView
+          character={character}
+          loadingItems={loadingItems}
+          onUseItem={onUseItem}
+          onEquipItem={onEquipItem}
+          onSetPrimary={handleSetPrimary}
+          onReplaceSlot={handleReplaceSlot}
+        />
+      )
+
+    case 'chat':
+      return (
+        <ChatView
+          character={character}
+          selectedLocation={selectedLocation}
+          chatMessages={chatMessages}
+          onSendMessage={onSendMessage}
+          onAddPresenceMessage={gameData.actions.addPresenceMessage}
+          loading={gameData.loading}
+        />
+      )
+    case 'rust-market':
+      return <RustMarket />
+
+    case 'admin':
+      return <AdminView character={character} />
+
+    default:
+      return (
+        <MainView
+          character={character}
+          playersAtLocation={playersAtLocation}
+          onMineClick={() => onViewChange('mine')}
+          onMarketClick={() => onViewChange('market')}
+          onChatClick={() => onViewChange('chat')}
+          onLeaderboardsClick={() => onViewChange('leaderboards')}
+        />
+      )
+  }
 }

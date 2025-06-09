@@ -1,4 +1,3 @@
-// src/components/views/ProfileView.tsx
 import React, { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -18,14 +17,18 @@ import {
   Globe,
   Hash,
   Calendar,
-  Award,
   Layers,
+  Database,
+  Activity,
+  Signal,
+  MapPin
 } from 'lucide-react'
 import { useWalletInfo } from '@/hooks/useWalletInfo'
 import { toast } from 'sonner'
 import type { Character } from '@/types'
 import { BurnCharacter } from '../BurnCharacter'
 import { useNetwork } from '@/contexts/NetworkContext'
+import SparkleParticles from "@/components/SparkleParticles"; // adjust path as needed
 
 interface ProfileViewProps {
   character: Character
@@ -34,7 +37,6 @@ interface ProfileViewProps {
 
 export const ProfileView: React.FC<ProfileViewProps> = ({ character, onCharacterUpdated }) => {
   console.log('🖼️ ProfileView render - coins:', character.coins, 'character ID:', character.id, 'object ref:', character)
-
 
   const walletInfo = useWalletInfo()
   const [imageError, setImageError] = useState(false)
@@ -67,239 +69,299 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ character, onCharacter
     window.open(getExplorerUrl(address), '_blank')
   }
 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'ACTIVE': return 'text-green-500 dark:text-green-400'
+      case 'DEAD': return 'text-red-500 dark:text-red-400'
+      case 'PENDING_MINT': return 'text-yellow-500 dark:text-yellow-400'
+      default: return 'text-muted-foreground'
+    }
+  }
+
   const renderCharacterProfile = () => (
-    <div className='space-y-4'>
-      {/* Character Header */}
-      <div className='bg-card border rounded-lg p-6'>
-        <div className='flex flex-col items-center text-center mb-6'>
+    <div className="bg-background border border-primary/30 rounded-lg p-4 font-mono">
+      {/* Terminal Header */}
+      <div className="flex items-center justify-between mb-4 border-b border-primary/20 pb-2">
+        <div className="flex items-center gap-2">
+          <Database className="w-4 h-4" />
+          <span className="text-primary font-bold">SURVIVOR DOSSIER v2.089</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Signal className="w-3 h-3 animate-pulse" />
+          <span className="text-primary text-xs">CLASSIFIED</span>
+        </div>
+      </div>
+
+      {/* Character Header Section */}
+      <div className="bg-muted/30 border border-primary/20 rounded p-4 mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-4">
           {/* Character Image */}
-          <div className='w-48 h-48 mx-auto bg-gray-200 rounded-lg flex items-center justify-center mb-4 overflow-hidden relative'>
-            {imageLoading && (
-              <div className='absolute inset-0 flex items-center justify-center'>
-                <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-primary'></div>
+          <div className="mx-auto md:mx-0">
+            <div className="w-48 h-48 bg-muted/50 border border-primary/20 rounded flex items-center justify-center overflow-hidden relative">
+              {imageLoading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-muted/50">
+                  <Activity className="w-6 h-6 animate-spin text-primary" />
+                </div>
+              )}
+
+              {!imageError ? (
+                // <img
+                //   src={getCharacterImageUrl()}
+                //   alt={character.name}
+                //   className="w-full h-full object-cover"
+                //   onLoad={handleImageLoad}
+                //   onError={handleImageError}
+                //   style={{ display: imageLoading ? 'none' : 'block' }}
+                // />
+                // <img
+                //   src="eve.png"
+                //   alt={character.name}
+                //   className="w-full h-full object-cover"
+                //   onLoad={handleImageLoad}
+                //   onError={handleImageError}
+                //   style={{ display: imageLoading ? 'none' : 'block' }}
+                // />
+                <div className="relative w-full h-full">
+                  <SparkleParticles />
+
+                  <img
+                    src="eve.png"
+                    alt={character.name}
+                    className="w-full h-full object-contain relative z-10"
+                    onLoad={handleImageLoad}
+                    onError={handleImageError}
+                    style={{ display: imageLoading ? 'none' : 'block' }}
+                  />
+                </div>
+              ) : (
+                <div className="text-4xl text-muted-foreground">🥺</div>
+              )}
+            </div>
+          </div>
+
+          {/* Character Info */}
+          <div className="space-y-4">
+            {/* Basic Info */}
+            <div className="grid grid-cols-2 gap-4 text-xs">
+              <div>
+                <div className="text-muted-foreground mb-1">DESIGNATION</div>
+                <div className="text-primary font-bold text-lg">{character.name.toUpperCase()}</div>
               </div>
-            )}
+              <div>
+                <div className="text-muted-foreground mb-1">CLEARANCE_LVL</div>
+                <div className="text-primary font-bold text-lg flex items-center gap-1">
+                  <Star className="w-4 h-4" />
+                  {character.level}
+                </div>
+              </div>
+              <div>
+                <div className="text-muted-foreground mb-1">PHENOTYPE</div>
+                <div className="text-primary font-bold">{character.gender}_{character.characterType}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground mb-1">STATUS</div>
+                <div className={`font-bold ${getStatusColor(character.status || 'ACTIVE')}`}>
+                  {(character.status || 'ACTIVE').toUpperCase()}
+                </div>
+              </div>
+            </div>
 
-            {!imageError ? (
-              <img
-                src={getCharacterImageUrl()}
-                alt={character.name}
-                className='w-full h-full object-cover'
-                onLoad={handleImageLoad}
-                onError={handleImageError}
-                style={{ display: imageLoading ? 'none' : 'block' }}
-              />
-            ) : (
-              <div className='text-6xl'>🥺</div>
-            )}
-          </div>
-
-          {/* Character Title */}
-          <div className='flex items-center gap-2 mb-2'>
-            <h2 className='text-2xl font-bold'>{character.name}</h2>
-            <Badge variant="secondary" className="text-xs">
-              <Star className="w-3 h-3 mr-1" />
-              Level {character.level}
-            </Badge>
-          </div>
-
-          <p className='text-muted-foreground mb-3'>
-            {character.gender} {character.characterType}
-          </p>
-
-          {/* Status Badges */}
-          <div className='flex gap-2 mb-4'>
-            <Badge variant={character.status === 'ACTIVE' ? 'default' : 'secondary'}>
-              <Shield className="w-3 h-3 mr-1" />
-              {character.status || 'Active'}
-            </Badge>
-            <Badge variant="outline">
-              <Hash className="w-3 h-3 mr-1" />
-              Version {character.currentVersion}
-            </Badge>
-            {isDevnet && (
-              <Badge variant="outline" className="text-orange-600">
-                <Globe className="w-3 h-3 mr-1" />
-                Devnet
+            {/* Status Badges */}
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline" className="text-xs font-mono">
+                <Hash className="w-3 h-3 mr-1" />
+                VER_{character.currentVersion}
               </Badge>
-            )}
-          </div>
+              {isDevnet && (
+                <Badge variant="secondary" className="text-xs font-mono bg-orange-500/20 text-orange-600">
+                  <Globe className="w-3 h-3 mr-1" />
+                  DEVNET_NODE
+                </Badge>
+              )}
+              <Badge variant="outline" className="text-xs font-mono">
+                <Shield className="w-3 h-3 mr-1" />
+                AUTHORIZED
+              </Badge>
+            </div>
 
-          {/* Character ID */}
-          <div className='text-xs text-muted-foreground font-mono bg-muted px-2 py-1 rounded'>
-            ID: {character.id}
+            {/* Subject ID */}
+            <div className="bg-muted/20 border border-primary/10 rounded p-2">
+              <div className="text-muted-foreground text-xs mb-1">SUBJECT_ID</div>
+              <div className="text-xs font-mono text-primary break-all">{character.id}</div>
+            </div>
           </div>
         </div>
+      </div>
 
-        {/* Character Stats Grid */}
-        <div className='grid grid-cols-2 gap-3 mb-4'>
-          <div className='bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-950 dark:to-yellow-900 rounded-lg p-3 text-center border'>
-            <div className='flex items-center justify-center gap-1 mb-1'>
-              <Zap className='w-4 h-4 text-yellow-600' />
-              <span className='font-medium text-sm'>Energy</span>
+      {/* Vital Statistics */}
+      <div className="bg-muted/30 border border-primary/20 rounded p-4 mb-4">
+        <div className="text-muted-foreground text-xs mb-3">VITAL_STATISTICS</div>
+        <div className="grid grid-cols-4 gap-4">
+          <div className="text-center">
+            <div className="flex items-center justify-center gap-1 mb-2">
+              <Zap className="w-4 h-4 text-primary" />
+              <span className="text-xs text-muted-foreground font-mono">ENERGY</span>
             </div>
-            <div className='text-xl font-bold text-yellow-700 dark:text-yellow-300'>
+            <div className="text-primary font-bold text-lg font-mono">
               {character.energy}/100
             </div>
+            <div className="w-full bg-muted/50 rounded-full h-2 mt-1">
+              <div
+                className="bg-primary h-2 rounded-full transition-all"
+                style={{ width: `${character.energy}%` }}
+              />
+            </div>
           </div>
 
-          <div className='bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950 dark:to-red-900 rounded-lg p-3 text-center border'>
-            <div className='flex items-center justify-center gap-1 mb-1'>
-              <Heart className='w-4 h-4 text-red-600' />
-              <span className='font-medium text-sm'>Health</span>
+          <div className="text-center">
+            <div className="flex items-center justify-center gap-1 mb-2">
+              <Heart className="w-4 h-4 text-primary" />
+              <span className="text-xs text-muted-foreground font-mono">HEALTH</span>
             </div>
-            <div className='text-xl font-bold text-red-700 dark:text-red-300'>
+            <div className="text-primary font-bold text-lg font-mono">
               {character.health}/100
             </div>
+            <div className="w-full bg-muted/50 rounded-full h-2 mt-1">
+              <div
+                className="bg-primary h-2 rounded-full transition-all"
+                style={{ width: `${character.health}%` }}
+              />
+            </div>
           </div>
 
-          <div className='bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-950 dark:to-amber-900 rounded-lg p-3 text-center border'>
-            <div className='flex items-center justify-center gap-1 mb-1'>
-              <Coins className='w-4 h-4 text-amber-600' />
-              <span className='font-medium text-sm'>Coins</span>
+          <div className="text-center">
+            <div className="flex items-center justify-center gap-1 mb-2">
+              <Coins className="w-4 h-4 text-primary" />
+              <span className="text-xs text-muted-foreground font-mono">RUST</span>
             </div>
-            <div className='text-xl font-bold text-amber-700 dark:text-amber-300'>
+            <div className="text-primary font-bold text-lg font-mono">
               {character.coins.toLocaleString()}
             </div>
+            <div className="text-xs text-muted-foreground mt-1">RUST_COIN</div>
           </div>
 
-          <div className='bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 rounded-lg p-3 text-center border'>
-            <div className='flex items-center justify-center gap-1 mb-1'>
-              <Package className='w-4 h-4 text-blue-600' />
-              <span className='font-medium text-sm'>Items</span>
+          <div className="text-center">
+            <div className="flex items-center justify-center gap-1 mb-2">
+              <Package className="w-4 h-4 text-primary" />
+              <span className="text-xs text-muted-foreground font-mono">INVENTORY</span>
             </div>
-            <div className='text-xl font-bold text-blue-700 dark:text-blue-300'>
+            <div className="text-primary font-bold text-lg font-mono">
               {character.inventory.length}
             </div>
+            <div className="text-xs text-muted-foreground mt-1">ITEMS</div>
           </div>
         </div>
+      </div>
 
-        {/* Current Location */}
-        <div className='bg-muted/30 rounded-lg p-4 border'>
-          <div className='flex items-center gap-2 mb-2'>
-            <Globe className='w-4 h-4 text-green-600' />
-            <span className='text-sm font-medium text-muted-foreground'>Current Location</span>
-          </div>
-          <div className='font-semibold text-lg'>{character.currentLocation.name}</div>
-          <div className='text-sm text-muted-foreground mt-1'>
-            {character.currentLocation.description}
-          </div>
+      {/* Current Location */}
+      <div className="bg-muted/30 border border-primary/20 rounded p-4 mb-4">
+        <div className="text-muted-foreground text-xs mb-3 flex items-center gap-2">
+          <MapPin className="w-4 h-4" />
+          CURRENT_COORDINATES
+        </div>
+        <div className="text-primary font-bold text-lg font-mono mb-2">
+          {character.currentLocation.name.toUpperCase()}
+        </div>
+        <div className="text-xs text-muted-foreground">
+          {character.currentLocation.description}
         </div>
       </div>
 
       {/* NFT Metadata Section */}
       {character.nftAddress && (
-        <div className='bg-card border rounded-lg p-6'>
-          <div className='flex items-center gap-2 mb-4'>
-            <Layers className='w-5 h-5 text-purple-600' />
-            <h3 className='text-lg font-semibold'>NFT Metadata</h3>
+        <div className="bg-muted/30 border border-primary/20 rounded p-4 mb-4">
+          <div className="text-muted-foreground text-xs mb-3 flex items-center gap-2">
+            <Layers className="w-4 h-4" />
+            BLOCKCHAIN_METADATA
           </div>
 
-          <div className='space-y-4'>
+          <div className="space-y-3">
             {/* NFT Address */}
             <div>
-              <label className='text-sm font-medium text-muted-foreground mb-1 block'>
-                NFT Address
-              </label>
-              <div className='flex items-center gap-2'>
-                <code className='text-sm font-mono bg-muted px-3 py-2 rounded flex-1 break-all'>
+              <div className="text-muted-foreground text-xs mb-1">NFT_ADDRESS</div>
+              <div className="flex items-center gap-2">
+                <div className="text-xs font-mono bg-muted/50 border border-primary/10 px-2 py-1 rounded flex-1 break-all text-primary">
                   {character.nftAddress}
-                </code>
+                </div>
                 <Button
-                  variant='ghost'
-                  size='sm'
+                  variant="ghost"
+                  size="sm"
                   onClick={() => copyToClipboard(character.nftAddress!, 'NFT address')}
+                  className="h-6 w-6 p-0"
                 >
-                  <Copy className='w-4 h-4' />
+                  <Copy className="w-3 h-3" />
                 </Button>
                 <Button
-                  variant='ghost'
-                  size='sm'
+                  variant="ghost"
+                  size="sm"
                   onClick={() => openInExplorer(character.nftAddress!)}
+                  className="h-6 w-6 p-0"
                 >
-                  <ExternalLink className='w-4 h-4' />
+                  <ExternalLink className="w-3 h-3" />
                 </Button>
               </div>
             </div>
 
             {/* Metadata URI */}
             <div>
-              <label className='text-sm font-medium text-muted-foreground mb-1 block'>
-                Metadata URI
-              </label>
-              <div className='flex items-center gap-2'>
-                <code className='text-sm font-mono bg-muted px-3 py-2 rounded flex-1 break-all'>
+              <div className="text-muted-foreground text-xs mb-1">METADATA_URI</div>
+              <div className="flex items-center gap-2">
+                <div className="text-xs font-mono bg-muted/50 border border-primary/10 px-2 py-1 rounded flex-1 break-all text-primary">
                   https://earth.ndao.computer/.netlify/functions/metadata/{character.id}
-                </code>
+                </div>
                 <Button
-                  variant='ghost'
-                  size='sm'
+                  variant="ghost"
+                  size="sm"
                   onClick={() => copyToClipboard(
                     `https://earth.ndao.computer/.netlify/functions/metadata/${character.id}`,
                     'Metadata URI'
                   )}
+                  className="h-6 w-6 p-0"
                 >
-                  <Copy className='w-4 h-4' />
+                  <Copy className="w-3 h-3" />
                 </Button>
                 <Button
-                  variant='ghost'
-                  size='sm'
+                  variant="ghost"
+                  size="sm"
                   onClick={() => window.open(
                     `https://earth.ndao.computer/.netlify/functions/metadata/${character.id}`,
                     '_blank'
                   )}
+                  className="h-6 w-6 p-0"
                 >
-                  <ExternalLink className='w-4 h-4' />
+                  <ExternalLink className="w-3 h-3" />
                 </Button>
               </div>
             </div>
 
             {/* Collection Info */}
-            <div>
-              <label className='text-sm font-medium text-muted-foreground mb-1 block'>
-                Collection
-              </label>
-              <div className='flex items-center gap-2'>
-                <Badge variant="outline" className="flex items-center gap-1">
-                  <Award className="w-3 h-3" />
-                  Wojak Earth Characters
-                </Badge>
-                <Badge variant="secondary" className="text-xs">
-                  Verified ✓
-                </Badge>
+            <div className="grid grid-cols-4 gap-2 text-xs">
+              <div className="bg-muted/20 border border-primary/10 rounded p-2 text-center">
+                <div className="text-muted-foreground mb-1">SYMBOL</div>
+                <div className="text-primary font-bold font-mono">WOJAK</div>
               </div>
-            </div>
-
-            {/* NFT Properties */}
-            <div className='grid grid-cols-2 gap-3'>
-              <div className='bg-muted/20 rounded p-3 text-center'>
-                <div className='text-xs text-muted-foreground mb-1'>Symbol</div>
-                <div className='font-semibold'>WOJAK</div>
+              <div className="bg-muted/20 border border-primary/10 rounded p-2 text-center">
+                <div className="text-muted-foreground mb-1">ROYALTY</div>
+                <div className="text-primary font-bold font-mono">5%</div>
               </div>
-              <div className='bg-muted/20 rounded p-3 text-center'>
-                <div className='text-xs text-muted-foreground mb-1'>Royalty</div>
-                <div className='font-semibold'>5%</div>
+              <div className="bg-muted/20 border border-primary/10 rounded p-2 text-center">
+                <div className="text-muted-foreground mb-1">STANDARD</div>
+                <div className="text-primary font-bold font-mono">METAPLEX</div>
               </div>
-              <div className='bg-muted/20 rounded p-3 text-center'>
-                <div className='text-xs text-muted-foreground mb-1'>Standard</div>
-                <div className='font-semibold'>Metaplex</div>
-              </div>
-              <div className='bg-muted/20 rounded p-3 text-center'>
-                <div className='text-xs text-muted-foreground mb-1'>Mutable</div>
-                <div className='font-semibold'>Yes</div>
+              <div className="bg-muted/20 border border-primary/10 rounded p-2 text-center">
+                <div className="text-muted-foreground mb-1">MUTABLE</div>
+                <div className="text-green-500 font-bold font-mono">TRUE</div>
               </div>
             </div>
 
             {/* Created Date */}
             <div>
-              <label className='text-sm font-medium text-muted-foreground mb-1 block'>
-                Created
-              </label>
-              <div className='flex items-center gap-2 text-sm'>
-                <Calendar className='w-4 h-4 text-muted-foreground' />
-                <span>{new Date(character.createdAt).toLocaleDateString()}</span>
-                <span className='text-muted-foreground'>
-                  ({new Date(character.createdAt).toLocaleTimeString()})
+              <div className="text-muted-foreground text-xs mb-1">GENESIS_TIMESTAMP</div>
+              <div className="flex items-center gap-2 text-xs font-mono">
+                <Calendar className="w-3 h-3 text-muted-foreground" />
+                <span className="text-primary">{new Date(character.createdAt).toLocaleDateString()}</span>
+                <span className="text-muted-foreground">
+                  {new Date(character.createdAt).toLocaleTimeString()}
                 </span>
               </div>
             </div>
@@ -309,34 +371,41 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ character, onCharacter
 
       {/* Equipped Items */}
       {character.inventory.filter(item => item.isEquipped).length > 0 && (
-        <div className='bg-card border rounded-lg p-6'>
-          <div className='flex items-center gap-2 mb-4'>
-            <Package className='w-5 h-5 text-blue-600' />
-            <h3 className='text-lg font-semibold'>Equipped Items</h3>
+        <div className="bg-muted/30 border border-primary/20 rounded p-4 mb-4">
+          <div className="text-muted-foreground text-xs mb-3 flex items-center gap-2">
+            <Package className="w-4 h-4" />
+            ACTIVE_EQUIPMENT_LOADOUT
           </div>
 
-          <div className='space-y-2'>
+          <div className="space-y-2">
             {character.inventory
               .filter(item => item.isEquipped)
               .map((item) => (
                 <div
                   key={item.id}
-                  className='flex items-center justify-between bg-muted/30 rounded-lg p-3 border'
+                  className="bg-muted/20 border border-primary/10 rounded p-2 flex items-center justify-between"
                 >
-                  <div className='flex items-center gap-3'>
-                    <div className='w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center'>
-                      <Package className='w-4 h-4 text-primary' />
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 bg-primary/20 border border-primary/20 rounded flex items-center justify-center">
+                      <Package className="w-3 h-3 text-primary" />
                     </div>
                     <div>
-                      <div className='font-medium'>{item.item.name}</div>
-                      <div className='text-xs text-muted-foreground capitalize'>
-                        {item.item.category.toLowerCase()}
+                      <div className="text-primary font-bold text-xs font-mono">{item.item.name.toUpperCase()}</div>
+                      <div className="text-xs text-muted-foreground font-mono">
+                        {item.item.category}_{item.item.rarity}
                       </div>
                     </div>
                   </div>
-                  <Badge variant="secondary" className="text-xs">
-                    Qty: {item.quantity}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    {item.is_primary && (
+                      <Badge variant="default" className="text-xs bg-yellow-500 font-mono">
+                        PRIMARY
+                      </Badge>
+                    )}
+                    <Badge variant="outline" className="text-xs font-mono">
+                      QTY_{item.quantity}
+                    </Badge>
+                  </div>
                 </div>
               ))}
           </div>
@@ -349,123 +418,149 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ character, onCharacter
   )
 
   const renderWalletInfo = () => (
-    <div className='space-y-4'>
-      {/* Wallet Overview */}
-      <div className='bg-card border rounded-lg p-6'>
-        <div className='flex items-center justify-between mb-4'>
-          <h3 className='text-lg font-semibold flex items-center gap-2'>
-            <Wallet className='w-5 h-5' />
-            Wallet Information
-          </h3>
-
-          <div className="flex items-center gap-2">
-            {walletInfo.connected && (
-              <Button
-                variant='ghost'
-                size='sm'
-                onClick={walletInfo.refreshBalance}
-                disabled={walletInfo.loading}
-              >
-                <RefreshCw
-                  className={`w-4 h-4 ${walletInfo.loading ? 'animate-spin' : ''}`}
-                />
-              </Button>
-            )}
-            <Badge variant="outline" className="text-xs">
-              {isDevnet ? 'Devnet' : 'Mainnet'}
-            </Badge>
-          </div>
+    <div className="bg-background border border-primary/30 rounded-lg p-4 font-mono">
+      {/* Terminal Header */}
+      <div className="flex items-center justify-between mb-4 border-b border-primary/20 pb-2">
+        <div className="flex items-center gap-2">
+          <Wallet className="w-4 h-4" />
+          <span className="text-primary font-bold">WALLET INTERFACE v2.089</span>
         </div>
+        <div className="flex items-center gap-2">
+          {walletInfo.connected && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={walletInfo.refreshBalance}
+              disabled={walletInfo.loading}
+              className="h-6 w-6 p-0"
+            >
+              <RefreshCw
+                className={`w-3 h-3 ${walletInfo.loading ? 'animate-spin' : ''}`}
+              />
+            </Button>
+          )}
+          <Badge variant="outline" className="text-xs font-mono">
+            {isDevnet ? 'DEVNET' : 'MAINNET'}
+          </Badge>
+          <Activity className="w-3 h-3 animate-pulse" />
+          <span className="text-primary text-xs">{walletInfo.connected ? 'LINKED' : 'OFFLINE'}</span>
+        </div>
+      </div>
 
-        {walletInfo.connected ? (
-          <div className='space-y-4'>
-            {/* Wallet Name */}
-            <div>
-              <label className='text-sm font-medium text-muted-foreground mb-1 block'>
-                Wallet Provider
-              </label>
-              <div className='font-semibold text-lg'>{walletInfo.walletName}</div>
-            </div>
+      {walletInfo.connected ? (
+        <div className="space-y-4">
+          {/* Wallet Provider */}
+          <div className="bg-muted/30 border border-primary/20 rounded p-3">
+            <div className="text-muted-foreground text-xs mb-1">WALLET_PROVIDER</div>
+            <div className="text-primary font-bold font-mono">{walletInfo.walletName?.toUpperCase()}</div>
+          </div>
 
-            {/* Wallet Address */}
-            <div>
-              <label className='text-sm font-medium text-muted-foreground mb-1 block'>
-                Wallet Address
-              </label>
-              <div className='flex items-center gap-2'>
-                <code className='text-sm font-mono bg-muted px-3 py-2 rounded flex-1 break-all'>
-                  {walletInfo.fullAddress}
-                </code>
-                <Button
-                  variant='ghost'
-                  size='sm'
-                  onClick={() => copyToClipboard(walletInfo.fullAddress!, 'Wallet address')}
-                >
-                  <Copy className='w-4 h-4' />
-                </Button>
-                <Button
-                  variant='ghost'
-                  size='sm'
-                  onClick={() => openInExplorer(walletInfo.fullAddress!)}
-                >
-                  <ExternalLink className='w-4 h-4' />
-                </Button>
+          {/* Wallet Address */}
+          <div className="bg-muted/30 border border-primary/20 rounded p-3">
+            <div className="text-muted-foreground text-xs mb-2">WALLET_ADDRESS</div>
+            <div className="flex items-center gap-2">
+              <div className="text-xs font-mono bg-muted/50 border border-primary/10 px-2 py-1 rounded flex-1 break-all text-primary">
+                {walletInfo.fullAddress}
               </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => copyToClipboard(walletInfo.fullAddress!, 'Wallet address')}
+                className="h-6 w-6 p-0"
+              >
+                <Copy className="w-3 h-3" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => openInExplorer(walletInfo.fullAddress!)}
+                className="h-6 w-6 p-0"
+              >
+                <ExternalLink className="w-3 h-3" />
+              </Button>
             </div>
+          </div>
 
-            {/* Balance Display */}
-            <div className='bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950 dark:to-purple-900 rounded-lg p-4 border'>
-              <div className='flex items-center justify-between mb-2'>
-                <span className='text-sm font-medium text-muted-foreground'>SOL Balance</span>
-                <Badge variant="secondary" className="text-xs">
-                  {isDevnet ? 'Devnet' : 'Mainnet'}
-                </Badge>
-              </div>
-              <div className='text-3xl font-bold font-mono text-purple-700 dark:text-purple-300'>
+          {/* Balance Display */}
+          <div className="bg-muted/30 border border-primary/20 rounded p-4">
+            <div className="text-muted-foreground text-xs mb-3 flex items-center justify-between">
+              <span>SOL_BALANCE</span>
+              <Badge variant="outline" className="text-xs font-mono">
+                {isDevnet ? 'DEVNET' : 'MAINNET'}
+              </Badge>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-bold font-mono text-primary mb-2">
                 {walletInfo.loading ? (
-                  <span className='text-muted-foreground text-lg'>Loading...</span>
+                  <span className="text-muted-foreground text-lg">SYNCING...</span>
                 ) : (
-                  <span>{walletInfo.balance?.toFixed(4) || '0.0000'} SOL</span>
+                  <span>{walletInfo.balance?.toFixed(4) || '0.0000'}</span>
                 )}
               </div>
+              <div className="text-xs text-muted-foreground font-mono">SOL_TOKENS</div>
             </div>
           </div>
-        ) : (
-          <div className='text-center py-8'>
-            <Wallet className='w-12 h-12 mx-auto text-muted-foreground mb-3' />
-            <div className='text-muted-foreground mb-2'>
-              No wallet connected
-            </div>
-            <div className='text-sm text-muted-foreground'>
-              Connect your Solana wallet to view balance and transaction history
+
+          {/* Network Status */}
+          <div className="bg-muted/30 border border-primary/20 rounded p-3">
+            <div className="grid grid-cols-2 gap-4 text-xs">
+              <div className="text-center">
+                <div className="text-muted-foreground mb-1">NETWORK_STATUS</div>
+                <div className="text-green-500 font-bold font-mono">ONLINE</div>
+              </div>
+              <div className="text-center">
+                <div className="text-muted-foreground mb-1">CONNECTION</div>
+                <div className="text-green-500 font-bold font-mono">SECURE</div>
+              </div>
             </div>
           </div>
-        )}
+        </div>
+      ) : (
+        <div className="bg-muted/30 border border-primary/20 rounded p-8 text-center">
+          <Wallet className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+          <div className="text-muted-foreground font-mono mb-2">
+            <div className="text-lg mb-2">NO_WALLET_DETECTED</div>
+            <div className="text-sm">CONNECT_SOLANA_WALLET_TO_ACCESS</div>
+          </div>
+        </div>
+      )}
+
+      {/* Footer */}
+      <div className="border-t border-primary/20 pt-2 mt-4 flex justify-between text-xs text-muted-foreground/60">
+        <span>WALLET_INTERFACE_v2089</span>
+        <span>LAST_SYNC: {new Date().toLocaleTimeString()}</span>
       </div>
     </div>
   )
 
   return (
-    <div className="space-y-4 max-w-full">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold flex items-center gap-2">
-          <User className="w-5 h-5" />
-          Profile
-        </h3>
+    <div className="w-full max-w-4xl mx-auto bg-background border border-primary/30 rounded-lg p-4 font-mono text-primary">
+      {/* Terminal Header */}
+      <div className="flex items-center justify-between mb-4 border-b border-primary/20 pb-2">
+        <div className="flex items-center gap-2">
+          <User className="w-4 h-4" />
+          <span className="text-primary font-bold">PROFILE ACCESS TERMINAL v2.089</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Activity className="w-3 h-3 animate-pulse" />
+          <span className="text-primary text-xs">AUTHENTICATED</span>
+        </div>
       </div>
 
       {/* Tabbed Navigation */}
       <Tabs defaultValue="character" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="character" className="text-sm">
-            <User className="w-4 h-4 mr-2" />
-            Character
-          </TabsTrigger>
-          <TabsTrigger value="wallet" className="text-sm">
-            <Wallet className="w-4 h-4 mr-2" />
-            Wallet
-          </TabsTrigger>
-        </TabsList>
+        <div className="w-full overflow-x-auto">
+          <TabsList className="flex w-max h-10 p-1 bg-muted/50">
+            <TabsTrigger value="character" className="text-xs font-mono flex-shrink-0 px-4">
+              <User className="w-3 h-3 mr-2" />
+              SURVIVOR_DOSSIER
+            </TabsTrigger>
+            <TabsTrigger value="wallet" className="text-xs font-mono flex-shrink-0 px-4">
+              <Wallet className="w-3 h-3 mr-2" />
+              WALLET_INTERFACE
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="character" className="mt-4">
           {renderCharacterProfile()}
@@ -475,6 +570,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ character, onCharacter
           {renderWalletInfo()}
         </TabsContent>
       </Tabs>
+
+      {/* Footer */}
+      <div className="border-t border-primary/20 pt-2 mt-4 flex justify-between text-xs text-muted-foreground/60">
+        <span>PROFILE_ACCESS_TERMINAL_v2089</span>
+        <span>SESSION_TIME: {new Date().toLocaleTimeString()}</span>
+      </div>
     </div>
   )
 }

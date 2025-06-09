@@ -1,9 +1,27 @@
 import { useState, useCallback, useRef } from "react"
-import { Badge, X } from "lucide-react"
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { baseSVGData } from "../../data/baseMapSVG"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card"
-import { Button } from "../ui/button"
-import { Separator } from "@radix-ui/react-dropdown-menu"
+import {
+  X,
+  Plus,
+  Minus,
+  Home,
+  Database,
+  Activity,
+  MapPin,
+  Zap,
+  DollarSign,
+  Users,
+  Shield,
+  Pickaxe,
+  MessageSquare,
+  Store,
+  Signal,
+  Eye,
+  Navigation,
+  AlertTriangle
+} from 'lucide-react'
 
 interface DatabaseLocation {
   id: string
@@ -72,6 +90,10 @@ export default function Earth({ locations, character, onTravel }: EarthProps) {
   // Pan and zoom handlers
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (e.button !== 0) return
+
+    // Disable panning when at initial zoom level
+    if (transform.scale <= 1) return
+
     setIsDragging(true)
     setDragStart({
       x: e.clientX,
@@ -81,16 +103,60 @@ export default function Earth({ locations, character, onTravel }: EarthProps) {
     })
   }, [transform])
 
+  // calculate pan boundaries
+  const calculatePanBounds = useCallback((scale: number) => {
+    if (!svgRef.current) return { minX: 0, maxX: 0, minY: 0, maxY: 0 }
+
+    const container = svgRef.current.parentElement
+    if (!container) return { minX: 0, maxX: 0, minY: 0, maxY: 0 }
+
+    const containerWidth = container.clientWidth
+    const containerHeight = container.clientHeight
+
+    // Calculate how much the scaled content exceeds the container
+    const scaledWidth = containerWidth * scale
+    const scaledHeight = containerHeight * scale
+
+    // Maximum translation is half the difference between scaled and container size
+    const maxTranslateX = Math.max(0, (scaledWidth - containerWidth) / 2)
+    const maxTranslateY = Math.max(0, (scaledHeight - containerHeight) / 2)
+
+    return {
+      minX: -maxTranslateX,
+      maxX: maxTranslateX,
+      minY: -maxTranslateY,
+      maxY: maxTranslateY
+    }
+  }, [])
+
+  // Helper function to constrain translation values
+  const constrainTranslation = useCallback((translateX: number, translateY: number, scale: number) => {
+    const bounds = calculatePanBounds(scale)
+
+    return {
+      translateX: Math.max(bounds.minX, Math.min(bounds.maxX, translateX)),
+      translateY: Math.max(bounds.minY, Math.min(bounds.maxY, translateY))
+    }
+  }, [calculatePanBounds])
+
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (!isDragging) return
+
     const deltaX = e.clientX - dragStart.x
     const deltaY = e.clientY - dragStart.y
+
+    const newTranslateX = dragStart.translateX + deltaX
+    const newTranslateY = dragStart.translateY + deltaY
+
+    // Apply constraints
+    const constrained = constrainTranslation(newTranslateX, newTranslateY, transform.scale)
+
     setTransform(prev => ({
       ...prev,
-      translateX: dragStart.translateX + deltaX,
-      translateY: dragStart.translateY + deltaY
+      translateX: constrained.translateX,
+      translateY: constrained.translateY
     }))
-  }, [isDragging, dragStart])
+  }, [isDragging, dragStart, transform.scale, constrainTranslation])
 
   const handleMouseUp = useCallback(() => {
     setIsDragging(false)
@@ -100,11 +166,34 @@ export default function Earth({ locations, character, onTravel }: EarthProps) {
     e.preventDefault()
     const delta = e.deltaY > 0 ? 0.9 : 1.1
     const newScale = Math.max(1.2, Math.min(5, transform.scale * delta))
-    setTransform(prev => ({ ...prev, scale: newScale }))
-  }, [transform.scale])
+
+    // Constrain translation for the new scale
+    const constrained = constrainTranslation(transform.translateX, transform.translateY, newScale)
+
+    setTransform(prev => ({
+      scale: newScale,
+      translateX: constrained.translateX,
+      translateY: constrained.translateY
+    }))
+  }, [transform, constrainTranslation])
 
   const resetView = useCallback(() => {
     setTransform({ scale: 1, translateX: 0, translateY: 0 })
+  }, [])
+
+  // Get biome color
+  const getBiomeColor = useCallback((biome?: string) => {
+    switch (biome) {
+      case 'forest': return '#10b981'
+      case 'desert': return '#f59e0b'
+      case 'urban': return '#3b82f6'
+      case 'plains': return '#22c55e'
+      case 'mountain': return '#8b5cf6'
+      case 'water': return '#06b6d4'
+      case 'swamp': return '#84cc16'
+      case 'tundra': return '#64748b'
+      default: return '#6b7280'
+    }
   }, [])
 
   // Path styling function
@@ -114,39 +203,30 @@ export default function Earth({ locations, character, onTravel }: EarthProps) {
     const isHovered = pathId === hoveredPath
     const isPlayerHere = location && character?.currentLocation?.id === location.id
 
-    let fill = '#6b7280' // Default gray
+    let fill = '#374151' // Default terminal gray
     let stroke = '#4b5563'
     let strokeWidth = '0'
-    let opacity = '0.6'
+    let opacity = '0.7'
 
     if (location) {
-      // Color by biome - slightly adjusted for better dark mode visibility
-      switch (location.biome) {
-        case 'forest': fill = '#10b981'; break
-        case 'desert': fill = '#f59e0b'; break
-        case 'urban': fill = '#3b82f6'; break
-        case 'plains': fill = '#22c55e'; break
-        case 'mountain': fill = '#8b5cf6'; break
-        case 'water': fill = '#06b6d4'; break
-        case 'swamp': fill = '#84cc16'; break
-        case 'tundra': fill = '#64748b'; break
-        default: fill = '#6b7280'
-      }
+      fill = getBiomeColor(location.biome)
       opacity = '0.8'
     }
 
     if (isSelected) {
       fill = '#3b82f6'
       stroke = '#1d4ed8'
-      strokeWidth = '3'
+      strokeWidth = '2'
       opacity = '1'
     } else if (isPlayerHere) {
       stroke = '#10b981'
       strokeWidth = '3'
       opacity = '1'
+      // Add pulsing effect for current location
     } else if (isHovered) {
       opacity = '0.9'
-      strokeWidth = '2'
+      strokeWidth = '1'
+      stroke = '#ffffff'
     }
 
     return {
@@ -156,7 +236,7 @@ export default function Earth({ locations, character, onTravel }: EarthProps) {
       opacity,
       cursor: 'pointer'
     }
-  }, [getLocation, selectedPath, hoveredPath, character])
+  }, [getLocation, selectedPath, hoveredPath, character, getBiomeColor])
 
   // Handle path clicks
   const handlePathClick = useCallback((pathId: string) => {
@@ -167,39 +247,83 @@ export default function Earth({ locations, character, onTravel }: EarthProps) {
   const selectedLocation = selectedPath ? getLocation(selectedPath) : null
 
   return (
-    <div className="w-full h-[calc(100vh-64px)] bg-gray-50 dark:bg-gray-900 overflow-hidden">
-
-      {/* Zoom Controls */}
-      <div className="absolute bottom-4 right-4 z-50 flex flex-col gap-2">
-        <button
-          onClick={() => setTransform(prev => ({ ...prev, scale: Math.min(5, prev.scale * 1.2) }))}
-          className="w-8 h-8 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center justify-center text-sm font-bold text-gray-900 dark:text-gray-100"
-        >
-          +
-        </button>
-        <button
-          onClick={() => setTransform(prev => ({ ...prev, scale: Math.max(0.1, prev.scale * 0.8) }))}
-          className="w-8 h-8 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center justify-center text-sm font-bold text-gray-900 dark:text-gray-100"
-        >
-          −
-        </button>
-        <button
-          onClick={resetView}
-          className="w-8 h-8 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center justify-center text-xs text-gray-900 dark:text-gray-100"
-        >
-          ⌂
-        </button>
+    <div className="w-full h-[calc(100vh-64px)] bg-background overflow-hidden font-mono relative">
+      {/* Terminal Header */}
+      <div className="absolute top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur border-b border-primary/30 p-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Database className="w-4 h-4 text-primary" />
+            <span className="text-primary font-bold text-sm">GLOBAL_MAP_INTERFACE v2.089</span>
+          </div>
+          <div className="flex items-center gap-2 text-xs">
+            <Badge variant="outline" className="font-mono">
+              <Signal className="w-3 h-3 mr-1" />
+              TRACKING_{locations.length}_ZONES
+            </Badge>
+            <Activity className="w-3 h-3 animate-pulse text-green-500" />
+            <span className="text-green-500">ACTIVE</span>
+          </div>
+        </div>
       </div>
 
-      {/* SVG Map */}
+      {/* Terminal Control Panel */}
+      <div className="absolute bottom-4 right-4 z-50 flex flex-col gap-2">
+        <div className="bg-background/95 border border-primary/30 rounded p-2">
+          <div className="text-xs text-muted-foreground mb-2 font-mono">ZOOM_CONTROLS</div>
+          <div className="flex flex-col gap-1">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                const newScale = Math.min(5, transform.scale * 1.2)
+                const constrained = constrainTranslation(transform.translateX, transform.translateY, newScale)
+                setTransform(prev => ({
+                  scale: newScale,
+                  translateX: constrained.translateX,
+                  translateY: constrained.translateY
+                }))
+              }}
+              className="h-8 w-8 p-0 font-mono border-primary/30"
+            >
+              <Plus className="w-4 h-4" />
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                const newScale = Math.max(0.1, transform.scale * 0.8)
+                const constrained = constrainTranslation(transform.translateX, transform.translateY, newScale)
+                setTransform(prev => ({
+                  scale: newScale,
+                  translateX: constrained.translateX,
+                  translateY: constrained.translateY
+                }))
+              }}
+              className="h-8 w-8 p-0 font-mono border-primary/30"
+            >
+              <Minus className="w-4 h-4" />
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={resetView}
+              className="h-8 w-8 p-0 font-mono border-primary/30"
+            >
+              <Home className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Terminal SVG Map Container */}
       <div
-        className="w-full h-full select-none overflow-hidden"
+        className="w-full h-full select-none overflow-hidden mt-12"
         style={{
-          cursor: isDragging ? 'grabbing' : 'grab',
+          cursor: transform.scale <= 1 ? 'default' : (isDragging ? 'grabbing' : 'grab'),
           transform: `scale(${transform.scale}) translate(${transform.translateX}px, ${transform.translateY}px)`,
           transformOrigin: 'center center',
-          background: 'radial-gradient(circle at center, transparent 40%, rgba(0,0,0,0.4) 80%), rgba(0,0,0,0.4)',
-          backgroundColor: 'rgba(0,0,0,0.4)'
+          background: 'radial-gradient(circle at center, rgba(0,255,0,0.05) 0%, rgba(0,0,0,0.8) 100%)',
+          backgroundColor: '#000000'
         }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
@@ -213,40 +337,82 @@ export default function Earth({ locations, character, onTravel }: EarthProps) {
           className="w-full h-full"
           xmlns="http://www.w3.org/2000/svg"
         >
+          {/* Terminal Grid Background */}
+          <defs>
+            <pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse">
+              <path d="M 50 0 L 0 0 0 50" fill="none" stroke="rgba(0,255,0,0.1)" strokeWidth="0.5" />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#grid)" />
+
           {baseSVGData.paths.map((path) => {
             const style = getPathStyle(path.id)
+            const location = getLocation(path.id)
+            const isPlayerHere = location && character?.currentLocation?.id === location.id
+
             return (
-              <path
-                key={path.id}
-                id={path.id}
-                d={path.d}
-                fill={style.fill}
-                stroke={style.stroke}
-                strokeWidth={style.strokeWidth}
-                opacity={style.opacity}
-                style={{ cursor: style.cursor }}
-                onClick={() => handlePathClick(path.id)}
-                onMouseEnter={() => setHoveredPath(path.id)}
-                onMouseLeave={() => setHoveredPath(null)}
-              />
+              <g key={path.id}>
+                <path
+                  id={path.id}
+                  d={path.d}
+                  fill={style.fill}
+                  stroke={style.stroke}
+                  strokeWidth={style.strokeWidth}
+                  opacity={style.opacity}
+                  style={{ cursor: style.cursor }}
+                  onClick={() => handlePathClick(path.id)}
+                  onMouseEnter={() => setHoveredPath(path.id)}
+                  onMouseLeave={() => setHoveredPath(null)}
+                />
+                {/* Player location indicator */}
+                {isPlayerHere && (
+                  <circle
+                    cx="0" cy="0"
+                    r="3"
+                    fill="#10b981"
+                    stroke="#ffffff"
+                    strokeWidth="1"
+                    opacity="1"
+                    className="animate-pulse"
+                    style={{
+                      transform: `translate(${path.id === 'california' ? '100px' : '0px'}, ${path.id === 'california' ? '100px' : '0px'})`
+                    }}
+                  />
+                )}
+              </g>
             )
           })}
         </svg>
       </div>
 
-      {/* Hover tooltip */}
+      {/* Terminal Hover Display */}
       {hoveredPath && (
-        <div className="absolute top-4 left-4 bg-white/95 dark:bg-gray-800/95 px-3 py-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-40">
+        <div className="absolute top-16 left-4 bg-background/95 border border-primary/30 px-3 py-2 rounded shadow-lg z-40 font-mono">
           {(() => {
             const location = getLocation(hoveredPath)
             if (!location) {
-              return <div className="text-sm text-gray-900 dark:text-gray-100">Unknown: {hoveredPath}</div>
+              return (
+                <div className="text-xs text-red-500">
+                  <div className="flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3" />
+                    UNMAPPED_REGION
+                  </div>
+                  <div className="text-muted-foreground">ID: {hoveredPath}</div>
+                </div>
+              )
             }
             return (
-              <div>
-                <div className="font-medium text-sm text-gray-900 dark:text-gray-100">{location.name}</div>
-                <div className="text-xs text-gray-600 dark:text-gray-400">
-                  {location.biome} • Level {location.difficulty}
+              <div className="text-xs">
+                <div className="font-bold text-primary mb-1">{location.name.toUpperCase()}</div>
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Badge
+                    variant="outline"
+                    className="text-xs font-mono px-1 py-0"
+                    style={{ backgroundColor: getBiomeColor(location.biome) + '20', borderColor: getBiomeColor(location.biome) + '50' }}
+                  >
+                    {location.biome?.toUpperCase()}
+                  </Badge>
+                  <span>THREAT_LVL_{location.difficulty}</span>
                 </div>
               </div>
             )
@@ -254,84 +420,162 @@ export default function Earth({ locations, character, onTravel }: EarthProps) {
         </div>
       )}
 
-      {/* Selected location modal */}
+      {/* Terminal Location Analysis Panel */}
       {selectedLocation && (
-        <div className="absolute top-20 left-4 bg-card/95 backdrop-blur-sm p-4 rounded-lg shadow-lg border max-w-sm z-40">
-          <div className="flex justify-between items-start mb-2">
-            <h3 className="font-semibold text-card-foreground">{selectedLocation.name}</h3>
-            <button
+        <div className="absolute top-16 left-4 bg-background/95 border border-primary/30 rounded shadow-lg max-w-sm z-40 font-mono">
+          {/* Panel Header */}
+          <div className="flex items-center justify-between p-3 border-b border-primary/20">
+            <div className="flex items-center gap-2">
+              <Eye className="w-4 h-4 text-primary" />
+              <span className="text-primary font-bold text-sm">ZONE_ANALYSIS</span>
+            </div>
+            <Button
+              size="sm"
+              variant="ghost"
               onClick={() => setSelectedPath(null)}
-              className="text-muted-foreground hover:text-foreground"
+              className="h-6 w-6 p-0"
             >
-              <X className="w-4 h-4" />
-            </button>
+              <X className="w-3 h-3" />
+            </Button>
           </div>
 
-          <p className="text-sm text-muted-foreground mb-3">{selectedLocation.description}</p>
+          {/* Location Info */}
+          <div className="p-3 space-y-3">
+            <div>
+              <div className="font-bold text-primary text-sm mb-1">{selectedLocation.name.toUpperCase()}</div>
+              <div className="text-xs text-muted-foreground">{selectedLocation.description}</div>
+            </div>
 
-          <div className="text-xs mb-3 space-y-1 text-muted-foreground">
-            <div>Biome: {selectedLocation.biome || 'Unknown'}</div>
-            <div>Difficulty: {selectedLocation.difficulty}</div>
-            <div>Type: {selectedLocation.locationType}</div>
-            {selectedLocation.minLevel && (
-              <div className={`${character && character.level < selectedLocation.minLevel ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
-                Min Level: {selectedLocation.minLevel}
-                {character && character.level < selectedLocation.minLevel && ' ⚠️'}
+            {/* Technical Specs */}
+            <div className="bg-muted/30 border border-primary/20 rounded p-2">
+              <div className="text-xs text-muted-foreground mb-2">ZONE_SPECIFICATIONS</div>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="flex items-center gap-1">
+                  <div
+                    className="w-2 h-2 rounded"
+                    style={{ backgroundColor: getBiomeColor(selectedLocation.biome) }}
+                  />
+                  <span>BIOME: {selectedLocation.biome?.toUpperCase() || 'UNKNOWN'}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Shield className="w-3 h-3 text-red-500" />
+                  <span>THREAT: {selectedLocation.difficulty}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Users className="w-3 h-3 text-blue-500" />
+                  <span>ACTIVE: {selectedLocation.playerCount}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Database className="w-3 h-3 text-purple-500" />
+                  <span>TYPE: {selectedLocation.locationType}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Requirements */}
+            {(selectedLocation.minLevel || selectedLocation.entryCost) && (
+              <div className="bg-muted/30 border border-primary/20 rounded p-2">
+                <div className="text-xs text-muted-foreground mb-2">ACCESS_REQUIREMENTS</div>
+                <div className="space-y-1 text-xs">
+                  {selectedLocation.minLevel && (
+                    <div className={`flex items-center gap-1 ${character && character.level < selectedLocation.minLevel ? 'text-red-500' : 'text-green-500'
+                      }`}>
+                      <Zap className="w-3 h-3" />
+                      <span>MIN_LEVEL: {selectedLocation.minLevel}</span>
+                      {character && character.level < selectedLocation.minLevel && <AlertTriangle className="w-3 h-3" />}
+                    </div>
+                  )}
+                  {selectedLocation.entryCost && selectedLocation.entryCost > 0 && (
+                    <div className={`flex items-center gap-1 ${character && (character.coins || 0) < selectedLocation.entryCost ? 'text-red-500' : 'text-green-500'
+                      }`}>
+                      <DollarSign className="w-3 h-3" />
+                      <span>ENTRY_FEE: {selectedLocation.entryCost}_RUST</span>
+                      {character && (character.coins || 0) < selectedLocation.entryCost && <AlertTriangle className="w-3 h-3" />}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
-            {selectedLocation.entryCost && selectedLocation.entryCost > 0 && (
-              <div className={`${character && (character.coins || 0) < selectedLocation.entryCost ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
-                Cost: {selectedLocation.entryCost} coins
-                {character && (character.coins || 0) < selectedLocation.entryCost && ' ⚠️'}
-              </div>
-            )}
-            {selectedLocation.hasMarket && <div>• Has Market</div>}
-            {selectedLocation.hasMining && <div>• Has Mining</div>}
-            {selectedLocation.hasChat && <div>• Has Chat</div>}
-            <div>Players: {selectedLocation.playerCount}</div>
-          </div>
 
-          {onTravel && character && (
-            <button
-              onClick={() => {
-                onTravel(selectedLocation.id)
-                setSelectedPath(null)
-              }}
-              disabled={
-                character.currentLocation?.id === selectedLocation.id ||
-                (selectedLocation.minLevel && character.level < selectedLocation.minLevel) ||
-                (selectedLocation.entryCost && selectedLocation.entryCost > (character.coins || 0))
-              }
-              className={`w-full py-2 px-3 rounded text-sm transition-colors ${character.currentLocation?.id === selectedLocation.id
-                ? 'bg-muted text-muted-foreground cursor-not-allowed'
-                : (selectedLocation.minLevel && character.level < selectedLocation.minLevel) ||
+            {/* Available Services */}
+            <div className="bg-muted/30 border border-primary/20 rounded p-2">
+              <div className="text-xs text-muted-foreground mb-2">AVAILABLE_SERVICES</div>
+              <div className="flex flex-wrap gap-1">
+                {selectedLocation.hasMarket && (
+                  <Badge variant="secondary" className="text-xs font-mono flex items-center gap-1">
+                    <Store className="w-3 h-3" />
+                    MARKET
+                  </Badge>
+                )}
+                {selectedLocation.hasMining && (
+                  <Badge variant="secondary" className="text-xs font-mono flex items-center gap-1">
+                    <Pickaxe className="w-3 h-3" />
+                    MINING
+                  </Badge>
+                )}
+                {selectedLocation.hasChat && (
+                  <Badge variant="secondary" className="text-xs font-mono flex items-center gap-1">
+                    <MessageSquare className="w-3 h-3" />
+                    COMMS
+                  </Badge>
+                )}
+                {!selectedLocation.hasMarket && !selectedLocation.hasMining && !selectedLocation.hasChat && (
+                  <span className="text-xs text-muted-foreground">NO_SERVICES_AVAILABLE</span>
+                )}
+              </div>
+            </div>
+
+            {/* Travel Action */}
+            {onTravel && character && (
+              <Button
+                onClick={() => {
+                  onTravel(selectedLocation.id)
+                  setSelectedPath(null)
+                }}
+                disabled={
+                  character.currentLocation?.id === selectedLocation.id ||
+                  (selectedLocation.minLevel && character.level < selectedLocation.minLevel) ||
                   (selectedLocation.entryCost && selectedLocation.entryCost > (character.coins || 0))
-                  ? 'bg-destructive/10 text-destructive cursor-not-allowed'
-                  : 'bg-primary text-primary-foreground hover:bg-primary/90'
-                }`}
-            >
-              {character.currentLocation?.id === selectedLocation.id
-                ? 'You are here'
-                : (selectedLocation.minLevel && character.level < selectedLocation.minLevel)
-                  ? `Requires Level ${selectedLocation.minLevel} (You're ${character.level})`
-                  : (selectedLocation.entryCost && selectedLocation.entryCost > (character.coins || 0))
-                    ? `Need ${selectedLocation.entryCost} coins (You have ${character.coins || 0})`
-                    : `Travel to ${selectedLocation.name}`}
-            </button>
-          )}
+                }
+                className={`w-full h-8 text-xs font-mono ${character.currentLocation?.id === selectedLocation.id
+                  ? 'bg-muted text-muted-foreground cursor-not-allowed'
+                  : (selectedLocation.minLevel && character.level < selectedLocation.minLevel) ||
+                    (selectedLocation.entryCost && selectedLocation.entryCost > (character.coins || 0))
+                    ? 'bg-red-500/20 text-red-500 cursor-not-allowed border-red-500/30'
+                    : 'bg-primary text-primary-foreground hover:bg-primary/90'
+                  }`}
+              >
+                <Navigation className="w-3 h-3 mr-2" />
+                {character.currentLocation?.id === selectedLocation.id
+                  ? 'CURRENT_LOCATION'
+                  : (selectedLocation.minLevel && character.level < selectedLocation.minLevel)
+                    ? `REQ_LVL_${selectedLocation.minLevel}`
+                    : (selectedLocation.entryCost && selectedLocation.entryCost > (character.coins || 0))
+                      ? `INSUFFICIENT_RUST`
+                      : `TRAVEL_TO_${selectedLocation.name.toUpperCase()}`}
+              </Button>
+            )}
+          </div>
         </div>
       )}
 
-      {/* Scale indicator */}
+      {/* Terminal Status Indicators */}
       {transform.scale !== 1 && (
-        <div className="absolute bottom-4 right-4 bg-white/90 dark:bg-gray-800/90 px-2 py-1 rounded text-xs border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100">
-          {Math.round(transform.scale * 100)}%
+        <div className="absolute bottom-4 left-4 bg-background/95 border border-primary/30 px-2 py-1 rounded text-xs font-mono">
+          <div className="flex items-center gap-2">
+            <Eye className="w-3 h-3 text-primary" />
+            <span className="text-primary">ZOOM: {Math.round(transform.scale * 100)}%</span>
+          </div>
         </div>
       )}
 
-      {/* Debug info */}
-      <div className="absolute bottom-4 left-4 bg-white/90 dark:bg-gray-800/90 px-2 py-1 rounded text-xs border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100">
-        Selected: {selectedPath || 'none'} | Locations: {locations.length} | Mapped: {locationLookup.size}
+      {/* Terminal Debug Info */}
+      <div className="absolute bottom-16 left-4 bg-background/95 border border-primary/30 px-2 py-1 rounded text-xs font-mono">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Database className="w-3 h-3" />
+          <span>MAPPED: {locationLookup.size}/{baseSVGData.paths.length}</span>
+          {selectedPath && <span>• SELECTED: {selectedPath}</span>}
+        </div>
       </div>
     </div>
   )

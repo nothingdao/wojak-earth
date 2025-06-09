@@ -228,32 +228,52 @@ export const handler = async (event, context) => {
 
     // Grant XP
     try {
-      const xpResponse = await fetch(`${API_BASE}/grant-experience`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          walletAddress,
-          experience: xpGained,
-          source: 'MINING',
-          details: { foundItem: foundItem?.name, rarity: foundItem?.rarity }
-        })
-      })
+      // Grant XP directly via database
+      const currentXP = character.experience || 0
+      const newTotalXP = currentXP + xpGained
 
-      if (xpResponse.ok) {
-        const xpData = await xpResponse.json()
-        if (xpData.leveledUp) {
-          console.log(`🎉 Level up! ${xpData.oldLevel} → ${xpData.newLevel}`)
+      // Simple level calculation (you can make this more sophisticated later)
+      let newLevel = character.level
+      if (newTotalXP >= 100 && character.level === 1) newLevel = 2
+      else if (newTotalXP >= 300 && character.level === 2) newLevel = 3
+      else if (newTotalXP >= 600 && character.level === 3) newLevel = 4
+      else if (newTotalXP >= 1000 && character.level === 4) newLevel = 5
+      // Add more level thresholds as needed
+
+      const leveledUp = newLevel > character.level
+
+      // Update character with new XP and level
+      const { error: xpError } = await supabase
+        .from('characters')
+        .update({
+          experience: newTotalXP,
+          level: newLevel
+        })
+        .eq('id', character.id)
+
+      if (xpError) {
+        console.error('Failed to update XP:', xpError)
+      } else {
+        // Log XP transaction
+        await supabase
+          .from('transactions')
+          .insert({
+            characterId: character.id,
+            type: 'XP_GAIN',
+            description: `Gained ${xpGained} XP from MINING${leveledUp ? ` - LEVEL UP! ${character.level} → ${newLevel}` : ''}`,
+            createdAt: new Date().toISOString()
+          })
+
+        if (leveledUp) {
+          console.log(`🎉 LEVEL UP! ${character.name} reached Level ${newLevel}! (${newTotalXP} total XP)`)
+        } else {
+          console.log(`⭐ ${character.name} gained ${xpGained} XP from MINING (${newTotalXP} total XP)`)
         }
       }
+
     } catch (xpError) {
-      console.warn('Failed to grant XP:', xpError)
+      console.warn('Failed to grant XP:', xpError.message)
     }
-
-
-
-
-
-
 
     // Prepare response
     const responseData = {
