@@ -23,6 +23,9 @@ import {
   AlertTriangle
 } from 'lucide-react'
 
+import type { Tables } from '@/types'
+type Character = Tables<'characters'>
+
 interface DatabaseLocation {
   id: string
   name: string
@@ -45,16 +48,6 @@ interface DatabaseLocation {
   updated_at: string
 }
 
-interface Character {
-  id: string
-  name: string
-  level: number
-  coins?: number
-  currentLocation?: {
-    id: string
-    name: string
-  }
-}
 
 interface EarthProps {
   locations: DatabaseLocation[]
@@ -170,7 +163,7 @@ export default function Earth({ locations, character, onTravel }: EarthProps) {
     // Constrain translation for the new scale
     const constrained = constrainTranslation(transform.translateX, transform.translateY, newScale)
 
-    setTransform(prev => ({
+    setTransform(() => ({
       scale: newScale,
       translateX: constrained.translateX,
       translateY: constrained.translateY
@@ -201,7 +194,7 @@ export default function Earth({ locations, character, onTravel }: EarthProps) {
     const location = getLocation(pathId)
     const isSelected = pathId === selectedPath
     const isHovered = pathId === hoveredPath
-    const isPlayerHere = location && character?.currentLocation?.id === location.id
+    const isPlayerHere = location && character?.current_location_id === location.id
 
     let fill = '#374151' // Default terminal gray
     let stroke = '#4b5563'
@@ -277,7 +270,7 @@ export default function Earth({ locations, character, onTravel }: EarthProps) {
               onClick={() => {
                 const newScale = Math.min(5, transform.scale * 1.2)
                 const constrained = constrainTranslation(transform.translateX, transform.translateY, newScale)
-                setTransform(prev => ({
+                setTransform(() => ({
                   scale: newScale,
                   translateX: constrained.translateX,
                   translateY: constrained.translateY
@@ -293,7 +286,7 @@ export default function Earth({ locations, character, onTravel }: EarthProps) {
               onClick={() => {
                 const newScale = Math.max(0.1, transform.scale * 0.8)
                 const constrained = constrainTranslation(transform.translateX, transform.translateY, newScale)
-                setTransform(prev => ({
+                setTransform(() => ({
                   scale: newScale,
                   translateX: constrained.translateX,
                   translateY: constrained.translateY
@@ -348,7 +341,7 @@ export default function Earth({ locations, character, onTravel }: EarthProps) {
           {baseSVGData.paths.map((path) => {
             const style = getPathStyle(path.id)
             const location = getLocation(path.id)
-            const isPlayerHere = location && character?.currentLocation?.id === location.id
+            const isPlayerHere = location && character?.current_location_id === location.id
 
             return (
               <g key={path.id}>
@@ -533,24 +526,24 @@ export default function Earth({ locations, character, onTravel }: EarthProps) {
                   setSelectedPath(null)
                 }}
                 disabled={
-                  character.currentLocation?.id === selectedLocation.id ||
-                  (selectedLocation.min_level && character.level < selectedLocation.min_level) ||
-                  (selectedLocation.entry_cost && selectedLocation.entry_cost > (character.coins || 0))
+                  character.current_location_id === selectedLocation.id ||
+                  (!!selectedLocation.min_level && character.level < selectedLocation.min_level) ||
+                  (!!selectedLocation.entry_cost && selectedLocation.entry_cost > (character.coins || 0))
                 }
-                className={`w-full h-8 text-xs font-mono ${character.currentLocation?.id === selectedLocation.id
+                className={`w-full h-8 text-xs font-mono ${character.current_location_id === selectedLocation.id
                   ? 'bg-muted text-muted-foreground cursor-not-allowed'
-                  : (selectedLocation.min_level && character.level < selectedLocation.min_level) ||
-                    (selectedLocation.entry_cost && selectedLocation.entry_cost > (character.coins || 0))
+                  : (!!selectedLocation.min_level && character.level < selectedLocation.min_level) ||
+                    (!!selectedLocation.entry_cost && selectedLocation.entry_cost > (character.coins || 0))
                     ? 'bg-red-500/20 text-red-500 cursor-not-allowed border-red-500/30'
                     : 'bg-primary text-primary-foreground hover:bg-primary/90'
                   }`}
               >
                 <Navigation className="w-3 h-3 mr-2" />
-                {character.currentLocation?.id === selectedLocation.id
+                {character.current_location_id === selectedLocation.id
                   ? 'CURRENT_LOCATION'
-                  : (selectedLocation.min_level && character.level < selectedLocation.min_level)
+                  : (!!selectedLocation.min_level && character.level < selectedLocation.min_level)
                     ? `REQ_LVL_${selectedLocation.min_level}`
-                    : (selectedLocation.entry_cost && selectedLocation.entry_cost > (character.coins || 0))
+                    : (!!selectedLocation.entry_cost && selectedLocation.entry_cost > (character.coins || 0))
                       ? `INSUFFICIENT_RUST`
                       : `TRAVEL_TO_${selectedLocation.name.toUpperCase()}`}
               </Button>

@@ -1,5 +1,11 @@
+/* src/index.css */
 @import "tailwindcss";
 @import "tw-animate-css";
+
+
+.font-mono {
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
 
 @custom-variant dark (&:is(.dark *));
 

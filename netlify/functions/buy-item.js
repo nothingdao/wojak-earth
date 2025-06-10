@@ -202,7 +202,7 @@ export const handler = async (event, context) => {
     // Update or remove market listing
     let remainingQuantity = marketListing.quantity - quantity
 
-    if (marketListing.quantity === quantity && !marketListing.is_systemItem) {
+    if (marketListing.quantity === quantity && !marketListing.is_system_item) {
       // Only remove player listings when sold out
       const { error: deleteError } = await supabase
         .from('market_listings')
@@ -253,7 +253,7 @@ export const handler = async (event, context) => {
       marketListing: {
         id: marketListingId,
         remainingQuantity: remainingQuantity,
-        wasRemoved: remainingQuantity === 0 && !marketListing.is_systemItem
+        wasRemoved: remainingQuantity === 0 && !marketListing.is_system_item
       },
       // ADDED: Character status after purchase
       character: {

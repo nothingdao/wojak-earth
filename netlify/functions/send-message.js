@@ -106,23 +106,23 @@ export const handler = async (event, context) => {
     // Verify character is at this location or a related location (for regional chat)
     let canChat = false
 
-    if (character.currentlocation_id === location_id) {
+    if (character.current_location_id === location_id) {
       canChat = true
     } else if (location.chat_scope === 'REGIONAL') {
       const { data: characterLocation, error: charLocError } = await supabase
         .from('locations')
         .select('*')
-        .eq('id', character.currentlocation_id)
+        .eq('id', character.current_location_id)
         .single()
 
       if (!charLocError && characterLocation) {
-        if (characterLocation.id === location.parentlocation_id) {
+        if (characterLocation.id === location.parent_location_id) {
           canChat = true
         }
-        else if (characterLocation.parentlocation_id === location.parentlocation_id && location.parentlocation_id) {
+        else if (characterLocation.parent_location_id === location.parent_location_id && location.parent_location_id) {
           canChat = true
         }
-        else if (location.parentlocation_id === characterLocation.id) {
+        else if (location.parent_location_id === characterLocation.id) {
           canChat = true
         }
       }

@@ -2,72 +2,19 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@supabase/supabase-js'
+import type {
+  AdminStats,
+  AdminCharacter,
+  AdminLocation,
+  AdminItem,
+  AdminActivity,
+  AdminMarketListing,
+} from '@/types'
 
 const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL!,
   import.meta.env.VITE_SUPABASE_ANON_KEY!
 )
-
-export interface AdminStats {
-  totalCharacters: number
-  totalLocations: number
-  totalItems: number
-  totalResources: number
-  activeCharacters: number
-  onlineNow: number
-  avgPlayerLevel: number
-}
-
-export interface AdminCharacter {
-  id: string
-  name: string
-  gender: string
-  currentlocation_id: string
-  locationName: string
-  level: number
-  health: number
-  energy: number
-  coins: number
-  status: string
-  created_at: string
-}
-
-export interface AdminLocation {
-  id: string
-  name: string
-  description: string
-  biome: string
-  difficulty: number
-  player_count: number
-  has_market: boolean
-  has_mining: boolean
-  has_travel: boolean
-  has_chat: boolean
-  status: string
-  parentlocation_id?: string // Optional parent location for nested locations
-}
-
-export interface AdminItem {
-  id: string
-  name: string
-  description: string
-  category: string
-  rarity: string
-  layer_type?: string
-  durability?: number
-  energy_effect?: number
-  health_effect?: number
-}
-
-export interface AdminActivity {
-  id: string
-  type: 'character' | 'mining' | 'travel' | 'market'
-  action: string
-  target: string
-  timestamp: string
-  characterName?: string
-  locationName?: string
-}
 
 export function useAdminStats() {
   const [stats, setStats] = useState<AdminStats | null>(null)
@@ -146,7 +93,7 @@ export function useAdminCharacters() {
           id,
           name,
           gender,
-          currentlocation_id,
+          current_location_id,
           level,
           health,
           energy,
@@ -164,7 +111,7 @@ export function useAdminCharacters() {
         id: char.id,
         name: char.name,
         gender: char.gender,
-        currentlocation_id: char.currentlocation_id,
+        current_location_id: char.current_location_id,
         locationName: char.location?.name || 'Unknown',
         level: char.level,
         health: char.health,
@@ -217,7 +164,7 @@ export function useAdminCharacters() {
     try {
       const { error } = await supabase
         .from('characters')
-        .update({ currentlocation_id: newlocation_id })
+        .update({ current_location_id: newlocation_id })
         .eq('id', character_id)
 
       if (error) throw error
@@ -416,7 +363,7 @@ export function useAdminActivity() {
       const { data: recentCharacters } = await supabase
         .from('characters')
         .select(
-          'id, name, created_at, currentlocation_id, location:locations(name)'
+          'id, name, created_at, current_location_id, location:locations(name)'
         )
         .order('created_at', { ascending: false })
         .limit(10)
@@ -449,23 +396,6 @@ export function useAdminActivity() {
   return { activity, loading, error, refetch: fetchActivity }
 }
 
-export interface AdminMarketListing {
-  id: string
-  location_id: string
-  locationName: string
-  item_id: string
-  itemName: string
-  seller_id?: string
-  sellerName?: string
-  quantity: number
-  price: number // Just price, not basePrice/currentPrice
-  is_systemItem: boolean
-  created_at: string
-  updated_at: string
-  isAvailable?: boolean // Optional, if we want to track availability
-  lastUpdated?: string // Optional, if we want to track last updated time
-}
-
 export function useAdminMarket() {
   const [marketListings, setMarketListings] = useState<AdminMarketListing[]>([])
   const [loading, setLoading] = useState(true)
@@ -486,7 +416,7 @@ export function useAdminMarket() {
           seller_id,
           quantity,
           price,
-          is_systemItem,
+          is_system_item,
           created_at,
           updated_at,
           location:locations(name),
@@ -508,7 +438,7 @@ export function useAdminMarket() {
         sellerName: listing.seller?.name || null,
         quantity: listing.quantity,
         price: listing.price,
-        is_systemItem: listing.is_systemItem,
+        is_system_item: listing.is_system_item,
         created_at: new Date(listing.created_at).toLocaleDateString(),
         updated_at: new Date(listing.updated_at).toLocaleDateString(),
         isAvailable: listing.quantity > 0,
@@ -570,7 +500,7 @@ export function useAdminMarket() {
   const getMarketStats = () => {
     const totalListings = marketListings.length
     const activeListings = marketListings.filter((l) => l.quantity > 0).length
-    const systemListings = marketListings.filter((l) => l.is_systemItem).length
+    const systemListings = marketListings.filter((l) => l.is_system_item).length
     const totalValue = marketListings.reduce(
       (sum, l) => sum + l.price * l.quantity,
       0

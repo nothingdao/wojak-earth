@@ -47,11 +47,11 @@ export const handler = async (event, context) => {
 
     // Get parent location if exists
     let parentLocation = null
-    if (location.parentlocation_id) {
+    if (location.parent_location_id) {
       const { data: parent, error: parentError } = await supabase
         .from('locations')
         .select('*')
-        .eq('id', location.parentlocation_id)
+        .eq('id', location.parent_location_id)
         .single()
 
       if (!parentError) {
@@ -63,7 +63,7 @@ export const handler = async (event, context) => {
     const { data: subLocations, error: subError } = await supabase
       .from('locations')
       .select('*')
-      .eq('parentlocation_id', location_id)
+      .eq('parent_location_id', location_id)
 
     if (subError && subError.code !== 'PGRST116') { // PGRST116 = no rows returned, which is fine
       throw subError
@@ -78,13 +78,13 @@ export const handler = async (event, context) => {
         chatlocation_ids.push(...subLocations.map(sub => sub.id))
       }
       // If this is a sub-location, include the parent
-      if (location.parentlocation_id) {
-        chatlocation_ids.push(location.parentlocation_id)
+      if (location.parent_location_id) {
+        chatlocation_ids.push(location.parent_location_id)
         // Also include sibling sub-locations
         const { data: siblings, error: siblingsError } = await supabase
           .from('locations')
           .select('*')
-          .eq('parentlocation_id', location.parentlocation_id)
+          .eq('parent_location_id', location.parent_location_id)
           .neq('id', location_id)
 
         if (!siblingsError && siblings?.length > 0) {

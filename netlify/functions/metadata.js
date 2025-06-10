@@ -144,7 +144,7 @@ export const handler = async (event, context) => {
         character_id: character.id,
         wallet_address: character.wallet_address,
         nft_address: character.nft_address,
-        current_location_id: character.currentlocation_id,
+        current_location_id: character.current_location_id,
         stats: {
           level: character.level,
           energy: character.energy,

@@ -17,7 +17,7 @@ export function AppRouter() {
       console.clear()
       console.log('🌍 Wojak Earth - Screen:', state.appState)
       if (state.travelingTo) {
-        console.log('🚀 Traveling to:', state.travelingTo.name)
+        console.log('🚀 Traveling to:', state.travelingTo)
       }
     }
   }, [state.appState, state.travelingTo])

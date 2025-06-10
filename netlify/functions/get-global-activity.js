@@ -95,7 +95,7 @@ export const handler = async (event, context) => {
         id,
         name,
         character_type,
-        currentlocation_id,
+        current_location_id,
         currentLocation:locations(
           id,
           name,

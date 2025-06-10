@@ -1,3 +1,4 @@
+// src/types/supabase.ts
 export type Json =
   | string
   | number
@@ -36,12 +37,12 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "character_images_characterId_fkey"
-            columns: ["character_id"]
+            foreignKeyName: 'character_images_characterId_fkey'
+            columns: ['character_id']
             isOneToOne: false
-            referencedRelation: "characters"
-            referencedColumns: ["id"]
-          },
+            referencedRelation: 'characters'
+            referencedColumns: ['id']
+          }
         ]
       }
       character_inventory: {
@@ -83,24 +84,24 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "character_inventory_characterId_fkey"
-            columns: ["character_id"]
+            foreignKeyName: 'character_inventory_characterId_fkey'
+            columns: ['character_id']
             isOneToOne: false
-            referencedRelation: "characters"
-            referencedColumns: ["id"]
+            referencedRelation: 'characters'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "character_inventory_itemId_fkey"
-            columns: ["item_id"]
+            foreignKeyName: 'character_inventory_itemId_fkey'
+            columns: ['item_id']
             isOneToOne: false
-            referencedRelation: "items"
-            referencedColumns: ["id"]
-          },
+            referencedRelation: 'items'
+            referencedColumns: ['id']
+          }
         ]
       }
       characters: {
         Row: {
-          character_type: Database["public"]["Enums"]["CharacterType"]
+          character_type: Database['public']['Enums']['CharacterType']
           coins: number
           created_at: string
           current_image_url: string | null
@@ -108,7 +109,7 @@ export type Database = {
           current_version: number
           energy: number
           experience: number | null
-          gender: Database["public"]["Enums"]["Gender"]
+          gender: Database['public']['Enums']['Gender']
           health: number
           id: string
           level: number
@@ -121,7 +122,7 @@ export type Database = {
           wallet_address: string
         }
         Insert: {
-          character_type?: Database["public"]["Enums"]["CharacterType"]
+          character_type?: Database['public']['Enums']['CharacterType']
           coins?: number
           created_at?: string
           current_image_url?: string | null
@@ -129,7 +130,7 @@ export type Database = {
           current_version?: number
           energy?: number
           experience?: number | null
-          gender: Database["public"]["Enums"]["Gender"]
+          gender: Database['public']['Enums']['Gender']
           health?: number
           id: string
           level?: number
@@ -142,7 +143,7 @@ export type Database = {
           wallet_address: string
         }
         Update: {
-          character_type?: Database["public"]["Enums"]["CharacterType"]
+          character_type?: Database['public']['Enums']['CharacterType']
           coins?: number
           created_at?: string
           current_image_url?: string | null
@@ -150,7 +151,7 @@ export type Database = {
           current_version?: number
           energy?: number
           experience?: number | null
-          gender?: Database["public"]["Enums"]["Gender"]
+          gender?: Database['public']['Enums']['Gender']
           health?: number
           id?: string
           level?: number
@@ -164,12 +165,12 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "characters_currentLocationId_fkey"
-            columns: ["current_location_id"]
+            foreignKeyName: 'characters_currentLocationId_fkey'
+            columns: ['current_location_id']
             isOneToOne: false
-            referencedRelation: "locations"
-            referencedColumns: ["id"]
-          },
+            referencedRelation: 'locations'
+            referencedColumns: ['id']
+          }
         ]
       }
       chat_messages: {
@@ -180,7 +181,7 @@ export type Database = {
           is_system: boolean
           location_id: string
           message: string
-          message_type: Database["public"]["Enums"]["ChatMessageType"]
+          message_type: Database['public']['Enums']['ChatMessageType']
         }
         Insert: {
           character_id: string
@@ -189,7 +190,7 @@ export type Database = {
           is_system?: boolean
           location_id: string
           message: string
-          message_type?: Database["public"]["Enums"]["ChatMessageType"]
+          message_type?: Database['public']['Enums']['ChatMessageType']
         }
         Update: {
           character_id?: string
@@ -198,29 +199,76 @@ export type Database = {
           is_system?: boolean
           location_id?: string
           message?: string
-          message_type?: Database["public"]["Enums"]["ChatMessageType"]
+          message_type?: Database['public']['Enums']['ChatMessageType']
         }
         Relationships: [
           {
-            foreignKeyName: "chat_messages_characterId_fkey"
-            columns: ["character_id"]
+            foreignKeyName: 'chat_messages_characterId_fkey'
+            columns: ['character_id']
             isOneToOne: false
-            referencedRelation: "characters"
-            referencedColumns: ["id"]
+            referencedRelation: 'characters'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "chat_messages_locationId_fkey"
-            columns: ["location_id"]
+            foreignKeyName: 'chat_messages_locationId_fkey'
+            columns: ['location_id']
             isOneToOne: false
-            referencedRelation: "locations"
-            referencedColumns: ["id"]
-          },
+            referencedRelation: 'locations'
+            referencedColumns: ['id']
+          }
+        ]
+      }
+      experience_logs: {
+        Row: {
+          character_id: string | null
+          created_at: string | null
+          details: Json | null
+          experience_gained: number
+          experience_total: number
+          id: string
+          level_after: number | null
+          level_before: number | null
+          leveled_up: boolean | null
+          source: string
+        }
+        Insert: {
+          character_id?: string | null
+          created_at?: string | null
+          details?: Json | null
+          experience_gained: number
+          experience_total: number
+          id?: string
+          level_after?: number | null
+          level_before?: number | null
+          leveled_up?: boolean | null
+          source: string
+        }
+        Update: {
+          character_id?: string | null
+          created_at?: string | null
+          details?: Json | null
+          experience_gained?: number
+          experience_total?: number
+          id?: string
+          level_after?: number | null
+          level_before?: number | null
+          leveled_up?: boolean | null
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'experience_logs_character_id_fkey'
+            columns: ['character_id']
+            isOneToOne: false
+            referencedRelation: 'characters'
+            referencedColumns: ['id']
+          }
         ]
       }
       items: {
         Row: {
           base_layer_file: string | null
-          category: Database["public"]["Enums"]["ItemCategory"]
+          category: Database['public']['Enums']['ItemCategory']
           created_at: string
           description: string
           durability: number | null
@@ -231,14 +279,14 @@ export type Database = {
           image_url: string | null
           layer_file: string | null
           layer_gender: string | null
-          layer_type: Database["public"]["Enums"]["LayerType"] | null
+          layer_type: Database['public']['Enums']['LayerType'] | null
           name: string
-          rarity: Database["public"]["Enums"]["Rarity"]
+          rarity: Database['public']['Enums']['Rarity']
           updated_at: string
         }
         Insert: {
           base_layer_file?: string | null
-          category: Database["public"]["Enums"]["ItemCategory"]
+          category: Database['public']['Enums']['ItemCategory']
           created_at?: string
           description: string
           durability?: number | null
@@ -249,14 +297,14 @@ export type Database = {
           image_url?: string | null
           layer_file?: string | null
           layer_gender?: string | null
-          layer_type?: Database["public"]["Enums"]["LayerType"] | null
+          layer_type?: Database['public']['Enums']['LayerType'] | null
           name: string
-          rarity?: Database["public"]["Enums"]["Rarity"]
+          rarity?: Database['public']['Enums']['Rarity']
           updated_at: string
         }
         Update: {
           base_layer_file?: string | null
-          category?: Database["public"]["Enums"]["ItemCategory"]
+          category?: Database['public']['Enums']['ItemCategory']
           created_at?: string
           description?: string
           durability?: number | null
@@ -267,9 +315,9 @@ export type Database = {
           image_url?: string | null
           layer_file?: string | null
           layer_gender?: string | null
-          layer_type?: Database["public"]["Enums"]["LayerType"] | null
+          layer_type?: Database['public']['Enums']['LayerType'] | null
           name?: string
-          rarity?: Database["public"]["Enums"]["Rarity"]
+          rarity?: Database['public']['Enums']['Rarity']
           updated_at?: string
         }
         Relationships: []
@@ -301,25 +349,25 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "location_resources_itemId_fkey"
-            columns: ["item_id"]
+            foreignKeyName: 'location_resources_itemId_fkey'
+            columns: ['item_id']
             isOneToOne: false
-            referencedRelation: "items"
-            referencedColumns: ["id"]
+            referencedRelation: 'items'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "location_resources_locationId_fkey"
-            columns: ["location_id"]
+            foreignKeyName: 'location_resources_locationId_fkey'
+            columns: ['location_id']
             isOneToOne: false
-            referencedRelation: "locations"
-            referencedColumns: ["id"]
-          },
+            referencedRelation: 'locations'
+            referencedColumns: ['id']
+          }
         ]
       }
       locations: {
         Row: {
           biome: string | null
-          chat_scope: Database["public"]["Enums"]["ChatScope"]
+          chat_scope: Database['public']['Enums']['ChatScope']
           created_at: string
           description: string
           difficulty: number
@@ -333,7 +381,7 @@ export type Database = {
           is_explored: boolean | null
           is_private: boolean
           last_active: string | null
-          location_type: Database["public"]["Enums"]["LocationType"]
+          location_type: Database['public']['Enums']['LocationType']
           lore: string | null
           map_x: number | null
           map_y: number | null
@@ -349,7 +397,7 @@ export type Database = {
         }
         Insert: {
           biome?: string | null
-          chat_scope?: Database["public"]["Enums"]["ChatScope"]
+          chat_scope?: Database['public']['Enums']['ChatScope']
           created_at?: string
           description: string
           difficulty?: number
@@ -363,7 +411,7 @@ export type Database = {
           is_explored?: boolean | null
           is_private?: boolean
           last_active?: string | null
-          location_type?: Database["public"]["Enums"]["LocationType"]
+          location_type?: Database['public']['Enums']['LocationType']
           lore?: string | null
           map_x?: number | null
           map_y?: number | null
@@ -379,7 +427,7 @@ export type Database = {
         }
         Update: {
           biome?: string | null
-          chat_scope?: Database["public"]["Enums"]["ChatScope"]
+          chat_scope?: Database['public']['Enums']['ChatScope']
           created_at?: string
           description?: string
           difficulty?: number
@@ -393,7 +441,7 @@ export type Database = {
           is_explored?: boolean | null
           is_private?: boolean
           last_active?: string | null
-          location_type?: Database["public"]["Enums"]["LocationType"]
+          location_type?: Database['public']['Enums']['LocationType']
           lore?: string | null
           map_x?: number | null
           map_y?: number | null
@@ -409,12 +457,12 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "locations_parentLocationId_fkey"
-            columns: ["parent_location_id"]
+            foreignKeyName: 'locations_parentLocationId_fkey'
+            columns: ['parent_location_id']
             isOneToOne: false
-            referencedRelation: "locations"
-            referencedColumns: ["id"]
-          },
+            referencedRelation: 'locations'
+            referencedColumns: ['id']
+          }
         ]
       }
       market_listings: {
@@ -453,26 +501,26 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "market_listings_itemId_fkey"
-            columns: ["item_id"]
+            foreignKeyName: 'market_listings_itemId_fkey'
+            columns: ['item_id']
             isOneToOne: false
-            referencedRelation: "items"
-            referencedColumns: ["id"]
+            referencedRelation: 'items'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "market_listings_locationId_fkey"
-            columns: ["location_id"]
+            foreignKeyName: 'market_listings_locationId_fkey'
+            columns: ['location_id']
             isOneToOne: false
-            referencedRelation: "locations"
-            referencedColumns: ["id"]
+            referencedRelation: 'locations'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "market_listings_sellerId_fkey"
-            columns: ["seller_id"]
+            foreignKeyName: 'market_listings_sellerId_fkey'
+            columns: ['seller_id']
             isOneToOne: false
-            referencedRelation: "characters"
-            referencedColumns: ["id"]
-          },
+            referencedRelation: 'characters'
+            referencedColumns: ['id']
+          }
         ]
       }
       npc_wallets: {
@@ -496,12 +544,12 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "npc_wallets_character_id_fkey"
-            columns: ["character_id"]
+            foreignKeyName: 'npc_wallets_character_id_fkey'
+            columns: ['character_id']
             isOneToOne: true
-            referencedRelation: "characters"
-            referencedColumns: ["id"]
-          },
+            referencedRelation: 'characters'
+            referencedColumns: ['id']
+          }
         ]
       }
       pending_payments: {
@@ -561,12 +609,12 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "pending_payments_character_id_fkey"
-            columns: ["character_id"]
+            foreignKeyName: 'pending_payments_character_id_fkey'
+            columns: ['character_id']
             isOneToOne: false
-            referencedRelation: "characters"
-            referencedColumns: ["id"]
-          },
+            referencedRelation: 'characters'
+            referencedColumns: ['id']
+          }
         ]
       }
       transactions: {
@@ -587,7 +635,7 @@ export type Database = {
           to_units: number | null
           to_vault: string | null
           txn_shard: string | null
-          type: Database["public"]["Enums"]["TransactionType"]
+          type: Database['public']['Enums']['TransactionType']
           wasteland_block: number | null
         }
         Insert: {
@@ -607,7 +655,7 @@ export type Database = {
           to_units?: number | null
           to_vault?: string | null
           txn_shard?: string | null
-          type: Database["public"]["Enums"]["TransactionType"]
+          type: Database['public']['Enums']['TransactionType']
           wasteland_block?: number | null
         }
         Update: {
@@ -627,17 +675,17 @@ export type Database = {
           to_units?: number | null
           to_vault?: string | null
           txn_shard?: string | null
-          type?: Database["public"]["Enums"]["TransactionType"]
+          type?: Database['public']['Enums']['TransactionType']
           wasteland_block?: number | null
         }
         Relationships: [
           {
-            foreignKeyName: "transactions_characterId_fkey"
-            columns: ["character_id"]
+            foreignKeyName: 'transactions_characterId_fkey'
+            columns: ['character_id']
             isOneToOne: false
-            referencedRelation: "characters"
-            referencedColumns: ["id"]
-          },
+            referencedRelation: 'characters'
+            referencedColumns: ['id']
+          }
         ]
       }
     }
@@ -651,38 +699,38 @@ export type Database = {
       }
     }
     Enums: {
-      CharacterType: "HUMAN" | "CREATURE" | "NPC"
-      ChatMessageType: "CHAT" | "EMOTE" | "SYSTEM" | "WHISPER"
-      ChatScope: "LOCAL" | "REGIONAL" | "GLOBAL"
-      Gender: "MALE" | "FEMALE"
+      CharacterType: 'HUMAN' | 'CREATURE' | 'NPC'
+      ChatMessageType: 'CHAT' | 'EMOTE' | 'SYSTEM' | 'WHISPER'
+      ChatScope: 'LOCAL' | 'REGIONAL' | 'GLOBAL'
+      Gender: 'MALE' | 'FEMALE'
       ItemCategory:
-        | "CLOTHING"
-        | "HAT"
-        | "ACCESSORY"
-        | "TOOL"
-        | "CONSUMABLE"
-        | "MATERIAL"
+        | 'CLOTHING'
+        | 'HAT'
+        | 'ACCESSORY'
+        | 'TOOL'
+        | 'CONSUMABLE'
+        | 'MATERIAL'
       LayerType:
-        | "BACKGROUND"
-        | "BASE"
-        | "CLOTHING"
-        | "HAT"
-        | "FACE_COVERING"
-        | "ACCESSORY"
-        | "OUTERWEAR"
-        | "FACE_ACCESSORY"
-      LocationType: "REGION" | "CITY" | "BUILDING" | "ROOM"
-      Rarity: "COMMON" | "UNCOMMON" | "RARE" | "EPIC" | "LEGENDARY"
+        | 'BACKGROUND'
+        | 'BASE'
+        | 'CLOTHING'
+        | 'HAT'
+        | 'FACE_COVERING'
+        | 'ACCESSORY'
+        | 'OUTERWEAR'
+        | 'FACE_ACCESSORY'
+      LocationType: 'REGION' | 'CITY' | 'BUILDING' | 'ROOM'
+      Rarity: 'COMMON' | 'UNCOMMON' | 'RARE' | 'EPIC' | 'LEGENDARY'
       TransactionType:
-        | "MINT"
-        | "MINE"
-        | "BUY"
-        | "SELL"
-        | "TRAVEL"
-        | "EQUIP"
-        | "UNEQUIP"
-        | "EXCHANGE"
-        | "BRIDGE"
+        | 'MINT'
+        | 'MINE'
+        | 'BUY'
+        | 'SELL'
+        | 'TRAVEL'
+        | 'EQUIP'
+        | 'UNEQUIP'
+        | 'EXCHANGE'
+        | 'BRIDGE'
     }
     CompositeTypes: {
       [_ in never]: never
@@ -690,148 +738,148 @@ export type Database = {
   }
 }
 
-type DefaultSchema = Database[Extract<keyof Database, "public">]
+type DefaultSchema = Database[Extract<keyof Database, 'public'>]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
     | { schema: keyof Database },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof Database
   }
-    ? keyof (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    ? keyof (Database[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+        Database[DefaultSchemaTableNameOrOptions['schema']]['Views'])
+    : never = never
 > = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+  ? (Database[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+      Database[DefaultSchemaTableNameOrOptions['schema']]['Views'])[TableName] extends {
       Row: infer R
     }
     ? R
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-        Row: infer R
-      }
-      ? R
-      : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema['Tables'] &
+      DefaultSchema['Views'])
+  ? (DefaultSchema['Tables'] &
+      DefaultSchema['Views'])[DefaultSchemaTableNameOrOptions] extends {
+      Row: infer R
+    }
+    ? R
     : never
+  : never
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
+    | keyof DefaultSchema['Tables']
     | { schema: keyof Database },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof Database
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    ? keyof Database[DefaultSchemaTableNameOrOptions['schema']]['Tables']
+    : never = never
 > = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+  ? Database[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
       Insert: infer I
     }
     ? I
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Insert: infer I
-      }
-      ? I
-      : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
+  ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
+      Insert: infer I
+    }
+    ? I
     : never
+  : never
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
+    | keyof DefaultSchema['Tables']
     | { schema: keyof Database },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof Database
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    ? keyof Database[DefaultSchemaTableNameOrOptions['schema']]['Tables']
+    : never = never
 > = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+  ? Database[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
       Update: infer U
     }
     ? U
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Update: infer U
-      }
-      ? U
-      : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
+  ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
+      Update: infer U
+    }
+    ? U
     : never
+  : never
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
+    | keyof DefaultSchema['Enums']
     | { schema: keyof Database },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
     schema: keyof Database
   }
-    ? keyof Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    ? keyof Database[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
+    : never = never
 > = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
-  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-    : never
+  ? Database[DefaultSchemaEnumNameOrOptions['schema']]['Enums'][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums']
+  ? DefaultSchema['Enums'][DefaultSchemaEnumNameOrOptions]
+  : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
+    | keyof DefaultSchema['CompositeTypes']
     | { schema: keyof Database },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof Database
   }
-    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    ? keyof Database[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
+    : never = never
 > = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-    : never
+  ? Database[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema['CompositeTypes']
+  ? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
+  : never
 
 export const Constants = {
   public: {
     Enums: {
-      CharacterType: ["HUMAN", "CREATURE", "NPC"],
-      ChatMessageType: ["CHAT", "EMOTE", "SYSTEM", "WHISPER"],
-      ChatScope: ["LOCAL", "REGIONAL", "GLOBAL"],
-      Gender: ["MALE", "FEMALE"],
+      CharacterType: ['HUMAN', 'CREATURE', 'NPC'],
+      ChatMessageType: ['CHAT', 'EMOTE', 'SYSTEM', 'WHISPER'],
+      ChatScope: ['LOCAL', 'REGIONAL', 'GLOBAL'],
+      Gender: ['MALE', 'FEMALE'],
       ItemCategory: [
-        "CLOTHING",
-        "HAT",
-        "ACCESSORY",
-        "TOOL",
-        "CONSUMABLE",
-        "MATERIAL",
+        'CLOTHING',
+        'HAT',
+        'ACCESSORY',
+        'TOOL',
+        'CONSUMABLE',
+        'MATERIAL',
       ],
       LayerType: [
-        "BACKGROUND",
-        "BASE",
-        "CLOTHING",
-        "HAT",
-        "FACE_COVERING",
-        "ACCESSORY",
-        "OUTERWEAR",
-        "FACE_ACCESSORY",
+        'BACKGROUND',
+        'BASE',
+        'CLOTHING',
+        'HAT',
+        'FACE_COVERING',
+        'ACCESSORY',
+        'OUTERWEAR',
+        'FACE_ACCESSORY',
       ],
-      LocationType: ["REGION", "CITY", "BUILDING", "ROOM"],
-      Rarity: ["COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY"],
+      LocationType: ['REGION', 'CITY', 'BUILDING', 'ROOM'],
+      Rarity: ['COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY'],
       TransactionType: [
-        "MINT",
-        "MINE",
-        "BUY",
-        "SELL",
-        "TRAVEL",
-        "EQUIP",
-        "UNEQUIP",
-        "EXCHANGE",
-        "BRIDGE",
+        'MINT',
+        'MINE',
+        'BUY',
+        'SELL',
+        'TRAVEL',
+        'EQUIP',
+        'UNEQUIP',
+        'EXCHANGE',
+        'BRIDGE',
       ],
     },
   },

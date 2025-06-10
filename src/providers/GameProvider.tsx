@@ -364,10 +364,16 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
       try {
         console.log('🎯 Send message action called:', message)
-        const result = await characterActions.sendMessage(character.wallet_address, message.trim())
+
+        // Use the character's current location or selected location for chat
+        const location_id = state.selectedLocation?.id || character.currentLocation.id
+
+        console.log('📍 Sending message to location:', location_id)
+
+        const result = await characterActions.sendMessage(location_id, message.trim())
 
         if (result.success) {
-          await gameData.actions.loadChatMessages()
+          await gameData.actions.loadChatMessages(location_id)
         } else {
           toast.error(result.message || 'Failed to send message')
         }
@@ -375,7 +381,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         console.error('Send message failed:', error)
         toast.error('Failed to send message. Please try again.')
       }
-    }, [character, characterActions, gameData.actions]),
+    }, [character, characterActions, gameData.actions, state.selectedLocation]),
 
     // Error handling - from your existing code
     handleRetry: useCallback(() => {

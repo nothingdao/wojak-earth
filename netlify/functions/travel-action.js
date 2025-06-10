@@ -59,7 +59,7 @@ export const handler = async (event, context) => {
     const { data: currentLocation, error: currentError } = await supabase
       .from('locations')
       .select('*')
-      .eq('id', character.currentlocation_id)
+      .eq('id', character.current_location_id)
       .single()
 
     if (currentError) throw currentError
@@ -86,7 +86,7 @@ export const handler = async (event, context) => {
     }
 
     // Check if already at destination
-    if (character.currentlocation_id === destinationId) {
+    if (character.current_location_id === destinationId) {
       return {
         statusCode: 400,
         headers,
@@ -151,7 +151,7 @@ export const handler = async (event, context) => {
     // Update character location
     const { data: updatedCharacter, error: updateError } = await supabase
       .from('characters')
-      .update({ currentlocation_id: destinationId })
+      .update({ current_location_id: destinationId })
       .eq('id', character.id)
       .select('*')
       .single()
@@ -179,7 +179,7 @@ export const handler = async (event, context) => {
       .update({
         player_count: Math.max(0, (currentLocation.player_count || 1) - 1)
       })
-      .eq('id', character.currentlocation_id)
+      .eq('id', character.current_location_id)
 
     if (decrementError) throw decrementError
 
@@ -203,7 +203,7 @@ export const handler = async (event, context) => {
     await supabase
       .from('characters')
       .update({
-        currentlocation_id: destinationId,
+        current_location_id: destinationId,
         health: newHealth
       })
       .eq('id', character.id)

@@ -135,7 +135,7 @@ export function useGameHandlers({
       location_id,
       hasCharacter: !!character,
       character_id: character?.id,
-      currentlocation_id: character?.currentLocation?.id,
+      current_location_id: character?.currentLocation?.id,
     })
 
     if (!character) {

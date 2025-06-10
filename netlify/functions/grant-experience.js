@@ -93,13 +93,18 @@ export const handler = async (event, context) => {
 
     if (updateError) throw updateError
 
-    // Log XP gain
+    // Log XP gain to the dedicated experience_logs table
     await supabase
-      .from('transactions')
+      .from('experience_logs')
       .insert({
         character_id: character.id,
-        type: 'XP_GAIN',
-        description: `Gained ${experience} XP from ${source}${canLevelUp && newLevel > oldLevel ? ` - LEVEL UP! ${oldLevel} → ${newLevel}` : ''}`,
+        experience_gained: experience,
+        experience_total: newTotalXP,
+        source: source,
+        level_before: oldLevel,
+        level_after: canLevelUp ? newLevel : oldLevel,
+        leveled_up: canLevelUp && newLevel > oldLevel,
+        details: details,
         created_at: new Date().toISOString()
       })
 

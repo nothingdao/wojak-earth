@@ -1,27 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Play, Pause, Square, Radio, Loader2, SkipForward, Shuffle } from 'lucide-react'
-
-interface Track {
-  id: string
-  name: string
-  url: string
-  title?: string
-  artist?: string
-  duration?: number
-}
-
-interface RadioStation {
-  id: string
-  name: string
-  genre?: string
-  playlist: Track[]
-}
-
-interface LocalRadioProps {
-  location_id: string
-  className?: string
-}
+import type { Track, RadioStation, LocalRadioProps } from '@/types'
 
 export const LocalRadio: React.FC<LocalRadioProps> = ({
   location_id,

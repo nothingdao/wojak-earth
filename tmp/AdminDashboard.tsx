@@ -622,8 +622,8 @@ export default function AdminDashboard() {
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
                             <div className="text-primary font-bold text-xs">{listing.itemName.toUpperCase()}</div>
-                            <Badge variant={listing.is_systemItem ? 'secondary' : 'default'} className="text-xs">
-                              {listing.is_systemItem ? 'SYS' : 'PLR'}
+                            <Badge variant={listing.is_system_item ? 'secondary' : 'default'} className="text-xs">
+                              {listing.is_system_item ? 'SYS' : 'PLR'}
                             </Badge>
                             <Badge variant="outline" className="text-xs">
                               {listing.quantity > 0 ? 'AVAIL' : 'SOLD_OUT'}

@@ -16,7 +16,7 @@ import { useWalletInfo } from '@/hooks/useWalletInfo'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { toast } from 'sonner'
 import SimplePayment from '@/components/SimplePayment'
-import type { Character } from '@/types'
+import type { Character, Enums } from '@/types'
 
 interface CharacterCreationViewProps {
   character: Character | null
@@ -81,7 +81,7 @@ const parseAssetEntry = (entry: string | AssetEntry): { file: string; rules?: As
 }
 
 // Get available assets for a layer based on gender and manifest
-const getLayerAssets = (manifest: Manifest, layer_type: string, gender: 'MALE' | 'FEMALE'): string[] => {
+const getLayerAssets = (manifest: Manifest, layer_type: string, gender: Enums<'Gender'>): string[] => {
   const layerData = manifest[layer_type] as LayerManifest | undefined
   if (!layerData || layer_type === 'compatibility_rules') return []
 
@@ -210,7 +210,7 @@ const areAssetsCompatible = (manifest: Manifest, selectedLayers: Record<string, 
 }
 
 // Get compatible assets
-const getCompatibleAssets = (manifest: Manifest, layer_type: string, selectedLayers: Record<string, string | null>, gender: 'MALE' | 'FEMALE'): string[] => {
+const getCompatibleAssets = (manifest: Manifest, layer_type: string, selectedLayers: Record<string, string | null>, gender: Enums<'Gender'>): string[] => {
   const layerAssets = getLayerAssets(manifest, layer_type, gender)
   const compatibleAssets: string[] = []
 
@@ -285,11 +285,11 @@ export const CharacterCreationView: React.FC<CharacterCreationViewProps> = ({ ch
       ctx.clearRect(0, 0, 400, 400)
 
       // Determine gender for this generation
-      let selectedGender: 'MALE' | 'FEMALE'
+      let selectedGender: Enums<'Gender'>
       if (genderFilter === 'ALL') {
         selectedGender = Math.random() < 0.5 ? 'MALE' : 'FEMALE'
       } else {
-        selectedGender = genderFilter as 'MALE' | 'FEMALE'
+        selectedGender = genderFilter as Enums<'Gender'>
       }
 
       setCurrentGender(selectedGender)

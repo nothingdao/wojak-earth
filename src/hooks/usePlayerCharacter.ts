@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { createClient } from '@supabase/supabase-js'
 import { toast } from 'sonner'
-import type { Character } from '@/types'
+import type { Character, UsePlayerCharacterReturn } from '@/types'
 
 const API_BASE = '/.netlify/functions'
 
@@ -11,14 +11,6 @@ const API_BASE = '/.netlify/functions'
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 const realtimeSupabase = createClient(supabaseUrl, supabaseAnonKey)
-
-interface UsePlayerCharacterReturn {
-  character: Character | null
-  loading: boolean
-  hasCharacter: boolean
-  error: string | null
-  refetchCharacter: () => Promise<void>
-}
 
 export function usePlayerCharacter(): UsePlayerCharacterReturn {
   const wallet = useWallet()

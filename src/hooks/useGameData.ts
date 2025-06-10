@@ -8,6 +8,7 @@ import type {
   MarketItem,
   ChatMessage,
   Player,
+  Enums,
 } from '@/types'
 
 const API_BASE = '/.netlify/functions'
@@ -148,7 +149,7 @@ export function useGameData(
       location_id: string
       character_id: string
       message: string
-      message_type: 'CHAT' | 'EMOTE' | 'SYSTEM'
+      message_type: Enums<'ChatMessageType'>
       is_system: boolean
       created_at: string
     }): Promise<ChatMessage | null> => {

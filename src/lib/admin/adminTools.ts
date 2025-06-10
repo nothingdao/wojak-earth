@@ -29,7 +29,7 @@ export async function getWorldOverview() {
         supabase
           .from('characters')
           .select(
-            'id, name, currentlocation_id, level, energy, health, status'
+            'id, name, current_location_id, level, energy, health, status'
           ),
         supabase
           .from('location_resources')
@@ -57,7 +57,7 @@ export async function getWorldOverview() {
     const locationsByBiome = groupBy(locations, 'biome')
     const itemsByCategory = groupBy(items, 'category')
     const itemsByRarity = groupBy(items, 'rarity')
-    const charactersByLocation = groupBy(characters, 'currentlocation_id')
+    const charactersByLocation = groupBy(characters, 'current_location_id')
 
     return {
       totals: {
@@ -94,7 +94,7 @@ export async function getRecentActivity(limit = 20) {
     const { data: characters } = await supabase
       .from('characters')
       .select(
-        'id, name, created_at, currentlocation_id, location:locations(name)'
+        'id, name, created_at, current_location_id, location:locations(name)'
       )
       .order('created_at', { ascending: false })
       .limit(limit)
@@ -160,7 +160,7 @@ export async function moveCharacter(
   const { data, error } = await supabase
     .from('characters')
     .update({
-      currentlocation_id: newlocation_id,
+      current_location_id: newlocation_id,
     })
     .eq('id', character_id)
     .select()
@@ -271,7 +271,7 @@ export async function deleteLocation(location_id: string) {
   const { data: characters } = await supabase
     .from('characters')
     .select('id, name')
-    .eq('currentlocation_id', location_id)
+    .eq('current_location_id', location_id)
 
   if (characters && characters.length > 0) {
     throw new Error(
@@ -500,7 +500,7 @@ export async function createMarketListing(listingData: {
   price: number
   quantity?: number
   seller_id?: string
-  is_systemItem?: boolean
+  is_system_item?: boolean
 }) {
   const now = new Date().toISOString()
 
@@ -513,7 +513,7 @@ export async function createMarketListing(listingData: {
       price: listingData.price,
       quantity: listingData.quantity || 1,
       seller_id: listingData.seller_id || null,
-      is_systemItem: listingData.is_systemItem || false,
+      is_system_item: listingData.is_system_item || false,
       created_at: now,
       updated_at: now,
     })
@@ -579,7 +579,7 @@ export async function getMarketListings() {
       seller_id,
       quantity,
       price,
-      is_systemItem,
+      is_system_item,
       created_at,
       updated_at,
       location:locations(name),
@@ -601,7 +601,7 @@ export async function getMarketListings() {
     sellerName: listing.seller?.name || null,
     quantity: listing.quantity,
     price: listing.price,
-    is_systemItem: listing.is_systemItem,
+    is_system_item: listing.is_system_item,
     created_at: new Date(listing.created_at).toLocaleDateString(),
     updated_at: new Date(listing.updated_at).toLocaleDateString(),
   }))
@@ -636,7 +636,7 @@ export async function restockSystemItems() {
     .update({
       quantity: 99, // or whatever default stock you want
     })
-    .eq('is_systemItem', true)
+    .eq('is_system_item', true)
     .select()
 
   if (error) throw error
@@ -660,16 +660,16 @@ export async function validateWorldData() {
     // Check for orphaned characters (in non-existent locations)
     const { data: characters } = await supabase
       .from('characters')
-      .select('id, name, currentlocation_id')
+      .select('id, name, current_location_id')
 
     const { data: locations } = await supabase.from('locations').select('id')
 
     const location_ids = new Set(locations?.map((l) => l.id) || [])
 
     characters?.forEach((char) => {
-      if (!location_ids.has(char.currentlocation_id)) {
+      if (!location_ids.has(char.current_location_id)) {
         issues.push(
-          `Character ${char.name} is in non-existent location ${char.currentlocation_id}`
+          `Character ${char.name} is in non-existent location ${char.current_location_id}`
         )
       }
     })

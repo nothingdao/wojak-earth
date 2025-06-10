@@ -21,35 +21,13 @@ import {
   Hash,
   Zap,
   Heart,
-  Coins,
   AlertTriangle,
   Eye,
   Copy,
   ExternalLink,
-  Signal
 } from 'lucide-react'
+import type { Character } from '@/types'
 
-interface Character {
-  id: string
-  name: string
-  gender: 'MALE' | 'FEMALE'
-  level: number
-  energy: number
-  health: number
-  coins: number
-  solBalance: number
-  character_type: 'HUMAN' | 'NPC'
-  status: 'ACTIVE' | 'DEAD' | 'INACTIVE'
-  current_image_url?: string
-  currentLocation: {
-    id: string
-    name: string
-    biome: string
-  }
-  created_at: string
-  wallet_address: string
-  nft_address?: string
-}
 
 const API_BASE = '/.netlify/functions'
 

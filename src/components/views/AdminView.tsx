@@ -1,7 +1,7 @@
 // src/components/views/AdminView.tsx - Create the admin view component
 import { useWallet } from '@solana/wallet-adapter-react'
 import { isAdmin } from '@/config/admins'
-import AdminDashboard from '@/components/admin/AdminDashboard'
+import AdminDashboard from '@/components/AdminDashboard'
 import type { Character } from '@/types'
 interface AdminViewProps {
   character: Character

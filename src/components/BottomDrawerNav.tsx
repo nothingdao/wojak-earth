@@ -9,7 +9,6 @@ import { Separator } from '@/components/ui/separator'
 import { ModeToggle } from './mode-toggle'
 import { WalletConnectButton } from './wallet-connect-button'
 import {
-  Menu,
   Map,
   TrendingUp,
   Backpack,
@@ -30,8 +29,6 @@ import {
   Heart,
   Coins,
   Terminal,
-  Hash,
-  Eye
 } from 'lucide-react'
 import { toast } from 'sonner'
 import type { Character, GameView } from '@/types'
@@ -461,7 +458,7 @@ export function BottomDrawerNav({
                               )
                               : 'hover:bg-muted/50'
                               } ${isAdmin && !item.current ? 'text-red-500 hover:text-red-400' : ''}`}
-                            variant={item.current ? "outline" : "ghost"}
+                            variant={item.current ? "default" : "outline"}
                             onClick={() => handleNavigation(item.action)}
                           >
                             <IconComponent className={`w-4 h-4 mr-3 ${item.current ? (isAdmin ? 'text-red-500' : 'text-primary') : item.color
