@@ -36,13 +36,13 @@ export const handler = async (event, context) => {
   }
 
   try {
-    const { walletAddress, experience, source, details = {} } = JSON.parse(event.body)
+    const { wallet_address, experience, source, details = {} } = JSON.parse(event.body)
 
-    if (!walletAddress || !experience || !source) {
+    if (!wallet_address || !experience || !source) {
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ error: 'Missing walletAddress, experience, or source' })
+        body: JSON.stringify({ error: 'Missing wallet_address, experience, or source' })
       }
     }
 
@@ -50,7 +50,7 @@ export const handler = async (event, context) => {
     const { data: character, error } = await supabase
       .from('characters')
       .select('*')
-      .eq('walletAddress', walletAddress)
+      .eq('wallet_address', wallet_address)
       .eq('status', 'ACTIVE')
       .single()
 
@@ -75,18 +75,18 @@ export const handler = async (event, context) => {
     )
 
     // Update character
-    const updateData = {
+    const updated_ata = {
       experience: newTotalXP,
-      updatedAt: new Date().toISOString()
+      updated_at: new Date().toISOString()
     }
 
     if (canLevelUp && newLevel > oldLevel) {
-      updateData.level = newLevel
+      updated_ata.level = newLevel
     }
 
     const { data: updatedCharacter, error: updateError } = await supabase
       .from('characters')
-      .update(updateData)
+      .update(updated_ata)
       .eq('id', character.id)
       .select()
       .single()
@@ -97,10 +97,10 @@ export const handler = async (event, context) => {
     await supabase
       .from('transactions')
       .insert({
-        characterId: character.id,
+        character_id: character.id,
         type: 'XP_GAIN',
         description: `Gained ${experience} XP from ${source}${canLevelUp && newLevel > oldLevel ? ` - LEVEL UP! ${oldLevel} → ${newLevel}` : ''}`,
-        createdAt: new Date().toISOString()
+        created_at: new Date().toISOString()
       })
 
     // Calculate progress to next level
@@ -143,12 +143,12 @@ export const handler = async (event, context) => {
   }
 }
 
-async function calculateEligibleLevel(totalXP, currentLevel, characterId) {
+async function calculateEligibleLevel(totalXP, currentLevel, character_id) {
   // Get character's achievements from transaction history
   const { data: transactions } = await supabase
     .from('transactions')
-    .select('type, description, createdAt')
-    .eq('characterId', characterId)
+    .select('type, description, created_at')
+    .eq('character_id', character_id)
 
   const achievements = calculateAchievements(transactions || [])
 

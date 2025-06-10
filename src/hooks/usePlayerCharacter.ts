@@ -1,4 +1,4 @@
-// src/hooks/usePlayerCharacter.ts - WITH REAL-TIME SUBSCRIPTIONS
+// src/hooks/usePlayerCharacter.ts
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { createClient } from '@supabase/supabase-js'
@@ -23,7 +23,7 @@ interface UsePlayerCharacterReturn {
 export function usePlayerCharacter(): UsePlayerCharacterReturn {
   const wallet = useWallet()
   const [character, setCharacter] = useState<Character | null>(null)
-  console.log('🔍 Character in hook:', character?.id, character?.coins)
+  // console.log('🔍 Character in hook:', character?.id, character?.coins)
 
   const [loading, setLoading] = useState(false)
   const [hasCharacter, setHasCharacter] = useState(false)
@@ -39,11 +39,11 @@ export function usePlayerCharacter(): UsePlayerCharacterReturn {
   > | null>(null)
 
   // Right after creating realtimeSupabase
-  console.log('🔌 Supabase client created:', {
-    url: supabaseUrl,
-    hasAnonKey: !!supabaseAnonKey,
-    client: !!realtimeSupabase,
-  })
+  // console.log('🔌 Supabase client created:', {
+  //   url: supabaseUrl,
+  //   hasAnonKey: !!supabaseAnonKey,
+  //   client: !!realtimeSupabase,
+  // })
 
   const fetchCharacter = useCallback(
     async (isRefetch = false) => {
@@ -63,7 +63,7 @@ export function usePlayerCharacter(): UsePlayerCharacterReturn {
 
       try {
         const response = await fetch(
-          `${API_BASE}/get-player-character?walletAddress=${wallet.publicKey.toString()}`
+          `${API_BASE}/get-player-character?wallet_address=${wallet.publicKey.toString()}`
         )
 
         const data = await response.json()
@@ -95,8 +95,8 @@ export function usePlayerCharacter(): UsePlayerCharacterReturn {
   )
 
   // Real-time character updates subscription
-  const subscribeToCharacterUpdates = useCallback((characterId: string) => {
-    console.log('🔄 Subscribing to character updates for:', characterId)
+  const subscribeToCharacterUpdates = useCallback((character_id: string) => {
+    // console.log('🔄 Subscribing to character updates for:', character_id)
 
     // Clean up existing subscription
     if (characterSubscriptionRef.current) {
@@ -104,14 +104,14 @@ export function usePlayerCharacter(): UsePlayerCharacterReturn {
     }
 
     characterSubscriptionRef.current = realtimeSupabase
-      .channel(`character-updates-${characterId}`)
+      .channel(`character-updates-${character_id}`)
       .on(
         'postgres_changes',
         {
           event: 'UPDATE',
           schema: 'public',
           table: 'characters',
-          filter: `id=eq.${characterId}`,
+          filter: `id=eq.${character_id}`,
         },
         (payload) => {
           console.log('📡 Character update received:', payload.new)
@@ -135,11 +135,11 @@ export function usePlayerCharacter(): UsePlayerCharacterReturn {
               _lastUpdated: Date.now(),
             }
 
-            console.log('🔄 Character state updated:', {
-              oldCoins: prev.coins,
-              newCoins: updated.coins,
-              timestamp: updated._lastUpdated,
-            })
+            // console.log('🔄 Character state updated:', {
+            //   oldCoins: prev.coins,
+            //   newCoins: updated.coins,
+            //   timestamp: updated._lastUpdated,
+            // })
 
             // Show toast for significant changes
             if (new_.energy !== undefined && new_.energy !== prev.energy) {
@@ -180,8 +180,8 @@ export function usePlayerCharacter(): UsePlayerCharacterReturn {
 
   // Real-time inventory updates subscription
   const subscribeToInventoryUpdates = useCallback(
-    (characterId: string) => {
-      console.log('🎒 Subscribing to inventory updates for:', characterId)
+    (character_id: string) => {
+      // console.log('🎒 Subscribing to inventory updates for:', character_id)
 
       // Clean up existing subscription
       if (inventorySubscriptionRef.current) {
@@ -189,14 +189,14 @@ export function usePlayerCharacter(): UsePlayerCharacterReturn {
       }
 
       inventorySubscriptionRef.current = realtimeSupabase
-        .channel(`inventory-updates-${characterId}`)
+        .channel(`inventory-updates-${character_id}`)
         .on(
           'postgres_changes',
           {
             event: '*', // INSERT, UPDATE, DELETE
             schema: 'public',
             table: 'character_inventory',
-            filter: `characterId=eq.${characterId}`,
+            filter: `character_id=eq.${character_id}`,
           },
           async (payload) => {
             console.log(
@@ -216,9 +216,9 @@ export function usePlayerCharacter(): UsePlayerCharacterReturn {
               const newData = payload.new as any
               const oldData = payload.old as any
 
-              if (newData.isEquipped !== oldData?.isEquipped) {
+              if (newData.is_equipped !== oldData?.is_equipped) {
                 // Equipment change
-                if (newData.isEquipped) {
+                if (newData.is_equipped) {
                   toast.success('Item equipped!', { duration: 2000 })
                 } else {
                   toast.success('Item unequipped!', { duration: 2000 })
@@ -303,7 +303,7 @@ export function usePlayerCharacter(): UsePlayerCharacterReturn {
   }
 }
 
-// Helper hook for character actions - UNCHANGED
+// FIXED: Enhanced error handling and request validation
 export function useCharacterActions() {
   const wallet = useWallet()
 
@@ -314,10 +314,20 @@ export function useCharacterActions() {
         throw new Error('Wallet not connected')
       }
 
+      const wallet_address = wallet.publicKey.toString()
+
+      // FIXED: Ensure we always have the required fields
       const requestBody = {
-        walletAddress: wallet.publicKey.toString(),
+        wallet_address,
         ...payload,
       }
+
+      // DEBUG: Log the request body to identify issues
+      // console.log(`🚀 Performing action: ${actionType}`, {
+      //   requestBody,
+      //   haswallet_address: !!requestBody.wallet_address,
+      //   hasDestinationId: !!(payload as any).destinationId,
+      // })
 
       try {
         const response = await fetch(`${API_BASE}/${actionType}`, {
@@ -330,14 +340,31 @@ export function useCharacterActions() {
 
         const result = await response.json()
 
+        // DEBUG: Log response details
+        // console.log(`📡 Response for ${actionType}:`, {
+        //   status: response.status,
+        //   ok: response.ok,
+        //   result,
+        // })
+
         if (!response.ok) {
-          throw new Error(result.message || result.error || 'Action failed')
+          // Enhanced error reporting
+          const errorMessage =
+            result.message || result.error || `${actionType} failed`
+          console.error(`❌ ${actionType} failed:`, {
+            status: response.status,
+            error: errorMessage,
+            requestBody,
+            result,
+          })
+          throw new Error(errorMessage)
         }
 
         return result
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : 'Unknown error'
+        console.error(`❌ ${actionType} error:`, error)
         toast.error(`Failed: ${errorMessage}`)
         throw error
       }
@@ -346,14 +373,23 @@ export function useCharacterActions() {
   )
 
   return {
-    mine: useCallback(
-      (locationId?: string) => performAction('mine-action', { locationId }),
-      [performAction]
-    ),
+    mine: useCallback(() => performAction('mine-action', {}), [performAction]),
 
     travel: useCallback(
-      (destinationId: string) =>
-        performAction('travel-action', { destinationId }),
+      (destinationId: string) => {
+        // FIXED: Add validation before making the request
+        if (!destinationId) {
+          const error = new Error('Destination ID is required for travel')
+          toast.error('No destination selected')
+          throw error
+        }
+
+        console.log(
+          '🗺️ Travel action called with destinationId:',
+          destinationId
+        )
+        return performAction('travel-action', { destinationId })
+      },
       [performAction]
     ),
 
@@ -375,8 +411,8 @@ export function useCharacterActions() {
     ),
 
     sendMessage: useCallback(
-      (locationId: string, message: string, messageType = 'CHAT') =>
-        performAction('send-message', { locationId, message, messageType }),
+      (location_id: string, message: string, message_type = 'CHAT') =>
+        performAction('send-message', { location_id, message, message_type }),
       [performAction]
     ),
   }

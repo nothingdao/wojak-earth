@@ -25,11 +25,11 @@ import { LocalRadio } from '../LocalRadio'
 // Types for the new data we'll be fetching
 interface LocationResource {
   id: string
-  itemId: string
+  item_id: string
   itemName: string
   itemRarity: 'COMMON' | 'UNCOMMON' | 'RARE' | 'EPIC' | 'LEGENDARY'
-  spawnRate: number
-  maxPerDay?: number
+  spawn_rate: number
+  max_per_day?: number
   difficulty: number
 }
 
@@ -60,8 +60,8 @@ export const MainView: React.FC<MainViewProps> = ({
   onLeaderboardsClick,
   onRustMarketClick
 }) => {
-  const locationId = character.currentLocation.id
-  const chatParticipants = useChatParticipantCount(locationId)
+  const location_id = character.currentLocation.id
+  const chatParticipants = useChatParticipantCount(location_id)
 
   // State for showing activity monitor
   const [showActivityMonitor, setShowActivityMonitor] = useState(false)
@@ -78,7 +78,7 @@ export const MainView: React.FC<MainViewProps> = ({
   // Load location resources
   useEffect(() => {
     const loadLocationResources = async () => {
-      if (!location.hasMining) {
+      if (!location.has_mining) {
         setLocationResources([])
         setLoadingResources(false)
         return
@@ -86,7 +86,7 @@ export const MainView: React.FC<MainViewProps> = ({
 
       try {
         setLoadingResources(true)
-        const response = await fetch(`/.netlify/functions/get-location-resources?locationId=${locationId}`)
+        const response = await fetch(`/.netlify/functions/get-location-resources?location_id=${location_id}`)
         if (response.ok) {
           const data = await response.json()
           setLocationResources(data.resources || [])
@@ -100,12 +100,12 @@ export const MainView: React.FC<MainViewProps> = ({
     }
 
     loadLocationResources()
-  }, [locationId, location.hasMining])
+  }, [location_id, location.has_mining])
 
   // Load market preview
   useEffect(() => {
     const loadMarketPreview = async () => {
-      if (!location.hasMarket) {
+      if (!location.has_market) {
         setMarketPreview(null)
         setLoadingMarket(false)
         return
@@ -113,7 +113,7 @@ export const MainView: React.FC<MainViewProps> = ({
 
       try {
         setLoadingMarket(true)
-        const response = await fetch(`/.netlify/functions/get-market-preview?locationId=${locationId}`)
+        const response = await fetch(`/.netlify/functions/get-market-preview?location_id=${location_id}`)
         if (response.ok) {
           const data = await response.json()
           setMarketPreview(data.preview)
@@ -127,7 +127,7 @@ export const MainView: React.FC<MainViewProps> = ({
     }
 
     loadMarketPreview()
-  }, [locationId, location.hasMarket])
+  }, [location_id, location.has_market])
 
   const getDifficultyColor = (difficulty: number) => {
     if (difficulty <= 1) return 'text-green-500 dark:text-green-400'
@@ -236,18 +236,18 @@ export const MainView: React.FC<MainViewProps> = ({
       <div className="grid grid-cols-2 gap-3 mb-4">
         {/* Mining */}
         <div
-          className={`bg-muted/30 border border-primary/20 rounded p-3 cursor-pointer transition-colors hover:bg-muted/50 ${!location.hasMining ? 'opacity-50' : ''}`}
-          onClick={location.hasMining ? onMineClick : undefined}
+          className={`bg-muted/30 border border-primary/20 rounded p-3 cursor-pointer transition-colors hover:bg-muted/50 ${!location.has_mining ? 'opacity-50' : ''}`}
+          onClick={location.has_mining ? onMineClick : undefined}
         >
           <div className="flex items-center gap-2 mb-2">
             <Pickaxe className="w-4 h-4" />
             <span className="text-primary font-bold text-sm">EXTRACT</span>
-            <div className={`text-xs px-1 rounded ${getStatusColor(location.hasMining)}`}>
-              {location.hasMining ? 'ONLINE' : 'OFFLINE'}
+            <div className={`text-xs px-1 rounded ${getStatusColor(location.has_mining)}`}>
+              {location.has_mining ? 'ONLINE' : 'OFFLINE'}
             </div>
           </div>
           <div className="text-xs text-muted-foreground">
-            {location.hasMining ? (
+            {location.has_mining ? (
               loadingResources ? (
                 <div className="flex items-center gap-1">
                   <Loader2 className="w-3 h-3 animate-spin" />
@@ -271,18 +271,18 @@ export const MainView: React.FC<MainViewProps> = ({
 
         {/* Market */}
         <div
-          className={`bg-muted/30 border border-primary/20 rounded p-3 cursor-pointer transition-colors hover:bg-muted/50 ${!location.hasMarket ? 'opacity-50' : ''}`}
-          onClick={location.hasMarket ? onMarketClick : undefined}
+          className={`bg-muted/30 border border-primary/20 rounded p-3 cursor-pointer transition-colors hover:bg-muted/50 ${!location.has_market ? 'opacity-50' : ''}`}
+          onClick={location.has_market ? onMarketClick : undefined}
         >
           <div className="flex items-center gap-2 mb-2">
             <Store className="w-4 h-4" />
             <span className="text-primary font-bold text-sm">TRADE</span>
-            <div className={`text-xs px-1 rounded ${getStatusColor(location.hasMarket)}`}>
-              {location.hasMarket ? 'ONLINE' : 'OFFLINE'}
+            <div className={`text-xs px-1 rounded ${getStatusColor(location.has_market)}`}>
+              {location.has_market ? 'ONLINE' : 'OFFLINE'}
             </div>
           </div>
           <div className="text-xs text-muted-foreground">
-            {location.hasMarket ? (
+            {location.has_market ? (
               loadingMarket ? (
                 <div className="flex items-center gap-1">
                   <Loader2 className="w-3 h-3 animate-spin" />
@@ -326,18 +326,18 @@ export const MainView: React.FC<MainViewProps> = ({
 
         {/* Chat */}
         <div
-          className={`bg-muted/30 border border-primary/20 rounded p-3 cursor-pointer transition-colors hover:bg-muted/50 ${!location.hasChat ? 'opacity-50' : ''}`}
-          onClick={location.hasChat ? onChatClick : undefined}
+          className={`bg-muted/30 border border-primary/20 rounded p-3 cursor-pointer transition-colors hover:bg-muted/50 ${!location.has_chat ? 'opacity-50' : ''}`}
+          onClick={location.has_chat ? onChatClick : undefined}
         >
           <div className="flex items-center gap-2 mb-2">
             <MessageCircle className="w-4 h-4" />
             <span className="text-primary font-bold text-sm">COMM</span>
-            <div className={`text-xs px-1 rounded ${getStatusColor(location.hasChat)}`}>
-              {location.hasChat ? 'ONLINE' : 'OFFLINE'}
+            <div className={`text-xs px-1 rounded ${getStatusColor(location.has_chat)}`}>
+              {location.has_chat ? 'ONLINE' : 'OFFLINE'}
             </div>
           </div>
           <div className="text-xs text-muted-foreground">
-            {location.hasChat ? (
+            {location.has_chat ? (
               <div>
                 {chatParticipants > 0 ? `${chatParticipants} ACTIVE CHANNELS` : 'OPEN FREQUENCY'}
               </div>
@@ -391,7 +391,7 @@ export const MainView: React.FC<MainViewProps> = ({
   )
 
   const DetailedResourcePreview = () => {
-    if (!location.hasMining) return null
+    if (!location.has_mining) return null
 
     return (
       <div className="bg-background border border-primary/30 rounded-lg p-4 font-mono">
@@ -416,7 +416,7 @@ export const MainView: React.FC<MainViewProps> = ({
                     {resource.itemRarity}
                   </span>
                   <span className="text-xs text-muted-foreground">
-                    {Math.round(resource.spawnRate * 100)}%
+                    {Math.round(resource.spawn_rate * 100)}%
                   </span>
                 </div>
               </div>
@@ -434,7 +434,7 @@ export const MainView: React.FC<MainViewProps> = ({
   return (
     <div className="space-y-4">
 
-      <LocalRadio locationId={'mining-plains'} />
+      <LocalRadio location_id={'mining-plains'} />
       {/* Activity Monitor Section */}
       <div className="bg-background border border-primary/30 rounded-lg p-4 font-mono">
         <div className="flex items-center justify-between mb-3">

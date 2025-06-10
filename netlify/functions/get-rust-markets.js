@@ -29,20 +29,20 @@ export const handler = async (event, context) => {
     const { data: transactions, error } = await supabase
       .from('transactions')
       .select(`
-        createdAt,
-        fromvault,
-        tovault,
-        fromunits,
-        tounits,
-        exchangeflux,
-        wastelandblock,
-        txnshard,
-        sendershard,
-        receivershard
+        created_at,
+        from_vault,
+        to_vault,
+        from_units,
+        to_units,
+        exchange_flux,
+        wasteland_block,
+        txn_shard,
+        sender_shard,
+        receiver_shard
       `)
       .eq('type', 'EXCHANGE')
-      .not('exchangeflux', 'is', null)
-      .order('wastelandblock', { ascending: false })
+      .not('exchange_flux', 'is', null)
+      .order('wasteland_block', { ascending: false })
       .limit(100)
 
     if (error) {
@@ -93,32 +93,32 @@ function processMarketData(transactions) {
   let totalVolume = 0
 
   transactions.forEach(tx => {
-    const block = tx.wastelandblock
+    const block = tx.wasteland_block
     if (!blockGroups[block]) {
       blockGroups[block] = {
         rates: [],
         volume: 0,
         trades: 0,
-        time: tx.createdAt,
+        time: tx.created_at,
         block: block
       }
     }
 
     // Convert rate to RUST per SOL format
     let rustPerSol
-    if (tx.fromvault === 'RUST_COIN' && tx.tovault === 'SCRAP_SOL') {
-      // Buying SOL with RUST: exchangeflux is already RUST per SOL
-      rustPerSol = tx.exchangeflux
-    } else if (tx.fromvault === 'SCRAP_SOL' && tx.tovault === 'RUST_COIN') {
-      // Selling SOL for RUST: exchangeflux is RUST per SOL
-      rustPerSol = tx.exchangeflux
+    if (tx.from_vault === 'RUST_COIN' && tx.to_vault === 'SCRAP_SOL') {
+      // Buying SOL with RUST: exchange_flux is already RUST per SOL
+      rustPerSol = tx.exchange_flux
+    } else if (tx.from_vault === 'SCRAP_SOL' && tx.to_vault === 'RUST_COIN') {
+      // Selling SOL for RUST: exchange_flux is RUST per SOL
+      rustPerSol = tx.exchange_flux
     }
 
     if (rustPerSol && rustPerSol > 0) {
       blockGroups[block].rates.push(rustPerSol)
 
       // Calculate volume in SOL
-      const solVolume = tx.fromvault === 'SCRAP_SOL' ? tx.fromunits : tx.tounits
+      const solVolume = tx.from_vault === 'SCRAP_SOL' ? tx.from_units : tx.to_units
       blockGroups[block].volume += solVolume
       totalVolume += solVolume
       blockGroups[block].trades += 1

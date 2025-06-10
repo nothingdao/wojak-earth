@@ -10,8 +10,8 @@ import type { DatabaseLocation } from '@/types'
 interface SVGMapperProps {
   locations: DatabaseLocation[]
   onCreateLocation: (pathId: string, locationData: CreateLocationData) => Promise<DatabaseLocation>
-  onLinkPath: (locationId: string, pathId: string) => Promise<DatabaseLocation>
-  onUnlinkPath: (locationId: string) => Promise<DatabaseLocation>
+  onLinkPath: (location_id: string, pathId: string) => Promise<DatabaseLocation>
+  onUnlinkPath: (location_id: string) => Promise<DatabaseLocation>
   onRefreshLocations: () => Promise<void>
   loading: boolean
 }
@@ -21,10 +21,10 @@ interface CreateLocationData {
   description: string
   biome: string
   difficulty: number
-  hasMarket: boolean
-  hasMining: boolean
-  hasTravel: boolean
-  hasChat: boolean
+  has_market: boolean
+  has_mining: boolean
+  has_travel: boolean
+  has_chat: boolean
   theme: string
 }
 
@@ -33,10 +33,10 @@ interface CreateLocationForm {
   description: string
   biome: string
   difficulty: number
-  hasMarket: boolean
-  hasMining: boolean
-  hasTravel: boolean
-  hasChat: boolean
+  has_market: boolean
+  has_mining: boolean
+  has_travel: boolean
+  has_chat: boolean
   theme: string
 }
 
@@ -65,10 +65,10 @@ export function SVGMapper({
     description: '',
     biome: 'plains',
     difficulty: 1,
-    hasMarket: false,
-    hasMining: false,
-    hasTravel: true,
-    hasChat: true,
+    has_market: false,
+    has_mining: false,
+    has_travel: true,
+    has_chat: true,
     theme: 'default'
   })
 
@@ -81,22 +81,22 @@ export function SVGMapper({
     console.log('Total SVG paths:', allPathIds.length)
     console.log('Total locations:', locations.length)
 
-    const withSvgPath = locations.filter(loc => loc.svgpathid)
-    console.log('Locations with svgpathid:', withSvgPath.length)
+    const withSvgPath = locations.filter(loc => loc.svg_path_id)
+    console.log('Locations with svg_path_id:', withSvgPath.length)
 
-    const linkedPaths = new Set(locations.map(loc => loc.svgpathid).filter(Boolean))
-    const svgPathIds = new Set(allPathIds)
+    const linkedPaths = new Set(locations.map(loc => loc.svg_path_id).filter(Boolean))
+    const svg_path_ids = new Set(allPathIds)
 
-    console.log('Database svgpathids:', Array.from(linkedPaths))
-    console.log('SVG path IDs:', Array.from(svgPathIds))
+    console.log('Database svg_path_ids:', Array.from(linkedPaths))
+    console.log('SVG path IDs:', Array.from(svg_path_ids))
 
-    const matchingPaths = Array.from(linkedPaths).filter(pathId => svgPathIds.has(pathId))
+    const matchingPaths = Array.from(linkedPaths).filter(pathId => svg_path_ids.has(pathId))
     console.log('Matching paths:', matchingPaths)
   }, [locations, allPathIds])
 
   // Get database location linked to a path
   const getLinkedLocation = useCallback((pathId: string) => {
-    return locations.find(loc => loc.svgpathid === pathId)
+    return locations.find(loc => loc.svg_path_id === pathId)
   }, [locations])
 
   // SVG interaction handlers
@@ -181,10 +181,10 @@ export function SVGMapper({
         description: createForm.description || `A region mapped from ${selectedPath}`,
         biome: createForm.biome,
         difficulty: createForm.difficulty,
-        hasMarket: createForm.hasMarket,
-        hasMining: createForm.hasMining,
-        hasTravel: createForm.hasTravel,
-        hasChat: createForm.hasChat,
+        has_market: createForm.has_market,
+        has_mining: createForm.has_mining,
+        has_travel: createForm.has_travel,
+        has_chat: createForm.has_chat,
         theme: createForm.theme
       }
 
@@ -198,10 +198,10 @@ export function SVGMapper({
         description: '',
         biome: 'plains',
         difficulty: 1,
-        hasMarket: false,
-        hasMining: false,
-        hasTravel: true,
-        hasChat: true,
+        has_market: false,
+        has_mining: false,
+        has_travel: true,
+        has_chat: true,
         theme: 'default'
       })
     } catch (error) {
@@ -240,7 +240,7 @@ export function SVGMapper({
   // Calculate stats
   const linkedPaths = allPathIds.filter(pathId => getLinkedLocation(pathId))
   const unlinkedPaths = allPathIds.filter(pathId => !getLinkedLocation(pathId))
-  const unlinkedLocations = locations.filter(loc => !loc.svgpathid || !allPathIds.includes(loc.svgpathid))
+  const unlinkedLocations = locations.filter(loc => !loc.svg_path_id || !allPathIds.includes(loc.svg_path_id))
 
   return (
     <div className="flex h-screen">
@@ -345,8 +345,8 @@ export function SVGMapper({
                   >
                     <div className="font-medium">{location.name}</div>
                     <div className="text-xs text-muted-foreground">{location.biome} • Level {location.difficulty}</div>
-                    {location.svgpathid && (
-                      <div className="text-xs text-orange-600">svgpathid: {location.svgpathid}</div>
+                    {location.svg_path_id && (
+                      <div className="text-xs text-orange-600">svg_path_id: {location.svg_path_id}</div>
                     )}
                   </div>
                 ))}
@@ -560,8 +560,8 @@ export function SVGMapper({
                 <label className="flex items-center space-x-2">
                   <input
                     type="checkbox"
-                    checked={createForm.hasMarket}
-                    onChange={(e) => setCreateForm(prev => ({ ...prev, hasMarket: e.target.checked }))}
+                    checked={createForm.has_market}
+                    onChange={(e) => setCreateForm(prev => ({ ...prev, has_market: e.target.checked }))}
                   />
                   <span className="text-sm">Has Market</span>
                 </label>
@@ -569,8 +569,8 @@ export function SVGMapper({
                 <label className="flex items-center space-x-2">
                   <input
                     type="checkbox"
-                    checked={createForm.hasMining}
-                    onChange={(e) => setCreateForm(prev => ({ ...prev, hasMining: e.target.checked }))}
+                    checked={createForm.has_mining}
+                    onChange={(e) => setCreateForm(prev => ({ ...prev, has_mining: e.target.checked }))}
                   />
                   <span className="text-sm">Has Mining</span>
                 </label>
@@ -578,8 +578,8 @@ export function SVGMapper({
                 <label className="flex items-center space-x-2">
                   <input
                     type="checkbox"
-                    checked={createForm.hasTravel}
-                    onChange={(e) => setCreateForm(prev => ({ ...prev, hasTravel: e.target.checked }))}
+                    checked={createForm.has_travel}
+                    onChange={(e) => setCreateForm(prev => ({ ...prev, has_travel: e.target.checked }))}
                   />
                   <span className="text-sm">Has Travel</span>
                 </label>
@@ -587,8 +587,8 @@ export function SVGMapper({
                 <label className="flex items-center space-x-2">
                   <input
                     type="checkbox"
-                    checked={createForm.hasChat}
-                    onChange={(e) => setCreateForm(prev => ({ ...prev, hasChat: e.target.checked }))}
+                    checked={createForm.has_chat}
+                    onChange={(e) => setCreateForm(prev => ({ ...prev, has_chat: e.target.checked }))}
                   />
                   <span className="text-sm">Has Chat</span>
                 </label>

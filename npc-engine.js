@@ -206,7 +206,7 @@ class NPCEngine {
       const wallet = await this.walletManager.load(npcData.id)
       if (wallet) {
         // Get full character data including health, energy, coins, level
-        const response = await fetch(`${API_BASE}/get-player-character?walletAddress=${wallet.publicKey.toString()}`)
+        const response = await fetch(`${API_BASE}/get-player-character?wallet_address=${wallet.publicKey.toString()}`)
         if (response.ok) {
           const characterData = await response.json()
           if (characterData.hasCharacter) {
@@ -345,10 +345,10 @@ class NPCEngine {
       console.log(`💱 ${npc.name} attempting ${action} for $${amountUSD} [${reason}] at $${solPrice}/SOL`)
 
       const exchangeResult = await this.callAPI('npc-exchange', {
-        walletAddress: npc.walletAddress,
+        wallet_address: npc.wallet_address,
         action: action,
         amountUSD: amountUSD,
-        characterId: npc.id
+        character_id: npc.id
       })
 
       if (exchangeResult.success) {
@@ -504,7 +504,7 @@ class NPCEngine {
 
   // NEW: Sell method for NPCs
   async sell(npc) {
-    const inventoryResponse = await fetch(`${API_BASE}/get-player-character?walletAddress=${npc.walletAddress}`)
+    const inventoryResponse = await fetch(`${API_BASE}/get-player-character?wallet_address=${npc.wallet_address}`)
     if (!inventoryResponse.ok) return
 
     const characterData = await inventoryResponse.json()
@@ -514,7 +514,7 @@ class NPCEngine {
 
     // Find items that can be sold (not equipped, quantity > 0)
     const sellableItems = inventory.filter(item =>
-      !item.isEquipped &&
+      !item.is_equipped &&
       item.quantity > 0 &&
       this.shouldSellItem(item, npc)
     )
@@ -530,7 +530,7 @@ class NPCEngine {
 
     try {
       const sellResult = await this.callAPI('sell-item', {
-        walletAddress: npc.walletAddress,
+        wallet_address: npc.wallet_address,
         inventoryId: itemToSell.id,
         quantity: quantityToSell
       })
@@ -571,8 +571,8 @@ class NPCEngine {
     const itemData = item.item
 
     // Never sell health/energy items if health/energy is low
-    if (npc.health < 50 && itemData.healthEffect > 0) return false
-    if (npc.energy < 50 && itemData.energyEffect > 0) return false
+    if (npc.health < 50 && itemData.health_effect > 0) return false
+    if (npc.energy < 50 && itemData.energy_effect > 0) return false
 
     // Always consider selling if broke
     if (npc.coins < 50) return true
@@ -651,7 +651,7 @@ class NPCEngine {
   estimateItemValue(item) {
     const rarityValues = { COMMON: 10, UNCOMMON: 20, RARE: 40, EPIC: 80, LEGENDARY: 150 }
     const baseValue = rarityValues[item.item.rarity] || 10
-    const effectValue = (item.item.healthEffect || 0) + (item.item.energyEffect || 0)
+    const effectValue = (item.item.health_effect || 0) + (item.item.energy_effect || 0)
     return baseValue + effectValue
   }
 
@@ -682,10 +682,10 @@ class NPCEngine {
       // Optional: Send death message to their current location
       if (this.config.chat?.enabled && this.config.announceDeaths) {
         await this.callAPI('send-message', {
-          walletAddress: npc.walletAddress,
-          locationId: npc.currentLocationId,
+          wallet_address: npc.wallet_address,
+          location_id: npc.currentlocation_id,
           message: `${npc.name} has fallen...`,
-          messageType: 'SYSTEM'
+          message_type: 'SYSTEM'
         })
       }
 
@@ -702,7 +702,7 @@ class NPCEngine {
   // NEW: Try emergency healing for critical NPCs
   async tryEmergencyHealing(npc) {
     try {
-      const inventoryResponse = await fetch(`${API_BASE}/get-player-character?walletAddress=${npc.walletAddress}`)
+      const inventoryResponse = await fetch(`${API_BASE}/get-player-character?wallet_address=${npc.wallet_address}`)
       if (!inventoryResponse.ok) return false
 
       const characterData = await inventoryResponse.json()
@@ -714,7 +714,7 @@ class NPCEngine {
       const healingItems = inventory.filter(item =>
         item.item.category === 'CONSUMABLE' &&
         item.quantity > 0 &&
-        (item.item.healthEffect || 0) > 0
+        (item.item.health_effect || 0) > 0
       )
 
       if (healingItems.length === 0) {
@@ -724,17 +724,17 @@ class NPCEngine {
 
       // Use the best healing item available
       const bestHealingItem = healingItems.reduce((best, current) =>
-        (current.item.healthEffect || 0) > (best.item.healthEffect || 0) ? current : best
+        (current.item.health_effect || 0) > (best.item.health_effect || 0) ? current : best
       )
 
       await this.callAPI('use-item', {
-        walletAddress: npc.walletAddress,
+        wallet_address: npc.wallet_address,
         inventoryId: bestHealingItem.id
       })
 
       await this.refreshNPCData(npc)
 
-      console.log(`🩹 ${npc.name} used ${bestHealingItem.item.name} to survive (+${bestHealingItem.item.healthEffect} health → ${npc.health})`)
+      console.log(`🩹 ${npc.name} used ${bestHealingItem.item.name} to survive (+${bestHealingItem.item.health_effect} health → ${npc.health})`)
       return true
 
     } catch (error) {
@@ -761,7 +761,7 @@ class NPCEngine {
     try {
       // Find a starting location (preferably easier/safer ones)
       const startingLocations = this.locations.filter(loc =>
-        loc.difficulty <= 2 && !loc.isPrivate && (!loc.minLevel || loc.minLevel <= 1)
+        loc.difficulty <= 2 && !loc.is_private && (!loc.min_level || loc.min_level <= 1)
       )
 
       const respawnLocation = startingLocations.length > 0
@@ -778,7 +778,7 @@ class NPCEngine {
           status: 'ACTIVE',
           health: respawnHealth,
           energy: respawnEnergy,
-          currentLocationId: respawnLocation.id
+          currentlocation_id: respawnLocation.id
         })
         .eq('id', npc.id)
 
@@ -786,16 +786,16 @@ class NPCEngine {
       npc.isDead = false
       npc.health = respawnHealth
       npc.energy = respawnEnergy
-      npc.currentLocationId = respawnLocation.id
+      npc.currentlocation_id = respawnLocation.id
       npc.deathTime = null
 
       // Optional: Announce respawn
       if (this.config.chat?.enabled && this.config.announceRespawns) {
         await this.callAPI('send-message', {
-          walletAddress: npc.walletAddress,
-          locationId: respawnLocation.id,
+          wallet_address: npc.wallet_address,
+          location_id: respawnLocation.id,
           message: `${npc.name} has returned from the void...`,
-          messageType: 'SYSTEM'
+          message_type: 'SYSTEM'
         })
       }
 
@@ -846,7 +846,7 @@ class NPCEngine {
 
       console.log(`🖼️ Minting NFT for ${personalityType}_${id}...`)
       const mintResult = await this.mintNPCCharacter({
-        walletAddress: npcWallet.publicKey.toString(),
+        wallet_address: npcWallet.publicKey.toString(),
         gender: gender,
         imageBlob: imageResult.imageBlob,
         selectedLayers: imageResult.selectedLayers,
@@ -870,9 +870,9 @@ class NPCEngine {
         this.scheduleNextActivity(this.npcs.get(mintResult.character.id))
       }
 
-      console.log(`👤 Spawned ${mintResult.character.name} at ${this.getLocationName(mintResult.character.currentLocationId)}`)
+      console.log(`👤 Spawned ${mintResult.character.name} at ${this.getLocationName(mintResult.character.currentlocation_id)}`)
 
-      console.log(`🔗 NFT: ${mintResult.nftAddress}`)
+      console.log(`🔗 NFT: ${mintResult.nft_address}`)
 
     } catch (error) {
       console.error(`Failed to spawn NPC ${personalityType}_${id}:`, error.message)
@@ -882,7 +882,7 @@ class NPCEngine {
 
   async mintNPCCharacter(npcData) {
     console.log('📤 Calling mint-nft with data:', {
-      walletAddress: npcData.walletAddress,
+      wallet_address: npcData.wallet_address,
       gender: npcData.gender,
       hasImageBlob: !!npcData.imageBlob,
       hasSelectedLayers: !!npcData.selectedLayers,
@@ -909,7 +909,7 @@ class NPCEngine {
     const result = await response.json()
     console.log('✅ Mint-nft success:', {
       characterName: result.character?.name,
-      nftAddress: result.nftAddress
+      nft_address: result.nft_address
     })
 
     return result
@@ -1146,7 +1146,7 @@ class NPCEngine {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          walletAddress: npc.walletAddress,
+          wallet_address: npc.wallet_address,
           experience,
           source,
           details
@@ -1175,7 +1175,7 @@ class NPCEngine {
 
   // Updated mining with XP
   async mine(npc) {
-    const result = await this.callAPI('mine-action', { walletAddress: npc.walletAddress })
+    const result = await this.callAPI('mine-action', { wallet_address: npc.wallet_address })
 
     // Update local stats from API response
     npc.energy = result.newEnergyLevel
@@ -1210,10 +1210,10 @@ class NPCEngine {
   // Updated travel with XP
   async travel(npc) {
     const availableDestinations = this.locations.filter(loc => {
-      if (loc.id === npc.currentLocationId) return false
-      if (loc.minLevel && npc.level < loc.minLevel) return false
-      if (loc.entryCost && npc.coins < loc.entryCost) return false
-      if (loc.isPrivate) return false
+      if (loc.id === npc.currentlocation_id) return false
+      if (loc.min_level && npc.level < loc.min_level) return false
+      if (loc.entry_cost && npc.coins < loc.entry_cost) return false
+      if (loc.is_private) return false
       return true
     })
 
@@ -1226,7 +1226,7 @@ class NPCEngine {
 
     try {
       await this.callAPI('travel-action', {
-        walletAddress: npc.walletAddress,
+        wallet_address: npc.wallet_address,
         destinationId: destination.id
       })
 
@@ -1247,11 +1247,11 @@ class NPCEngine {
         destination: destination.name,
         difficulty: destination.difficulty,
         firstVisit: !hasVisited,
-        entryCost: destination.entryCost || 0
+        entry_cost: destination.entry_cost || 0
       })
 
-      if (destination.entryCost) {
-        console.log(`🚶 ${npc.name} → ${destination.name} (paid ${destination.entryCost} coins, +${xpGained} XP)`)
+      if (destination.entry_cost) {
+        console.log(`🚶 ${npc.name} → ${destination.name} (paid ${destination.entry_cost} coins, +${xpGained} XP)`)
       } else {
         console.log(`🚶 ${npc.name} → ${destination.name} (+${xpGained} XP)`)
       }
@@ -1265,7 +1265,7 @@ class NPCEngine {
 
   // Updated buy with XP
   async buy(npc) {
-    const response = await fetch(`${API_BASE}/get-market?locationId=${npc.currentLocationId}`)
+    const response = await fetch(`${API_BASE}/get-market?location_id=${npc.currentlocation_id}`)
     const market = await response.json()
 
     if (market.items?.length) {
@@ -1275,7 +1275,7 @@ class NPCEngine {
 
         try {
           const buyResult = await this.callAPI('buy-item', {
-            walletAddress: npc.walletAddress,
+            wallet_address: npc.wallet_address,
             marketListingId: item.id
           })
 
@@ -1291,8 +1291,8 @@ class NPCEngine {
             else if (item.price >= 20) xpGained += 3
 
             // Smart purchase bonus (buying what you need)
-            if (npc.health < 30 && item.item.healthEffect > 0) xpGained += 5
-            if (npc.energy < 30 && item.item.energyEffect > 0) xpGained += 5
+            if (npc.health < 30 && item.item.health_effect > 0) xpGained += 5
+            if (npc.energy < 30 && item.item.energy_effect > 0) xpGained += 5
 
             await this.grantXP(npc, xpGained, 'SHOPPING', {
               itemName: item.item.name,
@@ -1310,7 +1310,7 @@ class NPCEngine {
           console.log(`🚫 ${npc.name} purchase failed: ${error.message}`)
         }
       } else {
-        console.log(`💸 ${npc.name} cannot afford anything available at ${this.getLocationName(npc.currentLocationId)}`)
+        console.log(`💸 ${npc.name} cannot afford anything available at ${this.getLocationName(npc.currentlocation_id)}`)
       }
     }
   }
@@ -1318,7 +1318,7 @@ class NPCEngine {
   // NEW METHOD: Refresh NPC data from database
   async refreshNPCData(npc) {
     try {
-      const response = await fetch(`${API_BASE}/get-player-character?walletAddress=${npc.walletAddress}`)
+      const response = await fetch(`${API_BASE}/get-player-character?wallet_address=${npc.wallet_address}`)
       if (response.ok) {
         const characterData = await response.json()
         if (characterData.hasCharacter) {
@@ -1330,7 +1330,7 @@ class NPCEngine {
           npc.energy = character.energy
           npc.level = character.level
           npc.experience = character.experience
-          npc.currentLocationId = character.currentLocationId
+          npc.currentlocation_id = character.currentlocation_id
 
           this.log('debug', `🔄 Refreshed ${npc.name}: ${npc.coins} coins, ${npc.health}H, ${npc.energy}E`)
         }
@@ -1364,7 +1364,7 @@ class NPCEngine {
     }
     // Priority 3: Use location biome
     else {
-      const location = this.locations.find(loc => loc.id === npc.currentLocationId)
+      const location = this.locations.find(loc => loc.id === npc.currentlocation_id)
       if (location?.biome && LOCATION_CHAT_MESSAGES[location.biome]) {
         messagePool = LOCATION_CHAT_MESSAGES[location.biome]
         context = location.biome
@@ -1375,10 +1375,10 @@ class NPCEngine {
     const message = messagePool[Math.floor(Math.random() * messagePool.length)]
 
     await this.callAPI('send-message', {
-      walletAddress: npc.walletAddress,
-      locationId: npc.currentLocationId,
+      wallet_address: npc.wallet_address,
+      location_id: npc.currentlocation_id,
       message,
-      messageType: 'CHAT'
+      message_type: 'CHAT'
     })
 
     // FIXED: Grant XP AFTER message is declared
@@ -1399,7 +1399,7 @@ class NPCEngine {
 
   // Updated equipment changes with XP
   async equip(npc) {
-    const inventoryResponse = await fetch(`${API_BASE}/get-player-character?walletAddress=${npc.walletAddress}`)
+    const inventoryResponse = await fetch(`${API_BASE}/get-player-character?wallet_address=${npc.wallet_address}`)
     if (!inventoryResponse.ok) return
 
     const characterData = await inventoryResponse.json()
@@ -1407,12 +1407,12 @@ class NPCEngine {
 
     const inventory = characterData.character.inventory || []
     const unequippedItems = inventory.filter(item =>
-      !item.isEquipped &&
+      !item.is_equipped &&
       item.item.category !== 'MATERIAL' &&
       item.item.category !== 'CONSUMABLE' &&
       item.quantity > 0
     )
-    const equippedItems = inventory.filter(item => item.isEquipped)
+    const equippedItems = inventory.filter(item => item.is_equipped)
 
     const shouldEquip = Math.random() > 0.3 && unequippedItems.length > 0
 
@@ -1420,7 +1420,7 @@ class NPCEngine {
       const item = unequippedItems[Math.floor(Math.random() * unequippedItems.length)]
 
       await this.callAPI('equip-item', {
-        walletAddress: npc.walletAddress,
+        wallet_address: npc.wallet_address,
         inventoryId: item.id,
         equip: true,
         setPrimary: Math.random() > 0.7
@@ -1438,7 +1438,7 @@ class NPCEngine {
       const item = equippedItems[Math.floor(Math.random() * equippedItems.length)]
 
       await this.callAPI('equip-item', {
-        walletAddress: npc.walletAddress,
+        wallet_address: npc.wallet_address,
         inventoryId: item.id,
         equip: false
       })
@@ -1456,7 +1456,7 @@ class NPCEngine {
 
   // Updated item use with XP
   async useItem(npc) {
-    const inventoryResponse = await fetch(`${API_BASE}/get-player-character?walletAddress=${npc.walletAddress}`)
+    const inventoryResponse = await fetch(`${API_BASE}/get-player-character?wallet_address=${npc.wallet_address}`)
     if (!inventoryResponse.ok) return
 
     const characterData = await inventoryResponse.json()
@@ -1476,7 +1476,7 @@ class NPCEngine {
 
     // Smart item usage gets bonus XP
     if (character.health < 20) {
-      targetItem = consumables.find(item => (item.item.healthEffect || 0) > 0)
+      targetItem = consumables.find(item => (item.item.health_effect || 0) > 0)
       if (targetItem) {
         reason = `CRITICAL HEALTH (${character.health}/100)`
         xpBonus = 5 // Smart emergency healing
@@ -1484,7 +1484,7 @@ class NPCEngine {
     }
 
     if (!targetItem && character.energy < 30) {
-      targetItem = consumables.find(item => (item.item.energyEffect || 0) > 0)
+      targetItem = consumables.find(item => (item.item.energy_effect || 0) > 0)
       if (targetItem) {
         reason = `LOW ENERGY (${character.energy}/100)`
         xpBonus = 3
@@ -1492,7 +1492,7 @@ class NPCEngine {
     }
 
     if (!targetItem && character.health < 60) {
-      targetItem = consumables.find(item => (item.item.healthEffect || 0) > 0)
+      targetItem = consumables.find(item => (item.item.health_effect || 0) > 0)
       if (targetItem) {
         reason = `HEALTH MAINTENANCE (${character.health}/100)`
         xpBonus = 2
@@ -1509,7 +1509,7 @@ class NPCEngine {
 
     try {
       await this.callAPI('use-item', {
-        walletAddress: npc.walletAddress,
+        wallet_address: npc.wallet_address,
         inventoryId: targetItem.id
       })
 
@@ -1525,8 +1525,8 @@ class NPCEngine {
       })
 
       const effects = []
-      if (targetItem.item.energyEffect) effects.push(`+${targetItem.item.energyEffect} energy`)
-      if (targetItem.item.healthEffect) effects.push(`+${targetItem.item.healthEffect} health`)
+      if (targetItem.item.energy_effect) effects.push(`+${targetItem.item.energy_effect} energy`)
+      if (targetItem.item.health_effect) effects.push(`+${targetItem.item.health_effect} health`)
 
       console.log(`🍎 ${npc.name} used ${targetItem.item.name} [${reason}] (+${baseXP + xpBonus} XP) ${effects.length ? `(${effects.join(', ')})` : ''} (${npc.health}H ${npc.energy}E)`)
       npc.lastActivity = 'USE_ITEM'
@@ -1537,14 +1537,14 @@ class NPCEngine {
   }
 
   // Helper method to check if visited location before
-  async checkIfVisitedBefore(npc, locationId) {
+  async checkIfVisitedBefore(npc, location_id) {
     try {
       const { data: transactions } = await supabase
         .from('transactions')
         .select('description')
-        .eq('characterId', npc.id)
+        .eq('character_id', npc.id)
         .eq('type', 'TRAVEL')
-        .ilike('description', `%${locationId}%`)
+        .ilike('description', `%${location_id}%`)
         .limit(1)
 
       return transactions && transactions.length > 0
@@ -1564,7 +1564,7 @@ class NPCEngine {
 
     // Enhanced XP logging
     if (result.experienceGained) {
-      const npc = Array.from(this.npcs.values()).find(n => n.walletAddress === payload.walletAddress)
+      const npc = Array.from(this.npcs.values()).find(n => n.wallet_address === payload.wallet_address)
 
       if (result.leveledUp) {
         console.log(`🎉 LEVEL UP! ${npc?.name} reached Level ${result.newLevel}! (${result.totalExperience} total XP)`)
@@ -1585,8 +1585,8 @@ class NPCEngine {
     return available[Math.floor(Math.random() * available.length)]
   }
 
-  getLocationName(locationId) {
-    return this.locations.find(loc => loc.id === locationId)?.name || 'Unknown'
+  getLocationName(location_id) {
+    return this.locations.find(loc => loc.id === location_id)?.name || 'Unknown'
   }
 }
 

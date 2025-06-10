@@ -78,10 +78,10 @@ export function BottomDrawerNav({
     }
   }
 
-  const getCharacterImageUrl = () => {
+  const getCharacterimage_url = () => {
     if (!character) return '/wojak.png'
-    if (imageError || !character.currentImageUrl) return '/wojak.png'
-    return character.currentImageUrl
+    if (imageError || !character.current_image_url) return '/wojak.png'
+    return character.current_image_url
   }
 
   const handleNavigation = (action: () => void) => {
@@ -207,7 +207,7 @@ export function BottomDrawerNav({
             <div className="flex items-center gap-3">
               <Avatar className="w-8 h-8 border border-primary/20">
                 <AvatarImage
-                  src={getCharacterImageUrl()}
+                  src={getCharacterimage_url()}
                   alt={character.name}
                   onError={handleImageError}
                   onLoad={() => setImageError(false)}
@@ -246,7 +246,7 @@ export function BottomDrawerNav({
           <div className="flex md:hidden items-center gap-3 flex-1 min-w-0">
             <Avatar className="w-10 h-10 flex-shrink-0 border border-primary/20">
               <AvatarImage
-                src={getCharacterImageUrl()}
+                src={getCharacterimage_url()}
                 alt={character.name}
                 onError={handleImageError}
                 onLoad={() => setImageError(false)}
@@ -336,7 +336,7 @@ export function BottomDrawerNav({
                     <div className="bg-muted/30 border border-primary/20 rounded p-3">
                       <div className="flex items-center gap-3 mb-3">
                         <Avatar className="w-12 h-12 border border-primary/20">
-                          <AvatarImage src={getCharacterImageUrl()} alt={character.name} onError={handleImageError} />
+                          <AvatarImage src={getCharacterimage_url()} alt={character.name} onError={handleImageError} />
                           <AvatarFallback className="bg-muted/50 font-mono">
                             {character.name.charAt(0).toUpperCase()}
                           </AvatarFallback>

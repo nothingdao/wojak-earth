@@ -28,7 +28,6 @@ import { toast } from 'sonner'
 import type { Character } from '@/types'
 import { BurnCharacter } from '../BurnCharacter'
 import { useNetwork } from '@/contexts/NetworkContext'
-import SparkleParticles from "@/components/SparkleParticles"; // adjust path as needed
 
 interface ProfileViewProps {
   character: Character
@@ -36,7 +35,7 @@ interface ProfileViewProps {
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({ character, onCharacterUpdated }) => {
-  console.log('🖼️ ProfileView render - coins:', character.coins, 'character ID:', character.id, 'object ref:', character)
+  // console.log('🖼️ ProfileView render - coins:', character.coins, 'character ID:', character.id, 'object ref:', character)
 
   const walletInfo = useWalletInfo()
   const [imageError, setImageError] = useState(false)
@@ -51,13 +50,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ character, onCharacter
   const handleImageError = () => {
     setImageLoading(false)
     setImageError(true)
-  }
-
-  const getCharacterImageUrl = () => {
-    if (imageError || !character.currentImageUrl) {
-      return '/wojak.png'
-    }
-    return character.currentImageUrl
   }
 
   const copyToClipboard = (text: string, label: string) => {
@@ -106,7 +98,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ character, onCharacter
 
               {!imageError ? (
                 // <img
-                //   src={getCharacterImageUrl()}
+                //   src={getCharacterimage_url()}
                 //   alt={character.name}
                 //   className="w-full h-full object-cover"
                 //   onLoad={handleImageLoad}
@@ -121,18 +113,17 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ character, onCharacter
                 //   onError={handleImageError}
                 //   style={{ display: imageLoading ? 'none' : 'block' }}
                 // />
-                <div className="relative w-full h-full">
-                  <SparkleParticles />
 
-                  <img
-                    src="eve.png"
-                    alt={character.name}
-                    className="w-full h-full object-contain relative z-10"
-                    onLoad={handleImageLoad}
-                    onError={handleImageError}
-                    style={{ display: imageLoading ? 'none' : 'block' }}
-                  />
-                </div>
+
+                <img
+                  src="eve.png"
+                  alt={character.name}
+                  className="w-full h-full object-contain relative z-10"
+                  onLoad={handleImageLoad}
+                  onError={handleImageError}
+                  style={{ display: imageLoading ? 'none' : 'block' }}
+                />
+
               ) : (
                 <div className="text-4xl text-muted-foreground">🥺</div>
               )}
@@ -156,7 +147,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ character, onCharacter
               </div>
               <div>
                 <div className="text-muted-foreground mb-1">PHENOTYPE</div>
-                <div className="text-primary font-bold">{character.gender}_{character.characterType}</div>
+                <div className="text-primary font-bold">{character.gender}_{character.character_type}</div>
               </div>
               <div>
                 <div className="text-muted-foreground mb-1">STATUS</div>
@@ -170,7 +161,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ character, onCharacter
             <div className="flex flex-wrap gap-2">
               <Badge variant="outline" className="text-xs font-mono">
                 <Hash className="w-3 h-3 mr-1" />
-                VER_{character.currentVersion}
+                VER_{character.current_version}
               </Badge>
               {isDevnet && (
                 <Badge variant="secondary" className="text-xs font-mono bg-orange-500/20 text-orange-600">
@@ -268,7 +259,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ character, onCharacter
       </div>
 
       {/* NFT Metadata Section */}
-      {character.nftAddress && (
+      {character.nft_address && (
         <div className="bg-muted/30 border border-primary/20 rounded p-4 mb-4">
           <div className="text-muted-foreground text-xs mb-3 flex items-center gap-2">
             <Layers className="w-4 h-4" />
@@ -281,12 +272,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ character, onCharacter
               <div className="text-muted-foreground text-xs mb-1">NFT_ADDRESS</div>
               <div className="flex items-center gap-2">
                 <div className="text-xs font-mono bg-muted/50 border border-primary/10 px-2 py-1 rounded flex-1 break-all text-primary">
-                  {character.nftAddress}
+                  {character.nft_address}
                 </div>
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => copyToClipboard(character.nftAddress!, 'NFT address')}
+                  onClick={() => copyToClipboard(character.nft_address!, 'NFT address')}
                   className="h-6 w-6 p-0"
                 >
                   <Copy className="w-3 h-3" />
@@ -294,7 +285,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ character, onCharacter
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => openInExplorer(character.nftAddress!)}
+                  onClick={() => openInExplorer(character.nft_address!)}
                   className="h-6 w-6 p-0"
                 >
                   <ExternalLink className="w-3 h-3" />
@@ -359,9 +350,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ character, onCharacter
               <div className="text-muted-foreground text-xs mb-1">GENESIS_TIMESTAMP</div>
               <div className="flex items-center gap-2 text-xs font-mono">
                 <Calendar className="w-3 h-3 text-muted-foreground" />
-                <span className="text-primary">{new Date(character.createdAt).toLocaleDateString()}</span>
+                <span className="text-primary">{new Date(character.created_at).toLocaleDateString()}</span>
                 <span className="text-muted-foreground">
-                  {new Date(character.createdAt).toLocaleTimeString()}
+                  {new Date(character.created_at).toLocaleTimeString()}
                 </span>
               </div>
             </div>
@@ -370,7 +361,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ character, onCharacter
       )}
 
       {/* Equipped Items */}
-      {character.inventory.filter(item => item.isEquipped).length > 0 && (
+      {character.inventory.filter(item => item.is_equipped).length > 0 && (
         <div className="bg-muted/30 border border-primary/20 rounded p-4 mb-4">
           <div className="text-muted-foreground text-xs mb-3 flex items-center gap-2">
             <Package className="w-4 h-4" />
@@ -379,7 +370,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ character, onCharacter
 
           <div className="space-y-2">
             {character.inventory
-              .filter(item => item.isEquipped)
+              .filter(item => item.is_equipped)
               .map((item) => (
                 <div
                   key={item.id}

@@ -15,20 +15,20 @@ export interface DatabaseLocation {
   description: string
   biome?: string
   difficulty: number
-  minLevel?: number
-  hasMarket: boolean
-  hasMining: boolean
-  hasTravel: boolean
-  hasChat: boolean
-  svgpathid?: string | null
+  min_level?: number
+  has_market: boolean
+  has_mining: boolean
+  has_travel: boolean
+  has_chat: boolean
+  svg_path_id?: string | null
   theme?: string
-  isExplored?: boolean
-  playerCount: number
-  entryCost?: number
-  locationType: string
-  parentLocationId?: string | null
-  createdAt: string
-  updatedAt: string
+  is_explored?: boolean
+  player_count: number
+  entry_cost?: number
+  location_type: string
+  parentlocation_id?: string | null
+  created_at: string
+  updated_at: string
 }
 
 export function useSvgMapper() {
@@ -77,15 +77,15 @@ export function useSvgMapper() {
   )
 
   const updateLocationData = useCallback(
-    async (locationId: string, updates: Partial<DatabaseLocation>) => {
+    async (location_id: string, updates: Partial<DatabaseLocation>) => {
       try {
         setError(null)
-        const updatedLocation = await updateLocation(locationId, updates)
+        const updatedLocation = await updateLocation(location_id, updates)
 
         // Update local state immediately for responsive UI
         setLocations((prev) =>
           prev.map((loc) =>
-            loc.id === locationId ? { ...loc, ...updates } : loc
+            loc.id === location_id ? { ...loc, ...updates } : loc
           )
         )
 
@@ -101,10 +101,10 @@ export function useSvgMapper() {
   )
 
   const linkPath = useCallback(
-    async (locationId: string, pathId: string) => {
+    async (location_id: string, pathId: string) => {
       try {
         setError(null)
-        const result = await linkPathToLocation(locationId, pathId)
+        const result = await linkPathToLocation(location_id, pathId)
         await fetchLocations() // Refresh to see changes
         return result
       } catch (err) {
@@ -116,10 +116,10 @@ export function useSvgMapper() {
   )
 
   const unlinkPath = useCallback(
-    async (locationId: string) => {
+    async (location_id: string) => {
       try {
         setError(null)
-        const result = await unlinkPathFromLocation(locationId)
+        const result = await unlinkPathFromLocation(location_id)
         await fetchLocations() // Refresh to see changes
         return result
       } catch (err) {
@@ -131,11 +131,11 @@ export function useSvgMapper() {
   )
 
   const deleteLocationData = useCallback(
-    async (locationId: string) => {
+    async (location_id: string) => {
       try {
         setLoading(true)
         setError(null)
-        await deleteLocation(locationId)
+        await deleteLocation(location_id)
         await fetchLocations() // Refresh the list
       } catch (err) {
         setError(
@@ -153,10 +153,10 @@ export function useSvgMapper() {
   const generateMapDataFromDatabase = useCallback(
     (svgContent?: string) => {
       const pathMappings = locations
-        .filter((loc) => loc.svgpathid) // Only include locations with SVG paths
+        .filter((loc) => loc.svg_path_id) // Only include locations with SVG paths
         .map((loc) => ({
-          pathId: loc.svgpathid!,
-          locationId: loc.id,
+          pathId: loc.svg_path_id!,
+          location_id: loc.id,
         }))
 
       // Calculate total paths from SVG content if provided
@@ -200,7 +200,7 @@ export function useSvgMapper() {
 
 export interface PathMapping {
   pathId: string
-  locationId: string
+  location_id: string
 }
 
 export interface MapData {
@@ -238,32 +238,32 @@ export class MapDataManager {
     this.locationToPathMap.clear()
 
     this.mapData.pathMappings.forEach((mapping) => {
-      this.pathToLocationMap.set(mapping.pathId, mapping.locationId)
-      this.locationToPathMap.set(mapping.locationId, mapping.pathId)
+      this.pathToLocationMap.set(mapping.pathId, mapping.location_id)
+      this.locationToPathMap.set(mapping.location_id, mapping.pathId)
     })
   }
 
-  getLocationIdByPath(pathId: string): string | undefined {
+  getlocation_idByPath(pathId: string): string | undefined {
     return this.pathToLocationMap.get(pathId)
   }
 
-  getPathIdByLocation(locationId: string): string | undefined {
-    return this.locationToPathMap.get(locationId)
+  getPathIdByLocation(location_id: string): string | undefined {
+    return this.locationToPathMap.get(location_id)
   }
 
   isPathMapped(pathId: string): boolean {
     return this.pathToLocationMap.has(pathId)
   }
 
-  isLocationMapped(locationId: string): boolean {
-    return this.locationToPathMap.has(locationId)
+  isLocationMapped(location_id: string): boolean {
+    return this.locationToPathMap.has(location_id)
   }
 
   getMappedPathIds(): string[] {
     return Array.from(this.pathToLocationMap.keys())
   }
 
-  getMappedLocationIds(): string[] {
+  getMappedlocation_ids(): string[] {
     return Array.from(this.locationToPathMap.keys())
   }
 
@@ -292,15 +292,15 @@ export class MapDataManager {
     if (!Array.isArray(this.mapData.pathMappings)) errors.push('pathMappings must be an array')
 
     const pathIds = new Set<string>()
-    const locationIds = new Set<string>()
+    const location_ids = new Set<string>()
 
     this.mapData.pathMappings.forEach((mapping, index) => {
       if (!mapping.pathId) errors.push(\`Mapping \${index}: missing pathId\`)
-      if (!mapping.locationId) errors.push(\`Mapping \${index}: missing locationId\`)
+      if (!mapping.location_id) errors.push(\`Mapping \${index}: missing location_id\`)
       if (pathIds.has(mapping.pathId)) errors.push(\`Duplicate pathId: \${mapping.pathId}\`)
-      if (locationIds.has(mapping.locationId)) errors.push(\`Duplicate locationId: \${mapping.locationId}\`)
+      if (location_ids.has(mapping.location_id)) errors.push(\`Duplicate location_id: \${mapping.location_id}\`)
       pathIds.add(mapping.pathId)
-      locationIds.add(mapping.locationId)
+      location_ids.add(mapping.location_id)
     })
 
     if (this.mapData.metadata) {
@@ -362,7 +362,7 @@ function generateMapDataTypeScript(mapData: any): string {
 
 export interface PathMapping {
   pathId: string
-  locationId: string
+  location_id: string
 }
 
 export interface MapData {
@@ -411,27 +411,27 @@ export default mapData
         // Get current database mappings
         const currentMappings = new Set(
           locations
-            .filter((loc) => loc.svgpathid)
-            .map((loc) => `${loc.svgpathid}:${loc.id}`)
+            .filter((loc) => loc.svg_path_id)
+            .map((loc) => `${loc.svg_path_id}:${loc.id}`)
         )
 
         // Get new mappings from mapData
         const newMappings = new Set(
           newMapData.pathMappings.map(
-            (mapping: any) => `${mapping.pathId}:${mapping.locationId}`
+            (mapping: any) => `${mapping.pathId}:${mapping.location_id}`
           )
         )
 
         // Find mappings to add (in new but not in current)
         const toAdd = newMapData.pathMappings.filter(
           (mapping: any) =>
-            !currentMappings.has(`${mapping.pathId}:${mapping.locationId}`)
+            !currentMappings.has(`${mapping.pathId}:${mapping.location_id}`)
         )
 
         // Find mappings to remove (in current but not in new)
         const toRemove = locations.filter(
           (loc) =>
-            loc.svgpathid && !newMappings.has(`${loc.svgpathid}:${loc.id}`)
+            loc.svg_path_id && !newMappings.has(`${loc.svg_path_id}:${loc.id}`)
         )
 
         // Apply changes
@@ -439,7 +439,7 @@ export default mapData
 
         // Add new mappings
         for (const mapping of toAdd) {
-          promises.push(linkPathToLocation(mapping.locationId, mapping.pathId))
+          promises.push(linkPathToLocation(mapping.location_id, mapping.pathId))
         }
 
         // Remove old mappings

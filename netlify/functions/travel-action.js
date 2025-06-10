@@ -26,9 +26,9 @@ export const handler = async (event, context) => {
   }
 
   try {
-    const { walletAddress, destinationId } = JSON.parse(event.body || '{}')
+    const { wallet_address, destinationId } = JSON.parse(event.body || '{}')
 
-    if (!walletAddress || !destinationId) {
+    if (!wallet_address || !destinationId) {
       return {
         statusCode: 400,
         headers,
@@ -40,7 +40,7 @@ export const handler = async (event, context) => {
     const { data: character, error } = await supabase
       .from('characters')
       .select('*')
-      .eq('walletAddress', walletAddress)
+      .eq('wallet_address', wallet_address)
       .eq('status', 'ACTIVE')
       .single()
 
@@ -59,7 +59,7 @@ export const handler = async (event, context) => {
     const { data: currentLocation, error: currentError } = await supabase
       .from('locations')
       .select('*')
-      .eq('id', character.currentLocationId)
+      .eq('id', character.currentlocation_id)
       .single()
 
     if (currentError) throw currentError
@@ -69,8 +69,8 @@ export const handler = async (event, context) => {
       .from('locations')
       .select(`
         *,
-        subLocations:locations!parentLocationId(*),
-        parentLocation:locations!parentLocationId(*)
+        subLocations:locations!parentlocation_id(*),
+        parentLocation:locations!parentlocation_id(*)
       `)
       .eq('id', destinationId)
       .single()
@@ -86,7 +86,7 @@ export const handler = async (event, context) => {
     }
 
     // Check if already at destination
-    if (character.currentLocationId === destinationId) {
+    if (character.currentlocation_id === destinationId) {
       return {
         statusCode: 400,
         headers,
@@ -98,35 +98,35 @@ export const handler = async (event, context) => {
     }
 
     // Check level requirement
-    if (destination.minLevel && character.level < destination.minLevel) {
+    if (destination.min_level && character.level < destination.min_level) {
       return {
         statusCode: 403,
         headers,
         body: JSON.stringify({
           error: 'Level requirement not met',
-          message: `${destination.name} requires level ${destination.minLevel}. You are level ${character.level}.`,
-          required: destination.minLevel,
+          message: `${destination.name} requires level ${destination.min_level}. You are level ${character.level}.`,
+          required: destination.min_level,
           current: character.level
         })
       }
     }
 
     // Check entry cost
-    if (destination.entryCost && character.coins < destination.entryCost) {
+    if (destination.entry_cost && character.coins < destination.entry_cost) {
       return {
         statusCode: 402,
         headers,
         body: JSON.stringify({
           error: 'Insufficient funds for entry',
-          message: `${destination.name} costs ${destination.entryCost} coins to enter. You have ${character.coins}.`,
-          cost: destination.entryCost,
+          message: `${destination.name} costs ${destination.entry_cost} coins to enter. You have ${character.coins}.`,
+          cost: destination.entry_cost,
           available: character.coins
         })
       }
     }
 
     // Check if private location (could require special access)
-    if (destination.isPrivate) {
+    if (destination.is_private) {
       // For now, block all private locations
       return {
         statusCode: 403,
@@ -139,8 +139,8 @@ export const handler = async (event, context) => {
     }
 
     // Deduct entry cost if required
-    if (destination.entryCost > 0) {
-      const newCoins = character.coins - destination.entryCost
+    if (destination.entry_cost > 0) {
+      const newCoins = character.coins - destination.entry_cost
 
       await supabase
         .from('characters')
@@ -151,7 +151,7 @@ export const handler = async (event, context) => {
     // Update character location
     const { data: updatedCharacter, error: updateError } = await supabase
       .from('characters')
-      .update({ currentLocationId: destinationId })
+      .update({ currentlocation_id: destinationId })
       .eq('id', character.id)
       .select('*')
       .single()
@@ -164,7 +164,7 @@ export const handler = async (event, context) => {
       .from('transactions')
       .insert({
         id: transactionId,
-        characterId: character.id,
+        character_id: character.id,
         type: 'TRAVEL',
         description: `Traveled from ${currentLocation.name} to ${destination.name}`
       })
@@ -177,17 +177,17 @@ export const handler = async (event, context) => {
     const { error: decrementError } = await supabase
       .from('locations')
       .update({
-        playerCount: Math.max(0, (currentLocation.playerCount || 1) - 1)
+        player_count: Math.max(0, (currentLocation.player_count || 1) - 1)
       })
-      .eq('id', character.currentLocationId)
+      .eq('id', character.currentlocation_id)
 
     if (decrementError) throw decrementError
 
     const { error: incrementError } = await supabase
       .from('locations')
       .update({
-        playerCount: (destination.playerCount || 0) + 1,
-        lastActive: new Date().toISOString()
+        player_count: (destination.player_count || 0) + 1,
+        last_active: new Date().toISOString()
       })
       .eq('id', destinationId)
 
@@ -203,7 +203,7 @@ export const handler = async (event, context) => {
     await supabase
       .from('characters')
       .update({
-        currentLocationId: destinationId,
+        currentlocation_id: destinationId,
         health: newHealth
       })
       .eq('id', character.id)
@@ -215,13 +215,13 @@ export const handler = async (event, context) => {
         id: destination.id,
         name: destination.name,
         description: destination.description,
-        locationType: destination.locationType,
+        location_type: destination.location_type,
         biome: destination.biome,
-        welcomeMessage: destination.welcomeMessage,
+        welcome_message: destination.welcome_message,
         lore: destination.lore,
-        hasMarket: destination.hasMarket,
-        hasMining: destination.hasMining,
-        hasChat: destination.hasChat
+        has_market: destination.has_market,
+        has_mining: destination.has_mining,
+        has_chat: destination.has_chat
       },
       previousLocation: {
         id: currentLocation.id,
@@ -230,7 +230,7 @@ export const handler = async (event, context) => {
       costs: {
         time: 0,
         energy: 0,
-        money: destination.entryCost || 0,
+        money: destination.entry_cost || 0,
         health: travelHealthCost,
         status: travelHealthCost > 0 ? [`Lost ${travelHealthCost} health from travel`] : []
       }

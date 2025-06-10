@@ -102,10 +102,10 @@
       {
         "file": "male-solana-seeker.png",
         "itemName": "Solana Seeker",
-        "itemId": "solana-seeker",
+        "item_id": "solana-seeker",
         "itemDescription": "Revolutionary phone built for the Solana ecosystem",
         "rarity": "LEGENDARY",
-        "energyEffect": 15,
+        "energy_effect": 15,
         "incompatible_base": ["male-2.png", "male-blue.png", "male-red.png"]
       }
     ],
@@ -114,10 +114,10 @@
       {
         "file": "female-solana-seeker.png",
         "itemName": "Solana Seeker",
-        "itemId": "solana-seeker",
+        "item_id": "solana-seeker",
         "itemDescription": "Revolutionary phone built for the Solana ecosystem",
         "rarity": "LEGENDARY",
-        "energyEffect": 15
+        "energy_effect": 15
       },
       {
         "file": "female-baseball-bat.png",

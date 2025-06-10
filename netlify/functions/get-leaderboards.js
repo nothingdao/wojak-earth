@@ -37,17 +37,17 @@ export const handler = async (event, context) => {
         level,
         energy,
         health,
-        characterType,
-        currentImageUrl,
-        currentLocationId,
-        createdAt,
+        character_type,
+        current_image_url,
+        current_location_id,
+        created_at,
         inventory:character_inventory(
           quantity,
           item:items(category)
         ),
         transactions(
           type,
-          createdAt
+          created_at
         )
       `)
       .eq('status', 'ACTIVE')
@@ -57,7 +57,7 @@ export const handler = async (event, context) => {
     // Get location visits for exploration leaderboard
     const { data: travels, error: travelsError } = await supabase
       .from('transactions')
-      .select('characterId, description')
+      .select('character_id, description')
       .eq('type', 'TRAVEL')
 
     if (travelsError) throw travelsError
@@ -103,10 +103,10 @@ function calculateLeaderboards(characters, travels) {
 
     return {
       id: `${character.id}_${type}`,
-      characterId: character.id,
-      characterName: character.name,
-      characterImageUrl: character.currentImageUrl,
-      characterType: character.characterType,
+      character_id: character.id,
+      character_name: character.name,
+      character_image_url: character.current_image_url,
+      character_type: character.character_type,
       value: value,
       change: change,
       badge: getBadgeForCharacter(character, type)
@@ -139,13 +139,13 @@ function calculateLeaderboards(characters, travels) {
 
   // 4. EXPLORATION LEADERBOARD (by unique locations visited)
   const locationVisits = travels.reduce((acc, travel) => {
-    const characterId = travel.characterId
-    if (!acc[characterId]) acc[characterId] = new Set()
+    const character_id = travel.character_id
+    if (!acc[character_id]) acc[character_id] = new Set()
 
     // Extract location from travel description
     const locationMatch = travel.description.match(/to (.+)$/)
     if (locationMatch) {
-      acc[characterId].add(locationMatch[1])
+      acc[character_id].add(locationMatch[1])
     }
     return acc
   }, {})
@@ -219,7 +219,7 @@ function getBadgeForCharacter(character, type) {
   }
 
   // Special type badges
-  if (character.characterType === 'NPC') {
+  if (character.character_type === 'NPC') {
     badges.push('🤖 NPC')
   }
 

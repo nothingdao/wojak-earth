@@ -13,14 +13,14 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 const realtimeSupabase = createClient(supabaseUrl, supabaseAnonKey)
 
 // Hook for READING participant count (doesn't track presence)
-export function useChatParticipantCount(locationId: string | null) {
+export function useChatParticipantCount(location_id: string | null) {
   const [chatParticipants, setChatParticipants] = useState(0)
   const channelRef = useRef<any>(null)
 
   useEffect(() => {
-    if (!locationId) return
+    if (!location_id) return
 
-    const channel = realtimeSupabase.channel(`chat_presence_${locationId}`)
+    const channel = realtimeSupabase.channel(`chat_presence_${location_id}`)
 
     channel
       .on('presence', { event: 'sync' }, () => {
@@ -45,14 +45,14 @@ export function useChatParticipantCount(locationId: string | null) {
         channelRef.current.unsubscribe()
       }
     }
-  }, [locationId])
+  }, [location_id])
 
   return chatParticipants
 }
 
 // Hook for ACTIVELY participating in chat (tracks presence)
 export function useChatPresence(
-  locationId: string | null,
+  location_id: string | null,
   character: Character | null,
   options?: PresenceOptions
 ) {
@@ -60,9 +60,9 @@ export function useChatPresence(
   const channelRef = useRef<any>(null)
 
   useEffect(() => {
-    if (!locationId || !character) return
+    if (!location_id || !character) return
 
-    const channel = realtimeSupabase.channel(`chat_presence_${locationId}`)
+    const channel = realtimeSupabase.channel(`chat_presence_${location_id}`)
 
     channel
       .on('presence', { event: 'sync' }, () => {
@@ -114,7 +114,7 @@ export function useChatPresence(
         channelRef.current.unsubscribe()
       }
     }
-  }, [locationId, character?.id, character?.name])
+  }, [location_id, character?.id, character?.name])
 
   return chatParticipants
 }

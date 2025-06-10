@@ -26,9 +26,9 @@ export const handler = async (event, context) => {
   }
 
   try {
-    const { walletAddress, inventoryId } = JSON.parse(event.body || '{}')
+    const { wallet_address, inventoryId } = JSON.parse(event.body || '{}')
 
-    if (!walletAddress || !inventoryId) {
+    if (!wallet_address || !inventoryId) {
       return {
         statusCode: 400,
         headers,
@@ -40,7 +40,7 @@ export const handler = async (event, context) => {
     const { data: character, error } = await supabase
       .from('characters')
       .select('*')
-      .eq('walletAddress', walletAddress)
+      .eq('wallet_address', wallet_address)
       .eq('status', 'ACTIVE')
       .single()
 
@@ -76,7 +76,7 @@ export const handler = async (event, context) => {
     const { data: item, error: itemError } = await supabase
       .from('items')
       .select('*')
-      .eq('id', inventoryItem.itemId)
+      .eq('id', inventoryItem.item_id)
       .single()
 
     if (itemError) throw itemError
@@ -84,7 +84,7 @@ export const handler = async (event, context) => {
     inventoryItem.item = item
 
     // Verify ownership
-    if (inventoryItem.characterId !== character.id) {
+    if (inventoryItem.character_id !== character.id) {
       return {
         statusCode: 403,
         headers,
@@ -117,11 +117,11 @@ export const handler = async (event, context) => {
     }
 
     // Calculate effects (capped at 100)
-    const energyEffect = inventoryItem.item.energyEffect || 0
-    const healthEffect = inventoryItem.item.healthEffect || 0
+    const energy_effect = inventoryItem.item.energy_effect || 0
+    const health_effect = inventoryItem.item.health_effect || 0
 
-    const newEnergy = Math.min(100, character.energy + energyEffect)
-    const newHealth = Math.min(100, character.health + healthEffect)
+    const newEnergy = Math.min(100, character.energy + energy_effect)
+    const newHealth = Math.min(100, character.health + health_effect)
 
     const actualEnergyGain = newEnergy - character.energy
     const actualHealthGain = newHealth - character.health
@@ -181,9 +181,9 @@ export const handler = async (event, context) => {
       .from('transactions')
       .insert({
         id: transactionId,
-        characterId: character.id,
+        character_id: character.id,
         type: 'MINE', // We can add 'USE' to the enum later, using MINE for now
-        itemId: inventoryItem.itemId,
+        item_id: inventoryItem.item_id,
         quantity: 1,
         description: `Used ${inventoryItem.item.name}${actualEnergyGain > 0 || actualHealthGain > 0 ?
           ` (${[

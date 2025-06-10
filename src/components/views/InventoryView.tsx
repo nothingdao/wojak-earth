@@ -27,19 +27,19 @@ import type { Character } from '@/types'
 interface InventoryViewProps {
   character: Character
   loadingItems: Set<string>
-  onUseItem: (inventoryId: string, itemName: string, energyEffect?: number, healthEffect?: number, event?: React.MouseEvent) => void
-  onEquipItem: (inventoryId: string, isEquipped: boolean, targetSlot?: string, event?: React.MouseEvent) => void
+  onUseItem: (inventoryId: string, itemName: string, energy_effect?: number, health_effect?: number, event?: React.MouseEvent) => void
+  onEquipItem: (inventoryId: string, is_equipped: boolean, targetSlot?: string, event?: React.MouseEvent) => void
   onSetPrimary?: (inventoryId: string, category: string) => void
   onReplaceSlot?: (inventoryId: string, category: string, slotIndex: number) => void
 }
 
 // Updated equipment slots with progression
 const EQUIPMENT_SLOTS = {
-  clothing: { name: 'CLOTHING', icon: GiShirt, layerType: 'CLOTHING' },
-  outerwear: { name: 'OUTERWEAR', icon: GiCloak, layerType: 'OUTERWEAR' },
-  face_accessory: { name: 'FACE_GEAR', icon: GiSunglasses, layerType: 'FACE_ACCESSORY' },
-  headwear: { name: 'HEADGEAR', icon: GiCrown, layerType: 'HAT' },
-  misc_accessory: { name: 'ACCESSORY', icon: GiGemNecklace, layerType: 'ACCESSORY' },
+  clothing: { name: 'CLOTHING', icon: GiShirt, layer_type: 'CLOTHING' },
+  outerwear: { name: 'OUTERWEAR', icon: GiCloak, layer_type: 'OUTERWEAR' },
+  face_accessory: { name: 'FACE_GEAR', icon: GiSunglasses, layer_type: 'FACE_ACCESSORY' },
+  headwear: { name: 'HEADGEAR', icon: GiCrown, layer_type: 'HAT' },
+  misc_accessory: { name: 'ACCESSORY', icon: GiGemNecklace, layer_type: 'ACCESSORY' },
   tool: { name: 'TOOL', icon: GiSpade, category: 'TOOL' },
 } as const
 
@@ -57,7 +57,7 @@ const getLevelForSlot = (slotIndex: number) => {
 const getSlotForItem = (item: Character['inventory'][0]['item']) => {
   if (item.category === 'TOOL') return 'tool'
 
-  switch (item.layerType) {
+  switch (item.layer_type) {
     case 'CLOTHING': return 'clothing'
     case 'OUTERWEAR': return 'outerwear'
     case 'FACE_ACCESSORY': return 'face_accessory'
@@ -86,7 +86,7 @@ export function InventoryView({
   // Categorize inventory items for tabs
   const equipmentItems = character.inventory?.filter(inv =>
     ['HAT', 'CLOTHING', 'ACCESSORY', 'TOOL'].includes(inv.item.category) ||
-    ['CLOTHING', 'OUTERWEAR', 'FACE_ACCESSORY', 'HAT', 'ACCESSORY'].includes(inv.item.layerType)
+    ['CLOTHING', 'OUTERWEAR', 'FACE_ACCESSORY', 'HAT', 'ACCESSORY'].includes(inv.item.layer_type)
   ) || []
 
   const consumableItems = character.inventory?.filter(inv =>
@@ -100,20 +100,20 @@ export function InventoryView({
   // Get equipped items by category and slot
   const getEquippedByCategory = (category: string) => {
     return character.inventory?.filter(inv =>
-      inv.isEquipped && inv.equippedslot === category
+      inv.is_equipped && inv.equipped_slot === category
     ).sort((a, b) => (a.slot_index || 1) - (b.slot_index || 1)) || []
   }
 
   // Get equipped item by specific slot
   const getEquippedBySlot = (category: string, slotIndex: number) => {
     return character.inventory?.find(inv =>
-      inv.isEquipped && inv.equippedslot === category && inv.slot_index === slotIndex
+      inv.is_equipped && inv.equipped_slot === category && inv.slot_index === slotIndex
     )
   }
 
   // Enhanced equip handler with multi-slot support
   const handleEquipWithConflictCheck = (item: Character['inventory'][0], event?: React.MouseEvent) => {
-    if (item.isEquipped) {
+    if (item.is_equipped) {
       // Simple unequip
       onEquipItem(item.id, true, undefined, event)
       return
@@ -166,8 +166,8 @@ export function InventoryView({
 
   // Handle setting item as primary
   const handleSetPrimary = (item: Character['inventory'][0]) => {
-    if (onSetPrimary && item.equippedslot) {
-      onSetPrimary(item.id, item.equippedslot)
+    if (onSetPrimary && item.equipped_slot) {
+      onSetPrimary(item.id, item.equipped_slot)
     }
   }
 
@@ -403,14 +403,14 @@ export function InventoryView({
   // Enhanced renderInventoryItem with terminal styling
   const renderInventoryItem = (inv: Character['inventory'][0]) => {
     const isConsumable = inv.item.category === 'CONSUMABLE'
-    const energyEffect = inv.item.energyEffect || 0
-    const healthEffect = inv.item.healthEffect || 0
+    const energy_effect = inv.item.energy_effect || 0
+    const health_effect = inv.item.health_effect || 0
 
-    const wouldWasteEnergy = energyEffect > 0 && character.energy >= 100
-    const wouldWasteHealth = healthEffect > 0 && character.health >= 100
+    const wouldWasteEnergy = energy_effect > 0 && character.energy >= 100
+    const wouldWasteHealth = health_effect > 0 && character.health >= 100
     const wouldBeWasted = isConsumable && (
-      (energyEffect > 0 && wouldWasteEnergy) ||
-      (healthEffect > 0 && wouldWasteHealth)
+      (energy_effect > 0 && wouldWasteEnergy) ||
+      (health_effect > 0 && wouldWasteHealth)
     )
 
     const isLoading = loadingItems.has(inv.id)
@@ -429,7 +429,7 @@ export function InventoryView({
           <div className="min-w-0 overflow-hidden">
             <div className="font-bold text-primary flex items-center gap-2 mb-1">
               <span className="truncate text-sm">{inv.item.name.toUpperCase()}</span>
-              {inv.isEquipped && (
+              {inv.is_equipped && (
                 <div className="flex items-center gap-1">
                   <Badge variant="secondary" className="text-xs font-mono flex items-center gap-1">
                     {inv.is_primary && <Crown className="w-3 h-3" />}
@@ -447,18 +447,18 @@ export function InventoryView({
             <div className="text-xs text-muted-foreground mb-2 line-clamp-2">{inv.item.description}</div>
 
             {/* Show consumable effects */}
-            {isConsumable && (energyEffect > 0 || healthEffect > 0) && (
+            {isConsumable && (energy_effect > 0 || health_effect > 0) && (
               <div className="text-xs text-green-500 mb-2 flex items-center gap-3 font-mono">
-                {energyEffect > 0 && (
+                {energy_effect > 0 && (
                   <span className="flex items-center gap-1">
                     <Zap className="w-3 h-3" />
-                    +{energyEffect}_ENERGY
+                    +{energy_effect}_ENERGY
                   </span>
                 )}
-                {healthEffect > 0 && (
+                {health_effect > 0 && (
                   <span className="flex items-center gap-1">
                     <Heart className="w-3 h-3" />
-                    +{healthEffect}_HEALTH
+                    +{health_effect}_HEALTH
                   </span>
                 )}
               </div>
@@ -477,7 +477,7 @@ export function InventoryView({
               <Button
                 type="button"
                 size="sm"
-                variant={inv.isEquipped ? "default" : "outline"}
+                variant={inv.is_equipped ? "default" : "outline"}
                 onClick={(e) => {
                   e.preventDefault()
                   e.stopPropagation()
@@ -489,13 +489,13 @@ export function InventoryView({
                 {isLoading ? (
                   <Loader2 className="w-3 h-3 animate-spin" />
                 ) : (
-                  inv.isEquipped ? 'UNEQUIP' : 'EQUIP'
+                  inv.is_equipped ? 'UNEQUIP' : 'EQUIP'
                 )}
               </Button>
             )}
 
             {/* Set Primary Button for equipped non-primary items */}
-            {inv.isEquipped && !inv.is_primary && onSetPrimary && (
+            {inv.is_equipped && !inv.is_primary && onSetPrimary && (
               <Button
                 type="button"
                 size="sm"
@@ -521,8 +521,8 @@ export function InventoryView({
                   onUseItem(
                     inv.id,
                     inv.item.name,
-                    inv.item.energyEffect,
-                    inv.item.healthEffect,
+                    inv.item.energy_effect,
+                    inv.item.health_effect,
                     e
                   )
                 }}

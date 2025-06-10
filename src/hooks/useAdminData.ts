@@ -22,14 +22,14 @@ export interface AdminCharacter {
   id: string
   name: string
   gender: string
-  currentLocationId: string
+  currentlocation_id: string
   locationName: string
   level: number
   health: number
   energy: number
   coins: number
   status: string
-  createdAt: string
+  created_at: string
 }
 
 export interface AdminLocation {
@@ -38,13 +38,13 @@ export interface AdminLocation {
   description: string
   biome: string
   difficulty: number
-  playerCount: number
-  hasMarket: boolean
-  hasMining: boolean
-  hasTravel: boolean
-  hasChat: boolean
+  player_count: number
+  has_market: boolean
+  has_mining: boolean
+  has_travel: boolean
+  has_chat: boolean
   status: string
-  parentLocationId?: string // Optional parent location for nested locations
+  parentlocation_id?: string // Optional parent location for nested locations
 }
 
 export interface AdminItem {
@@ -53,10 +53,10 @@ export interface AdminItem {
   description: string
   category: string
   rarity: string
-  layerType?: string
+  layer_type?: string
   durability?: number
-  energyEffect?: number
-  healthEffect?: number
+  energy_effect?: number
+  health_effect?: number
 }
 
 export interface AdminActivity {
@@ -146,17 +146,17 @@ export function useAdminCharacters() {
           id,
           name,
           gender,
-          currentLocationId,
+          currentlocation_id,
           level,
           health,
           energy,
           coins,
           status,
-          createdAt,
+          created_at,
           location:locations(name)
         `
         )
-        .order('createdAt', { ascending: false })
+        .order('created_at', { ascending: false })
 
       if (error) throw error
 
@@ -164,14 +164,14 @@ export function useAdminCharacters() {
         id: char.id,
         name: char.name,
         gender: char.gender,
-        currentLocationId: char.currentLocationId,
+        currentlocation_id: char.currentlocation_id,
         locationName: char.location?.name || 'Unknown',
         level: char.level,
         health: char.health,
         energy: char.energy,
         coins: char.coins,
         status: char.status,
-        createdAt: new Date(char.createdAt).toLocaleDateString(),
+        created_at: new Date(char.created_at).toLocaleDateString(),
       }))
 
       setCharacters(formattedCharacters)
@@ -184,7 +184,7 @@ export function useAdminCharacters() {
   }
 
   const updateCharacter = async (
-    characterId: string,
+    character_id: string,
     updates: {
       health?: number
       energy?: number
@@ -197,7 +197,7 @@ export function useAdminCharacters() {
       const { error } = await supabase
         .from('characters')
         .update(updates)
-        .eq('id', characterId)
+        .eq('id', character_id)
 
       if (error) throw error
 
@@ -210,12 +210,15 @@ export function useAdminCharacters() {
     }
   }
 
-  const moveCharacter = async (characterId: string, newLocationId: string) => {
+  const moveCharacter = async (
+    character_id: string,
+    newlocation_id: string
+  ) => {
     try {
       const { error } = await supabase
         .from('characters')
-        .update({ currentLocationId: newLocationId })
-        .eq('id', characterId)
+        .update({ currentlocation_id: newlocation_id })
+        .eq('id', character_id)
 
       if (error) throw error
 
@@ -268,14 +271,14 @@ export function useAdminLocations() {
   }
 
   const updateLocation = async (
-    locationId: string,
+    location_id: string,
     updates: Partial<AdminLocation>
   ) => {
     try {
       const { error } = await supabase
         .from('locations')
         .update(updates)
-        .eq('id', locationId)
+        .eq('id', location_id)
 
       if (error) throw error
 
@@ -340,12 +343,12 @@ export function useAdminItems() {
     }
   }
 
-  const updateItem = async (itemId: string, updates: Partial<AdminItem>) => {
+  const updateItem = async (item_id: string, updates: Partial<AdminItem>) => {
     try {
       const { error } = await supabase
         .from('items')
         .update(updates)
-        .eq('id', itemId)
+        .eq('id', item_id)
 
       if (error) throw error
 
@@ -357,13 +360,13 @@ export function useAdminItems() {
     }
   }
 
-  const deleteItem = async (itemId: string) => {
+  const deleteItem = async (item_id: string) => {
     try {
       // Check if item is used in location resources
       const { data: resources } = await supabase
         .from('location_resources')
         .select('id')
-        .eq('itemId', itemId)
+        .eq('item_id', item_id)
 
       if (resources && resources.length > 0) {
         throw new Error(
@@ -371,7 +374,7 @@ export function useAdminItems() {
         )
       }
 
-      const { error } = await supabase.from('items').delete().eq('id', itemId)
+      const { error } = await supabase.from('items').delete().eq('id', item_id)
 
       if (error) throw error
 
@@ -413,9 +416,9 @@ export function useAdminActivity() {
       const { data: recentCharacters } = await supabase
         .from('characters')
         .select(
-          'id, name, createdAt, currentLocationId, location:locations(name)'
+          'id, name, created_at, currentlocation_id, location:locations(name)'
         )
-        .order('createdAt', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(10)
 
       const mockActivity: AdminActivity[] = (recentCharacters || []).map(
@@ -424,7 +427,7 @@ export function useAdminActivity() {
           type: 'character' as const,
           action: 'Character created',
           target: `${char.name} in ${char.location?.name || 'Unknown'}`,
-          timestamp: new Date(char.createdAt).toLocaleString(),
+          timestamp: new Date(char.created_at).toLocaleString(),
           characterName: char.name,
           locationName: char.location?.name,
         })
@@ -448,17 +451,17 @@ export function useAdminActivity() {
 
 export interface AdminMarketListing {
   id: string
-  locationId: string
+  location_id: string
   locationName: string
-  itemId: string
+  item_id: string
   itemName: string
-  sellerId?: string
+  seller_id?: string
   sellerName?: string
   quantity: number
   price: number // Just price, not basePrice/currentPrice
-  isSystemItem: boolean
-  createdAt: string
-  updatedAt: string
+  is_systemItem: boolean
+  created_at: string
+  updated_at: string
   isAvailable?: boolean // Optional, if we want to track availability
   lastUpdated?: string // Optional, if we want to track last updated time
 }
@@ -478,38 +481,38 @@ export function useAdminMarket() {
         .select(
           `
           id,
-          locationId,
-          itemId,
-          sellerId,
+          location_id,
+          item_id,
+          seller_id,
           quantity,
           price,
-          isSystemItem,
-          createdAt,
-          updatedAt,
+          is_systemItem,
+          created_at,
+          updated_at,
           location:locations(name),
           item:items(name),
           seller:characters(name)
         `
         )
-        .order('updatedAt', { ascending: false })
+        .order('updated_at', { ascending: false })
 
       if (error) throw error
 
       const formattedListings = (data || []).map((listing) => ({
         id: listing.id,
-        locationId: listing.locationId,
+        location_id: listing.location_id,
         locationName: listing.location?.name || 'Unknown Location',
-        itemId: listing.itemId,
+        item_id: listing.item_id,
         itemName: listing.item?.name || 'Unknown Item',
-        sellerId: listing.sellerId,
+        seller_id: listing.seller_id,
         sellerName: listing.seller?.name || null,
         quantity: listing.quantity,
         price: listing.price,
-        isSystemItem: listing.isSystemItem,
-        createdAt: new Date(listing.createdAt).toLocaleDateString(),
-        updatedAt: new Date(listing.updatedAt).toLocaleDateString(),
+        is_systemItem: listing.is_systemItem,
+        created_at: new Date(listing.created_at).toLocaleDateString(),
+        updated_at: new Date(listing.updated_at).toLocaleDateString(),
         isAvailable: listing.quantity > 0,
-        lastUpdated: new Date(listing.updatedAt).toLocaleDateString(),
+        lastUpdated: new Date(listing.updated_at).toLocaleDateString(),
       }))
 
       setMarketListings(formattedListings)
@@ -533,7 +536,7 @@ export function useAdminMarket() {
         .from('market_listings')
         .update({
           ...updates,
-          updatedAt: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         })
         .eq('id', listingId)
 
@@ -567,7 +570,7 @@ export function useAdminMarket() {
   const getMarketStats = () => {
     const totalListings = marketListings.length
     const activeListings = marketListings.filter((l) => l.quantity > 0).length
-    const systemListings = marketListings.filter((l) => l.isSystemItem).length
+    const systemListings = marketListings.filter((l) => l.is_systemItem).length
     const totalValue = marketListings.reduce(
       (sum, l) => sum + l.price * l.quantity,
       0

@@ -18,10 +18,10 @@ export const handler = async (event, context) => {
   }
 
   try {
-    const locationId = event.queryStringParameters?.locationId
+    const location_id = event.queryStringParameters?.location_id
     const limit = parseInt(event.queryStringParameters?.limit || '20')
 
-    if (!locationId) {
+    if (!location_id) {
       return {
         statusCode: 400,
         headers,
@@ -34,9 +34,9 @@ export const handler = async (event, context) => {
       .from('locations')
       .select(`
         *,
-        parentLocation:locations!parentLocationId(*)
+        parentLocation:locations!parent_location_id(*)
       `)
-      .eq('id', locationId)
+      .eq('id', location_id)
       .single()
 
     if (locationError) throw locationError
@@ -49,7 +49,7 @@ export const handler = async (event, context) => {
       }
     }
 
-    if (!location.hasMarket) {
+    if (!location.has_market) {
       return {
         statusCode: 400,
         headers,
@@ -71,16 +71,16 @@ export const handler = async (event, context) => {
         seller:characters(
           id,
           name,
-          characterType
+          character_type
         )
       `)
-      .eq('locationId', locationId)
+      .eq('location_id', location_id)
 
     if (localError) throw localError
 
     // If this is a child location, also get parent location's items (global market)
     let globalListings = []
-    if (location.parentLocationId) {
+    if (location.parent_location_id) {
       const { data: globalData, error: globalError } = await supabase
         .from('market_listings')
         .select(`
@@ -89,10 +89,10 @@ export const handler = async (event, context) => {
           seller:characters(
             id,
             name,
-            characterType
+            character_type
           )
         `)
-        .eq('locationId', location.parentLocationId)
+        .eq('location_id', location.parent_location_id)
 
       if (globalError) throw globalError
       globalListings = globalData || []
@@ -137,14 +137,14 @@ export const handler = async (event, context) => {
           .from('market_listings')
           .insert({
             id: listingId, // ADD THIS LINE
-            locationId: locationId,
-            itemId: item.id,
-            sellerId: null, // Explicitly set for system items
+            location_id: location_id,
+            item_id: item.id,
+            seller_id: null, // Changed from sellerId to seller_id
             price: price,
             quantity: item.category === 'CONSUMABLE' ? 5 : 1,
-            isSystemItem: true,
-            createdAt: new Date().toISOString(), // Add timestamp for consistency
-            updatedAt: new Date().toISOString() // ADD THIS LINE
+            is_system_item: true, // Changed from isSystemItem to is_system_item
+            created_at: new Date().toISOString(), // Add timestamp for consistency
+            updated_at: new Date().toISOString() // ADD THIS LINE
 
           })
           .select(`
@@ -153,7 +153,7 @@ export const handler = async (event, context) => {
             seller:characters(
               id,
               name,
-              characterType
+              character_type
             )
           `)
           .single()
@@ -183,19 +183,19 @@ export const handler = async (event, context) => {
         // Sort: local specialties first, then by creation date
         if (a.isLocalSpecialty && !b.isLocalSpecialty) return -1
         if (!a.isLocalSpecialty && b.isLocalSpecialty) return 1
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       })
       .slice(0, limit)
       .map(listing => ({
         id: listing.id,
         price: listing.price,
         quantity: listing.quantity,
-        isSystemItem: listing.isSystemItem,
+        is_system_item: listing.is_system_item, // Use snake_case for response
         isLocalSpecialty: listing.isLocalSpecialty,
         seller: listing.seller ? {
           id: listing.seller.id,
           name: listing.seller.name,
-          characterType: listing.seller.characterType
+          character_type: listing.seller.character_type
         } : null,
         item: {
           id: listing.item.id,
@@ -203,12 +203,12 @@ export const handler = async (event, context) => {
           description: listing.item.description,
           category: listing.item.category,
           rarity: listing.item.rarity,
-          imageUrl: listing.item.imageUrl,
-          layerType: listing.item.layerType,
-          energyEffect: listing.item.energyEffect,
-          healthEffect: listing.item.healthEffect
+          image_url: listing.item.image_url, // Changed from imageUrl
+          layer_type: listing.item.layer_type, // Changed from layerType
+          energy_effect: listing.item.energy_effect,
+          health_effect: listing.item.health_effect // Changed from healthEffect
         },
-        createdAt: listing.createdAt
+        created_at: listing.created_at
       }))
 
     console.log(`🏪 Returning ${transformedListings.length} market items for ${location.name}`)
@@ -219,9 +219,9 @@ export const handler = async (event, context) => {
       body: JSON.stringify({
         items: transformedListings,
         totalCount: transformedListings.length,
-        locationId: locationId,
+        location_id: location_id,
         locationName: location.name,
-        isChildLocation: !!location.parentLocationId,
+        isChildLocation: !!location.parent_location_id, // Changed from parentlocation_id
         parentLocationName: location.parentLocation?.name,
         timestamp: new Date().toISOString()
       })

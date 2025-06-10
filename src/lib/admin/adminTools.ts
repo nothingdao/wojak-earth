@@ -24,14 +24,16 @@ export async function getWorldOverview() {
       await Promise.all([
         supabase
           .from('locations')
-          .select('id, name, biome, difficulty, playerCount, status'),
+          .select('id, name, biome, difficulty, player_count, status'),
         supabase.from('items').select('id, name, category, rarity'),
         supabase
           .from('characters')
-          .select('id, name, currentLocationId, level, energy, health, status'),
+          .select(
+            'id, name, currentlocation_id, level, energy, health, status'
+          ),
         supabase
           .from('location_resources')
-          .select('id, locationId, itemId, spawnRate, difficulty'),
+          .select('id, location_id, item_id, spawn_rate, difficulty'),
       ])
 
     const locations = locationsResult.data || []
@@ -55,7 +57,7 @@ export async function getWorldOverview() {
     const locationsByBiome = groupBy(locations, 'biome')
     const itemsByCategory = groupBy(items, 'category')
     const itemsByRarity = groupBy(items, 'rarity')
-    const charactersByLocation = groupBy(characters, 'currentLocationId')
+    const charactersByLocation = groupBy(characters, 'currentlocation_id')
 
     return {
       totals: {
@@ -92,9 +94,9 @@ export async function getRecentActivity(limit = 20) {
     const { data: characters } = await supabase
       .from('characters')
       .select(
-        'id, name, createdAt, currentLocationId, location:locations(name)'
+        'id, name, created_at, currentlocation_id, location:locations(name)'
       )
-      .order('createdAt', { ascending: false })
+      .order('created_at', { ascending: false })
       .limit(limit)
 
     return (characters || []).map((char, index) => ({
@@ -102,7 +104,7 @@ export async function getRecentActivity(limit = 20) {
       type: 'character' as const,
       action: 'Character created',
       target: `${char.name} in ${char.location?.name || 'Unknown'}`,
-      timestamp: new Date(char.createdAt).toLocaleString(),
+      timestamp: new Date(char.created_at).toLocaleString(),
     }))
   } catch (error) {
     console.error('Error fetching recent activity:', error)
@@ -112,7 +114,7 @@ export async function getRecentActivity(limit = 20) {
 
 // ===== CHARACTER MANAGEMENT =====
 
-export async function getCharacterDetails(characterId: string) {
+export async function getCharacterDetails(character_id: string) {
   const { data, error } = await supabase
     .from('characters')
     .select(
@@ -121,7 +123,7 @@ export async function getCharacterDetails(characterId: string) {
       location:locations(name, biome, difficulty)
     `
     )
-    .eq('id', characterId)
+    .eq('id', character_id)
     .single()
 
   if (error) throw error
@@ -129,7 +131,7 @@ export async function getCharacterDetails(characterId: string) {
 }
 
 export async function updateCharacterStats(
-  characterId: string,
+  character_id: string,
   updates: {
     health?: number
     energy?: number
@@ -142,9 +144,8 @@ export async function updateCharacterStats(
     .from('characters')
     .update({
       ...updates,
-      updatedAt: new Date().toISOString(),
     })
-    .eq('id', characterId)
+    .eq('id', character_id)
     .select()
     .single()
 
@@ -153,16 +154,15 @@ export async function updateCharacterStats(
 }
 
 export async function moveCharacter(
-  characterId: string,
-  newLocationId: string
+  character_id: string,
+  newlocation_id: string
 ) {
   const { data, error } = await supabase
     .from('characters')
     .update({
-      currentLocationId: newLocationId,
-      updatedAt: new Date().toISOString(),
+      currentlocation_id: newlocation_id,
     })
-    .eq('id', characterId)
+    .eq('id', character_id)
     .select()
     .single()
 
@@ -170,14 +170,14 @@ export async function moveCharacter(
   return data
 }
 
-export async function banCharacter(characterId: string, reason?: string) {
+export async function banCharacter(character_id: string, reason?: string) {
   const { data, error } = await supabase
     .from('characters')
     .update({
       status: 'BANNED',
-      updatedAt: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     })
-    .eq('id', characterId)
+    .eq('id', character_id)
     .select()
     .single()
 
@@ -192,13 +192,13 @@ export async function createLocation(locationData: {
   description: string
   biome?: string
   difficulty?: number
-  hasMarket?: boolean
-  hasMining?: boolean
-  hasTravel?: boolean
-  hasChat?: boolean
-  welcomeMessage?: string
+  has_market?: boolean
+  has_mining?: boolean
+  has_travel?: boolean
+  has_chat?: boolean
+  welcome_message?: string
   lore?: string
-  svgpathid?: string
+  svg_path_id?: string
   theme?: string
 }) {
   const now = new Date().toISOString()
@@ -211,22 +211,22 @@ export async function createLocation(locationData: {
       description: locationData.description,
       biome: locationData.biome || 'plains',
       difficulty: locationData.difficulty || 1,
-      locationType: 'REGION',
-      playerCount: 0,
-      hasMarket: locationData.hasMarket ?? true,
-      hasMining: locationData.hasMining ?? true,
-      hasTravel: locationData.hasTravel ?? true,
-      hasChat: locationData.hasChat ?? true,
-      chatScope: 'LOCAL',
-      welcomeMessage: locationData.welcomeMessage,
+      location_type: 'REGION',
+      player_count: 0,
+      has_market: locationData.has_market ?? true,
+      has_mining: locationData.has_mining ?? true,
+      has_travel: locationData.has_travel ?? true,
+      has_chat: locationData.has_chat ?? true,
+      chat_scope: 'LOCAL',
+      welcome_message: locationData.welcome_message,
       lore: locationData.lore,
-      isPrivate: false,
-      isExplored: true,
+      is_private: false,
+      is_explored: true,
       status: 'explored',
-      svgpathid: locationData.svgpathid,
+      svg_path_id: locationData.svg_path_id,
       theme: locationData.theme,
-      createdAt: now,
-      updatedAt: now,
+      created_at: now,
+      updated_at: now,
     })
     .select()
     .single()
@@ -236,17 +236,17 @@ export async function createLocation(locationData: {
 }
 
 export async function updateLocation(
-  locationId: string,
+  location_id: string,
   updates: Partial<{
     name: string
     description: string
     biome: string
     difficulty: number
-    hasMarket: boolean
-    hasMining: boolean
-    hasTravel: boolean
-    hasChat: boolean
-    welcomeMessage: string
+    has_market: boolean
+    has_mining: boolean
+    has_travel: boolean
+    has_chat: boolean
+    welcome_message: string
     lore: string
     status: string
     theme: string
@@ -256,9 +256,9 @@ export async function updateLocation(
     .from('locations')
     .update({
       ...updates,
-      updatedAt: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     })
-    .eq('id', locationId)
+    .eq('id', location_id)
     .select()
     .single()
 
@@ -266,12 +266,12 @@ export async function updateLocation(
   return data
 }
 
-export async function deleteLocation(locationId: string) {
+export async function deleteLocation(location_id: string) {
   // First check if any characters are in this location
   const { data: characters } = await supabase
     .from('characters')
     .select('id, name')
-    .eq('currentLocationId', locationId)
+    .eq('currentlocation_id', location_id)
 
   if (characters && characters.length > 0) {
     throw new Error(
@@ -287,19 +287,19 @@ export async function deleteLocation(locationId: string) {
   await supabase
     .from('location_resources')
     .delete()
-    .eq('locationId', locationId)
+    .eq('location_id', location_id)
 
   // Delete market listings for this location
-  await supabase.from('market_listings').delete().eq('locationId', locationId)
+  await supabase.from('market_listings').delete().eq('location_id', location_id)
 
   // Delete chat messages for this location
-  await supabase.from('chat_messages').delete().eq('locationId', locationId)
+  await supabase.from('chat_messages').delete().eq('location_id', location_id)
 
   // Finally delete the location
   const { error } = await supabase
     .from('locations')
     .delete()
-    .eq('id', locationId)
+    .eq('id', location_id)
 
   if (error) throw error
   return true
@@ -312,11 +312,11 @@ export async function createItem(itemData: {
   description: string
   category: string
   rarity?: string
-  layerType?: string
+  layer_type?: string
   durability?: number
-  energyEffect?: number
-  healthEffect?: number
-  imageUrl?: string
+  energy_effect?: number
+  health_effect?: number
+  image_url?: string
 }) {
   const now = new Date().toISOString()
 
@@ -328,13 +328,13 @@ export async function createItem(itemData: {
       description: itemData.description,
       category: itemData.category,
       rarity: itemData.rarity || 'COMMON',
-      layerType: itemData.layerType,
+      layer_type: itemData.layer_type,
       durability: itemData.durability,
-      energyEffect: itemData.energyEffect,
-      healthEffect: itemData.healthEffect,
-      imageUrl: itemData.imageUrl,
-      createdAt: now,
-      updatedAt: now,
+      energy_effect: itemData.energy_effect,
+      health_effect: itemData.health_effect,
+      image_url: itemData.image_url,
+      created_at: now,
+      updated_at: now,
     })
     .select()
     .single()
@@ -344,26 +344,25 @@ export async function createItem(itemData: {
 }
 
 export async function updateItem(
-  itemId: string,
+  item_id: string,
   updates: Partial<{
     name: string
     description: string
     category: string
     rarity: string
-    layerType: string
+    layer_type: string
     durability: number
-    energyEffect: number
-    healthEffect: number
-    imageUrl: string
+    energy_effect: number
+    health_effect: number
+    image_url: string
   }>
 ) {
   const { data, error } = await supabase
     .from('items')
     .update({
       ...updates,
-      updatedAt: new Date().toISOString(),
     })
-    .eq('id', itemId)
+    .eq('id', item_id)
     .select()
     .single()
 
@@ -371,12 +370,12 @@ export async function updateItem(
   return data
 }
 
-export async function deleteItem(itemId: string) {
+export async function deleteItem(item_id: string) {
   // Check if item is used in location resources
   const { data: resources } = await supabase
     .from('location_resources')
     .select('id, location:locations(name)')
-    .eq('itemId', itemId)
+    .eq('item_id', item_id)
 
   if (resources && resources.length > 0) {
     const locations = resources
@@ -392,7 +391,7 @@ export async function deleteItem(itemId: string) {
   const { data: listings } = await supabase
     .from('market_listings')
     .select('id, location:locations(name)')
-    .eq('itemId', itemId)
+    .eq('item_id', item_id)
 
   if (listings && listings.length > 0) {
     const locations = listings
@@ -408,7 +407,7 @@ export async function deleteItem(itemId: string) {
   const { data: inventories } = await supabase
     .from('character_inventory')
     .select('id, character:characters(name)')
-    .eq('itemId', itemId)
+    .eq('item_id', item_id)
 
   if (inventories && inventories.length > 0) {
     throw new Error(
@@ -416,7 +415,7 @@ export async function deleteItem(itemId: string) {
     )
   }
 
-  const { error } = await supabase.from('items').delete().eq('id', itemId)
+  const { error } = await supabase.from('items').delete().eq('id', item_id)
 
   if (error) throw error
   return true
@@ -425,11 +424,11 @@ export async function deleteItem(itemId: string) {
 // ===== MINING RESOURCE MANAGEMENT =====
 
 export async function addMiningResource(
-  locationId: string,
-  itemId: string,
+  location_id: string,
+  item_id: string,
   config: {
-    spawnRate: number
-    maxPerDay?: number
+    spawn_rate: number
+    max_per_day?: number
     difficulty: number
   }
 ) {
@@ -437,10 +436,10 @@ export async function addMiningResource(
     .from('location_resources')
     .insert({
       id: generateId(),
-      locationId,
-      itemId,
-      spawnRate: config.spawnRate,
-      maxPerDay: config.maxPerDay,
+      location_id,
+      item_id,
+      spawn_rate: config.spawn_rate,
+      max_per_day: config.max_per_day,
       difficulty: config.difficulty,
     })
     .select(
@@ -459,8 +458,8 @@ export async function addMiningResource(
 export async function updateMiningResource(
   resourceId: string,
   updates: {
-    spawnRate?: number
-    maxPerDay?: number
+    spawn_rate?: number
+    max_per_day?: number
     difficulty?: number
   }
 ) {
@@ -496,12 +495,12 @@ export async function removeMiningResource(resourceId: string) {
 // ===== MARKET MANAGEMENT FUNCTIONS =====
 
 export async function createMarketListing(listingData: {
-  locationId: string
-  itemId: string
+  location_id: string
+  item_id: string
   price: number
   quantity?: number
-  sellerId?: string
-  isSystemItem?: boolean
+  seller_id?: string
+  is_systemItem?: boolean
 }) {
   const now = new Date().toISOString()
 
@@ -509,14 +508,14 @@ export async function createMarketListing(listingData: {
     .from('market_listings')
     .insert({
       id: generateId(),
-      locationId: listingData.locationId,
-      itemId: listingData.itemId,
+      location_id: listingData.location_id,
+      item_id: listingData.item_id,
       price: listingData.price,
       quantity: listingData.quantity || 1,
-      sellerId: listingData.sellerId || null,
-      isSystemItem: listingData.isSystemItem || false,
-      createdAt: now,
-      updatedAt: now,
+      seller_id: listingData.seller_id || null,
+      is_systemItem: listingData.is_systemItem || false,
+      created_at: now,
+      updated_at: now,
     })
     .select(
       `
@@ -543,7 +542,6 @@ export async function updateMarketListing(
     .from('market_listings')
     .update({
       ...updates,
-      updatedAt: new Date().toISOString(),
     })
     .eq('id', listingId)
     .select(
@@ -576,54 +574,53 @@ export async function getMarketListings() {
     .select(
       `
       id,
-      locationId,
-      itemId,
-      sellerId,
+      location_id,
+      item_id,
+      seller_id,
       quantity,
       price,
-      isSystemItem,
-      createdAt,
-      updatedAt,
+      is_systemItem,
+      created_at,
+      updated_at,
       location:locations(name),
       item:items(name, category),
       seller:characters(name)
     `
     )
-    .order('updatedAt', { ascending: false })
+    .order('updated_at', { ascending: false })
 
   if (error) throw error
 
   return (data || []).map((listing) => ({
     id: listing.id,
-    locationId: listing.locationId,
+    location_id: listing.location_id,
     locationName: listing.location?.name || 'Unknown Location',
-    itemId: listing.itemId,
+    item_id: listing.item_id,
     itemName: listing.item?.name || 'Unknown Item',
-    sellerId: listing.sellerId,
+    seller_id: listing.seller_id,
     sellerName: listing.seller?.name || null,
     quantity: listing.quantity,
     price: listing.price,
-    isSystemItem: listing.isSystemItem,
-    createdAt: new Date(listing.createdAt).toLocaleDateString(),
-    updatedAt: new Date(listing.updatedAt).toLocaleDateString(),
+    is_systemItem: listing.is_systemItem,
+    created_at: new Date(listing.created_at).toLocaleDateString(),
+    updated_at: new Date(listing.updated_at).toLocaleDateString(),
   }))
 }
 
 export async function bulkUpdateMarketPrices(
-  itemId: string,
+  item_id: string,
   newPrice: number,
-  locationIds?: string[]
+  location_ids?: string[]
 ) {
   let query = supabase
     .from('market_listings')
     .update({
       price: newPrice,
-      updatedAt: new Date().toISOString(),
     })
-    .eq('itemId', itemId)
+    .eq('item_id', item_id)
 
-  if (locationIds && locationIds.length > 0) {
-    query = query.in('locationId', locationIds)
+  if (location_ids && location_ids.length > 0) {
+    query = query.in('location_id', location_ids)
   }
 
   const { data, error } = await query.select()
@@ -638,9 +635,8 @@ export async function restockSystemItems() {
     .from('market_listings')
     .update({
       quantity: 99, // or whatever default stock you want
-      updatedAt: new Date().toISOString(),
     })
-    .eq('isSystemItem', true)
+    .eq('is_systemItem', true)
     .select()
 
   if (error) throw error
@@ -664,16 +660,16 @@ export async function validateWorldData() {
     // Check for orphaned characters (in non-existent locations)
     const { data: characters } = await supabase
       .from('characters')
-      .select('id, name, currentLocationId')
+      .select('id, name, currentlocation_id')
 
     const { data: locations } = await supabase.from('locations').select('id')
 
-    const locationIds = new Set(locations?.map((l) => l.id) || [])
+    const location_ids = new Set(locations?.map((l) => l.id) || [])
 
     characters?.forEach((char) => {
-      if (!locationIds.has(char.currentLocationId)) {
+      if (!location_ids.has(char.currentlocation_id)) {
         issues.push(
-          `Character ${char.name} is in non-existent location ${char.currentLocationId}`
+          `Character ${char.name} is in non-existent location ${char.currentlocation_id}`
         )
       }
     })
@@ -681,21 +677,21 @@ export async function validateWorldData() {
     // Check for orphaned location resources
     const { data: resources } = await supabase
       .from('location_resources')
-      .select('id, locationId, itemId')
+      .select('id, location_id, item_id')
 
     const { data: items } = await supabase.from('items').select('id')
 
-    const itemIds = new Set(items?.map((i) => i.id) || [])
+    const item_ids = new Set(items?.map((i) => i.id) || [])
 
     resources?.forEach((resource) => {
-      if (!locationIds.has(resource.locationId)) {
+      if (!location_ids.has(resource.location_id)) {
         issues.push(
-          `Resource ${resource.id} references non-existent location ${resource.locationId}`
+          `Resource ${resource.id} references non-existent location ${resource.location_id}`
         )
       }
-      if (!itemIds.has(resource.itemId)) {
+      if (!item_ids.has(resource.item_id)) {
         issues.push(
-          `Resource ${resource.id} references non-existent item ${resource.itemId}`
+          `Resource ${resource.id} references non-existent item ${resource.item_id}`
         )
       }
     })
@@ -703,17 +699,17 @@ export async function validateWorldData() {
     // Check for orphaned market listings
     const { data: listings } = await supabase
       .from('market_listings')
-      .select('id, locationId, itemId, sellerId')
+      .select('id, location_id, item_id, seller_id')
 
     listings?.forEach((listing) => {
-      if (!locationIds.has(listing.locationId)) {
+      if (!location_ids.has(listing.location_id)) {
         issues.push(
-          `Market listing ${listing.id} references non-existent location ${listing.locationId}`
+          `Market listing ${listing.id} references non-existent location ${listing.location_id}`
         )
       }
-      if (!itemIds.has(listing.itemId)) {
+      if (!item_ids.has(listing.item_id)) {
         issues.push(
-          `Market listing ${listing.id} references non-existent item ${listing.itemId}`
+          `Market listing ${listing.id} references non-existent item ${listing.item_id}`
         )
       }
     })
@@ -727,7 +723,7 @@ export async function validateWorldData() {
 // ===== BULK OPERATIONS =====
 
 export async function bulkUpdateCharacters(
-  characterIds: string[],
+  character_ids: string[],
   updates: {
     health?: number
     energy?: number
@@ -739,9 +735,8 @@ export async function bulkUpdateCharacters(
     .from('characters')
     .update({
       ...updates,
-      updatedAt: new Date().toISOString(),
     })
-    .in('id', characterIds)
+    .in('id', character_ids)
     .select()
 
   if (error) throw error
@@ -754,7 +749,6 @@ export async function resetWorldDay() {
     .from('characters')
     .update({
       energy: 100, // Reset to full energy
-      updatedAt: new Date().toISOString(),
     })
     .select()
 
@@ -814,16 +808,16 @@ export async function createLocationFromSvgPath(
     description: string
     biome?: string
     difficulty?: number
-    hasMarket?: boolean
-    hasMining?: boolean
-    hasTravel?: boolean
-    hasChat?: boolean
+    has_market?: boolean
+    has_mining?: boolean
+    has_travel?: boolean
+    has_chat?: boolean
     theme?: string
   }
 ) {
   return await createLocation({
     ...locationData,
-    svgpathid: pathId,
+    svg_path_id: pathId,
     name:
       locationData.name ||
       pathId
@@ -835,25 +829,24 @@ export async function createLocationFromSvgPath(
       `A location in Earth 2089 mapped from ${pathId}`,
     biome: locationData.biome || 'unknown',
     difficulty: locationData.difficulty || 1,
-    hasMarket: locationData.hasMarket ?? false,
-    hasMining: locationData.hasMining ?? false,
-    hasTravel: locationData.hasTravel ?? true,
-    hasChat: locationData.hasChat ?? true,
+    has_market: locationData.has_market ?? false,
+    has_mining: locationData.has_mining ?? false,
+    has_travel: locationData.has_travel ?? true,
+    has_chat: locationData.has_chat ?? true,
     theme: locationData.theme || 'default',
   })
 }
 
 export async function linkPathToLocation(
-  locationId: string,
-  svgPathId: string
+  location_id: string,
+  svg_path_id: string
 ) {
   const { data, error } = await supabase
     .from('locations')
     .update({
-      svgpathid: svgPathId,
-      updatedAt: new Date().toISOString(),
+      svg_path_id: svg_path_id,
     })
-    .eq('id', locationId)
+    .eq('id', location_id)
     .select()
     .single()
 
@@ -861,14 +854,13 @@ export async function linkPathToLocation(
   return data
 }
 
-export async function unlinkPathFromLocation(locationId: string) {
+export async function unlinkPathFromLocation(location_id: string) {
   const { data, error } = await supabase
     .from('locations')
     .update({
-      svgpathid: null,
-      updatedAt: new Date().toISOString(),
+      svg_path_id: null,
     })
-    .eq('id', locationId)
+    .eq('id', location_id)
     .select()
     .single()
 
@@ -877,16 +869,15 @@ export async function unlinkPathFromLocation(locationId: string) {
 }
 
 export async function bulkUpdateLocationMappings(
-  mappings: Array<{ locationId: string; svgPathId: string | null }>
+  mappings: Array<{ location_id: string; svg_path_id: string | null }>
 ) {
-  const updates = mappings.map(async ({ locationId, svgPathId }) => {
+  const updates = mappings.map(async ({ location_id, svg_path_id }) => {
     return supabase
       .from('locations')
       .update({
-        svgpathid: svgPathId,
-        updatedAt: new Date().toISOString(),
+        svg_path_id: svg_path_id,
       })
-      .eq('id', locationId)
+      .eq('id', location_id)
   })
 
   const results = await Promise.all(updates)

@@ -25,7 +25,7 @@ export const handler = async (event, context) => {
   }
 
   try {
-    const { locationId } = event.queryStringParameters || {}
+    const { location_id } = event.queryStringParameters || {}
 
     /*
     ===============================
@@ -92,12 +92,12 @@ export const handler = async (event, context) => {
     // const { data: location } = await supabase
     //   .from('locations')
     //   .select('biome, theme')
-    //   .eq('id', locationId)
+    //   .eq('id', location_id)
     //   .single()
 
     let musicFolder = 'default'
-    if (locationId && stationMappings[locationId]) {
-      musicFolder = stationMappings[locationId]
+    if (location_id && stationMappings[location_id]) {
+      musicFolder = stationMappings[location_id]
     }
 
     // Get available music files for this location type
@@ -175,7 +175,7 @@ export const handler = async (event, context) => {
             genre: 'Ambient',
             playlist: playlist
           },
-          locationId: locationId || 'default'
+          location_id: location_id || 'default'
         })
       }
     }
@@ -216,7 +216,7 @@ export const handler = async (event, context) => {
       headers,
       body: JSON.stringify({
         station,
-        locationId: locationId || 'default'
+        location_id: location_id || 'default'
       })
     }
 

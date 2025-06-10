@@ -26,9 +26,9 @@ export const handler = async (event, context) => {
   }
 
   try {
-    const { walletAddress, locationId } = JSON.parse(event.body || '{}')
+    const { wallet_address, location_id } = JSON.parse(event.body || '{}')
 
-    if (!walletAddress) {
+    if (!wallet_address) {
       return {
         statusCode: 400,
         headers,
@@ -40,7 +40,7 @@ export const handler = async (event, context) => {
     const { data: character, error } = await supabase
       .from('characters')
       .select('*')
-      .eq('walletAddress', walletAddress)
+      .eq('wallet_address', wallet_address)
       .eq('status', 'ACTIVE')
       .single()
 
@@ -69,13 +69,13 @@ export const handler = async (event, context) => {
     }
 
     // Use current location if none specified
-    const miningLocationId = locationId || character.currentLocationId
+    const mininglocation_id = location_id || character.current_location_id
 
     // Get location to verify mining is available
     const { data: location, error: locationError } = await supabase
       .from('locations')
       .select('*')
-      .eq('id', miningLocationId)
+      .eq('id', mininglocation_id)
       .single()
 
     if (locationError) throw locationError
@@ -88,7 +88,7 @@ export const handler = async (event, context) => {
       }
     }
 
-    if (!location.hasMining) {
+    if (!location.has_mining) {
       return {
         statusCode: 400,
         headers,
@@ -154,8 +154,8 @@ export const handler = async (event, context) => {
         const { data: existingInventory } = await supabase
           .from('character_inventory')
           .select('*')
-          .eq('characterId', character.id)
-          .eq('itemId', foundItem.id)
+          .eq('character_id', character.id)
+          .eq('item_id', foundItem.id)
           .single()
 
         if (existingInventory) {
@@ -173,12 +173,12 @@ export const handler = async (event, context) => {
             .from('character_inventory')
             .insert({
               id: inventoryId,
-              characterId: character.id,
-              itemId: foundItem.id,
+              character_id: character.id,
+              item_id: foundItem.id,
               quantity: 1,
-              isEquipped: false,
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString()
+              is_equipped: false,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
             })
 
           if (createInvError) throw createInvError
@@ -190,9 +190,9 @@ export const handler = async (event, context) => {
           .from('transactions')
           .insert({
             id: transactionId,
-            characterId: character.id,
+            character_id: character.id,
             type: 'MINE',
-            itemId: foundItem.id,
+            item_id: foundItem.id,
             quantity: 1,
             description: `Mined ${foundItem.name} at ${location.name}`
           })
@@ -258,10 +258,10 @@ export const handler = async (event, context) => {
         await supabase
           .from('transactions')
           .insert({
-            characterId: character.id,
+            character_id: character.id,
             type: 'XP_GAIN',
             description: `Gained ${xpGained} XP from MINING${leveledUp ? ` - LEVEL UP! ${character.level} → ${newLevel}` : ''}`,
-            createdAt: new Date().toISOString()
+            created_at: new Date().toISOString()
           })
 
         if (leveledUp) {

@@ -1,3 +1,4 @@
+// src/components/map/Earth.tsx
 import { useState, useCallback, useRef } from "react"
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -9,7 +10,6 @@ import {
   Home,
   Database,
   Activity,
-  MapPin,
   Zap,
   DollarSign,
   Users,
@@ -29,20 +29,20 @@ interface DatabaseLocation {
   description: string
   biome?: string
   difficulty: number
-  minLevel?: number
-  hasMarket: boolean
-  hasMining: boolean
-  hasTravel: boolean
-  hasChat: boolean
-  svgpathid?: string | null
+  min_level?: number
+  has_market: boolean
+  has_mining: boolean
+  has_travel: boolean
+  has_chat: boolean
+  svg_path_id?: string | null
   theme?: string
-  isExplored?: boolean
-  playerCount: number
-  entryCost?: number
-  locationType: string
-  parentLocationId?: string | null
-  createdAt: string
-  updatedAt: string
+  is_explored?: boolean
+  player_count: number
+  entry_cost?: number
+  location_type: string
+  parentlocation_id?: string | null
+  created_at: string
+  updated_at: string
 }
 
 interface Character {
@@ -59,7 +59,7 @@ interface Character {
 interface EarthProps {
   locations: DatabaseLocation[]
   character?: Character
-  onTravel?: (locationId: string) => void
+  onTravel?: (location_id: string) => void
 }
 
 export default function Earth({ locations, character, onTravel }: EarthProps) {
@@ -74,8 +74,8 @@ export default function Earth({ locations, character, onTravel }: EarthProps) {
   const locationMap = useCallback(() => {
     const map = new Map<string, DatabaseLocation>()
     locations.forEach(loc => {
-      if (loc.svgpathid) {
-        map.set(loc.svgpathid, loc)
+      if (loc.svg_path_id) {
+        map.set(loc.svg_path_id, loc)
       }
     })
     return map
@@ -463,34 +463,34 @@ export default function Earth({ locations, character, onTravel }: EarthProps) {
                 </div>
                 <div className="flex items-center gap-1">
                   <Users className="w-3 h-3 text-blue-500" />
-                  <span>ACTIVE: {selectedLocation.playerCount}</span>
+                  <span>ACTIVE: {selectedLocation.player_count}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <Database className="w-3 h-3 text-purple-500" />
-                  <span>TYPE: {selectedLocation.locationType}</span>
+                  <span>TYPE: {selectedLocation.location_type}</span>
                 </div>
               </div>
             </div>
 
             {/* Requirements */}
-            {(selectedLocation.minLevel || selectedLocation.entryCost) && (
+            {(selectedLocation.min_level || selectedLocation.entry_cost) && (
               <div className="bg-muted/30 border border-primary/20 rounded p-2">
                 <div className="text-xs text-muted-foreground mb-2">ACCESS_REQUIREMENTS</div>
                 <div className="space-y-1 text-xs">
-                  {selectedLocation.minLevel && (
-                    <div className={`flex items-center gap-1 ${character && character.level < selectedLocation.minLevel ? 'text-red-500' : 'text-green-500'
+                  {selectedLocation.min_level && (
+                    <div className={`flex items-center gap-1 ${character && character.level < selectedLocation.min_level ? 'text-red-500' : 'text-green-500'
                       }`}>
                       <Zap className="w-3 h-3" />
-                      <span>MIN_LEVEL: {selectedLocation.minLevel}</span>
-                      {character && character.level < selectedLocation.minLevel && <AlertTriangle className="w-3 h-3" />}
+                      <span>MIN_LEVEL: {selectedLocation.min_level}</span>
+                      {character && character.level < selectedLocation.min_level && <AlertTriangle className="w-3 h-3" />}
                     </div>
                   )}
-                  {selectedLocation.entryCost && selectedLocation.entryCost > 0 && (
-                    <div className={`flex items-center gap-1 ${character && (character.coins || 0) < selectedLocation.entryCost ? 'text-red-500' : 'text-green-500'
+                  {selectedLocation.entry_cost && selectedLocation.entry_cost > 0 && (
+                    <div className={`flex items-center gap-1 ${character && (character.coins || 0) < selectedLocation.entry_cost ? 'text-red-500' : 'text-green-500'
                       }`}>
                       <DollarSign className="w-3 h-3" />
-                      <span>ENTRY_FEE: {selectedLocation.entryCost}_RUST</span>
-                      {character && (character.coins || 0) < selectedLocation.entryCost && <AlertTriangle className="w-3 h-3" />}
+                      <span>ENTRY_FEE: {selectedLocation.entry_cost}_RUST</span>
+                      {character && (character.coins || 0) < selectedLocation.entry_cost && <AlertTriangle className="w-3 h-3" />}
                     </div>
                   )}
                 </div>
@@ -501,25 +501,25 @@ export default function Earth({ locations, character, onTravel }: EarthProps) {
             <div className="bg-muted/30 border border-primary/20 rounded p-2">
               <div className="text-xs text-muted-foreground mb-2">AVAILABLE_SERVICES</div>
               <div className="flex flex-wrap gap-1">
-                {selectedLocation.hasMarket && (
+                {selectedLocation.has_market && (
                   <Badge variant="secondary" className="text-xs font-mono flex items-center gap-1">
                     <Store className="w-3 h-3" />
                     MARKET
                   </Badge>
                 )}
-                {selectedLocation.hasMining && (
+                {selectedLocation.has_mining && (
                   <Badge variant="secondary" className="text-xs font-mono flex items-center gap-1">
                     <Pickaxe className="w-3 h-3" />
                     MINING
                   </Badge>
                 )}
-                {selectedLocation.hasChat && (
+                {selectedLocation.has_chat && (
                   <Badge variant="secondary" className="text-xs font-mono flex items-center gap-1">
                     <MessageSquare className="w-3 h-3" />
                     COMMS
                   </Badge>
                 )}
-                {!selectedLocation.hasMarket && !selectedLocation.hasMining && !selectedLocation.hasChat && (
+                {!selectedLocation.has_market && !selectedLocation.has_mining && !selectedLocation.has_chat && (
                   <span className="text-xs text-muted-foreground">NO_SERVICES_AVAILABLE</span>
                 )}
               </div>
@@ -534,13 +534,13 @@ export default function Earth({ locations, character, onTravel }: EarthProps) {
                 }}
                 disabled={
                   character.currentLocation?.id === selectedLocation.id ||
-                  (selectedLocation.minLevel && character.level < selectedLocation.minLevel) ||
-                  (selectedLocation.entryCost && selectedLocation.entryCost > (character.coins || 0))
+                  (selectedLocation.min_level && character.level < selectedLocation.min_level) ||
+                  (selectedLocation.entry_cost && selectedLocation.entry_cost > (character.coins || 0))
                 }
                 className={`w-full h-8 text-xs font-mono ${character.currentLocation?.id === selectedLocation.id
                   ? 'bg-muted text-muted-foreground cursor-not-allowed'
-                  : (selectedLocation.minLevel && character.level < selectedLocation.minLevel) ||
-                    (selectedLocation.entryCost && selectedLocation.entryCost > (character.coins || 0))
+                  : (selectedLocation.min_level && character.level < selectedLocation.min_level) ||
+                    (selectedLocation.entry_cost && selectedLocation.entry_cost > (character.coins || 0))
                     ? 'bg-red-500/20 text-red-500 cursor-not-allowed border-red-500/30'
                     : 'bg-primary text-primary-foreground hover:bg-primary/90'
                   }`}
@@ -548,9 +548,9 @@ export default function Earth({ locations, character, onTravel }: EarthProps) {
                 <Navigation className="w-3 h-3 mr-2" />
                 {character.currentLocation?.id === selectedLocation.id
                   ? 'CURRENT_LOCATION'
-                  : (selectedLocation.minLevel && character.level < selectedLocation.minLevel)
-                    ? `REQ_LVL_${selectedLocation.minLevel}`
-                    : (selectedLocation.entryCost && selectedLocation.entryCost > (character.coins || 0))
+                  : (selectedLocation.min_level && character.level < selectedLocation.min_level)
+                    ? `REQ_LVL_${selectedLocation.min_level}`
+                    : (selectedLocation.entry_cost && selectedLocation.entry_cost > (character.coins || 0))
                       ? `INSUFFICIENT_RUST`
                       : `TRAVEL_TO_${selectedLocation.name.toUpperCase()}`}
               </Button>

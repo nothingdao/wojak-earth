@@ -26,9 +26,9 @@ export const handler = async (event, context) => {
   }
 
   try {
-    const { walletAddress, inventoryId, quantity = 1 } = JSON.parse(event.body || '{}')
+    const { wallet_address, inventoryId, quantity = 1 } = JSON.parse(event.body || '{}')
 
-    if (!walletAddress || !inventoryId) {
+    if (!wallet_address || !inventoryId) {
       return {
         statusCode: 400,
         headers,
@@ -40,7 +40,7 @@ export const handler = async (event, context) => {
     const { data: character, error } = await supabase
       .from('characters')
       .select('*')
-      .eq('walletAddress', walletAddress)
+      .eq('wallet_address', wallet_address)
       .eq('status', 'ACTIVE')
       .single()
 
@@ -76,7 +76,7 @@ export const handler = async (event, context) => {
     }
 
     // Verify ownership
-    if (inventoryItem.characterId !== character.id) {
+    if (inventoryItem.character_id !== character.id) {
       return {
         statusCode: 403,
         headers,
@@ -97,7 +97,7 @@ export const handler = async (event, context) => {
     }
 
     // Check if item can be sold (equipped items cannot be sold)
-    if (inventoryItem.isEquipped) {
+    if (inventoryItem.is_equipped) {
       return {
         statusCode: 400,
         headers,
@@ -143,7 +143,7 @@ export const handler = async (event, context) => {
         .from('character_inventory')
         .update({
           quantity: inventoryItem.quantity - quantity,
-          updatedAt: new Date().toISOString()
+          updated_at: new Date().toISOString()
         })
         .eq('id', inventoryId)
         .select('*')
@@ -160,12 +160,12 @@ export const handler = async (event, context) => {
       .from('transactions')
       .insert({
         id: transactionId,
-        characterId: character.id,
+        character_id: character.id,
         type: 'SELL', // Add this to your transaction types if needed
-        itemId: inventoryItem.item.id,
+        item_id: inventoryItem.item.id,
         quantity: quantity,
         description: `Sold ${quantity}x ${inventoryItem.item.name} for ${sellPrice} coins`,
-        createdAt: new Date().toISOString()
+        created_at: new Date().toISOString()
       })
       .select('*')
       .single()
@@ -247,8 +247,8 @@ function calculateSellPrice(item, quantity = 1) {
 
   // Special bonuses for valuable items
   let specialBonus = 0
-  if (item.energyEffect && item.energyEffect > 0) specialBonus += item.energyEffect * 0.5
-  if (item.healthEffect && item.healthEffect > 0) specialBonus += item.healthEffect * 0.8
+  if (item.energy_effect && item.energy_effect > 0) specialBonus += item.energy_effect * 0.5
+  if (item.health_effect && item.health_effect > 0) specialBonus += item.health_effect * 0.8
 
   // Calculate final price
   const itemValue = Math.floor((basePrice * rarityMultiplier) + specialBonus)

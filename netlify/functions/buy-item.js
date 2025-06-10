@@ -26,9 +26,9 @@ export const handler = async (event, context) => {
   }
 
   try {
-    const { walletAddress, marketListingId, quantity = 1 } = JSON.parse(event.body || '{}')
+    const { wallet_address, marketListingId, quantity = 1 } = JSON.parse(event.body || '{}')
 
-    if (!walletAddress || !marketListingId) {
+    if (!wallet_address || !marketListingId) {
       return {
         statusCode: 400,
         headers,
@@ -40,7 +40,7 @@ export const handler = async (event, context) => {
     const { data: character, error } = await supabase
       .from('characters')
       .select('*')
-      .eq('walletAddress', walletAddress)
+      .eq('wallet_address', wallet_address)
       .eq('status', 'ACTIVE')
       .single()
 
@@ -76,7 +76,7 @@ export const handler = async (event, context) => {
     const { data: item, error: itemError } = await supabase
       .from('items')
       .select('*')
-      .eq('id', marketListing.itemId)
+      .eq('id', marketListing.item_id)
       .single()
 
     if (itemError) throw itemError
@@ -85,18 +85,18 @@ export const handler = async (event, context) => {
     const { data: location, error: locationError } = await supabase
       .from('locations')
       .select('*')
-      .eq('id', marketListing.locationId)
+      .eq('id', marketListing.location_id)
       .single()
 
     if (locationError) throw locationError
 
     // Get seller if exists
     let seller = null
-    if (marketListing.sellerId) {
+    if (marketListing.seller_id) {
       const { data: sellerData, error: sellerError } = await supabase
         .from('characters')
         .select('*')
-        .eq('id', marketListing.sellerId)
+        .eq('id', marketListing.seller_id)
         .single()
 
       if (!sellerError) {
@@ -158,8 +158,8 @@ export const handler = async (event, context) => {
     const { data: existingInventory } = await supabase
       .from('character_inventory')
       .select('*')
-      .eq('characterId', character.id)
-      .eq('itemId', marketListing.itemId)
+      .eq('character_id', character.id)
+      .eq('item_id', marketListing.item_id)
       .single()
 
     let inventoryItem
@@ -184,12 +184,12 @@ export const handler = async (event, context) => {
         .from('character_inventory')
         .insert({
           id: inventoryId,
-          characterId: character.id,
-          itemId: marketListing.itemId,
+          character_id: character.id,
+          item_id: marketListing.item_id,
           quantity: quantity,
-          isEquipped: false,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
+          is_equipped: false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         })
         .select('*')
         .single()
@@ -202,7 +202,7 @@ export const handler = async (event, context) => {
     // Update or remove market listing
     let remainingQuantity = marketListing.quantity - quantity
 
-    if (marketListing.quantity === quantity && !marketListing.isSystemItem) {
+    if (marketListing.quantity === quantity && !marketListing.is_systemItem) {
       // Only remove player listings when sold out
       const { error: deleteError } = await supabase
         .from('market_listings')
@@ -226,9 +226,9 @@ export const handler = async (event, context) => {
       .from('transactions')
       .insert({
         id: transactionId,
-        characterId: character.id,
+        character_id: character.id,
         type: 'BUY',
-        itemId: marketListing.itemId,
+        item_id: marketListing.item_id,
         quantity: quantity,
         description: `Bought ${quantity}x ${marketListing.item.name} for ${totalCost} coins from ${marketListing.location.name} market`
       })
@@ -253,7 +253,7 @@ export const handler = async (event, context) => {
       marketListing: {
         id: marketListingId,
         remainingQuantity: remainingQuantity,
-        wasRemoved: remainingQuantity === 0 && !marketListing.isSystemItem
+        wasRemoved: remainingQuantity === 0 && !marketListing.is_systemItem
       },
       // ADDED: Character status after purchase
       character: {

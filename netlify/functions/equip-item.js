@@ -10,7 +10,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey)
 const getSlotForItem = (item) => {
   if (item.category === 'TOOL') return 'tool'
 
-  switch (item.layerType) {
+  switch (item.layer_type) {
     case 'CLOTHING': return 'clothing'
     case 'OUTERWEAR': return 'outerwear'
     case 'FACE_ACCESSORY': return 'face_accessory'
@@ -27,13 +27,13 @@ const getMaxSlotsForCategory = (characterLevel, category) => {
 }
 
 // Find next available slot in category
-const findAvailableSlot = async (characterId, category, maxSlots) => {
+const findAvailableSlot = async (character_id, category, maxSlots) => {
   const { data: occupiedSlots } = await supabase
     .from('character_inventory')
     .select('slot_index')
-    .eq('characterId', characterId)
-    .eq('equippedslot', category)
-    .eq('isEquipped', true)
+    .eq('character_id', character_id)
+    .eq('equipped_slot', category)
+    .eq('is_equipped', true)
     .order('slot_index', { ascending: true })
 
   const occupied = occupiedSlots?.map(item => item.slot_index) || []
@@ -69,7 +69,7 @@ export const handler = async (event, context) => {
 
   try {
     const {
-      walletAddress,
+      wallet_address,
       inventoryId,
       equip = true,
       targetSlot,
@@ -77,7 +77,7 @@ export const handler = async (event, context) => {
       replaceSlot = null // specific slot to replace
     } = JSON.parse(event.body || '{}')
 
-    if (!walletAddress || !inventoryId) {
+    if (!wallet_address || !inventoryId) {
       return {
         statusCode: 400,
         headers,
@@ -89,7 +89,7 @@ export const handler = async (event, context) => {
     const { data: character, error } = await supabase
       .from('characters')
       .select('*')
-      .eq('walletAddress', walletAddress)
+      .eq('wallet_address', wallet_address)
       .eq('status', 'ACTIVE')
       .single()
 
@@ -125,7 +125,7 @@ export const handler = async (event, context) => {
     }
 
     // Verify ownership
-    if (inventoryItem.characterId !== character.id) {
+    if (inventoryItem.character_id !== character.id) {
       return {
         statusCode: 403,
         headers,
@@ -165,18 +165,18 @@ export const handler = async (event, context) => {
         const { data: itemToReplace } = await supabase
           .from('character_inventory')
           .select('*, item:items(*)')
-          .eq('characterId', character.id)
-          .eq('equippedslot', finalTargetSlot)
+          .eq('character_id', character.id)
+          .eq('equipped_slot', finalTargetSlot)
           .eq('slot_index', replaceSlot)
-          .eq('isEquipped', true)
+          .eq('is_equipped', true)
           .single()
 
         if (itemToReplace) {
           await supabase
             .from('character_inventory')
             .update({
-              isEquipped: false,
-              equippedslot: null,
+              is_equipped: false,
+              equipped_slot: null,
               slot_index: null,
               is_primary: false
             })
@@ -210,8 +210,8 @@ export const handler = async (event, context) => {
         await supabase
           .from('character_inventory')
           .update({ is_primary: false })
-          .eq('characterId', character.id)
-          .eq('equippedslot', finalTargetSlot)
+          .eq('character_id', character.id)
+          .eq('equipped_slot', finalTargetSlot)
           .eq('is_primary', true)
       }
 
@@ -219,8 +219,8 @@ export const handler = async (event, context) => {
       const { data: updatedItem, error: equipError } = await supabase
         .from('character_inventory')
         .update({
-          isEquipped: true,
-          equippedslot: finalTargetSlot,
+          is_equipped: true,
+          equipped_slot: finalTargetSlot,
           slot_index: targetSlotIndex,
           is_primary: shouldBePrimary
         })
@@ -239,9 +239,9 @@ export const handler = async (event, context) => {
         .from('transactions')
         .insert({
           id: equipTransactionId,
-          characterId: character.id,
+          character_id: character.id,
           type: 'EQUIP',
-          itemId: inventoryItem.itemId,
+          item_id: inventoryItem.item_id,
           description: `Equipped ${inventoryItem.item.name} in ${finalTargetSlot} slot ${targetSlotIndex}${shouldBePrimary ? ' (primary)' : ''}`
         })
 
@@ -259,8 +259,8 @@ export const handler = async (event, context) => {
       const { data: updatedItem, error: unequipError } = await supabase
         .from('character_inventory')
         .update({
-          isEquipped: false,
-          equippedslot: null,
+          is_equipped: false,
+          equipped_slot: null,
           slot_index: null,
           is_primary: false
         })
@@ -274,13 +274,13 @@ export const handler = async (event, context) => {
       if (unequipError) throw unequipError
 
       // If this was primary, make another item in the category primary
-      if (inventoryItem.is_primary && inventoryItem.equippedslot) {
+      if (inventoryItem.is_primary && inventoryItem.equipped_slot) {
         const { data: newPrimaryCandidate } = await supabase
           .from('character_inventory')
           .select('id')
-          .eq('characterId', character.id)
-          .eq('equippedslot', inventoryItem.equippedslot)
-          .eq('isEquipped', true)
+          .eq('character_id', character.id)
+          .eq('equipped_slot', inventoryItem.equipped_slot)
+          .eq('is_equipped', true)
           .order('slot_index', { ascending: true })
           .limit(1)
           .single()
@@ -299,10 +299,10 @@ export const handler = async (event, context) => {
         .from('transactions')
         .insert({
           id: unequipTransactionId,
-          characterId: character.id,
+          character_id: character.id,
           type: 'UNEQUIP',
-          itemId: inventoryItem.itemId,
-          description: `Unequipped ${inventoryItem.item.name} from ${inventoryItem.equippedslot || 'unknown'} slot ${inventoryItem.slot_index || 'unknown'}`
+          item_id: inventoryItem.item_id,
+          description: `Unequipped ${inventoryItem.item.name} from ${inventoryItem.equipped_slot || 'unknown'} slot ${inventoryItem.slot_index || 'unknown'}`
         })
 
       result = {
@@ -316,8 +316,8 @@ export const handler = async (event, context) => {
     }
 
     const statEffects = {
-      energy: inventoryItem.item.energyEffect || 0,
-      health: inventoryItem.item.healthEffect || 0
+      energy: inventoryItem.item.energy_effect || 0,
+      health: inventoryItem.item.health_effect || 0
     }
 
     let message = `${inventoryItem.item.name} ${result.action} successfully!`
@@ -336,9 +336,9 @@ export const handler = async (event, context) => {
         name: result.item.item.name,
         category: result.item.item.category,
         rarity: result.item.item.rarity,
-        isEquipped: result.item.isEquipped,
-        layerType: result.item.item.layerType,
-        equippedslot: result.item.equippedslot,
+        is_equipped: result.item.is_equipped,
+        layer_type: result.item.item.layer_type,
+        equipped_slot: result.item.equipped_slot,
         slotIndex: result.item.slot_index,
         isPrimary: result.item.is_primary
       },

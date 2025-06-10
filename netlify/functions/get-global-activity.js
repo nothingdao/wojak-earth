@@ -37,8 +37,8 @@ export const handler = async (event, context) => {
     let query = supabase
       .from('transactions')
       .select('*')
-      .gte('createdAt', timeThreshold)
-      .order('createdAt', { ascending: false })
+      .gte('created_at', timeThreshold)
+      .order('created_at', { ascending: false })
       .limit(limit)
 
     // Optionally exclude the main player character
@@ -51,7 +51,7 @@ export const handler = async (event, context) => {
         .single()
 
       if (playerChar) {
-        query = query.neq('characterId', playerChar.id)
+        query = query.neq('character_id', playerChar.id)
       }
     }
 
@@ -88,22 +88,22 @@ export const handler = async (event, context) => {
     }
 
     // Get character details for all transactions
-    const characterIds = [...new Set(transactions.map(t => t.characterId))]
+    const character_ids = [...new Set(transactions.map(t => t.character_id))]
     const { data: characters, error: charactersError } = await supabase
       .from('characters')
       .select(`
         id,
         name,
-        characterType,
-        currentLocationId,
+        character_type,
+        currentlocation_id,
         currentLocation:locations(
           id,
           name,
-          locationType,
+          location_type,
           biome
         )
       `)
-      .in('id', characterIds)
+      .in('id', character_ids)
 
     if (charactersError) throw charactersError
 
@@ -114,16 +114,16 @@ export const handler = async (event, context) => {
     }, {}) || {}
 
     // Get unique item IDs to fetch item details separately
-    const itemIds = [...new Set(transactions.filter(t => t.itemId).map(t => t.itemId))]
-    console.log(`Found ${itemIds.length} unique items to fetch`)
+    const item_ids = [...new Set(transactions.filter(t => t.item_id).map(t => t.item_id))]
+    console.log(`Found ${item_ids.length} unique items to fetch`)
 
     // Fetch item details separately
     let items = []
-    if (itemIds.length > 0) {
+    if (item_ids.length > 0) {
       const { data: itemsData, error: itemsError } = await supabase
         .from('items')
-        .select('id, name, description, category, rarity, imageUrl')
-        .in('id', itemIds)
+        .select('id, name, description, category, rarity, image_url')
+        .in('id', item_ids)
 
       if (itemsError) throw itemsError
       items = itemsData || []
@@ -139,8 +139,8 @@ export const handler = async (event, context) => {
 
     // Transform transactions into activity format
     const activities = transactions.map(transaction => {
-      const timeAgo = getTimeAgo(new Date(transaction.createdAt))
-      const character = characterMap[transaction.characterId]
+      const timeAgo = getTimeAgo(new Date(transaction.created_at))
+      const character = characterMap[transaction.character_id]
 
       // Parse additional details from description if it's an NPC action
       const isNPCAction = transaction.description.startsWith('[NPC]')
@@ -149,7 +149,7 @@ export const handler = async (event, context) => {
         : transaction.description
 
       // Get item details from our map
-      const item = transaction.itemId ? itemMap[transaction.itemId] : null
+      const item = transaction.item_id ? itemMap[transaction.item_id] : null
 
       // Extract location from description if available
       let location = character?.currentLocation?.name
@@ -195,9 +195,9 @@ export const handler = async (event, context) => {
 
       return {
         id: transaction.id,
-        timestamp: transaction.createdAt,
+        timestamp: transaction.created_at,
         characterName: character?.name || 'Unknown',
-        characterType: character?.characterType || 'HUMAN',
+        character_type: character?.character_type || 'HUMAN',
         actionType: transaction.type,
         description: cleanDescription,
         location: location,

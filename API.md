@@ -7,7 +7,7 @@
 - `get-player-character` - Fetch character by wallet address
 - `mint-nft` - Create new character with payment verification (0.01 SOL)
 - `nuke-character` - Permanently delete character and all data
-- `metadata/{characterId}` - Generate NFT metadata for character
+- `metadata/{character_id}` - Generate NFT metadata for character
 
 ### Game Actions
 

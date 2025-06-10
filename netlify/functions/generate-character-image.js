@@ -128,9 +128,9 @@ function parseAssetEntry(entry) {
 }
 
 // Get available assets for a layer based on gender and manifest
-function getLayerAssets(manifest, layerType, gender) {
-  const layerData = manifest[layerType]
-  if (!layerData || layerType === 'compatibility_rules') return []
+function getLayerAssets(manifest, layer_type, gender) {
+  const layerData = manifest[layer_type]
+  if (!layerData || layer_type === 'compatibility_rules') return []
 
   const genderKey = gender.toLowerCase()
   const availableAssets = []
@@ -159,9 +159,9 @@ function getLayerAssets(manifest, layerType, gender) {
 }
 
 // Helper function to find asset entry with rules
-function findAssetEntry(manifest, layerType, fileName) {
-  const layerData = manifest[layerType]
-  if (!layerData || layerType === 'compatibility_rules') return null
+function findAssetEntry(manifest, layer_type, fileName) {
+  const layerData = manifest[layer_type]
+  if (!layerData || layer_type === 'compatibility_rules') return null
 
   // Search in all gender categories
   const allEntries = [
@@ -276,12 +276,12 @@ function areAssetsCompatible(manifest, selectedLayers) {
 }
 
 // Get compatible assets
-function getCompatibleAssets(manifest, layerType, selectedLayers, gender) {
-  const layerAssets = getLayerAssets(manifest, layerType, gender)
+function getCompatibleAssets(manifest, layer_type, selectedLayers, gender) {
+  const layerAssets = getLayerAssets(manifest, layer_type, gender)
   const compatibleAssets = []
 
   for (const asset of layerAssets) {
-    const testSelection = { ...selectedLayers, [layerType]: asset }
+    const testSelection = { ...selectedLayers, [layer_type]: asset }
     if (areAssetsCompatible(manifest, testSelection)) {
       compatibleAssets.push(asset)
     }
@@ -297,41 +297,41 @@ async function generateRandomLayers(manifest, gender) {
   const selectedLayers = {}
 
   // First pass: required layers (but check compatibility for hair)
-  for (const [layerType, config] of Object.entries(LAYER_CONFIG)) {
+  for (const [layer_type, config] of Object.entries(LAYER_CONFIG)) {
     if (config.required) {
-      if (layerType === '6-hair') {
+      if (layer_type === '6-hair') {
         // For hair, check compatibility with already selected base
-        const compatibleAssets = getCompatibleAssets(manifest, layerType, selectedLayers, gender)
+        const compatibleAssets = getCompatibleAssets(manifest, layer_type, selectedLayers, gender)
         if (compatibleAssets.length > 0) {
-          selectedLayers[layerType] = compatibleAssets[Math.floor(Math.random() * compatibleAssets.length)]
+          selectedLayers[layer_type] = compatibleAssets[Math.floor(Math.random() * compatibleAssets.length)]
         } else {
           // Fallback to any hair if no compatible ones
-          const availableAssets = getLayerAssets(manifest, layerType, gender)
+          const availableAssets = getLayerAssets(manifest, layer_type, gender)
           if (availableAssets.length > 0) {
-            selectedLayers[layerType] = availableAssets[Math.floor(Math.random() * availableAssets.length)]
+            selectedLayers[layer_type] = availableAssets[Math.floor(Math.random() * availableAssets.length)]
           }
         }
       } else {
         // For other required layers (like base), just pick randomly
-        const availableAssets = getLayerAssets(manifest, layerType, gender)
+        const availableAssets = getLayerAssets(manifest, layer_type, gender)
         if (availableAssets.length > 0) {
-          selectedLayers[layerType] = availableAssets[Math.floor(Math.random() * availableAssets.length)]
+          selectedLayers[layer_type] = availableAssets[Math.floor(Math.random() * availableAssets.length)]
         }
       }
     }
   }
 
   // Second pass: optional layers (with compatibility checking)
-  for (const [layerType, config] of Object.entries(LAYER_CONFIG)) {
+  for (const [layer_type, config] of Object.entries(LAYER_CONFIG)) {
     if (!config.required && Math.random() < config.probability) {
-      const compatibleAssets = getCompatibleAssets(manifest, layerType, selectedLayers, gender)
+      const compatibleAssets = getCompatibleAssets(manifest, layer_type, selectedLayers, gender)
       if (compatibleAssets.length > 0) {
-        selectedLayers[layerType] = compatibleAssets[Math.floor(Math.random() * compatibleAssets.length)]
+        selectedLayers[layer_type] = compatibleAssets[Math.floor(Math.random() * compatibleAssets.length)]
       }
     }
 
-    if (!selectedLayers[layerType]) {
-      selectedLayers[layerType] = null
+    if (!selectedLayers[layer_type]) {
+      selectedLayers[layer_type] = null
     }
   }
 
@@ -351,12 +351,12 @@ async function renderLayersToImage(selectedLayers, imageSize = 400) {
 
   const layerOrder = Object.keys(LAYER_CONFIG)
 
-  for (const layerType of layerOrder) {
-    const selectedFile = selectedLayers[layerType]
+  for (const layer_type of layerOrder) {
+    const selectedFile = selectedLayers[layer_type]
     if (!selectedFile) continue
 
     try {
-      const imagePath = path.join(process.cwd(), 'public', 'layers', layerType, selectedFile)
+      const imagePath = path.join(process.cwd(), 'public', 'layers', layer_type, selectedFile)
 
       // Check if file exists
       if (!fs.existsSync(imagePath)) {
@@ -366,9 +366,9 @@ async function renderLayersToImage(selectedLayers, imageSize = 400) {
 
       const img = await loadImage(imagePath)
       ctx.drawImage(img, 0, 0, imageSize, imageSize)
-      console.log(`✓ Loaded: ${layerType}/${selectedFile}`)
+      console.log(`✓ Loaded: ${layer_type}/${selectedFile}`)
     } catch (error) {
-      console.warn(`✗ Failed to load layer: ${layerType}/${selectedFile}`, error)
+      console.warn(`✗ Failed to load layer: ${layer_type}/${selectedFile}`, error)
     }
   }
 

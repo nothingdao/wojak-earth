@@ -1,3 +1,4 @@
+// src/components/views/EconomyView.tsx
 import React, { useState, useEffect } from 'react';
 import { XAxis, YAxis, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import {
@@ -44,7 +45,7 @@ interface EconomyData {
     avgHealth: number
     topLocations: Array<{
       name: string
-      playerCount: number
+      player_count: number
     }>
   }
   resources: {
@@ -64,9 +65,39 @@ interface RustMarketData {
   totalTransactions: number
 }
 
+interface GameEconomyFlow {
+  rustCirculation: {
+    playerBalances: number
+    merchantFloat: number
+    tradingVelocity: number
+    burnedRust: number
+    totalMinted: number
+  }
+  solCirculation: {
+    playerSOL: number
+    directSOLTrades: number
+    solAcceptingMerchants: number
+    treasurySOL: number
+  }
+  crossCurrencyFlow: {
+    solToRustTrades: number
+    rustToSolTrades: number
+    preferenceShifts: any
+    arbitrageGaps: any
+  }
+  totalEconomicValue: {
+    rustEconomyUSD: number
+    solEconomyUSD: number
+    totalEconomyUSD: number
+    rustDominance: number
+    solDominance: number
+  }
+}
+
 const EconomyView: React.FC = () => {
   const [economyData, setEconomyData] = useState<EconomyData | null>(null);
   const [rustMarketData, setRustMarketData] = useState<RustMarketData | null>(null);
+  const [gameEconomyFlow, setGameEconomyFlow] = useState<GameEconomyFlow | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -77,9 +108,10 @@ const EconomyView: React.FC = () => {
 
   const fetchEconomyData = async () => {
     try {
-      const [economyResponse, rustMarketResponse] = await Promise.all([
+      const [economyResponse, rustMarketResponse, gameEconomyResponse] = await Promise.all([
         fetch('/.netlify/functions/get-economy-overview'),
-        fetch('/.netlify/functions/get-rust-markets')
+        fetch('/.netlify/functions/rust-market'),
+        fetch('/.netlify/functions/game-economy')
       ]);
 
       if (economyResponse.ok) {
@@ -91,12 +123,20 @@ const EconomyView: React.FC = () => {
         const rustMarketResult = await rustMarketResponse.json();
         if (rustMarketResult.success) {
           setRustMarketData({
-            currentRate: rustMarketResult.marketStats.currentRate,
-            change24h: rustMarketResult.marketStats.change24h,
-            volume24h: rustMarketResult.marketStats.volume24h,
-            totalTrades: rustMarketResult.marketStats.totalTrades,
-            totalTransactions: rustMarketResult.totalTransactions
+            currentRate: rustMarketResult.data.rustPerSOL,
+            change24h: 0, // You can calculate this from your data
+            volume24h: 0, // Add this to your rust-market endpoint
+            totalTrades: rustMarketResult.transactionCount || 0,
+            totalTransactions: rustMarketResult.transactionCount || 0
           });
+        }
+      }
+
+      if (gameEconomyResponse.ok) {
+        const gameEconomyResult = await gameEconomyResponse.json();
+        if (gameEconomyResult.success) {
+          setGameEconomyFlow(gameEconomyResult.gameEconomyFlow);
+          console.log('🏦 Dual-Currency Economy Data:', gameEconomyResult);
         }
       }
 
@@ -133,9 +173,9 @@ const EconomyView: React.FC = () => {
         avgEnergy: 67,
         avgHealth: 78,
         topLocations: [
-          { name: "Central Hub", playerCount: 23 },
-          { name: "Mining Station", playerCount: 18 },
-          { name: "Wasteland", playerCount: 12 }
+          { name: "Central Hub", player_count: 23 },
+          { name: "Mining Station", player_count: 18 },
+          { name: "Wasteland", player_count: 12 }
         ]
       },
       resources: {
@@ -153,6 +193,36 @@ const EconomyView: React.FC = () => {
       volume24h: 12.4,
       totalTrades: 67,
       totalTransactions: 156
+    });
+
+    // Mock dual-currency data
+    setGameEconomyFlow({
+      rustCirculation: {
+        playerBalances: 45230,
+        merchantFloat: 12500,
+        tradingVelocity: 8940,
+        burnedRust: 2340,
+        totalMinted: 67890
+      },
+      solCirculation: {
+        playerSOL: 12.456,
+        directSOLTrades: 3.234,
+        solAcceptingMerchants: 1.890,
+        treasurySOL: 45.678
+      },
+      crossCurrencyFlow: {
+        solToRustTrades: 8.234,
+        rustToSolTrades: 2.456,
+        preferenceShifts: {},
+        arbitrageGaps: {}
+      },
+      totalEconomicValue: {
+        rustEconomyUSD: 57730,
+        solEconomyUSD: 11234,
+        totalEconomyUSD: 68964,
+        rustDominance: 0.837,
+        solDominance: 0.163
+      }
     });
   };
 
@@ -173,7 +243,7 @@ const EconomyView: React.FC = () => {
   const locationChartData = economyData ?
     economyData.playerActivity.topLocations.slice(0, 5).map(loc => ({
       name: loc.name.substring(0, 8),
-      players: loc.playerCount
+      players: loc.player_count
     })) : [];
 
   return (
@@ -366,31 +436,111 @@ const EconomyView: React.FC = () => {
           </div>
         </div>
 
-        {/* Exchange Activity */}
+        {/* Exchange Activity - Now with Dual Currency Data */}
         <div className="bg-muted/30 border border-primary/20 rounded p-4">
-          <div className="text-muted-foreground text-xs mb-3">EXCHANGE ACTIVITY</div>
+          <div className="text-muted-foreground text-xs mb-3">DUAL-CURRENCY ECONOMY</div>
           <div className="space-y-2">
             <div className="flex justify-between">
-              <span className="text-muted-foreground text-xs">24H VOLUME</span>
-              <span className="text-primary">{rustMarketData ? `${rustMarketData.volume24h.toFixed(3)} SOL` : '--'}</span>
+              <span className="text-muted-foreground text-xs">RUST CIRCULATION</span>
+              <span className="text-primary">
+                {gameEconomyFlow ? formatCurrency(gameEconomyFlow.rustCirculation.playerBalances) : '--'}
+              </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground text-xs">24H TRADES</span>
-              <span className="text-primary">{rustMarketData ? rustMarketData.totalTrades : '--'}</span>
+              <span className="text-muted-foreground text-xs">SOL IN GAME</span>
+              <span className="text-primary">
+                {gameEconomyFlow ? `${gameEconomyFlow.solCirculation.playerSOL.toFixed(3)} SOL` : '--'}
+              </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground text-xs">TOTAL TXN</span>
-              <span className="text-primary">{rustMarketData ? rustMarketData.totalTransactions : '--'}</span>
+              <span className="text-muted-foreground text-xs">TOTAL ECONOMY</span>
+              <span className="text-primary">
+                {gameEconomyFlow ? `$${formatNumber(gameEconomyFlow.totalEconomicValue.totalEconomyUSD)}` : '--'}
+              </span>
             </div>
             <div className="border-t border-primary/20 pt-2 mt-2">
-              <div className="text-xs text-muted-foreground mb-1">CURRENT RATE</div>
-              <div className="text-xs text-primary font-bold">
-                {rustMarketData ? `${rustMarketData.currentRate.toFixed(2)} RUST/SOL` : '--'}
+              <div className="text-xs text-muted-foreground mb-1">CURRENCY DOMINANCE</div>
+              <div className="text-xs">
+                <span className="text-orange-500">RUST: {gameEconomyFlow ? `${(gameEconomyFlow.totalEconomicValue.rustDominance * 100).toFixed(1)}%` : '--'}</span>
+                <span className="text-muted-foreground mx-1">|</span>
+                <span className="text-blue-500">SOL: {gameEconomyFlow ? `${(gameEconomyFlow.totalEconomicValue.solDominance * 100).toFixed(1)}%` : '--'}</span>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* NEW: Dual Currency Analytics Section */}
+      {gameEconomyFlow && (
+        <div className="grid grid-cols-3 gap-6 mb-6">
+          {/* RUST Economy Health */}
+          <div className="bg-muted/30 border border-primary/20 rounded p-4">
+            <div className="text-muted-foreground text-xs mb-3">RUST ECONOMY</div>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground text-xs">PLAYER BALANCES</span>
+                <span className="text-primary">{formatCurrency(gameEconomyFlow.rustCirculation.playerBalances)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground text-xs">NPC RESERVES</span>
+                <span className="text-primary">{formatCurrency(gameEconomyFlow.rustCirculation.merchantFloat)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground text-xs">TOTAL MINTED</span>
+                <span className="text-primary">{formatCurrency(gameEconomyFlow.rustCirculation.totalMinted)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground text-xs">BURNED</span>
+                <span className="text-red-500">{formatCurrency(gameEconomyFlow.rustCirculation.burnedRust)}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* SOL Economy Health */}
+          <div className="bg-muted/30 border border-primary/20 rounded p-4">
+            <div className="text-muted-foreground text-xs mb-3">SOL ECONOMY</div>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground text-xs">PLAYER SOL</span>
+                <span className="text-primary">{gameEconomyFlow.solCirculation.playerSOL.toFixed(3)} SOL</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground text-xs">TREASURY SOL</span>
+                <span className="text-primary">{gameEconomyFlow.solCirculation.treasurySOL.toFixed(3)} SOL</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground text-xs">DIRECT TRADES</span>
+                <span className="text-primary">{gameEconomyFlow.solCirculation.directSOLTrades.toFixed(3)} SOL</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground text-xs">MERCHANT USE</span>
+                <span className="text-primary">{gameEconomyFlow.solCirculation.solAcceptingMerchants.toFixed(3)} SOL</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Cross-Currency Flow */}
+          <div className="bg-muted/30 border border-primary/20 rounded p-4">
+            <div className="text-muted-foreground text-xs mb-3">CURRENCY EXCHANGE</div>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground text-xs">SOL→RUST</span>
+                <span className="text-green-500">{gameEconomyFlow.crossCurrencyFlow.solToRustTrades.toFixed(3)} SOL</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground text-xs">RUST→SOL</span>
+                <span className="text-red-500">{gameEconomyFlow.crossCurrencyFlow.rustToSolTrades.toFixed(3)} SOL</span>
+              </div>
+              <div className="border-t border-primary/20 pt-2 mt-2">
+                <div className="text-xs text-muted-foreground mb-1">EXCHANGE ACTIVITY</div>
+                <div className="text-xs text-primary">
+                  Net Flow: {((gameEconomyFlow.crossCurrencyFlow.solToRustTrades - gameEconomyFlow.crossCurrencyFlow.rustToSolTrades) >= 0 ? '+' : '')}{(gameEconomyFlow.crossCurrencyFlow.solToRustTrades - gameEconomyFlow.crossCurrencyFlow.rustToSolTrades).toFixed(3)} SOL
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Resource Intelligence */}
       <div className="mb-4">
@@ -416,7 +566,7 @@ const EconomyView: React.FC = () => {
 
       {/* Footer */}
       <div className="border-t border-primary/20 pt-2 flex justify-between text-xs text-muted-foreground/60">
-        <span>ECONOMIC_MONITOR_v2089 | REAL_TIME_ANALYTICS</span>
+        <span>ECONOMIC_MONITOR_v2089 | DUAL_CURRENCY_ANALYTICS</span>
         <span>LAST_SCAN: {new Date().toLocaleTimeString()}</span>
       </div>
     </div>

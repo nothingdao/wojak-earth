@@ -1,4 +1,4 @@
-// src/components/ActivityMonitor.tsx - Unified real-time activity feed
+// src/components/ActivityMonitor.tsx
 import { useState, useEffect, useCallback } from 'react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
@@ -28,19 +28,19 @@ type TransactionType = 'TRAVEL' | 'MINE' | 'BUY' | 'SELL' | 'EQUIP' | 'UNEQUIP' 
 
 interface Transaction {
   id: string
-  characterId: string
+  character_id: string
   type: TransactionType
-  itemId?: string
+  item_id?: string
   quantity?: number
   description: string
-  createdAt: string
+  created_at: string
   character: {
     name: string
     id: string
-    characterType: string
+    character_type: string
     level?: number
     experience?: number
-    currentImageUrl?: string
+    current_image_url?: string
   }
 }
 
@@ -72,9 +72,9 @@ export function ActivityMonitor({ className = "", maxHeight = "h-96" }: Activity
         .from('transactions')
         .select(`
     *,
-    character:characters(name, id, characterType, level, experience, currentImageUrl)
+    character:characters(name, id, character_type, level, experience, current_image_url)
   `)
-        .order('createdAt', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(50)
 
       if (error) {
@@ -83,11 +83,11 @@ export function ActivityMonitor({ className = "", maxHeight = "h-96" }: Activity
 
       if (transactions && transactions.length > 0) {
         // Debug: Check what we're getting from the database
-        console.log('📊 Sample transaction data:', {
-          firstTransaction: transactions[0],
-          characterData: transactions[0]?.character,
-          hasImageUrl: !!transactions[0]?.character?.currentImageUrl
-        })
+        // console.log('📊 Sample transaction data:', {
+        //   firstTransaction: transactions[0],
+        //   characterData: transactions[0]?.character,
+        //   hasimage_url: !!transactions[0]?.character?.current_image_url
+        // })
 
         setTransactions(transactions)
       }
@@ -119,19 +119,19 @@ export function ActivityMonitor({ className = "", maxHeight = "h-96" }: Activity
             // Fetch character data for the new transaction
             const { data: character } = await supabase
               .from('characters')
-              .select('name, id, characterType, level, experience, currentImageUrl')
-              .eq('id', payload.new.characterId)
+              .select('name, id, character_type, level, experience, current_image_url')
+              .eq('id', payload.new.character_id)
               .single()
 
             if (character) {
               const newTransaction: Transaction = {
                 id: payload.new.id,
-                characterId: payload.new.characterId,
+                character_id: payload.new.character_id,
                 type: payload.new.type,
-                itemId: payload.new.itemId,
+                item_id: payload.new.item_id,
                 quantity: payload.new.quantity,
                 description: payload.new.description,
-                createdAt: payload.new.createdAt,
+                created_at: payload.new.created_at,
                 character: character
               }
 
@@ -165,10 +165,10 @@ export function ActivityMonitor({ className = "", maxHeight = "h-96" }: Activity
     // Character type filter
     switch (filterMode) {
       case 'NPCS_ONLY':
-        if (transaction.character.characterType !== 'NPC') return false
+        if (transaction.character.character_type !== 'NPC') return false
         break
       case 'PLAYERS_ONLY':
-        if (transaction.character.characterType === 'NPC') return false
+        if (transaction.character.character_type === 'NPC') return false
         break
       default:
         break
@@ -249,7 +249,7 @@ export function ActivityMonitor({ className = "", maxHeight = "h-96" }: Activity
   }
 
   const isNPC = (transaction: Transaction) => {
-    return transaction.character.characterType === 'NPC'
+    return transaction.character.character_type === 'NPC'
   }
 
   const isRecentActivity = (transactionId: string) => {
@@ -258,12 +258,12 @@ export function ActivityMonitor({ className = "", maxHeight = "h-96" }: Activity
 
   const getFilterStats = () => {
     const npcCount = transactions.filter(t => isNPC(t)).length
-    const playerCount = transactions.length - npcCount
+    const player_count = transactions.length - npcCount
 
     return {
       total: transactions.length,
       npcs: npcCount,
-      players: playerCount,
+      players: player_count,
       filtered: filteredTransactions.length
     }
   }
@@ -468,21 +468,21 @@ export function ActivityMonitor({ className = "", maxHeight = "h-96" }: Activity
                 >
                   {/* Character Avatar with Level Badge */}
                   <div className="flex-shrink-0 relative">
-                    {transaction.character.currentImageUrl ? (
+                    {transaction.character.current_image_url ? (
                       <>
                         <img
-                          src={transaction.character.currentImageUrl}
+                          src={transaction.character.current_image_url}
                           alt={transaction.character.name}
                           className="w-16 h-16 rounded-sm border object-cover"
                           onError={(e) => {
-                            console.log('❌ Image failed to load:', transaction.character.currentImageUrl)
+                            console.log('❌ Image failed to load:', transaction.character.current_image_url)
                             // Hide the image and show fallback
                             e.currentTarget.style.display = 'none'
                             const fallback = e.currentTarget.nextElementSibling as HTMLElement
                             if (fallback) fallback.style.display = 'flex'
                           }}
                           onLoad={() => {
-                            console.log('✅ Image loaded successfully:', transaction.character.currentImageUrl)
+                            // console.log('✅ Image loaded successfully:', transaction.character.current_image_url)
                           }}
                         />
                         {/* Fallback avatar (hidden by default) */}
@@ -515,8 +515,8 @@ export function ActivityMonitor({ className = "", maxHeight = "h-96" }: Activity
 
                     {/* Debug info */}
                     {process.env.NODE_ENV === 'development' && (
-                      <div className="absolute -bottom-1 -left-1 text-xs" title={`Image URL: ${transaction.character.currentImageUrl || 'None'}`}>
-                        {transaction.character.currentImageUrl ? '🖼️' : '❌'}
+                      <div className="absolute -bottom-1 -left-1 text-xs" title={`Image URL: ${transaction.character.current_image_url || 'None'}`}>
+                        {transaction.character.current_image_url ? '🖼️' : '❌'}
                       </div>
                     )}
                   </div>
@@ -568,7 +568,7 @@ export function ActivityMonitor({ className = "", maxHeight = "h-96" }: Activity
                   {/* Timestamp */}
                   <div className="text-xs text-muted-foreground flex-shrink-0 flex items-center gap-1">
                     <Clock className="w-3 h-3" />
-                    {formatTimeAgo(transaction.createdAt)}
+                    {formatTimeAgo(transaction.created_at)}
                   </div>
                 </div>
               )

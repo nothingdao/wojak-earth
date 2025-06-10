@@ -26,9 +26,9 @@ interface UseGameDataReturn {
   error: string | null
   actions: {
     loadGameData: () => Promise<void>
-    loadMarketItems: (locationId: string) => Promise<void>
-    loadChatMessages: (locationId: string) => Promise<void>
-    loadPlayersAtLocation: (locationId: string) => Promise<void>
+    loadMarketItems: (location_id: string) => Promise<void>
+    loadChatMessages: (location_id: string) => Promise<void>
+    loadPlayersAtLocation: (location_id: string) => Promise<void>
     setMarketItems: React.Dispatch<React.SetStateAction<MarketItem[]>>
     addPresenceMessage: (message: ChatMessage) => void
   }
@@ -73,10 +73,10 @@ export function useGameData(
     }
   }, [])
 
-  const loadMarketItems = useCallback(async (locationId: string) => {
+  const loadMarketItems = useCallback(async (location_id: string) => {
     try {
       const response = await fetch(
-        `${API_BASE}/get-market?locationId=${locationId}`
+        `${API_BASE}/get-market?location_id=${location_id}`
       )
       if (response.ok) {
         const data = await response.json()
@@ -88,10 +88,10 @@ export function useGameData(
     }
   }, [])
 
-  const loadChatMessages = useCallback(async (locationId: string) => {
+  const loadChatMessages = useCallback(async (location_id: string) => {
     try {
       const response = await fetch(
-        `${API_BASE}/get-chat?locationId=${locationId}&limit=50`
+        `${API_BASE}/get-chat?location_id=${location_id}&limit=50`
       )
       if (response.ok) {
         const data = await response.json()
@@ -104,7 +104,7 @@ export function useGameData(
   }, [])
 
   // Optimized loadPlayersAtLocation with debouncing
-  const loadPlayersAtLocation = useCallback(async (locationId: string) => {
+  const loadPlayersAtLocation = useCallback(async (location_id: string) => {
     // Prevent multiple simultaneous calls
     if (loadingPlayersRef.current) {
       console.log('🚫 Already loading players, skipping duplicate call')
@@ -113,10 +113,10 @@ export function useGameData(
 
     try {
       loadingPlayersRef.current = true
-      console.log('🔄 Loading players for location:', locationId)
+      console.log('🔄 Loading players for location:', location_id)
 
       const response = await fetch(
-        `${API_BASE}/get-players-at-location?locationId=${locationId}`
+        `${API_BASE}/get-players-at-location?location_id=${location_id}`
       )
 
       if (response.ok) {
@@ -145,29 +145,29 @@ export function useGameData(
   const transformRealtimeMessage = useCallback(
     async (rawMessage: {
       id: string
-      locationId: string
-      characterId: string
+      location_id: string
+      character_id: string
       message: string
-      messageType: 'CHAT' | 'EMOTE' | 'SYSTEM'
-      isSystem: boolean
-      createdAt: string
+      message_type: 'CHAT' | 'EMOTE' | 'SYSTEM'
+      is_system: boolean
+      created_at: string
     }): Promise<ChatMessage | null> => {
       try {
         // Get character details if not a system message
         let character = null
-        if (!rawMessage.isSystem && rawMessage.characterId) {
+        if (!rawMessage.is_system && rawMessage.character_id) {
           const { data: charData } = await realtimeSupabase
             .from('characters')
-            .select('id, name, characterType, currentImageUrl')
-            .eq('id', rawMessage.characterId)
+            .select('id, name, character_type, current_image_url')
+            .eq('id', rawMessage.character_id)
             .single()
 
           if (charData) {
             character = {
               id: charData.id,
               name: charData.name,
-              characterType: charData.characterType,
-              imageUrl: charData.currentImageUrl,
+              character_type: charData.character_type,
+              image_url: charData.current_image_url,
             }
           }
         }
@@ -175,36 +175,36 @@ export function useGameData(
         // Get location details
         const { data: locationData } = await realtimeSupabase
           .from('locations')
-          .select('id, name, locationType')
-          .eq('id', rawMessage.locationId)
+          .select('id, name, location_type')
+          .eq('id', rawMessage.location_id)
           .single()
 
         if (!locationData) return null
 
         // Calculate time ago
-        const timeAgo = getTimeAgo(new Date(rawMessage.createdAt))
+        const timeAgo = getTimeAgo(new Date(rawMessage.created_at))
 
         return {
           id: rawMessage.id,
           message: rawMessage.message,
-          messageType: rawMessage.messageType,
-          isSystem: rawMessage.isSystem,
+          message_type: rawMessage.message_type,
+          is_system: rawMessage.is_system,
           timeAgo: timeAgo,
-          createdAt: rawMessage.createdAt,
-          character: rawMessage.isSystem
+          created_at: rawMessage.created_at,
+          character: rawMessage.is_system
             ? undefined
             : character
             ? {
                 id: character.id,
                 name: character.name,
-                characterType: character.characterType,
-                imageUrl: character.imageUrl || undefined,
+                character_type: character.character_type,
+                image_url: character.image_url || undefined,
               }
             : undefined,
           location: {
             id: locationData.id,
             name: locationData.name,
-            locationType: locationData.locationType,
+            location_type: locationData.location_type,
           },
         }
       } catch (error) {
@@ -217,21 +217,21 @@ export function useGameData(
 
   // Subscribe to realtime chat messages for current location
   const subscribeToChat = useCallback(
-    (locationId: string) => {
+    (location_id: string) => {
       // Unsubscribe from previous location if exists
       if (chatSubscriptionRef.current) {
         chatSubscriptionRef.current.unsubscribe()
       }
 
       chatSubscriptionRef.current = realtimeSupabase
-        .channel(`chat_${locationId}`)
+        .channel(`chat_${location_id}`)
         .on(
           'postgres_changes',
           {
             event: 'INSERT',
             schema: 'public',
             table: 'chat_messages',
-            filter: `locationId=eq.${locationId}`,
+            filter: `location_id=eq.${location_id}`,
           },
           async (payload) => {
             console.log('New chat message received:', payload)
@@ -248,14 +248,14 @@ export function useGameData(
           console.log('Chat subscription status:', status)
         })
 
-      currentLocationIdRef.current = locationId
+      currentLocationIdRef.current = location_id
     },
     [transformRealtimeMessage]
   )
 
   // Debounced player subscription to prevent excessive API calls
   const subscribeToPlayers = useCallback(
-    (locationId: string) => {
+    (location_id: string) => {
       // Unsubscribe from previous location if exists
       if (playersSubscriptionRef.current) {
         playersSubscriptionRef.current.unsubscribe()
@@ -264,14 +264,14 @@ export function useGameData(
       let debounceTimer: NodeJS.Timeout | null = null
 
       playersSubscriptionRef.current = realtimeSupabase
-        .channel(`players_${locationId}`)
+        .channel(`players_${location_id}`)
         .on(
           'postgres_changes',
           {
             event: '*', // Listen to INSERT, UPDATE, DELETE
             schema: 'public',
             table: 'characters',
-            filter: `currentLocationId=eq.${locationId}`,
+            filter: `current_location_id=eq.${location_id}`,
           },
           async (payload) => {
             console.log('Player movement detected:', payload.eventType, payload)
@@ -282,7 +282,7 @@ export function useGameData(
             }
 
             debounceTimer = setTimeout(async () => {
-              await loadPlayersAtLocation(locationId)
+              await loadPlayersAtLocation(location_id)
             }, 500) // 500ms debounce
           }
         )
@@ -310,11 +310,11 @@ export function useGameData(
   useEffect(() => {
     if (character && currentView === 'chat') {
       setChatMessages([])
-      const locationId = selectedLocation?.id || character.currentLocation.id
+      const location_id = selectedLocation?.id || character.currentLocation.id
 
-      loadChatMessages(locationId).then(() => {
+      loadChatMessages(location_id).then(() => {
         // Only start subscription AFTER initial messages load
-        subscribeToChat(locationId)
+        subscribeToChat(location_id)
       })
     }
   }, [
@@ -329,11 +329,11 @@ export function useGameData(
   // Subscribe to players when on main view
   useEffect(() => {
     if (character && currentView === 'main') {
-      const locationId = selectedLocation?.id || character.currentLocation.id
-      loadPlayersAtLocation(locationId)
+      const location_id = selectedLocation?.id || character.currentLocation.id
+      loadPlayersAtLocation(location_id)
 
       // Subscribe to real-time player updates for the main view
-      subscribeToPlayers(locationId)
+      subscribeToPlayers(location_id)
     }
   }, [
     currentView,

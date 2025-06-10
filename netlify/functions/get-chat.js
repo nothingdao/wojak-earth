@@ -17,10 +17,10 @@ export const handler = async (event, context) => {
   }
 
   try {
-    const locationId = event.queryStringParameters?.locationId
+    const location_id = event.queryStringParameters?.location_id
     const limit = parseInt(event.queryStringParameters?.limit || '50')
 
-    if (!locationId) {
+    if (!location_id) {
       return {
         statusCode: 400,
         headers,
@@ -32,7 +32,7 @@ export const handler = async (event, context) => {
     const { data: location, error: locationError } = await supabase
       .from('locations')
       .select('*')
-      .eq('id', locationId)
+      .eq('id', location_id)
       .single()
 
     if (locationError) throw locationError
@@ -47,11 +47,11 @@ export const handler = async (event, context) => {
 
     // Get parent location if exists
     let parentLocation = null
-    if (location.parentLocationId) {
+    if (location.parentlocation_id) {
       const { data: parent, error: parentError } = await supabase
         .from('locations')
         .select('*')
-        .eq('id', location.parentLocationId)
+        .eq('id', location.parentlocation_id)
         .single()
 
       if (!parentError) {
@@ -63,32 +63,32 @@ export const handler = async (event, context) => {
     const { data: subLocations, error: subError } = await supabase
       .from('locations')
       .select('*')
-      .eq('parentLocationId', locationId)
+      .eq('parentlocation_id', location_id)
 
     if (subError && subError.code !== 'PGRST116') { // PGRST116 = no rows returned, which is fine
       throw subError
     }
 
-    let chatLocationIds = [locationId]
+    let chatlocation_ids = [location_id]
 
     // Handle chat scope - REGIONAL chat includes parent and sub-locations
-    if (location.chatScope === 'REGIONAL') {
+    if (location.chat_scope === 'REGIONAL') {
       // If this is a parent location, include all sub-locations
       if (subLocations?.length > 0) {
-        chatLocationIds.push(...subLocations.map(sub => sub.id))
+        chatlocation_ids.push(...subLocations.map(sub => sub.id))
       }
       // If this is a sub-location, include the parent
-      if (location.parentLocationId) {
-        chatLocationIds.push(location.parentLocationId)
+      if (location.parentlocation_id) {
+        chatlocation_ids.push(location.parentlocation_id)
         // Also include sibling sub-locations
         const { data: siblings, error: siblingsError } = await supabase
           .from('locations')
           .select('*')
-          .eq('parentLocationId', location.parentLocationId)
-          .neq('id', locationId)
+          .eq('parentlocation_id', location.parentlocation_id)
+          .neq('id', location_id)
 
         if (!siblingsError && siblings?.length > 0) {
-          chatLocationIds.push(...siblings.map(sib => sib.id))
+          chatlocation_ids.push(...siblings.map(sib => sib.id))
         }
       }
     }
@@ -97,8 +97,8 @@ export const handler = async (event, context) => {
     const { data: messages, error: messagesError } = await supabase
       .from('chat_messages')
       .select('*')
-      .in('locationId', chatLocationIds)
-      .order('createdAt', { ascending: false })
+      .in('location_id', chatlocation_ids)
+      .order('created_at', { ascending: false })
       .limit(limit)
 
     if (messagesError) throw messagesError
@@ -108,11 +108,11 @@ export const handler = async (event, context) => {
 
     for (const msg of messages || []) {
       let character = null
-      if (!msg.isSystem) {
+      if (!msg.is_system) {
         const { data: charData, error: charError } = await supabase
           .from('characters')
-          .select('id, name, characterType, currentImageUrl')
-          .eq('id', msg.characterId)
+          .select('id, name, character_type, current_image_url')
+          .eq('id', msg.character_id)
           .single()
 
         if (!charError) {
@@ -123,32 +123,32 @@ export const handler = async (event, context) => {
       // Get location details
       const { data: msgLocation, error: msgLocError } = await supabase
         .from('locations')
-        .select('id, name, locationType')
-        .eq('id', msg.locationId)
+        .select('id, name, location_type')
+        .eq('id', msg.location_id)
         .single()
 
       if (msgLocError) throw msgLocError
 
       // Calculate time ago
-      const timeAgo = getTimeAgo(new Date(msg.createdAt))
+      const timeAgo = getTimeAgo(new Date(msg.created_at))
 
       transformedMessages.push({
         id: msg.id,
         message: msg.message,
-        messageType: msg.messageType,
-        isSystem: msg.isSystem,
+        message_type: msg.message_type,
+        is_system: msg.is_system,
         timeAgo: timeAgo,
-        createdAt: msg.createdAt,
-        character: msg.isSystem ? null : character ? {
+        created_at: msg.created_at,
+        character: msg.is_system ? null : character ? {
           id: character.id,
           name: character.name,
-          characterType: character.characterType,
-          imageUrl: character.currentImageUrl
+          character_type: character.character_type,
+          image_url: character.current_image_url
         } : null,
         location: {
           id: msgLocation.id,
           name: msgLocation.name,
-          locationType: msgLocation.locationType
+          location_type: msgLocation.location_type
         }
       })
     }
@@ -162,8 +162,8 @@ export const handler = async (event, context) => {
       body: JSON.stringify({
         messages: transformedMessages,
         totalCount: transformedMessages.length,
-        locationId: locationId,
-        chatScope: location.chatScope,
+        location_id: location_id,
+        chat_scope: location.chat_scope,
         locationName: location.name,
         timestamp: new Date().toISOString()
       })

@@ -5,7 +5,7 @@ import type { DatabaseLocation, Character } from '@/types'
 interface WorldMapViewProps {
   locations?: DatabaseLocation[]
   character?: Character | null
-  onTravel?: (locationId: string) => void
+  onTravel?: (location_id: string) => void
 }
 
 export function WorldMapView({ locations = [], character, onTravel }: WorldMapViewProps) {

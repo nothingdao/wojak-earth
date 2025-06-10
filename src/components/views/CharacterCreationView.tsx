@@ -1,7 +1,6 @@
 // src/components/views/CharacterCreationView.tsx - MOBILE-FIRST, NO LAYOUT SHIFTS
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
 import {
   RefreshCw,
   Loader2,
@@ -45,7 +44,7 @@ interface LayerManifest {
 
 interface Manifest {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  [layerType: string]: LayerManifest | any
+  [layer_type: string]: LayerManifest | any
   compatibility_rules?: {
     hair_headwear_conflicts?: Record<string, { blocks?: string[]; allows?: string[] }>
     outerwear_combinations?: Record<string, { blocks_headwear?: string[]; allows_headwear?: string[] }>
@@ -82,9 +81,9 @@ const parseAssetEntry = (entry: string | AssetEntry): { file: string; rules?: As
 }
 
 // Get available assets for a layer based on gender and manifest
-const getLayerAssets = (manifest: Manifest, layerType: string, gender: 'MALE' | 'FEMALE'): string[] => {
-  const layerData = manifest[layerType] as LayerManifest | undefined
-  if (!layerData || layerType === 'compatibility_rules') return []
+const getLayerAssets = (manifest: Manifest, layer_type: string, gender: 'MALE' | 'FEMALE'): string[] => {
+  const layerData = manifest[layer_type] as LayerManifest | undefined
+  if (!layerData || layer_type === 'compatibility_rules') return []
 
   const genderKey = gender.toLowerCase() as 'male' | 'female'
   const availableAssets: string[] = []
@@ -113,9 +112,9 @@ const getLayerAssets = (manifest: Manifest, layerType: string, gender: 'MALE' | 
 }
 
 // Helper function to find asset entry with rules
-const findAssetEntry = (manifest: Manifest, layerType: string, fileName: string): AssetEntry | null => {
-  const layerData = manifest[layerType] as LayerManifest | undefined
-  if (!layerData || layerType === 'compatibility_rules') return null
+const findAssetEntry = (manifest: Manifest, layer_type: string, fileName: string): AssetEntry | null => {
+  const layerData = manifest[layer_type] as LayerManifest | undefined
+  if (!layerData || layer_type === 'compatibility_rules') return null
 
   // Search in all gender categories
   const allEntries = [
@@ -211,12 +210,12 @@ const areAssetsCompatible = (manifest: Manifest, selectedLayers: Record<string, 
 }
 
 // Get compatible assets
-const getCompatibleAssets = (manifest: Manifest, layerType: string, selectedLayers: Record<string, string | null>, gender: 'MALE' | 'FEMALE'): string[] => {
-  const layerAssets = getLayerAssets(manifest, layerType, gender)
+const getCompatibleAssets = (manifest: Manifest, layer_type: string, selectedLayers: Record<string, string | null>, gender: 'MALE' | 'FEMALE'): string[] => {
+  const layerAssets = getLayerAssets(manifest, layer_type, gender)
   const compatibleAssets: string[] = []
 
   for (const asset of layerAssets) {
-    const testSelection = { ...selectedLayers, [layerType]: asset }
+    const testSelection = { ...selectedLayers, [layer_type]: asset }
     if (areAssetsCompatible(manifest, testSelection)) {
       compatibleAssets.push(asset)
     }
@@ -315,36 +314,36 @@ export const CharacterCreationView: React.FC<CharacterCreationViewProps> = ({ ch
           })
 
           // First pass: required layers
-          for (const [layerType, config] of Object.entries(LAYER_CONFIG)) {
+          for (const [layer_type, config] of Object.entries(LAYER_CONFIG)) {
             if (config.required) {
-              if (layerType === '6-hair') {
+              if (layer_type === '6-hair') {
                 // For hair, check compatibility with already selected base
-                const compatibleAssets = getCompatibleAssets(loadedManifest, layerType, newSelectedLayers, selectedGender)
+                const compatibleAssets = getCompatibleAssets(loadedManifest, layer_type, newSelectedLayers, selectedGender)
                 if (compatibleAssets.length > 0) {
-                  newSelectedLayers[layerType] = compatibleAssets[Math.floor(Math.random() * compatibleAssets.length)]
+                  newSelectedLayers[layer_type] = compatibleAssets[Math.floor(Math.random() * compatibleAssets.length)]
                 } else {
                   // Fallback to any hair if no compatible ones
-                  const availableAssets = getLayerAssets(loadedManifest, layerType, selectedGender)
+                  const availableAssets = getLayerAssets(loadedManifest, layer_type, selectedGender)
                   if (availableAssets.length > 0) {
-                    newSelectedLayers[layerType] = availableAssets[Math.floor(Math.random() * availableAssets.length)]
+                    newSelectedLayers[layer_type] = availableAssets[Math.floor(Math.random() * availableAssets.length)]
                   }
                 }
               } else {
                 // For other required layers (like base), just pick randomly
-                const availableAssets = getLayerAssets(loadedManifest, layerType, selectedGender)
+                const availableAssets = getLayerAssets(loadedManifest, layer_type, selectedGender)
                 if (availableAssets.length > 0) {
-                  newSelectedLayers[layerType] = availableAssets[Math.floor(Math.random() * availableAssets.length)]
+                  newSelectedLayers[layer_type] = availableAssets[Math.floor(Math.random() * availableAssets.length)]
                 }
               }
             }
           }
 
           // Second pass: optional layers (with compatibility checking)
-          for (const [layerType, config] of Object.entries(LAYER_CONFIG)) {
+          for (const [layer_type, config] of Object.entries(LAYER_CONFIG)) {
             if (!config.required && Math.random() < config.probability) {
-              const compatibleAssets = getCompatibleAssets(loadedManifest, layerType, newSelectedLayers, selectedGender)
+              const compatibleAssets = getCompatibleAssets(loadedManifest, layer_type, newSelectedLayers, selectedGender)
               if (compatibleAssets.length > 0) {
-                newSelectedLayers[layerType] = compatibleAssets[Math.floor(Math.random() * compatibleAssets.length)]
+                newSelectedLayers[layer_type] = compatibleAssets[Math.floor(Math.random() * compatibleAssets.length)]
               }
             }
           }
@@ -390,17 +389,17 @@ export const CharacterCreationView: React.FC<CharacterCreationViewProps> = ({ ch
       const layerOrder = Object.keys(LAYER_CONFIG)
       let successfulLayers = 0
 
-      for (const layerType of layerOrder) {
-        const selectedFile = newSelectedLayers[layerType]
+      for (const layer_type of layerOrder) {
+        const selectedFile = newSelectedLayers[layer_type]
         if (!selectedFile) continue
 
         try {
-          const img = await loadImage(`/layers/${layerType}/${selectedFile}`)
+          const img = await loadImage(`/layers/${layer_type}/${selectedFile}`)
           ctx.drawImage(img, 0, 0, 400, 400)
           successfulLayers++
-          console.log(`✓ Loaded: ${layerType}/${selectedFile}`)
+          console.log(`✓ Loaded: ${layer_type}/${selectedFile}`)
         } catch (error) {
-          console.warn(`✗ Failed to load layer: ${layerType}/${selectedFile}`, error)
+          console.warn(`✗ Failed to load layer: ${layer_type}/${selectedFile}`, error)
           // Don't fail the entire generation for one missing layer
         }
       }
@@ -492,7 +491,7 @@ export const CharacterCreationView: React.FC<CharacterCreationViewProps> = ({ ch
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          walletAddress: wallet.publicKey.toString(),
+          wallet_address: wallet.publicKey.toString(),
           gender: currentGender,
           imageBlob: generatedImage,
           selectedLayers: selectedLayers,

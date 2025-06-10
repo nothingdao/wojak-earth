@@ -18,14 +18,14 @@ exports.handler = async (event, context) => {
 
   try {
     // Get wallet address from query parameters
-    const walletAddress = event.queryStringParameters?.walletAddress
+    const wallet_address = event.queryStringParameters?.wallet_address
 
-    if (!walletAddress) {
+    if (!wallet_address) {
       return {
         statusCode: 400,
         headers,
         body: JSON.stringify({
-          error: 'Missing walletAddress parameter'
+          error: 'Missing wallet_address parameter'
         })
       }
     }
@@ -33,7 +33,7 @@ exports.handler = async (event, context) => {
     // Validate wallet address format
     let publicKey
     try {
-      publicKey = new PublicKey(walletAddress)
+      publicKey = new PublicKey(wallet_address)
     } catch (error) {
       return {
         statusCode: 400,
@@ -60,7 +60,7 @@ exports.handler = async (event, context) => {
       headers,
       body: JSON.stringify({
         success: true,
-        walletAddress,
+        wallet_address,
         solBalance,
         balanceInLamports,
         accountExists,

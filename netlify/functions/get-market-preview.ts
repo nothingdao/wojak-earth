@@ -25,9 +25,9 @@ export const handler = async (event, context) => {
   }
 
   try {
-    const { locationId } = event.queryStringParameters || {}
+    const { location_id } = event.queryStringParameters || {}
 
-    if (!locationId) {
+    if (!location_id) {
       return {
         statusCode: 400,
         headers,
@@ -38,8 +38,8 @@ export const handler = async (event, context) => {
     // Verify location exists and has market
     const { data: location, error: locationError } = await supabase
       .from('locations')
-      .select('id, name, hasMarket')
-      .eq('id', locationId)
+      .select('id, name, has_market')
+      .eq('id', location_id)
       .single()
 
     if (locationError || !location) {
@@ -50,7 +50,7 @@ export const handler = async (event, context) => {
       }
     }
 
-    if (!location.hasMarket) {
+    if (!location.has_market) {
       return {
         statusCode: 200,
         headers,
@@ -75,7 +75,7 @@ export const handler = async (event, context) => {
         )
       `
       )
-      .eq('locationId', locationId)
+      .eq('location_id', location_id)
 
     if (statsError) {
       console.error('Error fetching market stats:', statsError)

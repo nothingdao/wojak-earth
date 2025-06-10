@@ -40,12 +40,12 @@ export const handler = async (event, context) => {
         energy,
         health,
         coins,
-        characterType,
+        character_type,
         status,
-        currentImageUrl,
-        createdAt,
-        walletAddress,
-        nftAddress,
+        current_image_url,
+        created_at,
+        wallet_address,
+        nft_address,
         currentLocation:locations(
           id,
           name,
@@ -60,7 +60,7 @@ export const handler = async (event, context) => {
     // Otherwise, return ALL characters regardless of status
 
     const { data: characters, error } = await query
-      .order('createdAt', { ascending: false })
+      .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1)
 
     if (error) {

@@ -15,17 +15,16 @@ import {
 } from 'react-icons/gi';
 import supabase from '@/utils/supabase';
 
-// Types based on your Prisma schema
 type TransactionType = 'MINT' | 'MINE' | 'BUY' | 'SELL' | 'TRAVEL' | 'EQUIP' | 'UNEQUIP';
 
 interface Transaction {
   id: string;
-  characterId: string;
+  character_id: string;
   type: TransactionType;
-  itemId?: string;
+  item_id?: string;
   quantity?: number;
   description: string;
-  createdAt: string;
+  created_at: string;
   character: {
     name: string;
     id: string;
@@ -50,7 +49,7 @@ export default function GlobalActivityFeed({ className = "" }: GlobalActivityFee
           *,
           character:characters(name, id)
         `)
-        .order('createdAt', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(20);
 
       if (error) {
@@ -83,18 +82,18 @@ export default function GlobalActivityFeed({ className = "" }: GlobalActivityFee
             const { data: character } = await supabase
               .from('characters')
               .select('name, id')
-              .eq('id', payload.new.characterId)
+              .eq('id', payload.new.character_id)
               .single();
 
             if (character) {
               const newTransaction: Transaction = {
                 id: payload.new.id,
-                characterId: payload.new.characterId,
+                character_id: payload.new.character_id,
                 type: payload.new.type,
-                itemId: payload.new.itemId,
+                item_id: payload.new.item_id,
                 quantity: payload.new.quantity,
                 description: payload.new.description,
-                createdAt: payload.new.createdAt,
+                created_at: payload.new.created_at,
                 character: {
                   name: character.name,
                   id: character.id
@@ -214,7 +213,7 @@ export default function GlobalActivityFeed({ className = "" }: GlobalActivityFee
               </div>
 
               <div className="text-xs text-muted-foreground flex-shrink-0">
-                {formatTimeAgo(transaction.createdAt)}
+                {formatTimeAgo(transaction.created_at)}
               </div>
             </div>
           ))}
@@ -243,7 +242,7 @@ export default function GlobalActivityFeed({ className = "" }: GlobalActivityFee
                   *,
                   character:characters(name, id)
                 `)
-                .order('createdAt', { ascending: false })
+                .order('created_at', { ascending: false })
                 .limit(20);
 
               if (error) {

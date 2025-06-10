@@ -1,4 +1,4 @@
-// src/hooks/useGameHandlers.ts
+// src/hooks/useGameHandlers.ts - DEBUGGING VERSION
 import { toast } from 'sonner'
 import type { Location, MarketItem, Character, GameView } from '@/types'
 
@@ -33,7 +33,7 @@ interface EquipItemResponse {
 interface UseGameHandlersProps {
   character: Character | null
   characterActions: {
-    mine: (locationId?: string) => Promise<MineResponse>
+    mine: (location_id?: string) => Promise<MineResponse>
     travel: (destinationId: string) => Promise<void>
     buyItem: (marketListingId: string, quantity: number) => Promise<void>
     useItem: (inventoryId: string) => Promise<UseItemResponse>
@@ -42,9 +42,9 @@ interface UseGameHandlersProps {
       equip: boolean
     ) => Promise<EquipItemResponse>
     sendMessage: (
-      locationId: string,
+      location_id: string,
       message: string,
-      messageType: string
+      message_type: string
     ) => Promise<void>
   }
   refetchCharacter: () => Promise<void>
@@ -53,7 +53,7 @@ interface UseGameHandlersProps {
   setTravelingTo: React.Dispatch<React.SetStateAction<Location | null>>
   setCurrentView: React.Dispatch<React.SetStateAction<GameView>>
   loadGameData: () => Promise<void>
-  loadChatMessages: (locationId: string) => Promise<void>
+  loadChatMessages: (location_id: string) => Promise<void>
   selectedLocation: Location | null
   locations: Location[]
 }
@@ -129,32 +129,81 @@ export function useGameHandlers({
     }
   }
 
-  const handleTravel = async (locationId: string) => {
-    if (!character) return
+  const handleTravel = async (location_id: string) => {
+    // FIXED: Add extensive debugging
+    console.log('🗺️ handleTravel called with:', {
+      location_id,
+      hasCharacter: !!character,
+      character_id: character?.id,
+      currentlocation_id: character?.currentLocation?.id,
+    })
 
+    if (!character) {
+      console.error('❌ No character found for travel')
+      toast.error('No character found')
+      return
+    }
+
+    if (!location_id) {
+      console.error('❌ No location_id provided for travel')
+      toast.error('No destination selected')
+      return
+    }
+
+    // Find the destination location
     const destination =
-      locations.find((loc) => loc.id === locationId) ||
+      locations.find((loc) => loc.id === location_id) ||
       locations
-        .find((loc) => loc.subLocations?.some((sub) => sub.id === locationId))
-        ?.subLocations?.find((sub) => sub.id === locationId)
+        .find((loc) => loc.subLocations?.some((sub) => sub.id === location_id))
+        ?.subLocations?.find((sub) => sub.id === location_id)
+
+    console.log('🎯 Destination found:', {
+      location_id,
+      destination: destination
+        ? {
+            id: destination.id,
+            name: destination.name,
+          }
+        : null,
+      totalLocations: locations.length,
+    })
 
     if (destination) {
       setTravelingTo(destination)
+    } else {
+      console.warn('⚠️ Destination not found in locations array')
     }
 
     try {
-      await characterActions.travel(locationId)
+      console.log('🚀 Calling characterActions.travel with:', location_id)
+
+      await characterActions.travel(location_id)
+
+      console.log('✅ Travel successful, setting timeout for UI update')
 
       setTimeout(async () => {
         await refetchCharacter()
         await loadGameData()
         setTravelingTo(null)
         setCurrentView('main')
+        console.log('✅ Travel UI updates completed')
       }, 2800)
     } catch (error) {
-      console.error('Travel failed:', error)
+      console.error('❌ Travel failed:', error)
       setTravelingTo(null)
-      // Error already handled in characterActions
+
+      // More detailed error logging
+      if (error instanceof Error) {
+        console.error('❌ Error details:', {
+          message: error.message,
+          stack: error.stack,
+        })
+      }
+
+      // Error already handled in characterActions, but we'll add a fallback
+      if (!toast.isActive) {
+        toast.error('Travel failed. Please try again.')
+      }
     }
   }
 
@@ -222,7 +271,7 @@ export function useGameHandlers({
   // FIXED: Made event parameter optional and added proper type checking
   const handleEquipItem = async (
     inventoryId: string,
-    isEquipped: boolean,
+    is_equipped: boolean,
     targetSlot?: string,
     event?: React.MouseEvent
   ) => {
@@ -240,7 +289,7 @@ export function useGameHandlers({
     setLoadingItems((prev) => new Set(prev).add(inventoryId))
 
     try {
-      const result = await characterActions.equipItem(inventoryId, !isEquipped)
+      const result = await characterActions.equipItem(inventoryId, !is_equipped)
 
       if (result.replacedItems && result.replacedItems.length > 0) {
         toast.success(`${result.item.name} equipped!`, {
@@ -249,7 +298,7 @@ export function useGameHandlers({
         })
       } else {
         toast.success(
-          isEquipped
+          is_equipped
             ? `${result.item.name} unequipped`
             : `${result.item.name} equipped!`,
           {
@@ -278,8 +327,8 @@ export function useGameHandlers({
   const handleUseItem = async (
     inventoryId: string,
     itemName: string,
-    energyEffect?: number,
-    healthEffect?: number,
+    energy_effect?: number,
+    health_effect?: number,
     event?: React.MouseEvent
   ) => {
     // Only call preventDefault if event exists and has the method
@@ -293,20 +342,20 @@ export function useGameHandlers({
       return
     }
 
-    const actualEnergyGain = energyEffect
-      ? Math.min(energyEffect, 100 - character.energy)
+    const actualEnergyGain = energy_effect
+      ? Math.min(energy_effect, 100 - character.energy)
       : 0
-    const actualHealthGain = healthEffect
-      ? Math.min(healthEffect, 100 - character.health)
+    const actualHealthGain = health_effect
+      ? Math.min(health_effect, 100 - character.health)
       : 0
 
     if (
-      (energyEffect && actualEnergyGain === 0) ||
-      (healthEffect && actualHealthGain === 0)
+      (energy_effect && actualEnergyGain === 0) ||
+      (health_effect && actualHealthGain === 0)
     ) {
       toast.warning(
         `You're already at full ${
-          energyEffect && actualEnergyGain === 0 ? 'energy' : 'health'
+          energy_effect && actualEnergyGain === 0 ? 'energy' : 'health'
         }!`
       )
       return

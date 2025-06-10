@@ -26,22 +26,22 @@ export const handler = async (event, context) => {
   }
 
   try {
-    const { characterId, walletAddress, burnSignature } = JSON.parse(event.body)
+    const { character_id, wallet_address, burnSignature } = JSON.parse(event.body)
 
-    if (!characterId || !walletAddress || !burnSignature) {
+    if (!character_id || !wallet_address || !burnSignature) {
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ error: 'Missing characterId, walletAddress, or burnSignature' })
+        body: JSON.stringify({ error: 'Missing character_id, wallet_address, or burnSignature' })
       }
     }
 
     // 1. Verify character exists and belongs to wallet
     const { data: character, error: fetchError } = await supabase
       .from('characters')
-      .select('id, name, nftAddress, walletAddress')
-      .eq('id', characterId)
-      .eq('walletAddress', walletAddress)
+      .select('id, name, nft_address, wallet_address')
+      .eq('id', character_id)
+      .eq('wallet_address', wallet_address)
       .single()
 
     if (fetchError || !character) {
@@ -58,19 +58,19 @@ export const handler = async (event, context) => {
     // Delete in proper order to avoid foreign key violations
     const deleteQueries = [
       // Delete transactions first
-      supabase.from('transactions').delete().eq('characterId', characterId),
+      supabase.from('transactions').delete().eq('character_id', character_id),
 
       // Delete character inventory
-      supabase.from('character_inventory').delete().eq('characterId', characterId),
+      supabase.from('character_inventory').delete().eq('character_id', character_id),
 
       // Clear character_id reference in pending_payments (don't delete the payment record)
-      supabase.from('pending_payments').update({ character_id: null }).eq('character_id', characterId),
+      supabase.from('pending_payments').update({ character_id: null }).eq('character_id', character_id),
 
       // Delete any other character-related records
       // Add more tables here as needed based on your schema
 
       // Finally delete the character
-      supabase.from('characters').delete().eq('id', characterId)
+      supabase.from('characters').delete().eq('id', character_id)
     ]
 
     // Execute deletions in sequence

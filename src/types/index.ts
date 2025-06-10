@@ -17,8 +17,8 @@ export type GameView =
   | 'rust-market'
 
 export interface Character {
-  walletAddress: any
-  createdAt: string | number | Date
+  wallet_address: any
+  created_at: string | number | Date
   id: string
   name: string
   gender: string
@@ -27,33 +27,33 @@ export interface Character {
   level: number
   status: string
   coins: number
-  currentImageUrl: string
-  currentVersion: number
-  nftAddress?: string
-  characterType: string
+  current_image_url: string
+  current_version: number
+  nft_address?: string
+  character_type: string
   currentLocation: {
     id: string
     name: string
     description: string
-    locationType: string
+    location_type: string
     biome?: string
-    welcomeMessage?: string
+    welcome_message?: string
   }
   inventory: Array<{
-    equippedslot: string
+    equipped_slot: string
     id: string
     quantity: number
-    isEquipped: boolean
+    is_equipped: boolean
     item: {
-      layerType: any
+      layer_type: any
       id: string
       name: string
       description: string
       category: string
       rarity: string
-      imageUrl?: string
-      energyEffect?: number
-      healthEffect?: number
+      image_url?: string
+      energy_effect?: number
+      health_effect?: number
     }
   }>
   recentActivity: Array<{
@@ -73,31 +73,31 @@ export interface Location {
   id: string
   name: string
   description: string
-  imageUrl?: string
-  parentLocationId?: string
-  locationType: 'REGION' | 'BUILDING' | 'AREA'
+  image_url?: string
+  parentlocation_id?: string
+  location_type: 'REGION' | 'BUILDING' | 'AREA'
   biome: string
   difficulty: number
-  mapX?: number
-  mapY?: number
-  playerCount: number
-  lastActive?: string
-  hasMarket: boolean
-  hasMining: boolean
-  hasTravel: boolean
-  hasChat: boolean
-  chatScope: 'LOCAL' | 'REGIONAL' | 'GLOBAL'
-  welcomeMessage?: string
+  map_x?: number
+  map_y?: number
+  player_count: number
+  last_active?: string
+  has_market: boolean
+  has_mining: boolean
+  has_travel: boolean
+  has_chat: boolean
+  chat_scope: 'LOCAL' | 'REGIONAL' | 'GLOBAL'
+  welcome_message?: string
   lore?: string
-  minLevel?: number
-  entryCost?: number
-  isPrivate: boolean
-  createdAt: Date
-  updatedAt: Date
-  svgpathid: string
+  min_level?: number
+  entry_cost?: number
+  is_private: boolean
+  created_at: Date
+  updated_at: Date
+  svg_path_id: string
   theme: string
   // New fields from migration
-  isExplored?: boolean
+  is_explored?: boolean
   status?: 'explored' | 'unexplored' | 'locked'
   subLocations?: Location[]
 }
@@ -110,8 +110,8 @@ export interface Item {
   category: string
   rarity: string
   description: string
-  energyEffect?: number
-  healthEffect?: number
+  energy_effect?: number
+  health_effect?: number
   durability?: number
 }
 
@@ -122,7 +122,7 @@ export interface MarketItem {
   id: string
   price: number
   quantity: number
-  isSystemItem: boolean
+  is_systemItem: boolean
   isLocalSpecialty?: boolean
   seller?: {
     id: string
@@ -134,27 +134,27 @@ export interface MarketItem {
     description: string
     category: string
     rarity: string
-    imageUrl?: string
+    image_url?: string
   }
 }
 
 export interface ChatMessage {
   id: string
   message: string
-  messageType: 'CHAT' | 'EMOTE' | 'SYSTEM'
-  isSystem: boolean
+  message_type: 'CHAT' | 'EMOTE' | 'SYSTEM'
+  is_system: boolean
   timeAgo: string
-  createdAt: string
+  created_at: string
   character?: {
     id: string
     name: string
-    characterType: string
-    imageUrl?: string
+    character_type: string
+    image_url?: string
   }
   location: {
     id: string
     name: string
-    locationType: string
+    location_type: string
   }
 }
 
@@ -162,12 +162,12 @@ export interface Player {
   id: string
   name: string
   gender: string
-  characterType: string
+  character_type: string
   level: number
   energy: number
   health: number
   status: string
-  currentImageUrl?: string
+  current_image_url?: string
   equippedItems: Array<{
     name: string
     category: string
@@ -192,7 +192,7 @@ export interface EquipmentSlotInfo {
 export interface EnhancedCharacter extends Character {
   equipmentSlots?: {
     [K in EquipmentSlot]?: {
-      itemId: string
+      item_id: string
       itemName: string
       rarity: string
     }
@@ -248,12 +248,12 @@ export interface MapRegion {
   worldData: {
     difficulty: number
     biome: BiomeType
-    hasMarket: boolean
-    hasMining: boolean
-    hasChat: boolean
-    welcomeMessage: string
-    mapX?: number
-    mapY?: number
+    has_market: boolean
+    has_mining: boolean
+    has_chat: boolean
+    welcome_message: string
+    map_x?: number
+    map_y?: number
   }
 }
 
@@ -286,10 +286,10 @@ export interface MapLocation {
   id: string
   name: string
   description: string
-  svgPathId: string
+  svg_path_id: string
   difficulty: number
   theme: LocationTheme
-  isExplored: boolean
+  is_explored: boolean
   isPlayerHere: boolean
   status: 'explored' | 'unexplored' | 'locked' | 'gm-only'
 }
@@ -331,9 +331,9 @@ export interface LocationThemeDefinition {
 
 // Travel system types
 export interface TravelOptions {
-  characterId: string
+  character_id: string
   destinationId: string
-  payEntryCost?: boolean
+  payentry_cost?: boolean
 }
 
 export interface TravelResult {
@@ -348,8 +348,8 @@ export interface LocationFilters {
   biome?: string
   minDifficulty?: number
   maxDifficulty?: number
-  hasTravel?: boolean
-  isExplored?: boolean
+  has_travel?: boolean
+  is_explored?: boolean
   accessible?: boolean // Only locations character can access
 }
 

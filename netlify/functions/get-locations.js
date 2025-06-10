@@ -22,13 +22,13 @@ export const handler = async (event, context) => {
       .from('locations')
       .select(`
         *,
-        subLocations:locations!parentLocationId(
+        subLocations:locations!parent_location_id(
           *,
           characterCount:characters(count)
         ),
         characterCount:characters(count)
       `)
-      .is('parentLocationId', null)
+      .is('parent_location_id', null)
       .order('difficulty', { ascending: true })
 
     if (error) {
@@ -49,47 +49,47 @@ export const handler = async (event, context) => {
         id: location.id,
         name: location.name,
         description: location.description,
-        locationType: location.locationType,
+        location_type: location.location_type,
         biome: location.biome,
         difficulty: location.difficulty,
-        playerCount: totalPlayerCount, // Aggregated count
-        directPlayerCount: directPlayerCount, // Players directly at this location
-        lastActive: location.lastActive,
-        hasMarket: location.hasMarket,
-        hasMining: location.hasMining,
-        hasChat: location.hasChat,
-        welcomeMessage: location.welcomeMessage,
+        player_count: totalPlayerCount, // Aggregated count
+        direct_player_count: directPlayerCount, // Players directly at this location
+        last_active: location.last_active,
+        has_market: location.has_market,
+        has_mining: location.has_mining,
+        has_chat: location.has_chat,
+        welcome_message: location.welcome_message,
         lore: location.lore,
-        svgpathid: location.svgpathid,
+        svg_path_id: location.svg_path_id,
         theme: location.theme,
 
         // Add missing fields that DatabaseMapStyling expects
-        hasTravel: location.hasTravel ?? true, // Default to true if not set
-        isExplored: location.isExplored ?? true, // Default to true if not set
-        isPrivate: location.isPrivate ?? false, // Default to false if not set
-        minLevel: location.minLevel || null, // Minimum level requirement
-        entryCost: location.entryCost || null, // Entry cost in coins
+        has_travel: location.has_travel ?? true, // Default to true if not set
+        is_explored: location.is_explored ?? true, // Default to true if not set
+        is_private: location.is_private ?? false, // Default to false if not set
+        min_level: location.min_level || null, // Minimum level requirement
+        entry_cost: location.entry_cost || null, // Entry cost in coins
 
         subLocations: location.subLocations?.map(subLoc => ({
           id: subLoc.id,
           name: subLoc.name,
           description: subLoc.description,
-          locationType: subLoc.locationType,
+          location_type: subLoc.location_type,
           difficulty: subLoc.difficulty,
-          playerCount: subLoc.characterCount?.[0]?.count || 0, // Real player count for sub-location
-          hasMarket: subLoc.hasMarket,
-          hasMining: subLoc.hasMining,
-          hasChat: subLoc.hasChat,
-          welcomeMessage: subLoc.welcomeMessage,
-          parentLocationId: subLoc.parentLocationId,
+          player_count: subLoc.characterCount?.[0]?.count || 0, // Real player count for sub-location
+          has_market: subLoc.has_market,
+          has_mining: subLoc.has_mining,
+          has_chat: subLoc.has_chat,
+          welcome_message: subLoc.welcome_message,
+          parent_location_id: subLoc.parent_location_id,
 
           // Add missing fields for sub-locations too
-          hasTravel: subLoc.hasTravel ?? true,
-          isExplored: subLoc.isExplored ?? true,
-          isPrivate: subLoc.isPrivate ?? false,
-          minLevel: subLoc.minLevel || null,
-          entryCost: subLoc.entryCost || null,
-          svgpathid: subLoc.svgpathid,
+          has_travel: subLoc.has_travel ?? true,
+          is_explored: subLoc.is_explored ?? true,
+          is_private: subLoc.is_private ?? false,
+          min_level: subLoc.min_level || null,
+          entry_cost: subLoc.entry_cost || null,
+          svg_path_id: subLoc.svg_path_id,
           theme: subLoc.theme,
           biome: subLoc.biome
         })) || []

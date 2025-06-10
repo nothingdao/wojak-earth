@@ -25,9 +25,9 @@ export const handler = async (event, context) => {
   }
 
   try {
-    const walletAddress = event.queryStringParameters?.walletAddress
+    const wallet_address = event.queryStringParameters?.wallet_address
 
-    if (!walletAddress) {
+    if (!wallet_address) {
       return {
         statusCode: 400,
         headers,
@@ -48,7 +48,7 @@ export const handler = async (event, context) => {
         imageHistory:character_images(*),
         transactions(*)
       `)
-      .eq('walletAddress', walletAddress)
+      .eq('wallet_address', wallet_address)
       .eq('status', 'ACTIVE')
       .single()
 

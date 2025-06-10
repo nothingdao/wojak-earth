@@ -86,7 +86,7 @@ export function MarketView({
               </span>
               <span className="text-muted-foreground">•</span>
               <span className="text-muted-foreground font-mono">
-                VENDOR: {marketItem.isSystemItem ? 'SYSTEM' : marketItem.seller?.name?.toUpperCase() || 'UNKNOWN'}
+                VENDOR: {marketItem.is_systemItem ? 'SYSTEM' : marketItem.seller?.name?.toUpperCase() || 'UNKNOWN'}
               </span>
             </div>
           </div>

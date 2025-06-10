@@ -27,11 +27,11 @@ export const handler = async (event, context) => {
   }
 
   try {
-    // Extract character ID from path: /metadata/{characterId}
+    // Extract character ID from path: /metadata/{character_id}
     const pathParts = event.path.split('/')
-    const characterId = pathParts[pathParts.length - 1]
+    const character_id = pathParts[pathParts.length - 1]
 
-    if (!characterId) {
+    if (!character_id) {
       return {
         statusCode: 400,
         headers,
@@ -47,12 +47,12 @@ export const handler = async (event, context) => {
         currentLocation:locations(
           id,
           name,
-          locationType,
+          location_type,
           biome
         ),
         inventory:character_inventory(
           quantity,
-          isEquipped,
+          is_equipped,
           item:items(
             name,
             category,
@@ -60,7 +60,7 @@ export const handler = async (event, context) => {
           )
         )
       `)
-      .eq('id', characterId)
+      .eq('id', character_id)
       .eq('status', 'ACTIVE') // Only return metadata for active characters
       .single()
 
@@ -82,12 +82,12 @@ export const handler = async (event, context) => {
     const attributes = [
       { trait_type: "Level", value: character.level.toString() },
       { trait_type: "Gender", value: character.gender },
-      { trait_type: "Type", value: character.characterType },
+      { trait_type: "Type", value: character.character_type },
       { trait_type: "Current_Location", value: character.currentLocation?.name || "Unknown" },
       { trait_type: "Energy", value: character.energy.toString() },
       { trait_type: "Health", value: character.health.toString() },
       { trait_type: "Coins", value: character.coins.toString() },
-      { trait_type: "Character_Version", value: character.currentVersion.toString() },
+      { trait_type: "Character_Version", value: character.current_version.toString() },
 
       // Location attributes
       ...(character.currentLocation?.biome ? [{
@@ -107,8 +107,8 @@ export const handler = async (event, context) => {
       ...getRarityTraits(character.inventory),
 
       // Timestamps
-      { trait_type: "Created", value: new Date(character.createdAt).toISOString().split('T')[0] },
-      { trait_type: "Last_Updated", value: new Date(character.updatedAt).toISOString().split('T')[0] }
+      { trait_type: "Created", value: new Date(character.created_at).toISOString().split('T')[0] },
+      { trait_type: "Last_Updated", value: new Date(character.updated_at).toISOString().split('T')[0] }
     ]
 
     // Generate dynamic description
@@ -118,7 +118,7 @@ export const handler = async (event, context) => {
     const metadata = {
       name: character.name,
       description: description,
-      image: character.currentImageUrl || "https://earth.ndao.computer/layers/bases/male.png",
+      image: character.current_image_url || "https://earth.ndao.computer/layers/bases/male.png",
       external_url: `https://earth.ndao.computer/character/${character.id}`,
 
       attributes: attributes.filter(attr => attr.value !== null && attr.value !== undefined),
@@ -126,7 +126,7 @@ export const handler = async (event, context) => {
       properties: {
         files: [
           {
-            uri: character.currentImageUrl || "https://earth.ndao.computer/layers/bases/male.png",
+            uri: character.current_image_url || "https://earth.ndao.computer/layers/bases/male.png",
             type: "image/png"
           }
         ],
@@ -142,17 +142,17 @@ export const handler = async (event, context) => {
       // Custom game data (not standard but useful)
       game_data: {
         character_id: character.id,
-        wallet_address: character.walletAddress,
-        nft_address: character.nftAddress,
-        current_location_id: character.currentLocationId,
+        wallet_address: character.wallet_address,
+        nft_address: character.nft_address,
+        current_location_id: character.currentlocation_id,
         stats: {
           level: character.level,
           energy: character.energy,
           health: character.health,
           coins: character.coins
         },
-        version: character.currentVersion,
-        last_updated: character.updatedAt
+        version: character.current_version,
+        last_updated: character.updated_at
       }
     }
 
@@ -181,7 +181,7 @@ function calculateCharacterStats(character) {
   const inventory = character.inventory || []
 
   const totalItems = inventory.reduce((sum, inv) => sum + inv.quantity, 0)
-  const equippedItems = inventory.filter(inv => inv.isEquipped).length
+  const equippedItems = inventory.filter(inv => inv.is_equipped).length
 
   // Simple inventory value calculation (based on rarity)
   const rarityValues = {
@@ -206,7 +206,7 @@ function calculateCharacterStats(character) {
 
 // Helper: Get equipped items as traits
 function getEquippedItemTraits(inventory) {
-  const equippedItems = inventory?.filter(inv => inv.isEquipped) || []
+  const equippedItems = inventory?.filter(inv => inv.is_equipped) || []
 
   return equippedItems.map(inv => ({
     trait_type: `Equipped_${inv.item.category}`,
@@ -233,7 +233,7 @@ function getRarityTraits(inventory) {
 function generateCharacterDescription(character, stats) {
   const location = character.currentLocation?.name || "an unknown location"
   const level = character.level
-  const type = character.characterType.toLowerCase()
+  const type = character.character_type.toLowerCase()
   const gender = character.gender.toLowerCase()
 
   let description = `${character.name} is a level ${level} ${gender} ${type} currently exploring ${location}.`
@@ -277,7 +277,7 @@ async function findCharacterByIdentifier(identifier) {
     const result = await supabase
       .from('characters')
       .select('*')
-      .eq('nftAddress', identifier)
+      .eq('nft_address', identifier)
       .eq('status', 'ACTIVE')
       .single()
 

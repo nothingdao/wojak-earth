@@ -1,38 +1,47 @@
 # wojak-earth - React Project Rules
 
 ## Project Context
+
 - **Project**: wojak-earth
 - **Type**: React Application
-- **Description**: 
+- **Description**:
 
 ## Development Guidelines
 
 ### Code Style
+
 - Use TypeScript for all new components
 - Prefer functional components with hooks
 - Use Tailwind CSS for styling
 - Follow React best practices and hooks rules
 
 ### File Organization
+
 - Components in `src/components/`
 - Custom hooks in `src/hooks/`
 - Utilities in `src/lib/`
 - Types in `src/types/`
 
 ### Naming Conventions
+
 - PascalCase for components
 - camelCase for functions and variables
 - kebab-case for files and folders
+- snake_case for database fields and API endpoints
+- Use singular nouns for component names
 - Use descriptive, meaningful names
 
 ### Bundle Context
-This project uses cntx-ui for file bundling. Current bundles: 
+
+This project uses cntx-ui for file bundling. Current bundles:
+
 - **ui**: React components and styles
-- **api**: API routes and utilities  
+- **api**: API routes and utilities
 - **config**: Configuration files
 - **docs**: Documentation
 
 ### AI Assistant Instructions
+
 - When suggesting code changes, consider the current bundle structure
 - Prioritize TypeScript and modern React patterns
 - Suggest Tailwind classes for styling
@@ -41,14 +50,17 @@ This project uses cntx-ui for file bundling. Current bundles:
 - Consider bundle organization when suggesting file locations
 
 ## Custom Rules
+
 Add your specific project rules and preferences below:
 
 ### Team Preferences
+
 - [Add team coding standards]
 - [Add preferred libraries/frameworks]
 - [Add project-specific guidelines]
 
 ### Architecture Notes
+
 - [Document key architectural decisions]
 - [Note important patterns to follow]
 - [List critical dependencies]

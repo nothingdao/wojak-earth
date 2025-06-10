@@ -38,13 +38,13 @@ export class NPCWalletManager {
   }
 
   // Store NPC wallet
-  async store(characterId, keypair) {
+  async store(character_id, keypair) {
     const encrypted = this.encrypt(keypair.secretKey)
 
     const { error } = await this.supabase
       .from('npc_wallets')
       .upsert({
-        character_id: characterId,
+        character_id: character_id,
         encrypted_private_key: encrypted,
         public_key: keypair.publicKey.toString()
       })
@@ -53,11 +53,11 @@ export class NPCWalletManager {
   }
 
   // Load NPC wallet
-  async load(characterId) {
+  async load(character_id) {
     const { data, error } = await this.supabase
       .from('npc_wallets')
       .select('*')
-      .eq('character_id', characterId)
+      .eq('character_id', character_id)
       .single()
 
     if (error || !data) return null
@@ -66,7 +66,7 @@ export class NPCWalletManager {
       const privateKeyArray = this.decrypt(data.encrypted_private_key)
       return Keypair.fromSecretKey(privateKeyArray)
     } catch (e) {
-      console.error(`Failed to decrypt wallet for ${characterId}:`, e.message)
+      console.error(`Failed to decrypt wallet for ${character_id}:`, e.message)
       return null
     }
   }
@@ -79,7 +79,7 @@ export class NPCWalletManager {
         *,
         npc_wallets!inner(public_key)
       `)
-      .eq('characterType', 'NPC')
+      .eq('character_type', 'NPC')
       .eq('status', 'ACTIVE')
 
     if (error) throw error

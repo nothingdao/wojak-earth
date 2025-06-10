@@ -1,10 +1,10 @@
 {
-  "npcCount": 10,
+  "npcCount": 30,
   "resumeExisting": true,
   "spawnReplacements": true,
   "personalities": ["casual", "hardcore", "social", "merchant", "explorer"],
   "spawnDelay": 20000,
-  "activityInterval": 70000,
+  "activityInterval": 500000,
   "globalActivityRate": 1000,
   "activityVariance": 0.4,
   "energyRestThreshold": 15,

@@ -31,26 +31,26 @@ export const handler = async (event, context) => {
     }
   }
 
-  const characterId = randomUUID()
-  console.log('🆔 Generated character ID:', characterId)
+  const character_id = randomUUID()
+  console.log('🆔 Generated character ID:', character_id)
 
   try {
-    const { walletAddress, gender, imageBlob, selectedLayers, paymentSignature, isNPC = false } = JSON.parse(event.body)
+    const { wallet_address, gender, imageBlob, selectedLayers, paymentSignature, isNPC = false } = JSON.parse(event.body)
 
     console.log('📋 Request data:', {
-      walletAddress,
+      wallet_address,
       gender,
       hasImageBlob: !!imageBlob,
       hasSelectedLayers: !!selectedLayers,
       paymentSignature: paymentSignature || 'NOT PROVIDED'
     })
 
-    if (!walletAddress || !gender || !imageBlob || !paymentSignature) {
+    if (!wallet_address || !gender || !imageBlob || !paymentSignature) {
       return {
         statusCode: 400,
         headers,
         body: JSON.stringify({
-          error: 'Missing required fields: walletAddress, gender, imageBlob, paymentSignature'
+          error: 'Missing required fields: wallet_address, gender, imageBlob, paymentSignature'
         })
       }
     }
@@ -182,7 +182,7 @@ export const handler = async (event, context) => {
       const senderIndex = 0 // Usually the first account is the sender
       const senderPubkey = accountKeys[senderIndex]
 
-      if (senderPubkey !== walletAddress) {
+      if (senderPubkey !== wallet_address) {
         return {
           statusCode: 400,
           headers,
@@ -191,7 +191,7 @@ export const handler = async (event, context) => {
             code: 'WALLET_MISMATCH',
             debug: {
               paymentFrom: senderPubkey,
-              requestFrom: walletAddress
+              requestFrom: wallet_address
             }
           })
         }
@@ -228,7 +228,7 @@ export const handler = async (event, context) => {
     const { data: existingChar } = await supabase
       .from('characters')
       .select('id, name')
-      .eq('walletAddress', walletAddress)
+      .eq('wallet_address', wallet_address)
       .single()
 
     if (existingChar) {
@@ -246,19 +246,19 @@ export const handler = async (event, context) => {
     // 📝 CHARACTER CREATION - Same as before but with payment signature
     const wojakNumber = await getNextWojakNumber()
     const characterName = `Wojak #${wojakNumber}`
-    const characterData = await generateRandomCharacter(characterName, gender, walletAddress, isNPC)
+    const characterData = await generateRandomCharacter(characterName, gender, wallet_address, isNPC)
 
     // Create character record with payment signature
     const { data: character, error: createError } = await supabase
       .from('characters')
       .insert({
-        id: characterId,
+        id: character_id,
         ...characterData,
         payment_signature: paymentSignature, // Store payment proof
-        nftAddress: null,
-        tokenId: null,
+        nft_address: null,
+        token_id: null,
         status: 'PENDING_MINT',
-        updatedAt: new Date().toISOString()
+        updated_at: new Date().toISOString()
       })
       .select()
       .single()
@@ -269,11 +269,11 @@ export const handler = async (event, context) => {
     }
 
     // Upload character image
-    const imageUrl = await uploadCharacterImage(characterId, imageBlob)
+    const image_url = await uploadCharacterImage(character_id, imageBlob)
     await supabase
       .from('characters')
-      .update({ currentImageUrl: imageUrl })
-      .eq('id', characterId)
+      .update({ current_image_url: image_url })
+      .eq('id', character_id)
 
     // 🎨 NFT MINTING - Same as before
     console.log('🎨 Starting NFT mint...')
@@ -300,7 +300,7 @@ export const handler = async (event, context) => {
     }
 
     // Create NFT
-    const metadataUri = `https://earth.ndao.computer/.netlify/functions/metadata/${characterId}`
+    const metadataUri = `https://earth.ndao.computer/.netlify/functions/metadata/${character_id}`
     console.log('📝 Metadata URI:', metadataUri)
 
     let nftParams = {
@@ -315,7 +315,7 @@ export const handler = async (event, context) => {
           share: 100
         }
       ],
-      tokenOwner: new PublicKey(walletAddress),
+      tokenOwner: new PublicKey(wallet_address),
       isMutable: true,
     }
 
@@ -349,18 +349,18 @@ export const handler = async (event, context) => {
     const { data: finalCharacter, error: updateError } = await supabase
       .from('characters')
       .update({
-        nftAddress: nft.mintAddress.toBase58(),
-        tokenId: nft.mintAddress.toBase58(),
+        nft_address: nft.mintAddress.toBase58(),
+        token_id: nft.mintAddress.toBase58(),
         status: 'ACTIVE'
       })
-      .eq('id', characterId)
+      .eq('id', character_id)
       .select()
       .single()
 
     if (updateError) throw updateError
 
     // Create starting inventory
-    await createStartingInventoryWithLayers(characterId, selectedLayers)
+    await createStartingInventoryWithLayers(character_id, selectedLayers)
 
     console.log('🎉 Character creation complete!')
 
@@ -370,9 +370,9 @@ export const handler = async (event, context) => {
       body: JSON.stringify({
         success: true,
         character: finalCharacter,
-        nftAddress: nft.mintAddress.toBase58(),
+        nft_address: nft.mintAddress.toBase58(),
         signature: nft.response.signature,
-        imageUrl: imageUrl,
+        image_url: image_url,
         metadataUri: metadataUri,
         collectionAddress: collectionMint?.toBase58() || null,
         paymentVerified: true,
@@ -389,7 +389,7 @@ export const handler = async (event, context) => {
       await supabase
         .from('characters')
         .delete()
-        .eq('id', characterId)
+        .eq('id', character_id)
       console.log('🧹 Cleaned up failed character record')
     } catch (cleanupError) {
       console.error('❌ Cleanup failed:', cleanupError)
@@ -431,8 +431,8 @@ async function getNextWojakNumber() {
   return highestNumber + 1
 }
 
-async function uploadCharacterImage(characterId, imageBlob) {
-  const fileName = `wojak-${characterId}.png`
+async function uploadCharacterImage(character_id, imageBlob) {
+  const fileName = `wojak-${character_id}.png`
 
   let imageBuffer
   if (typeof imageBlob === 'string') {
@@ -458,7 +458,7 @@ async function uploadCharacterImage(characterId, imageBlob) {
   return publicUrl
 }
 
-async function generateRandomCharacter(name, gender, walletAddress, isNPC = false) {
+async function generateRandomCharacter(name, gender, wallet_address, isNPC = false) {
 
   const startingLocations = [
     'Frostpine Reaches',
@@ -479,18 +479,18 @@ async function generateRandomCharacter(name, gender, walletAddress, isNPC = fals
   return {
     name: name,
     gender: gender,
-    characterType: isNPC ? 'NPC' : 'HUMAN', // Use the isNPC flag here
-    walletAddress: walletAddress,
-    currentLocationId: startingLocation.id,
+    character_type: isNPC ? 'NPC' : 'HUMAN', // Use the isNPC flag here
+    wallet_address: wallet_address,
+    currentlocation_id: startingLocation.id,
     energy: 100,
     health: 100,
     level: 1,
     coins: 1200,
-    currentVersion: 1
+    current_version: 1
   }
 }
 
-async function createStartingInventoryWithLayers(characterId, selectedLayers = null) {
+async function createStartingInventoryWithLayers(character_id, selectedLayers = null) {
   console.log('🎒 Creating starting inventory...')
 
   const startingItems = []
@@ -502,50 +502,50 @@ async function createStartingInventoryWithLayers(characterId, selectedLayers = n
 
     const ITEM_LAYER_TYPES = ['3-undergarments', '4-clothing', '5-outerwear', '7-face-accessories', '8-headwear', '9-misc-accessories']
 
-    for (const layerType of ITEM_LAYER_TYPES) {
-      const selectedFile = selectedLayers[layerType]
+    for (const layer_type of ITEM_LAYER_TYPES) {
+      const selectedFile = selectedLayers[layer_type]
 
       if (!selectedFile) {
-        console.log(`  ⏭️ No ${layerType} selected`)
+        console.log(`  ⏭️ No ${layer_type} selected`)
         continue
       }
 
-      console.log(`  🔍 Looking for item: ${layerType}/${selectedFile}`)
+      console.log(`  🔍 Looking for item: ${layer_type}/${selectedFile}`)
 
       // Try exact match first
       let { data: layerItems, error: itemError } = await supabase
         .from('items')
-        .select('id, name, category, layerfile, layergender, baselayerfile')
-        .eq('layerfile', selectedFile)
+        .select('id, name, category, layer_file, layer_gender, base_layer_file')
+        .eq('layer_file', selectedFile)
 
       // If no exact match, try genderless items
       if (!layerItems || layerItems.length === 0) {
-        const baseLayerFile = selectedFile.replace(/^(male-|female-)/, '')
-        console.log(`  🔍 Looking for genderless item: "${baseLayerFile}"`)
+        const base_layer_file = selectedFile.replace(/^(male-|female-)/, '')
+        console.log(`  🔍 Looking for genderless item: "${base_layer_file}"`)
 
         const { data: genderlessItems, error: genderlessError } = await supabase
           .from('items')
-          .select('id, name, category, layerfile, layergender, baselayerfile')
-          .eq('baselayerfile', baseLayerFile)
-          .is('layerfile', null)
-          .is('layergender', null)
+          .select('id, name, category, layer_file, layer_gender, base_layer_file')
+          .eq('base_layer_file', base_layer_file)
+          .is('layer_file', null)
+          .is('layer_gender', null)
 
         layerItems = genderlessItems
         itemError = genderlessError
       }
 
       if (itemError) {
-        console.error(`  ❌ Database error for ${layerType}/${selectedFile}:`, itemError)
+        console.error(`  ❌ Database error for ${layer_type}/${selectedFile}:`, itemError)
         continue
       }
 
       if (!layerItems || layerItems.length === 0) {
-        console.log(`  ⏭️ No item found for ${layerType}/${selectedFile}`)
+        console.log(`  ⏭️ No item found for ${layer_type}/${selectedFile}`)
         continue
       }
 
       // Prefer genderless items
-      let selectedItem = layerItems.find(item => item.layergender === null)
+      let selectedItem = layerItems.find(item => item.layer_gender === null)
       if (!selectedItem) {
         selectedItem = layerItems[0]
       }
@@ -553,12 +553,12 @@ async function createStartingInventoryWithLayers(characterId, selectedLayers = n
       // Add to starting inventory as equipped
       startingItems.push({
         id: randomUUID(),
-        characterId: characterId,
-        itemId: selectedItem.id,
+        character_id: character_id,
+        item_id: selectedItem.id,
         quantity: 1,
-        isEquipped: true,
-        createdAt: now,
-        updatedAt: now
+        is_equipped: true,
+        created_at: now,
+        updated_at: now
       })
 
       console.log(`  ✅ Added equipped ${selectedItem.category}: ${selectedItem.name}`)
@@ -573,7 +573,7 @@ async function createStartingInventoryWithLayers(characterId, selectedLayers = n
     .from('items')
     .select('id, name, category')
     .in('category', ['TOOL', 'CONSUMABLE'])
-    .is('layerfile', null)
+    .is('layer_file', null)
     .limit(10)
 
   if (basicError) {
@@ -584,12 +584,12 @@ async function createStartingInventoryWithLayers(characterId, selectedLayers = n
     if (tool) {
       startingItems.push({
         id: randomUUID(),
-        characterId: characterId,
-        itemId: tool.id,
+        character_id: character_id,
+        item_id: tool.id,
         quantity: 1,
-        isEquipped: false,
-        createdAt: now,
-        updatedAt: now
+        is_equipped: false,
+        created_at: now,
+        updated_at: now
       })
       console.log(`  🔧 Added tool: ${tool.name}`)
     }
@@ -600,12 +600,12 @@ async function createStartingInventoryWithLayers(characterId, selectedLayers = n
       const quantity = Math.floor(Math.random() * 3) + 2
       startingItems.push({
         id: randomUUID(),
-        characterId: characterId,
-        itemId: consumable.id,
+        character_id: character_id,
+        item_id: consumable.id,
         quantity: quantity,
-        isEquipped: false,
-        createdAt: now,
-        updatedAt: now
+        is_equipped: false,
+        created_at: now,
+        updated_at: now
       })
       console.log(`  🍎 Added consumable: ${consumable.name} (${quantity}x)`)
     }

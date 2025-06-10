@@ -38,17 +38,17 @@ interface Character {
   health: number
   coins: number
   solBalance: number
-  characterType: 'HUMAN' | 'NPC'
+  character_type: 'HUMAN' | 'NPC'
   status: 'ACTIVE' | 'DEAD' | 'INACTIVE'
-  currentImageUrl?: string
+  current_image_url?: string
   currentLocation: {
     id: string
     name: string
     biome: string
   }
-  createdAt: string
-  walletAddress: string
-  nftAddress?: string
+  created_at: string
+  wallet_address: string
+  nft_address?: string
 }
 
 const API_BASE = '/.netlify/functions'
@@ -77,7 +77,7 @@ const useCharacters = () => {
         (data.characters || []).map(async (character: Character) => {
           try {
             // You'll need to create this endpoint or use existing one
-            const balanceResponse = await fetch(`${API_BASE}/get-sol-balance?walletAddress=${character.walletAddress}`)
+            const balanceResponse = await fetch(`${API_BASE}/get-sol-balance?wallet_address=${character.wallet_address}`)
             if (balanceResponse.ok) {
               const balanceData = await balanceResponse.json()
               return { ...character, solBalance: balanceData.solBalance }
@@ -150,10 +150,10 @@ export default function CharactersView() {
   const [filteredCharacters, setFilteredCharacters] = useState<Character[]>([])
   const [selectedCharacterBalance, setSelectedCharacterBalance] = useState(null)
 
-  const fetchCharacterBalance = async (walletAddress) => {
+  const fetchCharacterBalance = async (wallet_address) => {
     try {
       setSelectedCharacterBalance(null) // Show loading
-      const response = await fetch(`${API_BASE}/get-sol-balance?walletAddress=${walletAddress}`)
+      const response = await fetch(`${API_BASE}/get-sol-balance?wallet_address=${wallet_address}`)
       if (response.ok) {
         const data = await response.json()
         setSelectedCharacterBalance(data.solBalance)
@@ -173,7 +173,7 @@ export default function CharactersView() {
     if (searchQuery) {
       filtered = filtered.filter(char =>
         char.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        char.walletAddress.toLowerCase().includes(searchQuery.toLowerCase())
+        char.wallet_address.toLowerCase().includes(searchQuery.toLowerCase())
       )
     }
 
@@ -182,7 +182,7 @@ export default function CharactersView() {
     }
 
     if (typeFilter !== 'all') {
-      filtered = filtered.filter(char => char.characterType === typeFilter)
+      filtered = filtered.filter(char => char.character_type === typeFilter)
     }
 
     if (statusFilter !== 'all') {
@@ -474,14 +474,14 @@ export default function CharactersView() {
                   }`}
                 onClick={() => {
                   setSelectedCharacter(character)
-                  fetchCharacterBalance(character.walletAddress)
+                  fetchCharacterBalance(character.wallet_address)
                 }}
               >
                 {/* Character Image Container */}
                 <div className="w-full relative">
-                  {character.currentImageUrl ? (
+                  {character.current_image_url ? (
                     <img
-                      src={character.currentImageUrl}
+                      src={character.current_image_url}
                       alt={character.name}
                       className="w-full h-auto object-contain rounded"
                       onError={(e) => {
@@ -493,7 +493,7 @@ export default function CharactersView() {
                   ) : null}
 
                   {/* Fallback Avatar */}
-                  <div className={`w-full aspect-square flex items-center justify-center bg-muted/50 rounded ${character.currentImageUrl ? 'hidden' : ''}`}>
+                  <div className={`w-full aspect-square flex items-center justify-center bg-muted/50 rounded ${character.current_image_url ? 'hidden' : ''}`}>
                     <User className="h-1/3 w-1/3 text-muted-foreground" />
                   </div>
 
@@ -520,7 +520,7 @@ export default function CharactersView() {
                         >
                           L{character.level}
                         </Badge>
-                        {character.characterType === 'NPC' && (
+                        {character.character_type === 'NPC' && (
                           <Badge variant="outline" className="text-xs font-mono h-4 px-1 text-white border-white/50">
                             NPC
                           </Badge>
@@ -582,7 +582,7 @@ export default function CharactersView() {
               <div className="bg-muted/30 border border-primary/20 rounded p-3">
                 <div className="flex items-center gap-3">
                   <Avatar className={`w-12 h-12 border border-primary/20 ${selectedCharacter.status === 'DEAD' ? 'grayscale opacity-75' : ''}`}>
-                    <AvatarImage src={selectedCharacter.currentImageUrl} />
+                    <AvatarImage src={selectedCharacter.current_image_url} />
                     <AvatarFallback className="bg-muted/50 font-mono">
                       <User className="h-6 w-6" />
                     </AvatarFallback>
@@ -594,7 +594,7 @@ export default function CharactersView() {
                         {getRarityLabel(selectedCharacter.level)}
                       </Badge>
                       <Badge variant="secondary" className="text-xs font-mono">
-                        {selectedCharacter.characterType}
+                        {selectedCharacter.character_type}
                       </Badge>
                       <Badge variant="outline" className={`text-xs font-mono ${getStatusColor(selectedCharacter.status)}`}>
                         {selectedCharacter.status === 'DEAD' && <Skull className="w-3 h-3 mr-1" />}
@@ -690,7 +690,7 @@ export default function CharactersView() {
                 </div>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono">
                   <Calendar className="h-3 w-3" />
-                  <span>GENESIS: {new Date(selectedCharacter.createdAt).toLocaleDateString()}</span>
+                  <span>GENESIS: {new Date(selectedCharacter.created_at).toLocaleDateString()}</span>
                 </div>
               </div>
 
@@ -703,12 +703,12 @@ export default function CharactersView() {
                     <div className="text-muted-foreground text-xs mb-1">WALLET_ADDRESS</div>
                     <div className="flex items-center gap-2">
                       <div className="font-mono text-xs bg-muted/50 border border-primary/10 px-2 py-1 rounded flex-1 break-all text-primary">
-                        {selectedCharacter.walletAddress}
+                        {selectedCharacter.wallet_address}
                       </div>
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => copyToClipboard(selectedCharacter.walletAddress, 'Wallet address')}
+                        onClick={() => copyToClipboard(selectedCharacter.wallet_address, 'Wallet address')}
                         className="h-6 w-6 p-0"
                       >
                         <Copy className="w-3 h-3" />
@@ -716,17 +716,17 @@ export default function CharactersView() {
                     </div>
                   </div>
 
-                  {selectedCharacter.nftAddress && (
+                  {selectedCharacter.nft_address && (
                     <div>
                       <div className="text-muted-foreground text-xs mb-1">NFT_ADDRESS</div>
                       <div className="flex items-center gap-2">
                         <div className="font-mono text-xs bg-muted/50 border border-primary/10 px-2 py-1 rounded flex-1 break-all text-primary">
-                          {selectedCharacter.nftAddress}
+                          {selectedCharacter.nft_address}
                         </div>
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => copyToClipboard(selectedCharacter.nftAddress!, 'NFT address')}
+                          onClick={() => copyToClipboard(selectedCharacter.nft_address!, 'NFT address')}
                           className="h-6 w-6 p-0"
                         >
                           <Copy className="w-3 h-3" />
@@ -734,7 +734,7 @@ export default function CharactersView() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => window.open(`https://explorer.solana.com/address/${selectedCharacter.nftAddress}`, '_blank')}
+                          onClick={() => window.open(`https://explorer.solana.com/address/${selectedCharacter.nft_address}`, '_blank')}
                           className="h-6 w-6 p-0"
                         >
                           <ExternalLink className="w-3 h-3" />

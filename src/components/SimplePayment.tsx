@@ -1,8 +1,19 @@
-// src/components/SimplePayment.tsx - Enhanced Error Display
+// src/components/SimplePayment.tsx - Terminal/Cyberpunk styled payment interface
 import React, { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Loader2, Coins, CheckCircle, AlertTriangle, Settings } from 'lucide-react'
+import {
+  Loader2,
+  Zap,
+  CheckCircle,
+  AlertTriangle,
+  Database,
+  Activity,
+  Shield,
+  Coins,
+  Terminal,
+  RefreshCw,
+  WifiOff
+} from 'lucide-react'
 import { useWallet, useConnection } from '@solana/wallet-adapter-react'
 import { Transaction, SystemProgram, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js'
 import { toast } from 'sonner'
@@ -193,107 +204,125 @@ export const SimplePayment: React.FC<SimplePaymentProps> = ({
   // If there's a configuration error, show it prominently
   if (configError || treasuryValidationError) {
     return (
-      <Card className="w-full max-w-md mx-auto border-yellow-200 dark:border-yellow-800">
-        <CardHeader className="text-center">
-          <CardTitle className="flex items-center justify-center gap-2 text-yellow-600">
-            <AlertTriangle className="w-5 h-5" />
-            Dev Configuration Error
-          </CardTitle>
-        </CardHeader>
+      <div className="w-full max-w-md mx-auto bg-background border border-red-500/50 rounded-lg p-4 font-mono">
+        {/* Terminal Header */}
+        <div className="flex items-center justify-between mb-3 border-b border-red-500/30 pb-2">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-red-500" />
+            <span className="text-red-500 font-bold text-sm">CONFIG_ERROR v2.089</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <WifiOff className="w-3 h-3 text-red-500" />
+            <span className="text-red-500 text-xs">BLOCKED</span>
+          </div>
+        </div>
 
-        <CardContent className="space-y-4">
-          {/* Error Display */}
-          <div className="bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-            <div className="flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
-              <div>
-                <div className="font-medium text-yellow-800 dark:text-yellow-200 mb-2">
-                  🚨 Developer Warning
-                </div>
-                <div className="text-sm text-yellow-700 dark:text-yellow-300 mb-2">
-                  You're using the treasury wallet to test payments. Switch to a different wallet or update your treasury address.
-                </div>
-                <div className="text-xs text-yellow-600 dark:text-yellow-400 font-mono bg-yellow-100 dark:bg-yellow-900 p-2 rounded">
-                  Treasury wallet cannot be the same as your connected wallet
-                </div>
-              </div>
+        {/* Error Display */}
+        <div className="bg-red-950/20 border border-red-500/30 rounded p-3 mb-3">
+          <div className="text-center">
+            <div className="text-red-500 text-2xl mb-2">🚨</div>
+            <div className="text-red-500 font-bold mb-1">TREASURY_WALLET_CONFLICT</div>
+            <div className="text-red-400 text-xs">
+              CONNECTED_WALLET_MATCHES_TREASURY
             </div>
           </div>
+        </div>
 
-          {/* Debug Info */}
-          {publicKey && treasuryPubkey && (
-            <div className="text-xs bg-muted rounded p-3 space-y-2 font-mono">
-              <div>
-                <span className="text-muted-foreground">Connected Wallet:</span>
-                <br />
-                <span className="text-red-600">{publicKey.toString()}</span>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Treasury Wallet:</span>
-                <br />
-                <span className="text-red-600">{treasuryPubkey.toString()}</span>
-              </div>
-              <div className="text-center text-red-600 font-bold">
-                ↑ These are the same! ↑
-              </div>
+        {/* Debug Info */}
+        {publicKey && treasuryPubkey && (
+          <div className="bg-muted/20 border border-red-500/10 rounded p-2 mb-3">
+            <div className="text-xs text-red-400 font-mono">
+              <div className="text-red-500 text-xs font-bold mb-1">[WALLET_ANALYSIS]</div>
+              <div className="text-muted-foreground">SENDER:</div>
+              <div className="text-red-400 break-all text-xs">{publicKey.toString()}</div>
+              <div className="text-muted-foreground mt-1">TREASURY:</div>
+              <div className="text-red-400 break-all text-xs">{treasuryPubkey.toString()}</div>
+              <div className="text-center text-red-500 font-bold mt-2">CONFLICT_DETECTED</div>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* Actions */}
-          <Button
-            variant="outline"
-            onClick={onCancel}
-            className="w-full"
-          >
-            Cancel & Switch Wallet
-          </Button>
-        </CardContent>
-      </Card>
+        {/* Actions */}
+        <Button
+          variant="outline"
+          onClick={onCancel}
+          className="w-full font-mono text-xs h-7"
+        >
+          <Terminal className="w-3 h-3 mr-1" />
+          CANCEL_AND_SWITCH_WALLET
+        </Button>
+
+        {/* Footer */}
+        <div className="text-xs text-red-400/60 font-mono text-center border-t border-red-500/20 pt-2 mt-3">
+          PAYMENT_SYSTEM_v2089 | DEV_ERROR_DETECTED
+        </div>
+      </div>
     )
   }
 
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader className="text-center">
-        <CardTitle className="flex items-center justify-center gap-2">
-          <Coins className="w-5 h-5" />
-          Pay to Create Character
-        </CardTitle>
-        <p className="text-sm text-muted-foreground">
-          One-time payment to mint your character NFT
-        </p>
-      </CardHeader>
+    <div className="w-full max-w-md mx-auto bg-background border border-primary/30 rounded-lg p-4 font-mono">
+      {/* Terminal Header */}
+      <div className="flex items-center justify-between mb-3 border-b border-primary/20 pb-2">
+        <div className="flex items-center gap-2">
+          <Database className="w-4 h-4" />
+          <span className="text-primary font-bold text-sm">PAYMENT_PROCESSOR v2.089</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Activity className="w-3 h-3 animate-pulse" />
+          <span className="text-primary text-xs">READY</span>
+        </div>
+      </div>
 
-      <CardContent className="space-y-4">
-        {/* Price Display */}
-        <div className="text-center bg-muted rounded-lg p-4">
-          <div className="text-3xl font-bold">{NFT_PRICE} SOL</div>
-          <div className="text-sm text-muted-foreground">
-            Character NFT minting cost
+      {/* Payment Header */}
+      <div className="bg-muted/30 border border-primary/20 rounded p-3 mb-3">
+        <div className="text-center">
+          <div className="text-primary font-bold mb-1">CHARACTER_NFT_MINTING</div>
+          <div className="text-muted-foreground text-xs">
+            ONE_TIME_PAYMENT_REQUIRED
           </div>
         </div>
+      </div>
 
-        {/* Wallet Info */}
-        <div className="text-xs text-muted-foreground bg-muted/50 rounded p-2">
-          <div>Wallet: {wallet?.adapter?.name}</div>
-          <div>To: {treasuryPubkey?.toString().slice(0, 20)}...{treasuryPubkey?.toString().slice(-10)}</div>
+      {/* Price Display */}
+      <div className="bg-muted/20 border border-primary/10 rounded p-3 mb-3">
+        <div className="text-center">
+          <div className="flex items-center justify-center gap-2 mb-1">
+            <Zap className="w-5 h-5 text-primary" />
+            <span className="text-primary font-bold text-xl">{NFT_PRICE}_SOL</span>
+          </div>
+          <div className="text-muted-foreground text-xs font-mono">
+            MINTING_COST_FIXED_RATE
+          </div>
         </div>
+      </div>
 
-        {/* Payment Status */}
-        {signature && (
-          <div className="bg-muted rounded-lg p-3 text-center">
+      {/* Wallet Info */}
+      <div className="bg-muted/20 border border-primary/10 rounded p-2 mb-3">
+        <div className="text-xs text-muted-foreground font-mono">
+          <div className="text-primary text-xs font-bold mb-1">[TRANSACTION_DETAILS]</div>
+          <div>WALLET: {wallet?.adapter?.name?.toUpperCase()}</div>
+          <div>DESTINATION: {treasuryPubkey?.toString().slice(0, 8)}...{treasuryPubkey?.toString().slice(-8)}</div>
+          <div>NETWORK: SOLANA_DEVNET</div>
+        </div>
+      </div>
+
+      {/* Payment Status */}
+      {signature && (
+        <div className="bg-muted/30 border border-primary/20 rounded p-3 mb-3">
+          <div className="text-center">
             <div className="flex items-center justify-center gap-2 mb-2">
               {verifying ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="w-4 h-4 animate-spin text-primary" />
               ) : (
-                <CheckCircle className="w-4 h-4 text-green-600" />
+                <CheckCircle className="w-4 h-4 text-green-500" />
               )}
-              <span className="text-sm font-medium">
-                {verifying ? 'Confirming Payment...' : 'Payment Confirmed!'}
+              <span className="text-primary font-bold text-sm">
+                {verifying ? 'CONFIRMING_PAYMENT...' : 'PAYMENT_CONFIRMED'}
               </span>
             </div>
-            <div className="text-xs text-muted-foreground font-mono">
-              {signature.slice(0, 20)}...{signature.slice(-20)}
+            <div className="text-xs text-muted-foreground font-mono bg-muted/20 border border-primary/10 rounded p-1">
+              TX: {signature.slice(0, 8)}...{signature.slice(-8)}
             </div>
 
             {/* Retry button if verification failed */}
@@ -302,40 +331,43 @@ export const SimplePayment: React.FC<SimplePaymentProps> = ({
                 variant="ghost"
                 size="sm"
                 onClick={retryVerification}
-                className="mt-2 text-xs"
+                className="mt-2 text-xs font-mono h-6"
               >
-                Retry Creation
+                <RefreshCw className="w-3 h-3 mr-1" />
+                RETRY_CREATION
               </Button>
             )}
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Main Action Button */}
+      {/* Main Action Button */}
+      <div className="space-y-2 mb-3">
         <Button
           onClick={handlePayment}
           disabled={paying || verifying || !!signature}
-          className="w-full"
+          className="w-full font-mono text-xs h-8"
           size="lg"
         >
           {paying ? (
             <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Sending Payment...
+              <Loader2 className="w-3 h-3 mr-2 animate-spin" />
+              PROCESSING_PAYMENT...
             </>
           ) : verifying ? (
             <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Confirming Payment...
+              <Loader2 className="w-3 h-3 mr-2 animate-spin" />
+              CONFIRMING_TRANSACTION...
             </>
           ) : signature ? (
             <>
-              <CheckCircle className="w-4 h-4 mr-2" />
-              Payment Complete
+              <CheckCircle className="w-3 h-3 mr-2" />
+              PAYMENT_COMPLETE
             </>
           ) : (
             <>
-              <Coins className="w-4 h-4 mr-2" />
-              Pay {NFT_PRICE} SOL & Create Character
+              <Coins className="w-3 h-3 mr-2" />
+              PAY_{NFT_PRICE}_SOL_&_CREATE_CHARACTER
             </>
           )}
         </Button>
@@ -346,20 +378,32 @@ export const SimplePayment: React.FC<SimplePaymentProps> = ({
             variant="outline"
             onClick={onCancel}
             disabled={paying || verifying}
-            className="w-full"
+            className="w-full font-mono text-xs h-7"
           >
-            Cancel
+            <Terminal className="w-3 h-3 mr-1" />
+            CANCEL_OPERATION
           </Button>
         )}
+      </div>
 
-        {/* Success Message */}
-        {signature && !verifying && (
-          <div className="text-center text-sm text-green-600 bg-green-50 dark:bg-green-950 p-2 rounded">
-            🎉 Payment confirmed! Creating your character...
+      {/* Success Message */}
+      {signature && !verifying && (
+        <div className="bg-green-950/20 border border-green-500/30 rounded p-2 mb-3">
+          <div className="text-center text-green-400 text-xs font-mono">
+            <div className="flex items-center justify-center gap-2">
+              <Shield className="w-3 h-3" />
+              <span>PAYMENT_VERIFIED_SUCCESSFULLY</span>
+            </div>
+            <div className="text-green-500/80 mt-1">CREATING_CHARACTER_PROFILE...</div>
           </div>
-        )}
-      </CardContent>
-    </Card>
+        </div>
+      )}
+
+      {/* Footer */}
+      <div className="text-xs text-muted-foreground/60 font-mono text-center border-t border-primary/20 pt-2">
+        PAYMENT_SYSTEM_v2089 | SECURE_BLOCKCHAIN_TRANSACTION
+      </div>
+    </div>
   )
 }
 

@@ -27,13 +27,13 @@ export const handler = async (event, context) => {
 
   try {
     const {
-      walletAddress,
-      locationId,
+      wallet_address,
+      location_id,
       message,
-      messageType = 'CHAT'
+      message_type = 'CHAT'
     } = JSON.parse(event.body || '{}')
 
-    if (!walletAddress || !locationId || !message?.trim()) {
+    if (!wallet_address || !location_id || !message?.trim()) {
       return {
         statusCode: 400,
         headers,
@@ -60,7 +60,7 @@ export const handler = async (event, context) => {
     const { data: character, error } = await supabase
       .from('characters')
       .select('*')
-      .eq('walletAddress', walletAddress)
+      .eq('wallet_address', wallet_address)
       .eq('status', 'ACTIVE')
       .single()
 
@@ -79,7 +79,7 @@ export const handler = async (event, context) => {
     const { data: location, error: locationError } = await supabase
       .from('locations')
       .select('*')
-      .eq('id', locationId)
+      .eq('id', location_id)
       .single()
 
     if (locationError) throw locationError
@@ -92,7 +92,7 @@ export const handler = async (event, context) => {
       }
     }
 
-    if (!location.hasChat) {
+    if (!location.has_chat) {
       return {
         statusCode: 400,
         headers,
@@ -106,23 +106,23 @@ export const handler = async (event, context) => {
     // Verify character is at this location or a related location (for regional chat)
     let canChat = false
 
-    if (character.currentLocationId === locationId) {
+    if (character.currentlocation_id === location_id) {
       canChat = true
-    } else if (location.chatScope === 'REGIONAL') {
+    } else if (location.chat_scope === 'REGIONAL') {
       const { data: characterLocation, error: charLocError } = await supabase
         .from('locations')
         .select('*')
-        .eq('id', character.currentLocationId)
+        .eq('id', character.currentlocation_id)
         .single()
 
       if (!charLocError && characterLocation) {
-        if (characterLocation.id === location.parentLocationId) {
+        if (characterLocation.id === location.parentlocation_id) {
           canChat = true
         }
-        else if (characterLocation.parentLocationId === location.parentLocationId && location.parentLocationId) {
+        else if (characterLocation.parentlocation_id === location.parentlocation_id && location.parentlocation_id) {
           canChat = true
         }
-        else if (location.parentLocationId === characterLocation.id) {
+        else if (location.parentlocation_id === characterLocation.id) {
           canChat = true
         }
       }
@@ -160,8 +160,8 @@ export const handler = async (event, context) => {
     const { data: recentMessages, error: rateError } = await supabase
       .from('chat_messages')
       .select('id')
-      .eq('characterId', character.id)
-      .gte('createdAt', oneMinuteAgo)
+      .eq('character_id', character.id)
+      .gte('created_at', oneMinuteAgo)
 
     if (rateError) throw rateError
 
@@ -182,11 +182,11 @@ export const handler = async (event, context) => {
       .from('chat_messages')
       .insert({
         id: messageId,
-        locationId: locationId,
-        characterId: character.id,
+        location_id: location_id,
+        character_id: character.id,
         message: message.trim(),
-        messageType: messageType,
-        isSystem: false
+        message_type: message_type,
+        is_system: false
       })
       .select('*')
       .single()
@@ -196,15 +196,15 @@ export const handler = async (event, context) => {
     // Update location last active timestamp
     const { error: updateError } = await supabase
       .from('locations')
-      .update({ lastActive: new Date().toISOString() })
-      .eq('id', locationId)
+      .update({ last_active: new Date().toISOString() })
+      .eq('id', location_id)
 
     if (updateError) throw updateError
 
     // Get character and location details for response
     const { data: characterDetails, error: charError } = await supabase
       .from('characters')
-      .select('id, name, characterType, currentImageUrl')
+      .select('id, name, character_type, current_image_url')
       .eq('id', character.id)
       .single()
 
@@ -212,8 +212,8 @@ export const handler = async (event, context) => {
 
     const { data: locationDetails, error: locError } = await supabase
       .from('locations')
-      .select('id, name, locationType')
-      .eq('id', locationId)
+      .select('id, name, location_type')
+      .eq('id', location_id)
       .single()
 
     if (locError) throw locError
@@ -221,20 +221,20 @@ export const handler = async (event, context) => {
     const transformedMessage = {
       id: chatMessage.id,
       message: chatMessage.message,
-      messageType: chatMessage.messageType,
-      isSystem: chatMessage.isSystem,
+      message_type: chatMessage.message_type,
+      is_system: chatMessage.is_system,
       timeAgo: 'now',
-      createdAt: chatMessage.createdAt,
+      created_at: chatMessage.created_at,
       character: {
         id: characterDetails.id,
         name: characterDetails.name,
-        characterType: characterDetails.characterType,
-        imageUrl: characterDetails.currentImageUrl
+        character_type: characterDetails.character_type,
+        image_url: characterDetails.current_image_url
       },
       location: {
         id: locationDetails.id,
         name: locationDetails.name,
-        locationType: locationDetails.locationType
+        location_type: locationDetails.location_type
       }
     }
 

@@ -34,18 +34,18 @@ export const handler = async (event, context) => {
 
   try {
     const {
-      walletAddress,
+      wallet_address,
       action, // 'BUY_SOL' or 'SELL_SOL'
       amountUSD, // Amount in USD value (since 1 coin = $1)
-      characterId
+      character_id
     } = JSON.parse(event.body || '{}')
 
-    if (!walletAddress || !action || !amountUSD || !characterId) {
+    if (!wallet_address || !action || !amountUSD || !character_id) {
       return {
         statusCode: 400,
         headers,
         body: JSON.stringify({
-          error: 'Missing required fields: walletAddress, action, amountUSD, characterId'
+          error: 'Missing required fields: wallet_address, action, amountUSD, character_id'
         })
       }
     }
@@ -58,8 +58,8 @@ export const handler = async (event, context) => {
     const { data: character, error: characterError } = await supabase
       .from('characters')
       .select('*')
-      .eq('id', characterId)
-      .eq('characterType', 'NPC')
+      .eq('id', character_id)
+      .eq('character_type', 'NPC')
       .eq('status', 'ACTIVE')
       .single()
 
@@ -72,7 +72,7 @@ export const handler = async (event, context) => {
     }
 
     // Verify wallet address matches
-    if (character.walletAddress !== walletAddress) {
+    if (character.wallet_address !== wallet_address) {
       return {
         statusCode: 403,
         headers,
@@ -99,7 +99,7 @@ export const handler = async (event, context) => {
     )
 
     // Load NPC wallet
-    const npcWallet = await walletManager.load(characterId)
+    const npcWallet = await walletManager.load(character_id)
     if (!npcWallet) {
       return {
         statusCode: 500,
@@ -126,9 +126,9 @@ export const handler = async (event, context) => {
       .from('characters')
       .update({
         coins: result.newCoinBalance,
-        updatedAt: new Date().toISOString()
+        updated_at: new Date().toISOString()
       })
-      .eq('id', characterId)
+      .eq('id', character_id)
 
     // Log the transaction with debug logging
     const transactionId = randomUUID()
@@ -136,25 +136,25 @@ export const handler = async (event, context) => {
 
     const transactionData = {
       id: transactionId,
-      characterId: characterId,
+      character_id: character_id,
       type: 'EXCHANGE',
       description: result.description,
-      createdAt: currentTime,
+      created_at: currentTime,
 
       // Blockchain ledger fields (lowercase to match database)
-      fromvault: action === 'BUY_SOL' ? 'RUST_COIN' : 'SCRAP_SOL',
-      tovault: action === 'BUY_SOL' ? 'SCRAP_SOL' : 'RUST_COIN',
-      fromunits: action === 'BUY_SOL' ? result.coinsSpent : result.solSpent,
-      tounits: action === 'BUY_SOL' ? result.solReceived : result.coinsReceived,
-      exchangeflux: action === 'BUY_SOL' ? (result.coinsSpent / result.solReceived) : (result.coinsReceived / result.solSpent),
+      from_vault: action === 'BUY_SOL' ? 'RUST_COIN' : 'SCRAP_SOL',
+      to_vault: action === 'BUY_SOL' ? 'SCRAP_SOL' : 'RUST_COIN',
+      from_units: action === 'BUY_SOL' ? result.coinsSpent : result.solSpent,
+      to_units: action === 'BUY_SOL' ? result.solReceived : result.coinsReceived,
+      exchange_flux: action === 'BUY_SOL' ? (result.coinsSpent / result.solReceived) : (result.coinsReceived / result.solSpent),
 
       // Wasteland blockchain metadata (lowercase to match database)
-      wastelandblock: Math.floor(Date.now() / 60000),
-      txnshard: `w${Date.now()}_${Math.random().toString(36).substr(2, 8)}`,
-      sendershard: `shard_${walletAddress.slice(-8)}`,
-      receivershard: 'SYSTEM_AMM',
-      energyburn: 2,
-      sequenceid: Date.now()
+      wasteland_block: Math.floor(Date.now() / 60000),
+      txn_shard: `w${Date.now()}_${Math.random().toString(36).substr(2, 8)}`,
+      sender_shard: `shard_${wallet_address.slice(-8)}`,
+      receiver_shard: 'SYSTEM_AMM',
+      energy_burn: 2,
+      sequence_id: Date.now()
     }
 
     console.log('🔗 BLOCKCHAIN TRANSACTION DATA:', JSON.stringify(transactionData, null, 2))

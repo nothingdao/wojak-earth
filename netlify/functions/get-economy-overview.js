@@ -36,11 +36,11 @@ export const handler = async (event, context) => {
         energy,
         health,
         status,
-        currentLocationId,
+        current_location_id,
         currentLocation:locations(
           id,
           name,
-          playerCount
+          player_count
         )
       `)
       .eq('status', 'ACTIVE')
@@ -54,7 +54,7 @@ export const handler = async (event, context) => {
         id,
         price,
         quantity,
-        locationId,
+        location_id,
         item:items(
           id,
           name,
@@ -72,8 +72,8 @@ export const handler = async (event, context) => {
     // Fetch location player counts
     const { data: locations, error: locationsError } = await supabase
       .from('locations')
-      .select('id, name, playerCount')
-      .order('playerCount', { ascending: false })
+      .select('id, name, player_count')
+      .order('player_count', { ascending: false })
       .limit(10)
 
     if (locationsError) throw locationsError
@@ -176,10 +176,10 @@ function calculateEconomyMetrics(characters, marketListings, locations, items) {
 
   // Top locations by player count
   const topLocations = locations
-    .filter(loc => loc.playerCount > 0)
+    .filter(loc => loc.player_count > 0)
     .map(loc => ({
       name: loc.name,
-      playerCount: loc.playerCount
+      player_count: loc.player_count
     }))
     .slice(0, 5)
 

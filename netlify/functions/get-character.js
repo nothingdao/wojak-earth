@@ -17,9 +17,8 @@ export const handler = async (event, context) => {
   }
 
   try {
-    const characterId = event.queryStringParameters?.characterId || 'hardcoded-demo'
+    const character_id = event.queryStringParameters?.character_id || 'hardcoded-demo'
 
-    // Query using Supabase client instead of Prisma
     const { data: character, error } = await supabase
       .from('characters')
       .select(`

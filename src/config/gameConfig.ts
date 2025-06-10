@@ -106,7 +106,7 @@ export const GAME_CONFIG = {
 // Type exports for better TypeScript support
 export type GameTheme = keyof typeof GAME_CONFIG.THEMES
 export type ItemRarity = keyof typeof GAME_CONFIG.RARITY
-export type ChatScope = (typeof GAME_CONFIG.CHAT.CHAT_SCOPES)[number]
+export type chat_scope = (typeof GAME_CONFIG.CHAT.CHAT_SCOPES)[number]
 export type ItemCategory = keyof typeof GAME_CONFIG.ITEMS.STACK_LIMITS
 
 // Helper functions for theme and rarity

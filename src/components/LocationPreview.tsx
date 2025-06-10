@@ -18,8 +18,8 @@ export function LocationPreview({
 }: LocationPreviewProps) {
 
   // Get viewBox for this location
-  const getViewBoxForLocation = (svgpathid: string) => {
-    switch (svgpathid) {
+  const getViewBoxForLocation = (svg_path_id: string) => {
+    switch (svg_path_id) {
       case 'fungi-networks':
         return "0 0 788 1440" // full map to test first
       // Add more locations as needed
@@ -28,7 +28,7 @@ export function LocationPreview({
     }
   }
 
-  const viewBox = getViewBoxForLocation(location.svgpathid)
+  const viewBox = getViewBoxForLocation(location.svg_path_id)
 
   // Parse viewBox for clipping
   const viewBoxParts = viewBox.split(' ').map(Number)

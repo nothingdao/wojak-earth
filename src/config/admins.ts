@@ -5,6 +5,6 @@ export const ADMIN_WALLETS = [
   // Add more admin wallet addresses as needed
 ]
 
-export function isAdmin(walletAddress: string): boolean {
-  return ADMIN_WALLETS.includes(walletAddress)
+export function isAdmin(wallet_address: string): boolean {
+  return ADMIN_WALLETS.includes(wallet_address)
 }

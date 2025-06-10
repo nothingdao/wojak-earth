@@ -25,9 +25,9 @@ export const handler = async (event, context) => {
   }
 
   try {
-    const { locationId } = event.queryStringParameters || {}
+    const { location_id } = event.queryStringParameters || {}
 
-    if (!locationId) {
+    if (!location_id) {
       return {
         statusCode: 400,
         headers,
@@ -38,8 +38,8 @@ export const handler = async (event, context) => {
     // Verify location exists and has mining
     const { data: location, error: locationError } = await supabase
       .from('locations')
-      .select('id, name, hasMining')
-      .eq('id', locationId)
+      .select('id, name, has_mining')
+      .eq('id', location_id)
       .single()
 
     if (locationError || !location) {
@@ -50,7 +50,7 @@ export const handler = async (event, context) => {
       }
     }
 
-    if (!location.hasMining) {
+    if (!location.has_mining) {
       return {
         statusCode: 200,
         headers,
@@ -66,9 +66,9 @@ export const handler = async (event, context) => {
       .from('location_resources')
       .select(`
         id,
-        itemId,
-        spawnRate,
-        maxPerDay,
+        item_id,
+        spawn_rate,
+        max_per_day,
         difficulty,
         items (
           id,
@@ -77,7 +77,7 @@ export const handler = async (event, context) => {
           category
         )
       `)
-      .eq('locationId', locationId)
+      .eq('location_id', location_id)
       .order('difficulty', { ascending: true })
 
     if (resourcesError) {
@@ -92,11 +92,11 @@ export const handler = async (event, context) => {
     // Transform the data for the frontend
     const transformedResources = resources?.map(resource => ({
       id: resource.id,
-      itemId: resource.itemId,
+      item_id: resource.item_id,
       itemName: resource.items.name,
       itemRarity: resource.items.rarity,
-      spawnRate: resource.spawnRate,
-      maxPerDay: resource.maxPerDay,
+      spawn_rate: resource.spawn_rate,
+      max_per_day: resource.max_per_day,
       difficulty: resource.difficulty
     })) || []
 

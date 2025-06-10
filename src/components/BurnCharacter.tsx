@@ -37,7 +37,7 @@ export const BurnCharacter: React.FC<BurnCharacterProps> = ({ character, onChara
       return
     }
 
-    if (!character.nftAddress) {
+    if (!character.nft_address) {
       toast.error('Character has no NFT to burn')
       return
     }
@@ -49,7 +49,7 @@ export const BurnCharacter: React.FC<BurnCharacterProps> = ({ character, onChara
       // 1. Set up Solana connection
       const connection = new Connection(getRpcUrl(), "confirmed")
 
-      const mintAddress = new PublicKey(character.nftAddress)
+      const mintAddress = new PublicKey(character.nft_address)
 
       // Get the associated token account
       const tokenAccount = await getAssociatedTokenAddress(
@@ -57,7 +57,7 @@ export const BurnCharacter: React.FC<BurnCharacterProps> = ({ character, onChara
         wallet.publicKey
       )
 
-      console.log('Burning NFT:', character.nftAddress)
+      console.log('Burning NFT:', character.nft_address)
       console.log('Token account:', tokenAccount.toBase58())
 
       // Check if token account exists and has the token
@@ -158,8 +158,8 @@ export const BurnCharacter: React.FC<BurnCharacterProps> = ({ character, onChara
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          characterId: character.id,
-          walletAddress: wallet.publicKey.toString(),
+          character_id: character.id,
+          wallet_address: wallet.publicKey.toString(),
           burnSignature: signature
         })
       })

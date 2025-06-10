@@ -21,20 +21,20 @@ export const handler = async (event, context) => {
   }
 
   try {
-    // Get locationId from query parameters
-    const locationId = event.queryStringParameters?.locationId
+    // Get location_id from query parameters
+    const location_id = event.queryStringParameters?.location_id
 
-    if (!locationId) {
+    if (!location_id) {
       return {
         statusCode: 400,
         headers,
         body: JSON.stringify({
-          error: 'Missing locationId parameter'
+          error: 'Missing location_id parameter'
         })
       }
     }
 
-    console.log('🔍 Fetching players for locationId:', locationId)
+    console.log('🔍 Fetching players for location_id:', location_id)
 
     // Query characters at the specified location
     const { data: characters, error } = await supabase
@@ -42,18 +42,16 @@ export const handler = async (event, context) => {
       .select(`
         id,
         name,
-        characterType,
+        character_type,
         level,
         experience,
-        currentImageUrl,
-        currentLocationId,
-        walletAddress,
+        current_image_url,
+        current_location_id,
+        wallet_address,
         energy,
-        health,
-        lastActiveAt
+        health
       `)
-      .eq('currentLocationId', locationId)
-    // .order('lastActiveAt', { ascending: false })
+      .eq('current_location_id', location_id)
 
     if (error) {
       console.error('❌ Supabase error:', error)
@@ -71,18 +69,17 @@ export const handler = async (event, context) => {
     const players = characters?.map(char => ({
       id: char.id,
       name: char.name,
-      characterType: char.characterType,
+      character_type: char.character_type,
       level: char.level,
       experience: char.experience,
-      imageUrl: char.currentImageUrl,
-      currentLocationId: char.currentLocationId,
-      walletAddress: char.walletAddress,
+      image_url: char.current_image_url,
+      current_location_id: char.current_location_id,
+      wallet_address: char.wallet_address,
       energy: char.energy,
       health: char.health,
-      lastActiveAt: char.lastActiveAt
     })) || []
 
-    console.log(`✅ Found ${players.length} players at location ${locationId}`)
+    console.log(`✅ Found ${players.length} players at location ${location_id}`)
 
     return {
       statusCode: 200,
@@ -90,7 +87,7 @@ export const handler = async (event, context) => {
       body: JSON.stringify({
         success: true,
         players,
-        locationId,
+        location_id,
         count: players.length,
         timestamp: new Date().toISOString()
       })

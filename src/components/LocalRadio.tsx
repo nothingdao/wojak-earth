@@ -19,12 +19,12 @@ interface RadioStation {
 }
 
 interface LocalRadioProps {
-  locationId: string
+  location_id: string
   className?: string
 }
 
 export const LocalRadio: React.FC<LocalRadioProps> = ({
-  locationId,
+  location_id,
   className = ''
 }) => {
   const [isPlaying, setIsPlaying] = useState(false)
@@ -116,7 +116,7 @@ export const LocalRadio: React.FC<LocalRadioProps> = ({
       try {
         setError(null)
         setIsPlaying(false)
-        const response = await fetch(`/.netlify/functions/get-local-radio?locationId=${locationId}`)
+        const response = await fetch(`/.netlify/functions/get-local-radio?location_id=${location_id}`)
         if (response.ok) {
           const data = await response.json()
           if (data.station && data.station.playlist) {
@@ -147,7 +147,7 @@ export const LocalRadio: React.FC<LocalRadioProps> = ({
     }
 
     loadRadioStation()
-  }, [locationId])
+  }, [location_id])
 
   // Get current track
   const getCurrentTrack = (): Track | null => {
