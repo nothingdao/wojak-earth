@@ -1,4 +1,4 @@
-// netlify/functions/travel-action.js - UPDATED
+// netlify/functions/travel-action.js - FIXED VERSION
 import { createClient } from '@supabase/supabase-js'
 import { randomUUID } from 'crypto'
 
@@ -55,27 +55,29 @@ export const handler = async (event, context) => {
       }
     }
 
-    // Get current location details
+    // Get current location details - SIMPLIFIED QUERY
     const { data: currentLocation, error: currentError } = await supabase
       .from('locations')
       .select('*')
       .eq('id', character.current_location_id)
       .single()
 
-    if (currentError) throw currentError
+    if (currentError) {
+      console.error('Error fetching current location:', currentError)
+      throw currentError
+    }
 
-    // Get destination location
+    // Get destination location - SIMPLIFIED QUERY (no self-joins)
     const { data: destination, error: destError } = await supabase
       .from('locations')
-      .select(`
-        *,
-        subLocations:locations!parentlocation_id(*),
-        parentLocation:locations!parentlocation_id(*)
-      `)
+      .select('*')
       .eq('id', destinationId)
       .single()
 
-    if (destError) throw destError
+    if (destError) {
+      console.error('Error fetching destination:', destError)
+      throw destError
+    }
 
     if (!destination) {
       return {
@@ -127,7 +129,6 @@ export const handler = async (event, context) => {
 
     // Check if private location (could require special access)
     if (destination.is_private) {
-      // For now, block all private locations
       return {
         statusCode: 403,
         headers,
@@ -138,75 +139,69 @@ export const handler = async (event, context) => {
       }
     }
 
-    // Deduct entry cost if required
-    if (destination.entry_cost > 0) {
-      const newCoins = character.coins - destination.entry_cost
+    // Calculate travel difficulty/distance health cost
+    const travelHealthCost = Math.max(1, destination.difficulty - currentLocation.difficulty)
+    const newHealth = Math.max(0, character.health - travelHealthCost)
 
-      await supabase
-        .from('characters')
-        .update({ coins: newCoins })
-        .eq('id', character.id)
-    }
+    // Calculate new coin balance after entry cost
+    const newCoins = destination.entry_cost ? character.coins - destination.entry_cost : character.coins
 
-    // Update character location
+    // Update character location, health, and coins in a single query
     const { data: updatedCharacter, error: updateError } = await supabase
       .from('characters')
-      .update({ current_location_id: destinationId })
+      .update({
+        current_location_id: destinationId,
+        health: newHealth,
+        coins: newCoins
+      })
       .eq('id', character.id)
       .select('*')
       .single()
 
-    if (updateError) throw updateError
+    if (updateError) {
+      console.error('Error updating character:', updateError)
+      throw updateError
+    }
 
     // Log the travel transaction
     const transactionId = randomUUID()
-    const { data: transaction, error: transactionError } = await supabase
+    const { error: transactionError } = await supabase
       .from('transactions')
       .insert({
         id: transactionId,
         character_id: character.id,
         type: 'TRAVEL',
-        description: `Traveled from ${currentLocation.name} to ${destination.name}`
+        description: `Traveled from ${currentLocation.name} to ${destination.name}`,
+        amount: destination.entry_cost || 0
       })
-      .select('*')
-      .single()
 
-    if (transactionError) throw transactionError
+    if (transactionError) {
+      console.error('Error creating transaction:', transactionError)
+      // Don't throw here, just log - transaction logging is not critical
+    }
 
-    // Update player counts
-    const { error: decrementError } = await supabase
-      .from('locations')
-      .update({
-        player_count: Math.max(0, (currentLocation.player_count || 1) - 1)
-      })
-      .eq('id', character.current_location_id)
+    // Update player counts for both locations
+    try {
+      // Decrement old location
+      await supabase
+        .from('locations')
+        .update({
+          player_count: Math.max(0, (currentLocation.player_count || 1) - 1)
+        })
+        .eq('id', character.current_location_id)
 
-    if (decrementError) throw decrementError
-
-    const { error: incrementError } = await supabase
-      .from('locations')
-      .update({
-        player_count: (destination.player_count || 0) + 1,
-        last_active: new Date().toISOString()
-      })
-      .eq('id', destinationId)
-
-    if (incrementError) throw incrementError
-
-    // Attach current location to character for response
-    updatedCharacter.currentLocation = destination
-
-    // Calculate travel difficulty/distance health cost
-    const travelHealthCost = Math.max(1, destination.difficulty - currentLocation.difficulty)
-    const newHealth = Math.max(0, character.health - travelHealthCost)
-
-    await supabase
-      .from('characters')
-      .update({
-        current_location_id: destinationId,
-        health: newHealth
-      })
-      .eq('id', character.id)
+      // Increment new location
+      await supabase
+        .from('locations')
+        .update({
+          player_count: (destination.player_count || 0) + 1,
+          last_active: new Date().toISOString()
+        })
+        .eq('id', destinationId)
+    } catch (locationUpdateError) {
+      console.error('Error updating location player counts:', locationUpdateError)
+      // Don't throw here, travel was successful
+    }
 
     const responseData = {
       success: true,
@@ -250,7 +245,8 @@ export const handler = async (event, context) => {
       headers,
       body: JSON.stringify({
         error: 'Internal server error',
-        message: 'Travel failed'
+        message: 'Travel failed',
+        details: error.message
       })
     }
   }

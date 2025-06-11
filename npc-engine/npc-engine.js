@@ -978,12 +978,21 @@ class NPCEngine {
 
     // Start staggered timers to prevent thundering herd
     let startupDelay = 0
+    // for (const [id, npc] of this.npcs) {
+    //   if (!npc.isDead) {
+    //     setTimeout(() => {
+    //       this.scheduleNextActivity(npc)
+    //     }, startupDelay)
+    //     startupDelay += 2000 + Math.random() * 3000 // 2-5 second stagger
+    //   }
+    // }
+
+    // THUNDERING HERD MODE - ALL NPCs START IMMEDIATELY
     for (const [id, npc] of this.npcs) {
       if (!npc.isDead) {
         setTimeout(() => {
           this.scheduleNextActivity(npc)
-        }, startupDelay)
-        startupDelay += 2000 + Math.random() * 3000 // 2-5 second stagger
+        }, Math.random() * 2000) // 0-2 second random start only
       }
     }
 

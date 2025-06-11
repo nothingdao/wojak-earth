@@ -307,21 +307,71 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       }
     }, [character, characterActions, refetchCharacter]),
 
-    handleTravel: useCallback((location_id: string) => {
-      const location = gameData.locations?.find((l: any) => l.id === location_id)
-      if (!location) {
-        console.error('Location not found:', location_id)
+    handleTravel: useCallback(async (location_id: string) => {
+      if (!character) {
+        toast.error('No character found')
         return
       }
 
-      console.log('🎯 Travel action called with location:', location)
-      dispatch({ type: 'START_TRAVEL', destination: location })
+      const location = gameData.locations?.find((l: any) => l.id === location_id)
+      if (!location) {
+        console.error('Location not found:', location_id)
+        toast.error('Location not found')
+        return
+      }
 
-      setTimeout(() => {
+      // Check if already at this location
+      if (character.current_location_id === location_id) {
+        toast.info('You are already at this location')
+        return
+      }
+
+      // Check level requirements
+      if (location.min_level && character.level < location.min_level) {
+        toast.error(`You need to be level ${location.min_level} to travel here`)
+        return
+      }
+
+      // Check entry cost
+      if (location.entry_cost && location.entry_cost > (character.coins || 0)) {
+        toast.error(`You need ${location.entry_cost} RUST to travel here`)
+        return
+      }
+
+      try {
+        console.log('🎯 Starting travel to:', location.name)
+        dispatch({ type: 'START_TRAVEL', destination: location })
+
+        // Make the actual API call to travel
+        console.log('🌐 Making API call to travel...')
+        const result = await characterActions.travel(location_id)
+        console.log('📋 Travel API result:', result)
+
+        if (result.success) {
+          toast.success(`Traveled to ${location.name}!`)
+
+          // Update character data
+          console.log('🔄 Refetching character data...')
+          await refetchCharacter()
+
+          // Reload game data for new location
+          console.log('🔄 Reloading game data...')
+          await gameData.actions.loadGameData()
+
+          // Switch to main view after successful travel
+          dispatch({ type: 'SET_VIEW', view: 'main' })
+          console.log('✅ Travel completed successfully!')
+        } else {
+          console.error('❌ Travel failed:', result.message)
+          toast.error(result.message || 'Travel failed')
+        }
+      } catch (error) {
+        console.error('❌ Travel error:', error)
+        toast.error('Travel failed. Please try again.')
+      } finally {
         dispatch({ type: 'END_TRAVEL' })
-        dispatch({ type: 'SET_VIEW', view: 'main' })
-      }, 5000)
-    }, [gameData.locations]),
+      }
+    }, [character, gameData.locations, characterActions, refetchCharacter, gameData.actions]),
 
     handlePurchase: useCallback(async (item_id: string, cost: number, itemName: string) => {
       if (!character) return

@@ -14,7 +14,6 @@ import {
 } from 'lucide-react'
 
 // Import refactored components
-import { AdminHeader } from './admin/AdminHeader'
 import { AdminFooter } from './admin/AdminFooter'
 import { OverviewTab } from './admin/tabs/OverviewTab'
 import { CharactersTab } from './admin/tabs/CharactersTab'
@@ -44,15 +43,11 @@ import {
   banCharacter,
   createLocation,
   createItem,
-  updateLocation,
-  updateItem,
   deleteItem,
   deleteLocation,
-  addMiningResource,
   deleteMarketListing,
   validateWorldData,
-  resetWorldDay,
-  createMarketListing
+  resetWorldDay
 } from '@/lib/admin/adminTools'
 
 // Import SVG Mapper if needed
@@ -75,11 +70,7 @@ export default function AdminDashboard({ className }: AdminDashboardProps) {
   const [showCreateLocationModal, setShowCreateLocationModal] = useState<boolean>(false)
   const [showCreateItemModal, setShowCreateItemModal] = useState<boolean>(false)
   const [showEditCharacterModal, setShowEditCharacterModal] = useState<boolean>(false)
-  const [showCreateMarketListingModal, setShowCreateMarketListingModal] = useState<boolean>(false)
   const [selectedCharacter, setSelectedCharacter] = useState<AdminCharacter | null>(null)
-  const [selectedLocation, setSelectedLocation] = useState<AdminLocation | null>(null)
-  const [selectedItem, setSelectedItem] = useState<Item | null>(null)
-  const [selectedMarketListing, setSelectedMarketListing] = useState<AdminMarketListing | null>(null)
 
   // Data hooks
   const { stats, loading: statsLoading, error: statsError, refetch: refetchStats } = useAdminStats()
@@ -390,7 +381,6 @@ export default function AdminDashboard({ className }: AdminDashboardProps) {
   return (
     <div className={`min-h-screen bg-background font-mono ${className || ''}`}>
       {/* Terminal Header */}
-      <AdminHeader />
 
       <div className="p-3">
         <div className="space-y-3">

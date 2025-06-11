@@ -75,25 +75,6 @@ export function SVGMapper({
   // Get all path IDs from clean SVG data
   const allPathIds = getAllPathIds()
 
-  // Debug function
-  const debugDatabaseConnection = useCallback(() => {
-    console.log('=== CLEAN SVG DEBUG ===')
-    console.log('Total SVG paths:', allPathIds.length)
-    console.log('Total locations:', locations.length)
-
-    const withSvgPath = locations.filter(loc => loc.svg_path_id)
-    console.log('Locations with svg_path_id:', withSvgPath.length)
-
-    const linkedPaths = new Set(locations.map(loc => loc.svg_path_id).filter(Boolean))
-    const svg_path_ids = new Set(allPathIds)
-
-    console.log('Database svg_path_ids:', Array.from(linkedPaths))
-    console.log('SVG path IDs:', Array.from(svg_path_ids))
-
-    const matchingPaths = Array.from(linkedPaths).filter(pathId => svg_path_ids.has(pathId))
-    console.log('Matching paths:', matchingPaths)
-  }, [locations, allPathIds])
-
   // Get database location linked to a path
   const getLinkedLocation = useCallback((pathId: string) => {
     return locations.find(loc => loc.svg_path_id === pathId)
@@ -250,24 +231,6 @@ export function SVGMapper({
           {/* Info */}
           <div className="space-y-2">
             <h3 className="font-semibold text-lg">Clean SVG Manager</h3>
-
-            <div className="space-y-2">
-              <Button
-                onClick={resetSvgView}
-                variant="outline"
-                className="w-full text-xs"
-              >
-                Reset View
-              </Button>
-
-              <Button
-                onClick={debugDatabaseConnection}
-                variant="outline"
-                className="w-full text-xs"
-              >
-                Debug Database
-              </Button>
-            </div>
           </div>
 
           {/* Statistics */}
@@ -500,7 +463,6 @@ export function SVGMapper({
         </div>
       </div>
 
-      {/* Modals remain the same... */}
       {/* Create Location Form Modal */}
       {showCreateForm && selectedPath && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
