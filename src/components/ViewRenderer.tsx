@@ -135,6 +135,8 @@ export function ViewRenderer({
           locations={gameData.locations || []}
           character={character}
           onTravel={actions.handleTravel}
+          isTravelingOnMap={gameData.isTravelingOnMap}
+          mapTravelDestination={gameData.mapTravelDestination}
         />
       )
 

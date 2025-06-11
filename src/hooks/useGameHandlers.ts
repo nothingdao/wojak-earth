@@ -1,3 +1,7 @@
+// ========================================
+// 1. COMPLETE useGameHandlers.ts
+// ========================================
+
 // src/hooks/useGameHandlers.ts - DEBUGGING VERSION
 import { toast } from 'sonner'
 import type { Location, MarketItem, Character, GameView } from '@/types'
@@ -56,6 +60,9 @@ interface UseGameHandlersProps {
   loadChatMessages: (location_id: string) => Promise<void>
   selectedLocation: Location | null
   locations: Location[]
+  // NEW: Optional map animation state setters
+  setIsTravelingOnMap?: React.Dispatch<React.SetStateAction<boolean>>
+  setMapTravelDestination?: React.Dispatch<React.SetStateAction<string | null>>
 }
 
 export function useGameHandlers({
@@ -70,6 +77,8 @@ export function useGameHandlers({
   loadChatMessages,
   selectedLocation,
   locations,
+  setIsTravelingOnMap,
+  setMapTravelDestination,
 }: UseGameHandlersProps) {
   const handleMining = async (event?: React.MouseEvent) => {
     // Prevent default behavior that might cause page reload
@@ -185,12 +194,21 @@ export function useGameHandlers({
         await refetchCharacter()
         await loadGameData()
         setTravelingTo(null)
+
+        // Clear map animation states (only if functions are provided)
+        setIsTravelingOnMap?.(false)
+        setMapTravelDestination?.(null)
+
         setCurrentView('main')
         console.log('✅ Travel UI updates completed')
       }, 2800)
     } catch (error) {
       console.error('❌ Travel failed:', error)
       setTravelingTo(null)
+
+      // Clear map animation on error (only if functions are provided)
+      setIsTravelingOnMap?.(false)
+      setMapTravelDestination?.(null)
 
       // More detailed error logging
       if (error instanceof Error) {

@@ -52,15 +52,32 @@ interface EarthProps {
   locations: DatabaseLocation[]
   character?: Character
   onTravel?: (location_id: string) => void
+  isTravelingOnMap?: boolean
+  mapTravelDestination?: string | null
 }
 
-export default function Earth({ locations, character, onTravel }: EarthProps) {
+export default function Earth({
+  locations,
+  character,
+  onTravel,
+  isTravelingOnMap = false,
+  mapTravelDestination = null
+}: EarthProps) {
   const [selectedPath, setSelectedPath] = useState<string | null>(null)
   const [hoveredPath, setHoveredPath] = useState<string | null>(null)
   const [transform, setTransform] = useState({ scale: 1, translateX: 0, translateY: 0 })
   const [isDragging, setIsDragging] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0, translateX: 0, translateY: 0 })
   const svgRef = useRef<SVGSVGElement>(null)
+
+  const handleMapTravel = async (location_id: string) => {
+    setSelectedPath(null) // Close the selection panel
+
+    // Call the travel handler passed from parent
+    if (onTravel) {
+      await onTravel(location_id)
+    }
+  }
 
   // Create lookup map for quick location finding
   const locationMap = useCallback(() => {
@@ -196,6 +213,7 @@ export default function Earth({ locations, character, onTravel }: EarthProps) {
     const isSelected = pathId === selectedPath
     const isHovered = pathId === hoveredPath
     const isPlayerHere = location && character?.current_location_id === location.id
+    const isTravelingToHere = location && mapTravelDestination === location.id
 
     // Get computed colors from CSS custom properties
     const style = getComputedStyle(document.documentElement)
@@ -222,6 +240,11 @@ export default function Earth({ locations, character, onTravel }: EarthProps) {
       stroke = '#22c55e' // Green for current location
       strokeWidth = '3'
       opacity = '1'
+    } else if (isTravelingToHere && isTravelingOnMap) {
+      fill = isDark ? '#f59e0b' : '#f97316' // Orange for destination
+      stroke = isDark ? '#fbbf24' : '#ea580c'
+      strokeWidth = '2'
+      opacity = '1'
     } else if (isHovered) {
       opacity = '1'
       strokeWidth = '1.5'
@@ -235,7 +258,8 @@ export default function Earth({ locations, character, onTravel }: EarthProps) {
       opacity,
       cursor: 'pointer'
     }
-  }, [getLocation, selectedPath, hoveredPath, character, getBiomeColor])
+  }, [getLocation, selectedPath, hoveredPath, character, getBiomeColor, isTravelingOnMap, mapTravelDestination])
+
 
   // Handle path clicks
   const handlePathClick = useCallback((pathId: string) => {
@@ -264,6 +288,21 @@ export default function Earth({ locations, character, onTravel }: EarthProps) {
           </div>
         </div>
       </div>
+
+
+      // Add this traveling status display after your existing terminal header
+      {isTravelingOnMap && (
+        <div className="absolute top-16 right-4 bg-background/95 border border-border px-3 py-2 rounded shadow-lg z-40 font-mono">
+          <div className="flex items-center gap-2 text-xs">
+            <div className="w-2 h-2 bg-chart-3 rounded-full animate-pulse" />
+            <span className="text-chart-3 font-bold">TRAVELING...</span>
+            {mapTravelDestination && (() => {
+              const dest = locations.find(loc => loc.id === mapTravelDestination)
+              return dest ? <span className="text-muted-foreground">TO_{dest.name.toUpperCase()}</span> : null
+            })()}
+          </div>
+        </div>
+      )}
 
       {/* Terminal Control Panel */}
       <div className="absolute bottom-4 right-4 z-50 flex flex-col gap-2">
@@ -390,6 +429,27 @@ export default function Earth({ locations, character, onTravel }: EarthProps) {
                     }}
                   />
                 )}
+
+                {isTravelingOnMap && mapTravelDestination && (() => {
+                  const destLocation = locations.find(loc => loc.id === mapTravelDestination)
+                  const destPath = baseSVGData.paths.find(path => path.id === destLocation?.svg_path_id)
+                  if (!destPath) return null
+
+                  return (
+                    <circle
+                      cx="0" cy="0"
+                      r="4"
+                      fill="#f59e0b"
+                      stroke="#ffffff"
+                      strokeWidth="2"
+                      opacity="0.8"
+                      className="animate-ping"
+                      style={{
+                        transform: `translate(${destPath.id === 'california' ? '100px' : '0px'}, ${destPath.id === 'california' ? '100px' : '0px'})`
+                      }}
+                    />
+                  )
+                })()}
               </g>
             )
           })}
@@ -543,10 +603,7 @@ export default function Earth({ locations, character, onTravel }: EarthProps) {
             {/* Travel Action */}
             {onTravel && character && (
               <Button
-                onClick={() => {
-                  onTravel(selectedLocation.id)
-                  setSelectedPath(null)
-                }}
+                onClick={() => handleMapTravel(selectedLocation.id)}
                 disabled={
                   character.current_location_id === selectedLocation.id ||
                   (!!selectedLocation.min_level && character.level < selectedLocation.min_level) ||

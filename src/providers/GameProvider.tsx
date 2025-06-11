@@ -30,6 +30,10 @@ interface GameState {
   // New: track what checks we've completed
   hasCheckedCharacter: boolean
   hasLoadedGameData: boolean
+
+  isTravelingOnMap: boolean
+  mapTravelDestination: string | null
+
 }
 
 type GameAction =
@@ -45,6 +49,8 @@ type GameAction =
   | { type: 'CHARACTER_CHECK_COMPLETE'; hasCharacter: boolean }
   | { type: 'GAME_DATA_LOADED' }
   | { type: 'USER_WANTS_TO_ENTER_GAME' }
+  | { type: 'SET_MAP_TRAVELING'; isTraveling: boolean; destination: string | null }
+  | { type: 'CLEAR_MAP_TRAVELING' }
 
 function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
@@ -107,6 +113,20 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         appState: 'entering-game'
       }
 
+    case 'SET_MAP_TRAVELING':
+      return {
+        ...state,
+        isTravelingOnMap: action.isTraveling,
+        mapTravelDestination: action.destination
+      }
+
+    case 'CLEAR_MAP_TRAVELING':
+      return {
+        ...state,
+        isTravelingOnMap: false,
+        mapTravelDestination: null
+      }
+
     default:
       return state
   }
@@ -158,7 +178,10 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     gameData: {},
     loadingItems: new Set<string>(),
     hasCheckedCharacter: false,
-    hasLoadedGameData: false
+    hasLoadedGameData: false,
+    isTravelingOnMap: false,
+    mapTravelDestination: null
+
   })
 
   const gameData = useGameData(character, state.currentView, state.selectedLocation)
@@ -342,6 +365,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         console.log('🎯 Starting travel to:', location.name)
         dispatch({ type: 'START_TRAVEL', destination: location })
 
+        // ADD THIS LINE - Start map animation:
+        dispatch({ type: 'SET_MAP_TRAVELING', isTraveling: true, destination: location_id })
+
         // Make the actual API call to travel
         console.log('🌐 Making API call to travel...')
         const result = await characterActions.travel(location_id)
@@ -358,20 +384,31 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           console.log('🔄 Reloading game data...')
           await gameData.actions.loadGameData()
 
+          // ADD THIS - Clear map animation after delay:
+          setTimeout(() => {
+            dispatch({ type: 'CLEAR_MAP_TRAVELING' })
+          }, 2800)
+
           // Switch to main view after successful travel
-          dispatch({ type: 'SET_VIEW', view: 'main' })
-          console.log('✅ Travel completed successfully!')
+          if (state.currentView !== 'map') {
+            dispatch({ type: 'SET_VIEW', view: 'main' })
+          } console.log('✅ Travel completed successfully!')
         } else {
           console.error('❌ Travel failed:', result.message)
           toast.error(result.message || 'Travel failed')
+          // ADD THIS - Clear map animation on error:
+          dispatch({ type: 'CLEAR_MAP_TRAVELING' })
         }
       } catch (error) {
         console.error('❌ Travel error:', error)
         toast.error('Travel failed. Please try again.')
+        // ADD THIS - Clear map animation on error:
+        dispatch({ type: 'CLEAR_MAP_TRAVELING' })
       } finally {
         dispatch({ type: 'END_TRAVEL' })
       }
     }, [character, gameData.locations, characterActions, refetchCharacter, gameData.actions]),
+
 
     handlePurchase: useCallback(async (item_id: string, cost: number, itemName: string) => {
       if (!character) return
