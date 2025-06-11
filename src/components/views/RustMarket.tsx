@@ -771,7 +771,7 @@ const RustMarket: React.FC = () => {
       <div className="flex items-center justify-between mb-4 border-b border-primary/20 pb-2">
         <div className="flex items-center gap-2">
           <Database className="w-4 h-4" />
-          <span className="text-primary font-bold">WASTELAND EXCHANGE v2.089</span>
+          <span className="text-primary font-bold">EARTH GLOBAL EXCHANGE v2.089</span>
         </div>
         <div className="flex items-center gap-2">
           <Activity className="w-3 h-3 animate-pulse" />

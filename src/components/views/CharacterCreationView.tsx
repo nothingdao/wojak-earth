@@ -471,6 +471,9 @@ export const CharacterCreationView: React.FC<CharacterCreationViewProps> = ({ ch
   }
 
   // Create character with payment - improved error handling
+  // In your CharacterCreationView.tsx, replace the catch block in createCharacterWithPayment function:
+
+  // Find this function (around line 481):
   const createCharacterWithPayment = async (paymentSignature: string) => {
     if (!wallet.publicKey || !generatedImage || !selectedLayers) {
       toast.error('Missing required data for character creation')
@@ -513,7 +516,7 @@ export const CharacterCreationView: React.FC<CharacterCreationViewProps> = ({ ch
         setGeneratedImage(null)
         setSelectedLayers(null)
         setShowPayment(false)
-        setCreatingCharacter(false) // Hide creation progress
+        setCreatingCharacter(false)
 
         // Navigate to main app AFTER character is successfully created
         if (onCharacterCreated) {
@@ -530,8 +533,29 @@ export const CharacterCreationView: React.FC<CharacterCreationViewProps> = ({ ch
         throw new Error(result.error || 'Character creation failed')
       }
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Character creation failed:', error)
+
+      // NEW: Check if this is the "wallet already has character" error
+      if (error.message?.includes('WALLET_HAS_CHARACTER') || error.message?.includes('Wallet already has a character')) {
+        console.log('🎉 Wallet already has a character, proceeding to game...')
+
+        // Clear the creation state
+        setCreatingCharacter(false)
+        setShowPayment(false)
+
+        // Show success message
+        toast.success('Character already exists! Entering game...')
+
+        // Navigate to the game since character already exists
+        if (onCharacterCreated) {
+          onCharacterCreated()
+        }
+
+        return
+      }
+
+      // Handle other errors normally
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
       toast.error(`Creation failed: ${errorMessage}`)
       setCreatingCharacter(false) // Hide creation progress on error

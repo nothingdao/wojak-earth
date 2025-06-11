@@ -186,7 +186,7 @@ export const MainView: React.FC<MainViewProps> = ({
         </div>
 
         <div className="bg-muted/50 border border-primary/20 p-3 rounded">
-          <div className="text-muted-foreground text-xs mb-1">THREAT LEVEL</div>
+          <div className="text-muted-foreground text-xs mb-1">REQUIRED LEVEL</div>
           <div className={`text-sm font-bold flex items-center gap-1 ${getDifficultyColor(location.difficulty)}`}>
             <Shield className="w-3 h-3" />
             LEVEL {location.difficulty}
@@ -202,7 +202,7 @@ export const MainView: React.FC<MainViewProps> = ({
             <Users className="w-3 h-3" />
             {playersAtLocation.length} ACTIVE
           </div>
-          <div className="text-muted-foreground text-xs">SURVIVORS</div>
+          <div className="text-muted-foreground text-xs">HUMANS</div>
         </div>
       </div>
 

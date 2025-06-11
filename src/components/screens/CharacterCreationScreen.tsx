@@ -1,4 +1,4 @@
-// src/components/screens/CharacterCreationScreen.tsx
+// src/components/screens/CharacterCreationScreen.tsx - Updated for explicit state machine
 import { User, Activity } from 'lucide-react'
 import { CharacterCreationView } from '../views'
 import { useGame } from '@/providers/GameProvider'
@@ -9,8 +9,14 @@ export function CharacterCreationScreen() {
   const handleCharacterCreated = async () => {
     console.log('🎉 Character creation completed, refreshing data...')
     try {
+      // First, refresh the character data
       await actions.refetchCharacter()
-      // Navigation will happen automatically via the state change
+
+      // Then signal that character creation is complete
+      // This will trigger the state transition to 'entering-game'
+      actions.createCharacterComplete()
+
+      console.log('✅ Character creation flow completed')
     } catch (error) {
       console.error('Failed to refresh character after creation:', error)
       // Error will be handled by the GameProvider

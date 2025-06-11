@@ -2,7 +2,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { Connection, Keypair, Transaction, SystemProgram, sendAndConfirmTransaction } from '@solana/web3.js'
 import { randomUUID } from 'crypto'
-import { NPCWalletManager } from '../../wallet-manager.js'
+import { NPCWalletManager } from '../../npc-engine/wallet-manager.js' // Adjust path as needed
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY

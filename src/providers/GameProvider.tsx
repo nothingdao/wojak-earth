@@ -1,4 +1,4 @@
-// src/providers/GameProvider.tsx
+// src/providers/GameProvider.tsx - Explicit State Machine Version
 import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { usePlayerCharacter, useCharacterActions } from '@/hooks/usePlayerCharacter'
@@ -6,27 +6,30 @@ import { useGameData } from '@/hooks/useGameData'
 import { toast } from 'sonner'
 import type { GameView, DatabaseLocation, Character } from '@/types'
 
-// Types from your existing code
-type AppState = 'wallet-disconnected' | 'initial-loading' | 'character-loading' | 'no-character' | 'game-loading' | 'ready' | 'error'
+// Simplified app states - only what user sees
+type AppState =
+  | 'wallet-required'      // Show wallet connect
+  | 'checking-character'   // Loading spinner only
+  | 'character-required'   // Show character creation
+  | 'entering-game'        // Loading game data
+  | 'ready'               // Game is ready
+  | 'error'               // Show error
 
 interface GameState {
-  // App state
   appState: AppState
   currentView: GameView
   error?: string
-
-  // Character data (from your existing hooks)
   character?: Character
   characterLoading: boolean
   hasCharacter: boolean
-
-  // Game data
   gameData: any
-
-  // UI state (from your existing App.tsx)
   loadingItems: Set<string>
   travelingTo?: DatabaseLocation
-  selectedLocation?: DatabaseLocation
+  selectedLocation?: DatabaseLocation | undefined
+
+  // New: track what checks we've completed
+  hasCheckedCharacter: boolean
+  hasLoadedGameData: boolean
 }
 
 type GameAction =
@@ -37,8 +40,11 @@ type GameAction =
   | { type: 'SET_LOADING_ITEM'; item_id: string; loading: boolean }
   | { type: 'START_TRAVEL'; destination: DatabaseLocation }
   | { type: 'END_TRAVEL' }
-  | { type: 'SET_SELECTED_LOCATION'; location: DatabaseLocation | null }
+  | { type: 'SET_SELECTED_LOCATION'; location: DatabaseLocation | undefined }
   | { type: 'SET_CHARACTER_DATA'; character: Character; hasCharacter: boolean; loading: boolean }
+  | { type: 'CHARACTER_CHECK_COMPLETE'; hasCharacter: boolean }
+  | { type: 'GAME_DATA_LOADED' }
+  | { type: 'USER_WANTS_TO_ENTER_GAME' }
 
 function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
@@ -71,7 +77,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       return { ...state, travelingTo: undefined }
 
     case 'SET_SELECTED_LOCATION':
-      return { ...state, selectedLocation: action.location }
+      return { ...state, selectedLocation: action.location || undefined }
 
     case 'SET_CHARACTER_DATA':
       return {
@@ -79,6 +85,26 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         character: action.character,
         hasCharacter: action.hasCharacter,
         characterLoading: action.loading
+      }
+
+    case 'CHARACTER_CHECK_COMPLETE':
+      return {
+        ...state,
+        hasCheckedCharacter: true,
+        appState: action.hasCharacter ? 'entering-game' : 'character-required'
+      }
+
+    case 'GAME_DATA_LOADED':
+      return {
+        ...state,
+        hasLoadedGameData: true,
+        appState: 'ready'
+      }
+
+    case 'USER_WANTS_TO_ENTER_GAME':
+      return {
+        ...state,
+        appState: 'entering-game'
       }
 
     default:
@@ -92,12 +118,17 @@ interface GameContextType {
   actions: {
     // Navigation
     navigate: (view: GameView) => void
-    setSelectedLocation: (location: DatabaseLocation | null) => void
+    setSelectedLocation: (location: DatabaseLocation | undefined) => void
 
     // Character actions
     refetchCharacter: () => Promise<void>
 
-    // Game actions (migrated from your existing handlers)
+    // New: explicit user actions
+    checkForCharacter: () => Promise<void>
+    enterGame: () => Promise<void>
+    createCharacterComplete: () => void
+
+    // Game actions (same as before)
     handleMining: () => Promise<void>
     handleTravel: (location_id: string) => void
     handlePurchase: (item_id: string, cost: number, itemName: string) => Promise<void>
@@ -115,95 +146,121 @@ const GameContext = createContext<GameContextType | null>(null)
 
 export function GameProvider({ children }: { children: React.ReactNode }) {
   const wallet = useWallet()
-
-  // Your existing hooks
-  const { character, loading: characterLoading, hasCharacter, refetchCharacter, error: characterError } = usePlayerCharacter()
+  const { character, loading: characterLoading, hasCharacter, refetchCharacter } = usePlayerCharacter()
   const characterActions = useCharacterActions()
 
   const [state, dispatch] = useReducer(gameReducer, {
-    appState: 'wallet-disconnected',
+    appState: 'wallet-required',
     currentView: 'main',
-    characterLoading,
-    hasCharacter,
-    character,
+    characterLoading: false,
+    hasCharacter: false,
+    character: undefined,
     gameData: {},
-    loadingItems: new Set()
+    loadingItems: new Set<string>(),
+    hasCheckedCharacter: false,
+    hasLoadedGameData: false
   })
 
-  // Your existing gameData hook
   const gameData = useGameData(character, state.currentView, state.selectedLocation)
 
   // Update character data when hooks change
   useEffect(() => {
-    dispatch({
-      type: 'SET_CHARACTER_DATA',
-      character: character!,
-      hasCharacter,
-      loading: characterLoading
-    })
+    if (character) {
+      dispatch({
+        type: 'SET_CHARACTER_DATA',
+        character: character,
+        hasCharacter,
+        loading: characterLoading
+      })
+    }
   }, [character, hasCharacter, characterLoading])
 
-  // Your existing state management logic from App.tsx
+  // Only handle wallet connection/disconnection automatically
   useEffect(() => {
     if (!wallet.connected) {
-      dispatch({ type: 'SET_APP_STATE', appState: 'wallet-disconnected' })
+      dispatch({ type: 'SET_APP_STATE', appState: 'wallet-required' })
       dispatch({ type: 'CLEAR_ERROR' })
       dispatch({ type: 'SET_VIEW', view: 'main' })
-      return
+    } else if (wallet.connected && state.appState === 'wallet-required') {
+      // When wallet connects, check for character
+      dispatch({ type: 'SET_APP_STATE', appState: 'checking-character' })
     }
+  }, [wallet.connected, state.appState])
 
-    if (characterError || state.error) {
-      dispatch({ type: 'SET_APP_STATE', appState: 'error' })
-      return
+
+  // Fallback fix: If we have a character object but hasCharacter is false, fix it
+  useEffect(() => {
+    if (character && character.id && !hasCharacter && !characterLoading) {
+      console.log('🔧 FIXING character detection - character exists but hasCharacter is false')
+      console.log('Character found via real-time:', {
+        id: character.id,
+        name: character.name,
+        hasCharacter,
+        appState: state.appState
+      })
+
+      // Force the character check to complete with the correct hasCharacter value
+      dispatch({
+        type: 'CHARACTER_CHECK_COMPLETE',
+        hasCharacter: true // Force this to true since we have a character
+      })
     }
+  }, [character, hasCharacter, characterLoading, state.appState])
 
-    if (characterLoading) {
-      dispatch({ type: 'SET_APP_STATE', appState: 'character-loading' })
-      return
+  // Check if the character is loaded but we're still in wrong state
+  useEffect(() => {
+    if (character && character.id && hasCharacter && state.appState === 'character-required') {
+      console.log('🔧 FIXING app state - have character but still showing character-required')
+
+      // If we have a character and hasCharacter is true, but we're still showing character-required
+      dispatch({
+        type: 'SET_APP_STATE',
+        appState: 'entering-game'
+      })
     }
+  }, [character, hasCharacter, state.appState])
 
-    if (!hasCharacter) {
-      dispatch({ type: 'SET_APP_STATE', appState: 'no-character' })
-      return
-    }
-
-    if (!character) {
-      dispatch({ type: 'SET_APP_STATE', appState: 'initial-loading' })
-      return
-    }
-
-    if (gameData.loading && !gameData.locations.length) {
-      dispatch({ type: 'SET_APP_STATE', appState: 'game-loading' })
-      return
-    }
-
-    if (gameData.error) {
-      dispatch({ type: 'SET_ERROR', error: gameData.error })
-      return
-    }
-
-    dispatch({ type: 'SET_APP_STATE', appState: 'ready' })
-  }, [
-    wallet.connected,
-    characterLoading,
-    hasCharacter,
-    character,
-    characterError,
-    state.error,
-    gameData.loading,
-    gameData.locations.length,
-    gameData.error
-  ])
-
-  // Actions - migrated from your existing gameHandlers
+  // Actions
   const actions = {
     // Navigation
     navigate: useCallback((view: GameView) => {
       dispatch({ type: 'SET_VIEW', view })
     }, []),
 
-    setSelectedLocation: useCallback((location: DatabaseLocation | null) => {
+    setSelectedLocation: useCallback((location: DatabaseLocation | undefined) => {
       dispatch({ type: 'SET_SELECTED_LOCATION', location })
+    }, []),
+
+    // NEW: Explicit character checking
+    checkForCharacter: useCallback(async () => {
+      if (!wallet.connected) return
+
+      try {
+        await refetchCharacter()
+        // The character data will update via useEffect above
+        // Then we dispatch completion
+        dispatch({ type: 'CHARACTER_CHECK_COMPLETE', hasCharacter })
+      } catch (error) {
+        dispatch({ type: 'SET_ERROR', error: 'Failed to check character' })
+      }
+    }, [wallet.connected, refetchCharacter, hasCharacter]),
+
+    // NEW: Explicit game entry
+    enterGame: useCallback(async () => {
+      if (!character) return
+
+      try {
+        // Wait for game data to load
+        await gameData.actions.loadGameData()
+        dispatch({ type: 'GAME_DATA_LOADED' })
+      } catch (error) {
+        dispatch({ type: 'SET_ERROR', error: 'Failed to load game data' })
+      }
+    }, [character, gameData.actions]),
+
+    // NEW: Called after character creation completes
+    createCharacterComplete: useCallback(() => {
+      dispatch({ type: 'USER_WANTS_TO_ENTER_GAME' })
     }, []),
 
     // Character
@@ -216,11 +273,10 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       }
     }, [refetchCharacter]),
 
-    // Mining - from your existing code
+    // Game Actions (from your existing code)
     handleMining: useCallback(async () => {
       if (!character) return
 
-      // Check energy first
       if (character.energy < 10) {
         toast.error('Not enough energy! Need at least 10 energy to mine.')
         return
@@ -228,27 +284,17 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
       try {
         dispatch({ type: 'SET_LOADING_ITEM', item_id: 'mining', loading: true })
-
-        console.log('🎯 Starting mining action for character:', character.id)
         const result = await characterActions.mine()
 
-
-        console.log('⛏️ Mining result:', result)
-
         if (result.success) {
-          // Check if we found an item
           if (result.foundItem) {
             toast.success(`Found ${result.foundItem.name}! (-${result.energyCost} energy)`)
           } else {
             toast.warning(`Nothing found this time... (-${result.energyCost} energy)`)
           }
-
-          // Show health loss if any
           if (result.healthLoss > 0) {
             toast.warning(`Lost ${result.healthLoss} health!`)
           }
-
-          // Refresh character data
           await refetchCharacter()
         } else {
           toast.error(result.message || 'Mining failed')
@@ -261,9 +307,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       }
     }, [character, characterActions, refetchCharacter]),
 
-    // Travel - from your existing code
     handleTravel: useCallback((location_id: string) => {
-      const location = gameData.locations.find((l: any) => l.id === location_id)
+      const location = gameData.locations?.find((l: any) => l.id === location_id)
       if (!location) {
         console.error('Location not found:', location_id)
         return
@@ -272,21 +317,17 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       console.log('🎯 Travel action called with location:', location)
       dispatch({ type: 'START_TRAVEL', destination: location })
 
-      // Simulate travel time (from your existing code)
       setTimeout(() => {
         dispatch({ type: 'END_TRAVEL' })
         dispatch({ type: 'SET_VIEW', view: 'main' })
       }, 5000)
     }, [gameData.locations]),
 
-    // Purchase - from your existing code
     handlePurchase: useCallback(async (item_id: string, cost: number, itemName: string) => {
       if (!character) return
 
       try {
         dispatch({ type: 'SET_LOADING_ITEM', item_id, loading: true })
-
-        console.log('🎯 Purchase action called:', { item_id, cost, itemName })
         const result = await characterActions.buyItem(item_id)
 
         if (result.success) {
@@ -304,16 +345,12 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       }
     }, [character, characterActions, refetchCharacter, gameData.actions]),
 
-    // Equip item - from your existing code
     handleEquipItem: useCallback(async (inventoryId: string, isCurrentlyEquipped: boolean) => {
       if (!character) return
 
       try {
         dispatch({ type: 'SET_LOADING_ITEM', item_id: inventoryId, loading: true })
-
-        console.log('🎯 Equip item action called:', { inventoryId, isCurrentlyEquipped })
         const result = await characterActions.equipItem(inventoryId, !isCurrentlyEquipped)
-
 
         if (result.success) {
           const action = isCurrentlyEquipped ? 'unequipped' : 'equipped'
@@ -330,14 +367,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       }
     }, [character, characterActions, refetchCharacter]),
 
-    // Use item - from your existing code
     handleUseItem: useCallback(async (inventoryId: string, itemName: string, energy_effect?: number, health_effect?: number) => {
       if (!character) return
 
       try {
         dispatch({ type: 'SET_LOADING_ITEM', item_id: inventoryId, loading: true })
-
-        console.log('🎯 Use item action called:', { inventoryId, itemName, energy_effect, health_effect })
         const result = await characterActions.useItem(inventoryId)
 
         if (result.success) {
@@ -358,18 +392,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       }
     }, [character, characterActions, refetchCharacter]),
 
-    // Send message - from your existing code
     handleSendMessage: useCallback(async (message: string) => {
       if (!character || !message.trim()) return
 
       try {
-        console.log('🎯 Send message action called:', message)
-
-        // Use the character's current location or selected location for chat
         const location_id = state.selectedLocation?.id || character.currentLocation.id
-
-        console.log('📍 Sending message to location:', location_id)
-
         const result = await characterActions.sendMessage(location_id, message.trim())
 
         if (result.success) {
@@ -381,13 +408,14 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         console.error('Send message failed:', error)
         toast.error('Failed to send message. Please try again.')
       }
-    }, [character, characterActions, gameData.actions, state.selectedLocation]),
-
-    // Error handling - from your existing code
+    }, [character, characterActions, gameData.actions, state.selectedLocation])
+    ,
     handleRetry: useCallback(() => {
       dispatch({ type: 'CLEAR_ERROR' })
-      refetchCharacter()
-    }, [refetchCharacter]),
+      if (wallet.connected) {
+        dispatch({ type: 'SET_APP_STATE', appState: 'checking-character' })
+      }
+    }, [wallet.connected]),
 
     handleRefresh: useCallback(() => {
       window.location.reload()
@@ -397,7 +425,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const contextValue: GameContextType = {
     state: {
       ...state,
-      gameData // Include gameData in state
+      gameData
     },
     dispatch,
     actions
@@ -418,5 +446,4 @@ export const useGame = () => {
   return context
 }
 
-// Export types for other components
 export type { GameContextType, GameState, GameAction }

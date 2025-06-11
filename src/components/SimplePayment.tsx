@@ -38,6 +38,8 @@ try {
   treasuryValidationError = 'Invalid treasury wallet configuration'
 }
 
+
+
 export const SimplePayment: React.FC<SimplePaymentProps> = ({
   onPaymentSuccess,
   onCancel
@@ -85,69 +87,137 @@ export const SimplePayment: React.FC<SimplePaymentProps> = ({
       return
     }
 
-    // Check wallet balance first
+    console.log('🔍 Payment Debug Info:', {
+      senderWallet: publicKey.toString(),
+      treasuryWallet: treasuryPubkey.toString(),
+      nftPrice: NFT_PRICE,
+      walletAdapter: wallet?.adapter?.name,
+      connection: connection.rpcEndpoint
+    })
+
+    // Check wallet balance first with detailed logging
     try {
+      console.log('💰 Checking wallet balance...')
       const balance = await connection.getBalance(publicKey)
+      const balanceSOL = balance / LAMPORTS_PER_SOL
       const requiredLamports = Math.floor(NFT_PRICE * LAMPORTS_PER_SOL)
+      const requiredSOL = requiredLamports / LAMPORTS_PER_SOL
       const estimatedFee = 5000 // Rough estimate for transaction fee
+      const estimatedFeeSOL = estimatedFee / LAMPORTS_PER_SOL
+
+      console.log('💰 Balance Check:', {
+        currentBalance: balanceSOL,
+        requiredAmount: requiredSOL,
+        estimatedFee: estimatedFeeSOL,
+        totalNeeded: requiredSOL + estimatedFeeSOL,
+        hasSufficientFunds: balance >= requiredLamports + estimatedFee
+      })
 
       if (balance < requiredLamports + estimatedFee) {
-        toast.error(`Insufficient SOL. Need ${NFT_PRICE} SOL + fees, have ${(balance / LAMPORTS_PER_SOL).toFixed(4)} SOL`)
+        const errorMsg = `Insufficient SOL. Need ${NFT_PRICE} SOL + fees (${estimatedFeeSOL.toFixed(4)}), have ${balanceSOL.toFixed(4)} SOL`
+        toast.error(errorMsg)
+        console.error('❌ Insufficient balance:', errorMsg)
         return
       }
+
+      console.log('✅ Balance check passed')
     } catch (error) {
-      console.error('Failed to check balance:', error)
+      console.error('❌ Failed to check balance:', error)
       toast.error('Failed to check wallet balance')
       return
     }
 
-    console.log('💰 Starting payment:', {
-      from: publicKey.toString(),
-      to: treasuryPubkey.toString(),
-      amount: NFT_PRICE,
-      wallet: wallet?.adapter?.name
-    })
-
+    console.log('💰 Starting payment transaction...')
     setPaying(true)
-    try {
-      // Get fresh blockhash with confirmed commitment
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed')
 
+    try {
+      // Validate accounts before creating transaction
+      console.log('🔍 Validating accounts...')
+
+      // Check if accounts exist on the network
+      const [senderInfo, treasuryInfo] = await Promise.all([
+        connection.getAccountInfo(publicKey),
+        connection.getAccountInfo(treasuryPubkey)
+      ])
+
+      console.log('📊 Account Info:', {
+        senderExists: !!senderInfo,
+        senderOwner: senderInfo?.owner?.toString(),
+        treasuryExists: !!treasuryInfo,
+        treasuryOwner: treasuryInfo?.owner?.toString()
+      })
+
+      // Get fresh blockhash with detailed logging
+      console.log('🔗 Getting latest blockhash...')
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized')
+
+      console.log('🔗 Blockhash Info:', {
+        blockhash: blockhash.slice(0, 8) + '...',
+        lastValidBlockHeight,
+        currentSlot: await connection.getSlot()
+      })
+
+      // Create transaction with validation
+      console.log('📝 Creating transaction...')
       const transaction = new Transaction({
         recentBlockhash: blockhash,
         feePayer: publicKey
       })
 
-      transaction.add(
-        SystemProgram.transfer({
-          fromPubkey: publicKey,
-          toPubkey: treasuryPubkey,
-          lamports: Math.floor(NFT_PRICE * LAMPORTS_PER_SOL)
-        })
-      )
-
-      console.log('📝 Transaction created:', {
-        instructions: transaction.instructions.length,
-        lamports: Math.floor(NFT_PRICE * LAMPORTS_PER_SOL),
-        blockhash,
-        lastValidBlockHeight
+      const transferInstruction = SystemProgram.transfer({
+        fromPubkey: publicKey,
+        toPubkey: treasuryPubkey,
+        lamports: Math.floor(NFT_PRICE * LAMPORTS_PER_SOL)
       })
 
-      // Send transaction with better error handling
+      transaction.add(transferInstruction)
+
+      console.log('📝 Transaction Details:', {
+        instructions: transaction.instructions.length,
+        lamports: Math.floor(NFT_PRICE * LAMPORTS_PER_SOL),
+        feePayer: transaction.feePayer?.toString(),
+        recentBlockhash: transaction.recentBlockhash,
+        fromPubkey: transferInstruction.keys[0].pubkey.toString(),
+        toPubkey: transferInstruction.keys[1].pubkey.toString()
+      })
+
+      // Simulate transaction first
+      console.log('🧪 Simulating transaction...')
+      try {
+        const simulation = await connection.simulateTransaction(transaction)
+        console.log('🧪 Simulation Result:', {
+          err: simulation.value.err,
+          logs: simulation.value.logs?.slice(0, 3) // First 3 logs
+        })
+
+        if (simulation.value.err) {
+          throw new Error(`Transaction simulation failed: ${JSON.stringify(simulation.value.err)}`)
+        }
+      } catch (simError) {
+        console.error('❌ Transaction simulation failed:', simError)
+        // Continue anyway, sometimes simulation fails but transaction works
+      }
+
+      // Send transaction with enhanced error handling
+      console.log('🚀 Sending transaction...')
       const txSignature = await sendTransaction(transaction, connection, {
         skipPreflight: false,
         preflightCommitment: 'confirmed',
         maxRetries: 3
       })
 
-      console.log('✅ Payment sent:', txSignature)
-      setSignature(txSignature)
-      toast.success('Payment sent! Verifying...')
+      console.log('✅ Transaction sent successfully:', {
+        signature: txSignature,
+        explorer: `https://explorer.solana.com/tx/${txSignature}?cluster=devnet`
+      })
 
-      // Wait for confirmation before proceeding
+      setSignature(txSignature)
+      toast.success(`Payment sent! TX: ${txSignature.slice(0, 8)}...`)
+
+      // Wait for confirmation
+      console.log('⏳ Waiting for confirmation...')
       setVerifying(true)
 
-      // Wait for transaction confirmation
       const confirmation = await connection.confirmTransaction({
         signature: txSignature,
         blockhash,
@@ -155,10 +225,14 @@ export const SimplePayment: React.FC<SimplePaymentProps> = ({
       }, 'confirmed')
 
       if (confirmation.value.err) {
-        throw new Error(`Transaction failed: ${confirmation.value.err}`)
+        throw new Error(`Transaction failed: ${JSON.stringify(confirmation.value.err)}`)
       }
 
-      console.log('✅ Payment confirmed:', txSignature)
+      console.log('✅ Transaction confirmed:', {
+        signature: txSignature,
+        slot: confirmation.context.slot
+      })
+
       toast.success('Payment confirmed! Creating character...')
 
       // Small delay to ensure backend can verify
@@ -168,7 +242,14 @@ export const SimplePayment: React.FC<SimplePaymentProps> = ({
       }, 1000)
 
     } catch (error: any) {
-      console.error('❌ Payment failed:', error)
+      console.error('❌ Payment failed with detailed error:', {
+        error,
+        errorMessage: error.message,
+        errorCode: error.code,
+        errorName: error.name,
+        stack: error.stack?.split('\n').slice(0, 3) // First 3 stack lines
+      })
+
       setSignature(null)
       setVerifying(false)
 
@@ -181,6 +262,8 @@ export const SimplePayment: React.FC<SimplePaymentProps> = ({
         errorMessage = 'Transaction expired, please try again'
       } else if (error.message?.includes('0x1')) {
         errorMessage = 'Insufficient funds for transaction'
+      } else if (error.message?.includes('Invalid account')) {
+        errorMessage = 'Invalid account error - check console for details'
       } else if (error.message) {
         errorMessage = error.message
       }

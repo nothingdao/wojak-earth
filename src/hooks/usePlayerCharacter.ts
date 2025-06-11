@@ -1,4 +1,4 @@
-// src/hooks/usePlayerCharacter.ts
+// src/hooks/usePlayerCharacter.ts - Updated for explicit flow
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { createClient } from '@supabase/supabase-js'
@@ -15,12 +15,9 @@ const realtimeSupabase = createClient(supabaseUrl, supabaseAnonKey)
 export function usePlayerCharacter(): UsePlayerCharacterReturn {
   const wallet = useWallet()
   const [character, setCharacter] = useState<Character | null>(null)
-  // console.log('🔍 Character in hook:', character?.id, character?.coins)
-
   const [loading, setLoading] = useState(false)
   const [hasCharacter, setHasCharacter] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [isInitialLoad, setIsInitialLoad] = useState(true)
 
   // Real-time subscription refs
   const characterSubscriptionRef = useRef<ReturnType<
@@ -30,20 +27,16 @@ export function usePlayerCharacter(): UsePlayerCharacterReturn {
     typeof realtimeSupabase.channel
   > | null>(null)
 
-  // Right after creating realtimeSupabase
-  // console.log('🔌 Supabase client created:', {
-  //   url: supabaseUrl,
-  //   hasAnonKey: !!supabaseAnonKey,
-  //   client: !!realtimeSupabase,
-  // })
-
   const fetchCharacter = useCallback(
     async (isRefetch = false) => {
       if (!wallet.connected || !wallet.publicKey) {
-        setCharacter(null)
-        setHasCharacter(false)
-        setError(null)
-        setIsInitialLoad(false)
+        // Don't automatically clear state when wallet disconnects
+        // Let the GameProvider handle this
+        if (!isRefetch) {
+          setCharacter(null)
+          setHasCharacter(false)
+          setError(null)
+        }
         return
       }
 
@@ -80,7 +73,6 @@ export function usePlayerCharacter(): UsePlayerCharacterReturn {
         console.error('Error fetching character:', err)
       } finally {
         setLoading(false)
-        setIsInitialLoad(false)
       }
     },
     [wallet.connected, wallet.publicKey?.toString()]
@@ -88,8 +80,6 @@ export function usePlayerCharacter(): UsePlayerCharacterReturn {
 
   // Real-time character updates subscription
   const subscribeToCharacterUpdates = useCallback((character_id: string) => {
-    // console.log('🔄 Subscribing to character updates for:', character_id)
-
     // Clean up existing subscription
     if (characterSubscriptionRef.current) {
       characterSubscriptionRef.current.unsubscribe()
@@ -114,7 +104,7 @@ export function usePlayerCharacter(): UsePlayerCharacterReturn {
 
             const new_ = payload.new as any
 
-            // FORCE a new object reference - this is the key fix
+            // Force a new object reference
             const updated = {
               ...prev,
               ...new_,
@@ -126,12 +116,6 @@ export function usePlayerCharacter(): UsePlayerCharacterReturn {
               // Force re-render with timestamp
               _lastUpdated: Date.now(),
             }
-
-            // console.log('🔄 Character state updated:', {
-            //   oldCoins: prev.coins,
-            //   newCoins: updated.coins,
-            //   timestamp: updated._lastUpdated,
-            // })
 
             // Show toast for significant changes
             if (new_.energy !== undefined && new_.energy !== prev.energy) {
@@ -173,8 +157,6 @@ export function usePlayerCharacter(): UsePlayerCharacterReturn {
   // Real-time inventory updates subscription
   const subscribeToInventoryUpdates = useCallback(
     (character_id: string) => {
-      // console.log('🎒 Subscribing to inventory updates for:', character_id)
-
       // Clean up existing subscription
       if (inventorySubscriptionRef.current) {
         inventorySubscriptionRef.current.unsubscribe()
@@ -198,7 +180,6 @@ export function usePlayerCharacter(): UsePlayerCharacterReturn {
             )
 
             // For inventory changes, we need to refetch to get the full item details
-            // This is because the inventory table only has item IDs, not full item data
             await fetchCharacter(true)
 
             // Show appropriate toast messages
@@ -209,7 +190,6 @@ export function usePlayerCharacter(): UsePlayerCharacterReturn {
               const oldData = payload.old as any
 
               if (newData.is_equipped !== oldData?.is_equipped) {
-                // Equipment change
                 if (newData.is_equipped) {
                   toast.success('Item equipped!', { duration: 2000 })
                 } else {
@@ -245,11 +225,6 @@ export function usePlayerCharacter(): UsePlayerCharacterReturn {
       inventorySubscriptionRef.current = null
     }
   }, [])
-
-  // Fetch character when wallet connects/changes
-  useEffect(() => {
-    fetchCharacter(false) // Initial load
-  }, [fetchCharacter])
 
   // Set up real-time subscriptions when character is loaded
   useEffect(() => {
@@ -288,14 +263,14 @@ export function usePlayerCharacter(): UsePlayerCharacterReturn {
 
   return {
     character,
-    loading: loading && isInitialLoad, // Only show loading on initial load
+    loading,
     hasCharacter,
     error,
-    refetchCharacter, // Still available for edge cases, but most calls will be eliminated
+    refetchCharacter,
   }
 }
 
-// FIXED: Enhanced error handling and request validation
+// Enhanced error handling and request validation
 export function useCharacterActions() {
   const wallet = useWallet()
 
@@ -308,18 +283,11 @@ export function useCharacterActions() {
 
       const wallet_address = wallet.publicKey.toString()
 
-      // FIXED: Ensure we always have the required fields
+      // Ensure we always have the required fields
       const requestBody = {
         wallet_address,
         ...payload,
       }
-
-      // DEBUG: Log the request body to identify issues
-      // console.log(`🚀 Performing action: ${actionType}`, {
-      //   requestBody,
-      //   haswallet_address: !!requestBody.wallet_address,
-      //   hasDestinationId: !!(payload as any).destinationId,
-      // })
 
       try {
         const response = await fetch(`${API_BASE}/${actionType}`, {
@@ -331,13 +299,6 @@ export function useCharacterActions() {
         })
 
         const result = await response.json()
-
-        // DEBUG: Log response details
-        // console.log(`📡 Response for ${actionType}:`, {
-        //   status: response.status,
-        //   ok: response.ok,
-        //   result,
-        // })
 
         if (!response.ok) {
           // Enhanced error reporting
@@ -369,7 +330,7 @@ export function useCharacterActions() {
 
     travel: useCallback(
       (destinationId: string) => {
-        // FIXED: Add validation before making the request
+        // Add validation before making the request
         if (!destinationId) {
           const error = new Error('Destination ID is required for travel')
           toast.error('No destination selected')
