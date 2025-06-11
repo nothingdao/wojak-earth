@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// npc-engine.js - Complete rewrite with centralized configuration
+// npc-engine.js -  centralized configuration in gameConfig.ts
 
 import dotenv from 'dotenv'
 import { createClient } from '@supabase/supabase-js'
@@ -11,7 +11,7 @@ import gameConfig, {
   createNPCEngineConfig,
   calculateActivityDelay,
   NPC_PERSONALITIES
-} from './src/config/gameConfig.js'
+} from '../src/config/gameConfig.js'
 
 // Import supporting modules
 import { LOCATION_CHAT_MESSAGES } from './chat-messages.js'

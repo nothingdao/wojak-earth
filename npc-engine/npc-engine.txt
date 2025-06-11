@@ -1,5 +1,9 @@
 # NPC Engine Documentation
 
+`npm run npc:dev` from the root of wojak-earth
+
+- Check `src/config/gameConfig.ts` the configure the script. 
+
 ## Overview
 The NPC Engine (npc-engine.js) is as autonomous character management system for the Wojak Earth game. It creates, manages, and controls Non-Player Characters (NPCs) that perform various activities within the game world, creating a living, breathing virtual environment.
 

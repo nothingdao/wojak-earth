@@ -10,10 +10,9 @@
     "preview": "vite preview",
     "functions:dev": "netlify dev",
     "functions:build": "netlify build",
-    "types": "supabase gen types typescript --project-id sudufmmkfuawomvlrkha > src/types/supabase.ts"
-  },
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
+    "npc:start": "npx tsx npc-engine.js",
+    "npc:dev": "NODE_ENV=development npx tsx ./npc-engine/npc-engine.js",
+    "types": "supabase gen types typescript --project-id sudufmmkfuawomvlrkha > ../src/types/supabase.ts"
   },
   "dependencies": {
     "@fontsource/jetbrains-mono": "^5.2.6",
