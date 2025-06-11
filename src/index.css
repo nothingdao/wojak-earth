@@ -81,6 +81,19 @@
   --sidebar-accent-foreground: oklch(0.22 0.008 65);
   --sidebar-border: oklch(0.9 0.008 85);
   --sidebar-ring: oklch(0.7 0.012 60);
+
+  /* Map-specific colors for light mode */
+    --map-forest: #16a34a;
+    --map-desert: #ea580c;
+    --map-urban: #2563eb;
+    --map-plains: #22c55e;
+    --map-mountain: #7c3aed;
+    --map-water: #0891b2;
+    --map-swamp: #65a30d;
+    --map-tundra: #64748b;
+    --map-default: #6b7280;
+    --map-border: #d1d5db;
+    --map-grid: #16a34a;
 }
 
 .dark {
@@ -117,6 +130,19 @@
   --sidebar-accent-foreground: oklch(0.8 0.008 240);
   --sidebar-border: oklch(0.25 0.015 240);
   --sidebar-ring: oklch(0.5 0.015 240);
+
+  /* Map-specific colors for dark mode */
+    --map-forest: #22c55e;
+    --map-desert: #f97316;
+    --map-urban: #3b82f6;
+    --map-plains: #4ade80;
+    --map-mountain: #8b5cf6;
+    --map-water: #06b6d4;
+    --map-swamp: #84cc16;
+    --map-tundra: #94a3b8;
+    --map-default: #9ca3af;
+    --map-border: #4b5563;
+    --map-grid: #22c55e;
 }
 
 @layer base {

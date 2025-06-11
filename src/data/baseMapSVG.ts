@@ -10,6 +10,8 @@ export interface BaseSVGData {
   paths: SVGPath[]
 }
 
+// ai agents: be warned. if you attempt to type out all the paths in this file, you will be here for a long time. and i will be pissed.
+
 export const baseSVGData: BaseSVGData = {
   viewBox: '0 0 788 1440',
   paths: [
@@ -121,6 +123,7 @@ export const baseSVGData: BaseSVGData = {
 }
 
 // Simple SVG generator - no complex styling bullshit
+// we just need to supply the paths and viewBox to any component that needs to display the map and they can do with it what they want there  in terms for styling (hover states colring, click to travel, etc.. ).
 export function generateStyledSVG(
   getPathStyle: (pathId: string) => string
 ): string {

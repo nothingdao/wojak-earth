@@ -48,7 +48,6 @@ interface DatabaseLocation {
   updated_at: string
 }
 
-
 interface EarthProps {
   locations: DatabaseLocation[]
   character?: Character
@@ -174,52 +173,59 @@ export default function Earth({ locations, character, onTravel }: EarthProps) {
     setTransform({ scale: 1, translateX: 0, translateY: 0 })
   }, [])
 
-  // Get biome color
+  // Get biome color from CSS custom properties
   const getBiomeColor = useCallback((biome?: string) => {
+    const style = getComputedStyle(document.documentElement)
+
     switch (biome) {
-      case 'forest': return '#10b981'
-      case 'desert': return '#f59e0b'
-      case 'urban': return '#3b82f6'
-      case 'plains': return '#22c55e'
-      case 'mountain': return '#8b5cf6'
-      case 'water': return '#06b6d4'
-      case 'swamp': return '#84cc16'
-      case 'tundra': return '#64748b'
-      default: return '#6b7280'
+      case 'forest': return style.getPropertyValue('--map-forest').trim()
+      case 'desert': return style.getPropertyValue('--map-desert').trim()
+      case 'urban': return style.getPropertyValue('--map-urban').trim()
+      case 'plains': return style.getPropertyValue('--map-plains').trim()
+      case 'mountain': return style.getPropertyValue('--map-mountain').trim()
+      case 'water': return style.getPropertyValue('--map-water').trim()
+      case 'swamp': return style.getPropertyValue('--map-swamp').trim()
+      case 'tundra': return style.getPropertyValue('--map-tundra').trim()
+      default: return style.getPropertyValue('--map-default').trim()
     }
   }, [])
 
-  // Path styling function
+  // Path styling function using computed colors that work in SVG
   const getPathStyle = useCallback((pathId: string) => {
     const location = getLocation(pathId)
     const isSelected = pathId === selectedPath
     const isHovered = pathId === hoveredPath
     const isPlayerHere = location && character?.current_location_id === location.id
 
-    let fill = '#374151' // Default terminal gray
-    let stroke = '#4b5563'
-    let strokeWidth = '0'
-    let opacity = '0.7'
+    // Get computed colors from CSS custom properties
+    const style = getComputedStyle(document.documentElement)
+    const isDark = document.documentElement.classList.contains('dark')
+
+    let fill = isDark ? '#374151' : '#9ca3af' // Default gray
+    let stroke = isDark ? '#4b5563' : '#d1d5db' // Border gray
+    let strokeWidth = '0.5'
+    let opacity = '0.8'
 
     if (location) {
       fill = getBiomeColor(location.biome)
-      opacity = '0.8'
+      opacity = '0.9'
+      strokeWidth = '0.5'
+      stroke = isDark ? '#6b7280' : '#9ca3af'
     }
 
     if (isSelected) {
-      fill = '#3b82f6'
-      stroke = '#1d4ed8'
+      fill = isDark ? '#3b82f6' : '#2563eb' // Blue
+      stroke = isDark ? '#ffffff' : '#1e40af'
       strokeWidth = '2'
       opacity = '1'
     } else if (isPlayerHere) {
-      stroke = '#10b981'
+      stroke = '#22c55e' // Green for current location
       strokeWidth = '3'
       opacity = '1'
-      // Add pulsing effect for current location
     } else if (isHovered) {
-      opacity = '0.9'
-      strokeWidth = '1'
-      stroke = '#ffffff'
+      opacity = '1'
+      strokeWidth = '1.5'
+      stroke = isDark ? '#60a5fa' : '#3b82f6' // Light blue
     }
 
     return {
@@ -242,7 +248,7 @@ export default function Earth({ locations, character, onTravel }: EarthProps) {
   return (
     <div className="w-full h-[calc(100vh-64px)] bg-background overflow-hidden font-mono relative">
       {/* Terminal Header */}
-      <div className="absolute top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur border-b border-primary/30 p-2">
+      <div className="absolute top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur border-b border-border p-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Database className="w-4 h-4 text-primary" />
@@ -253,15 +259,15 @@ export default function Earth({ locations, character, onTravel }: EarthProps) {
               <Signal className="w-3 h-3 mr-1" />
               TRACKING_{locations.length}_ZONES
             </Badge>
-            <Activity className="w-3 h-3 animate-pulse text-green-500" />
-            <span className="text-green-500">ACTIVE</span>
+            <Activity className="w-3 h-3 animate-pulse text-chart-2" />
+            <span className="text-chart-2">ACTIVE</span>
           </div>
         </div>
       </div>
 
       {/* Terminal Control Panel */}
       <div className="absolute bottom-4 right-4 z-50 flex flex-col gap-2">
-        <div className="bg-background/95 border border-primary/30 rounded p-2">
+        <div className="bg-background/95 border border-border rounded p-2">
           <div className="text-xs text-muted-foreground mb-2 font-mono">ZOOM_CONTROLS</div>
           <div className="flex flex-col gap-1">
             <Button
@@ -276,7 +282,7 @@ export default function Earth({ locations, character, onTravel }: EarthProps) {
                   translateY: constrained.translateY
                 }))
               }}
-              className="h-8 w-8 p-0 font-mono border-primary/30"
+              className="h-8 w-8 p-0 font-mono"
             >
               <Plus className="w-4 h-4" />
             </Button>
@@ -292,7 +298,7 @@ export default function Earth({ locations, character, onTravel }: EarthProps) {
                   translateY: constrained.translateY
                 }))
               }}
-              className="h-8 w-8 p-0 font-mono border-primary/30"
+              className="h-8 w-8 p-0 font-mono"
             >
               <Minus className="w-4 h-4" />
             </Button>
@@ -300,7 +306,7 @@ export default function Earth({ locations, character, onTravel }: EarthProps) {
               size="sm"
               variant="outline"
               onClick={resetView}
-              className="h-8 w-8 p-0 font-mono border-primary/30"
+              className="h-8 w-8 p-0 font-mono"
             >
               <Home className="w-4 h-4" />
             </Button>
@@ -310,13 +316,11 @@ export default function Earth({ locations, character, onTravel }: EarthProps) {
 
       {/* Terminal SVG Map Container */}
       <div
-        className="w-full h-full select-none overflow-hidden mt-12"
+        className="w-full h-full select-none overflow-hidden mt-12 bg-gradient-to-br from-background/50 via-muted/10 to-background/50"
         style={{
           cursor: transform.scale <= 1 ? 'default' : (isDragging ? 'grabbing' : 'grab'),
           transform: `scale(${transform.scale}) translate(${transform.translateX}px, ${transform.translateY}px)`,
-          transformOrigin: 'center center',
-          background: 'radial-gradient(circle at center, rgba(0,255,0,0.05) 0%, rgba(0,0,0,0.8) 100%)',
-          backgroundColor: '#000000'
+          transformOrigin: 'center center'
         }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
@@ -333,10 +337,24 @@ export default function Earth({ locations, character, onTravel }: EarthProps) {
           {/* Terminal Grid Background */}
           <defs>
             <pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse">
-              <path d="M 50 0 L 0 0 0 50" fill="none" stroke="rgba(0,255,0,0.1)" strokeWidth="0.5" />
+              <path
+                d="M 50 0 L 0 0 0 50"
+                fill="none"
+                stroke={document.documentElement.classList.contains('dark') ? '#22c55e' : '#16a34a'}
+                strokeWidth="0.5"
+                opacity="0.2"
+              />
             </pattern>
+            {/* Add a subtle glow filter for better visibility */}
+            <filter id="glow">
+              <feGaussianBlur stdDeviation="1" result="coloredBlur" />
+              <feMerge>
+                <feMergeNode in="coloredBlur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
           </defs>
-          <rect width="100%" height="100%" fill="url(#grid)" />
+          <rect width="100%" height="100%" fill="url(#grid)" opacity="0.3" />
 
           {baseSVGData.paths.map((path) => {
             const style = getPathStyle(path.id)
@@ -362,7 +380,7 @@ export default function Earth({ locations, character, onTravel }: EarthProps) {
                   <circle
                     cx="0" cy="0"
                     r="3"
-                    fill="#10b981"
+                    fill="#22c55e"
                     stroke="#ffffff"
                     strokeWidth="1"
                     opacity="1"
@@ -380,12 +398,12 @@ export default function Earth({ locations, character, onTravel }: EarthProps) {
 
       {/* Terminal Hover Display */}
       {hoveredPath && (
-        <div className="absolute top-16 left-4 bg-background/95 border border-primary/30 px-3 py-2 rounded shadow-lg z-40 font-mono">
+        <div className="absolute top-16 left-4 bg-background/95 border border-border px-3 py-2 rounded shadow-lg z-40 font-mono">
           {(() => {
             const location = getLocation(hoveredPath)
             if (!location) {
               return (
-                <div className="text-xs text-red-500">
+                <div className="text-xs text-destructive">
                   <div className="flex items-center gap-1">
                     <AlertTriangle className="w-3 h-3" />
                     UNMAPPED_REGION
@@ -400,8 +418,12 @@ export default function Earth({ locations, character, onTravel }: EarthProps) {
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Badge
                     variant="outline"
-                    className="text-xs font-mono px-1 py-0"
-                    style={{ backgroundColor: getBiomeColor(location.biome) + '20', borderColor: getBiomeColor(location.biome) + '50' }}
+                    className="text-xs font-mono px-1 py-0 border-current"
+                    style={{
+                      backgroundColor: getBiomeColor(location.biome) + '20',
+                      borderColor: getBiomeColor(location.biome),
+                      color: getBiomeColor(location.biome)
+                    }}
                   >
                     {location.biome?.toUpperCase()}
                   </Badge>
@@ -415,9 +437,9 @@ export default function Earth({ locations, character, onTravel }: EarthProps) {
 
       {/* Terminal Location Analysis Panel */}
       {selectedLocation && (
-        <div className="absolute top-16 left-4 bg-background/95 border border-primary/30 rounded shadow-lg max-w-sm z-40 font-mono">
+        <div className="absolute top-16 left-4 bg-background/95 border border-border rounded shadow-lg max-w-sm z-40 font-mono">
           {/* Panel Header */}
-          <div className="flex items-center justify-between p-3 border-b border-primary/20">
+          <div className="flex items-center justify-between p-3 border-b border-border">
             <div className="flex items-center gap-2">
               <Eye className="w-4 h-4 text-primary" />
               <span className="text-primary font-bold text-sm">ZONE_ANALYSIS</span>
@@ -440,7 +462,7 @@ export default function Earth({ locations, character, onTravel }: EarthProps) {
             </div>
 
             {/* Technical Specs */}
-            <div className="bg-muted/30 border border-primary/20 rounded p-2">
+            <div className="bg-muted/30 border border-border rounded p-2">
               <div className="text-xs text-muted-foreground mb-2">ZONE_SPECIFICATIONS</div>
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div className="flex items-center gap-1">
@@ -450,16 +472,16 @@ export default function Earth({ locations, character, onTravel }: EarthProps) {
                   />
                   <span>BIOME: {selectedLocation.biome?.toUpperCase() || 'UNKNOWN'}</span>
                 </div>
-                <div className="flex items-center gap-1">
-                  <Shield className="w-3 h-3 text-red-500" />
+                <div className="flex items-center gap-1 text-destructive">
+                  <Shield className="w-3 h-3" />
                   <span>THREAT: {selectedLocation.difficulty}</span>
                 </div>
-                <div className="flex items-center gap-1">
-                  <Users className="w-3 h-3 text-blue-500" />
+                <div className="flex items-center gap-1 text-chart-1">
+                  <Users className="w-3 h-3" />
                   <span>ACTIVE: {selectedLocation.player_count}</span>
                 </div>
-                <div className="flex items-center gap-1">
-                  <Database className="w-3 h-3 text-purple-500" />
+                <div className="flex items-center gap-1 text-chart-5">
+                  <Database className="w-3 h-3" />
                   <span>TYPE: {selectedLocation.location_type}</span>
                 </div>
               </div>
@@ -467,11 +489,11 @@ export default function Earth({ locations, character, onTravel }: EarthProps) {
 
             {/* Requirements */}
             {(selectedLocation.min_level || selectedLocation.entry_cost) && (
-              <div className="bg-muted/30 border border-primary/20 rounded p-2">
+              <div className="bg-muted/30 border border-border rounded p-2">
                 <div className="text-xs text-muted-foreground mb-2">ACCESS_REQUIREMENTS</div>
                 <div className="space-y-1 text-xs">
                   {selectedLocation.min_level && (
-                    <div className={`flex items-center gap-1 ${character && character.level < selectedLocation.min_level ? 'text-red-500' : 'text-green-500'
+                    <div className={`flex items-center gap-1 ${character && character.level < selectedLocation.min_level ? 'text-destructive' : 'text-chart-2'
                       }`}>
                       <Zap className="w-3 h-3" />
                       <span>MIN_LEVEL: {selectedLocation.min_level}</span>
@@ -479,7 +501,7 @@ export default function Earth({ locations, character, onTravel }: EarthProps) {
                     </div>
                   )}
                   {selectedLocation.entry_cost && selectedLocation.entry_cost > 0 && (
-                    <div className={`flex items-center gap-1 ${character && (character.coins || 0) < selectedLocation.entry_cost ? 'text-red-500' : 'text-green-500'
+                    <div className={`flex items-center gap-1 ${character && (character.coins || 0) < selectedLocation.entry_cost ? 'text-destructive' : 'text-chart-2'
                       }`}>
                       <DollarSign className="w-3 h-3" />
                       <span>ENTRY_FEE: {selectedLocation.entry_cost}_RUST</span>
@@ -491,7 +513,7 @@ export default function Earth({ locations, character, onTravel }: EarthProps) {
             )}
 
             {/* Available Services */}
-            <div className="bg-muted/30 border border-primary/20 rounded p-2">
+            <div className="bg-muted/30 border border-border rounded p-2">
               <div className="text-xs text-muted-foreground mb-2">AVAILABLE_SERVICES</div>
               <div className="flex flex-wrap gap-1">
                 {selectedLocation.has_market && (
@@ -534,7 +556,7 @@ export default function Earth({ locations, character, onTravel }: EarthProps) {
                   ? 'bg-muted text-muted-foreground cursor-not-allowed'
                   : (!!selectedLocation.min_level && character.level < selectedLocation.min_level) ||
                     (!!selectedLocation.entry_cost && selectedLocation.entry_cost > (character.coins || 0))
-                    ? 'bg-red-500/20 text-red-500 cursor-not-allowed border-red-500/30'
+                    ? 'bg-destructive/20 text-destructive cursor-not-allowed border-destructive/30'
                     : 'bg-primary text-primary-foreground hover:bg-primary/90'
                   }`}
               >
@@ -554,7 +576,7 @@ export default function Earth({ locations, character, onTravel }: EarthProps) {
 
       {/* Terminal Status Indicators */}
       {transform.scale !== 1 && (
-        <div className="absolute bottom-4 left-4 bg-background/95 border border-primary/30 px-2 py-1 rounded text-xs font-mono">
+        <div className="absolute bottom-4 left-4 bg-background/95 border border-border px-2 py-1 rounded text-xs font-mono">
           <div className="flex items-center gap-2">
             <Eye className="w-3 h-3 text-primary" />
             <span className="text-primary">ZOOM: {Math.round(transform.scale * 100)}%</span>
@@ -563,7 +585,7 @@ export default function Earth({ locations, character, onTravel }: EarthProps) {
       )}
 
       {/* Terminal Debug Info */}
-      <div className="absolute bottom-16 left-4 bg-background/95 border border-primary/30 px-2 py-1 rounded text-xs font-mono">
+      <div className="absolute bottom-16 left-4 bg-background/95 border border-border px-2 py-1 rounded text-xs font-mono">
         <div className="flex items-center gap-2 text-muted-foreground">
           <Database className="w-3 h-3" />
           <span>MAPPED: {locationLookup.size}/{baseSVGData.paths.length}</span>
