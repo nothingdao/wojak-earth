@@ -41,6 +41,8 @@ const RustMarket: React.FC = () => {
   const [lookupCharacter, setLookupCharacter] = useState('');
   const [characterHistory, setCharacterHistory] = useState<Transaction[]>([]);
   const [showDocumentation, setShowDocumentation] = useState(false);
+  const [newTransactionIds, setNewTransactionIds] = useState<Set<string>>(new Set());
+
 
   useEffect(() => {
     fetchMarketData();
@@ -87,7 +89,28 @@ const RustMarket: React.FC = () => {
           setMarketData(processedData);
 
           // Set recent individual transactions for detailed view
-          setRecentTransactions(data.transactions.slice(0, 10));
+          const newTransactions = data.transactions.slice(0, 10);
+
+          // Track new transactions for animation
+          if (recentTransactions.length > 0) {
+            const existingIds = new Set(recentTransactions.map(tx => tx.id || tx.txn_shard || tx.wasteland_block));
+            const newIds = new Set();
+
+            newTransactions.forEach(tx => {
+              const txId = tx.id || tx.txn_shard || tx.wasteland_block;
+              if (!existingIds.has(txId)) {
+                newIds.add(txId);
+              }
+            });
+
+            if (newIds.size > 0) {
+              setNewTransactionIds(newIds);
+              // Clear the animation after 3 seconds
+              setTimeout(() => setNewTransactionIds(new Set()), 3000);
+            }
+          }
+
+          setRecentTransactions(newTransactions);
 
           // Calculate simple stats
           const totalVol = processedData.reduce((sum, d) => sum + d.volume, 0);
@@ -922,7 +945,10 @@ const RustMarket: React.FC = () => {
               return (
                 <div
                   key={idx}
-                  className="py-2 border-b border-border/30 last:border-b-0 cursor-pointer hover:bg-muted/20 transition-colors"
+                  className={`py-2 border-b border-border/30 last:border-b-0 cursor-pointer hover:bg-muted/20 transition-all duration-300 ${newTransactionIds.has(tx.id || tx.txn_shard || tx.wasteland_block)
+                    ? 'animate-pulse bg-primary/10 border-primary/30'
+                    : ''
+                    }`}
                   onClick={() => setSelectedTransaction(tx)}
                 >
                   <div className="flex items-center justify-between mb-1">

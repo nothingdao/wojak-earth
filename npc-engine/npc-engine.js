@@ -21,12 +21,21 @@ dotenv.config()
 
 // ===== CONFIGURATION =====
 const config = createNPCEngineConfig({
-  // Environment-specific overrides
-  DEFAULT_NPC_COUNT: parseInt(process.env.NPC_COUNT) || 8,
-  BASE_ACTIVITY_INTERVAL: parseInt(process.env.NPC_INTERVAL) || (process.env.NODE_ENV === 'development' ? 15000 : 45000),
-  LOG_LEVEL: process.env.NPC_LOG_LEVEL || (process.env.NODE_ENV === 'development' ? 'debug' : 'info'),
-  ENABLE_LOGS: process.env.NPC_LOGS !== 'false',
-  RESPAWN_ENABLED: process.env.NPC_RESPAWN !== 'false',
+  // SUPER AGGRESSIVE EXCHANGE TESTING MODE
+  DEFAULT_NPC_COUNT: 50,           // 80 NPCs for max volume
+  BASE_ACTIVITY_INTERVAL: 10000,   // 10 seconds (was 15000/45000)
+  ACTIVITY_VARIANCE: 0.1,          // Minimal variance for consistent timing
+  FUNDING_AMOUNT: 0.01,            // More SOL per NPC (was 0.002)
+  LOG_LEVEL: 'info',
+  ENABLE_LOGS: true,
+  RESPAWN_ENABLED: true,
+
+  // RESTORE TO NORMAL AFTER TESTING:
+  // DEFAULT_NPC_COUNT: 8,
+  // BASE_ACTIVITY_INTERVAL: process.env.NODE_ENV === 'development' ? 15000 : 45000,
+  // ACTIVITY_VARIANCE: 0.4,
+  // FUNDING_AMOUNT: 0.002,
+  // LOG_LEVEL: process.env.NODE_ENV === 'development' ? 'debug' : 'info',
 })
 
 const API_BASE = 'http://localhost:8888/.netlify/functions'
@@ -95,6 +104,7 @@ class NPCEngine {
       process.env.VITE_SUPABASE_URL,
       process.env.VITE_SUPABASE_ANON_KEY
     ))
+    this.chatChannels = new Map() // location_id -> channel
 
     // Performance tracking
     this.metrics = {
@@ -383,10 +393,39 @@ class NPCEngine {
   async chat(npc) {
     if (!this.config.CHAT_CONFIG.enabled) return
 
+    const location_id = npc.current_location_id
+
+    // Get or create realtime channel for this location
+    let channel = this.chatChannels.get(location_id)
+    if (!channel) {
+      const supabase = createClient(
+        process.env.VITE_SUPABASE_URL,
+        process.env.VITE_SUPABASE_ANON_KEY
+      )
+
+      channel = supabase.channel(`chat_presence_${location_id}`)
+      await channel.subscribe()
+      this.chatChannels.set(location_id, channel)
+    }
+
+    // Enter chat presence before chatting
+    await channel.track({
+      user_id: npc.id,
+      name: npc.name,
+      online_at: new Date().toISOString(),
+      character_type: 'NPC',
+      is_npc: true
+    })
+
+    console.log(`👤 ${npc.name} entered chat`)
+
+    // Wait a moment to let presence sync
+    await this.sleep(1000)
+
+    // ... your existing chat message logic ...
     let messagePool = LOCATION_CHAT_MESSAGES.default
     let context = 'default'
 
-    // Choose message context
     if (npc.energy < this.gameConfig.GAME_MECHANICS.ENERGY_REST_THRESHOLD) {
       messagePool = LOCATION_CHAT_MESSAGES.low_energy
       context = 'low_energy'
@@ -412,6 +451,18 @@ class NPCEngine {
     } else {
       this.log('info', `💬 ${npc.name}: "${message}"`)
     }
+
+    // Stay in chat for a random duration (30 seconds to 3 minutes)
+    const stayDuration = 30000 + Math.random() * 150000
+
+    setTimeout(async () => {
+      try {
+        await channel.untrack()
+        console.log(`👋 ${npc.name} left chat`)
+      } catch (error) {
+        console.error(`Failed to remove ${npc.name} from chat:`, error)
+      }
+    }, stayDuration)
 
     npc.lastActivity = null
   }

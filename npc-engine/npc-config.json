@@ -1,19 +1,19 @@
 {
-  "npcCount": 40,
+  "npcCount": 80,
   "resumeExisting": true,
   "spawnReplacements": true,
-  "personalities": ["casual", "hardcore", "social", "merchant", "explorer"],
-  "spawnDelay": 20000,
-  "activityInterval": 700000,
-  "globalActivityRate": 1000,
-  "activityVariance": 0.4,
-  "energyRestThreshold": 15,
-  "fundingAmount": 0.002,
-  "restEnergyGain": 5,
+  "personalities": ["merchant", "merchant", "merchant", "merchant", "merchant"],
+  "spawnDelay": 5000,
+  "activityInterval": 10000,
+  "globalActivityRate": 100,
+  "activityVariance": 0.1,
+  "energyRestThreshold": 5,
+  "fundingAmount": 0.01,
+  "restEnergyGain": 20,
   "enableLogs": true,
   "logLevel": "info",
   "chat": {
-    "enabled": true,
-    "showContext": true
+    "enabled": false,
+    "showContext": false
   }
 }
