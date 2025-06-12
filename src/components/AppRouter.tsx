@@ -638,7 +638,7 @@ function EnteringGameScreen() {
                   </div>
                   <div className="text-center">
                     <div className="text-yellow-400 font-bold">{state.character.coins}</div>
-                    <div className="text-muted-foreground">RUST</div>
+                    <div className="text-muted-foreground">SHARD</div>
                   </div>
                 </div>
               </div>
