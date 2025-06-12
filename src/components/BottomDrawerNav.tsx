@@ -119,7 +119,7 @@ export function BottomDrawerNav({
     {
       id: 'characters',
       icon: Users,
-      label: 'SPECIMENS',
+      label: 'PLAYERS',
       action: onCharactersClick,
       current: currentView === 'characters',
       color: 'text-orange-500'

@@ -284,7 +284,7 @@ export default function CharactersView() {
       <div className="bg-muted/30 border border-primary/20 rounded p-3 mb-4">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
           <div>
-            <div className="text-muted-foreground mb-1">TOTAL_SPECIMENS</div>
+            <div className="text-muted-foreground mb-1">TOTAL_PEOPLE</div>
             <div className="text-primary font-bold font-mono">
               {loading ? 'SCANNING...' : `${filteredCharacters.length}/${characters.length}`}
             </div>
@@ -324,7 +324,7 @@ export default function CharactersView() {
       <div className="bg-muted/30 border border-primary/20 rounded p-4 mb-4">
         <div className="flex items-center gap-2 mb-3 border-b border-primary/20 pb-2">
           <Filter className="w-4 h-4" />
-          <span className="text-primary font-bold text-sm">SPECIMEN_FILTERS</span>
+          <span className="text-primary font-bold text-sm">PLAYER_FILTERS</span>
           {hasActiveFilters && (
             <Badge variant="outline" className="text-xs font-mono">
               {[searchQuery, genderFilter !== 'all' ? genderFilter : '', typeFilter !== 'all' ? typeFilter : '', statusFilter !== 'all' ? statusFilter : '', levelFilter !== 'all' ? levelFilter : '', biomeFilter !== 'all' ? biomeFilter : ''].filter(Boolean).length}_ACTIVE
@@ -337,7 +337,7 @@ export default function CharactersView() {
           <div className="relative lg:col-span-2">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 text-muted-foreground" />
             <Input
-              placeholder="SEARCH_SPECIMEN_ID..."
+              placeholder="SEARCH_PEOPLE_ID..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-8 h-8 text-xs font-mono bg-muted/50 border-primary/20"
@@ -536,7 +536,7 @@ export default function CharactersView() {
           <User className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <div className="text-muted-foreground font-mono">
             <div className="text-lg mb-2">
-              {characters.length === 0 ? 'NO_SPECIMENS_DETECTED' : 'FILTER_CRITERIA_NO_MATCH'}
+              {characters.length === 0 ? 'NO_PEOPLE_DETECTED' : 'FILTER_CRITERIA_NO_MATCH'}
             </div>
             <div className="text-sm">
               {characters.length === 0
@@ -564,7 +564,7 @@ export default function CharactersView() {
           <DialogHeader className="border-b border-primary/20 pb-2">
             <DialogTitle className="flex items-center gap-2 text-primary font-mono">
               <Eye className="w-4 h-4" />
-              SPECIMEN_ANALYSIS
+              PEOPLE_ANALYSIS
             </DialogTitle>
           </DialogHeader>
 
@@ -602,7 +602,7 @@ export default function CharactersView() {
                 <div className="bg-red-500/20 border border-red-500/30 rounded p-3">
                   <div className="flex items-center gap-2 text-red-500 font-mono text-sm">
                     <Skull className="h-4 w-4" />
-                    <span className="font-bold">SPECIMEN_TERMINATED</span>
+                    <span className="font-bold">PEOPLE_TERMINATED</span>
                   </div>
                   <div className="text-xs text-red-400 mt-1 font-mono">
                     COMBAT_CASUALTY_CONFIRMED
@@ -736,7 +736,7 @@ export default function CharactersView() {
                   )}
 
                   <div>
-                    <div className="text-muted-foreground text-xs mb-1">SPECIMEN_ID</div>
+                    <div className="text-muted-foreground text-xs mb-1">PEOPLE_ID</div>
                     <div className="flex items-center gap-2">
                       <Hash className="w-3 h-3 text-muted-foreground" />
                       <div className="font-mono text-xs bg-muted/50 border border-primary/10 px-2 py-1 rounded flex-1 break-all text-primary">
@@ -761,7 +761,7 @@ export default function CharactersView() {
 
       {/* Footer */}
       <div className="border-t border-primary/20 pt-2 flex justify-between text-xs text-muted-foreground/60">
-        <span>NFT_GALLERY_v2089 | SPECIMEN_DATABASE</span>
+        <span>NFT_GALLERY_v2089 | PEOPLE_DATABASE</span>
         <span>LAST_SCAN: {new Date().toLocaleTimeString()}</span>
       </div>
     </div>

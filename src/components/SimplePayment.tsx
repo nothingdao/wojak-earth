@@ -233,7 +233,7 @@ export const SimplePayment: React.FC<SimplePaymentProps> = ({
         slot: confirmation.context.slot
       })
 
-      toast.success('Payment confirmed! Creating character...')
+      // toast.success('Payment confirmed! Creating character...')
 
       // Small delay to ensure backend can verify
       setTimeout(() => {

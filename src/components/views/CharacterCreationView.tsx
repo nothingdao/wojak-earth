@@ -411,8 +411,8 @@ export const CharacterCreationView: React.FC<CharacterCreationViewProps> = ({ ch
       // Convert to base64
       const imageDataUrl = canvas.toDataURL('image/png', 0.9) // Slightly compress
       setGeneratedImage(imageDataUrl)
-
-      toast.success(`${selectedGender.toLowerCase()} character generated! (${successfulLayers} layers)`)
+      // man we got to get a handle on these toasts
+      // toast.success(`${selectedGender.toLowerCase()} character generated! (${successfulLayers} layers)`)
 
     } catch (error) {
       console.error('Image generation failed:', error)
