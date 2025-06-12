@@ -215,7 +215,7 @@ export default function CharactersView() {
         <div className="flex items-center justify-between mb-4 border-b border-primary/20 pb-2">
           <div className="flex items-center gap-2">
             <Database className="w-4 h-4" />
-            <span className="text-primary font-bold">NFT GALLERY INTERFACE v2.089</span>
+            <span className="text-primary font-bold">NFT PLATER INTERFACE v2.089</span>
           </div>
           <div className="flex items-center gap-2">
             <AlertTriangle className="w-3 h-3 text-red-500" />
@@ -243,7 +243,7 @@ export default function CharactersView() {
       <div className="flex items-center justify-between mb-4 border-b border-primary/20 pb-2">
         <div className="flex items-center gap-2">
           <Database className="w-4 h-4" />
-          <span className="text-primary font-bold">NFT GALLERY INTERFACE v2.089</span>
+          <span className="text-primary font-bold">NFT PLAYER INTERFACE v2.089</span>
         </div>
         <div className="flex items-center gap-2">
           <ToggleGroup

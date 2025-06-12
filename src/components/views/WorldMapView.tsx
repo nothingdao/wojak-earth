@@ -18,7 +18,7 @@ export function WorldMapView({
   mapTravelDestination = null
 }: WorldMapViewProps) {
   return (
-    <div className="w-full h-full">
+    <div className="w-full h-full pt-14">
       <Earth
         locations={locations}
         character={character || undefined}

@@ -201,53 +201,98 @@ export function BottomDrawerNav({
     <>
       {/* Terminal Status Bar */}
       <div className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur border-b border-primary/30 font-mono">
-        <div className="flex items-center justify-between p-3">
-          {/* Desktop: Terminal Status Display */}
-          <div className="hidden md:flex items-center gap-4 flex-1">
-            <div className="flex items-center gap-3">
-              <Avatar className="w-8 h-8 border border-primary/20">
-                <AvatarImage
-                  src={getCharacterimage_url()}
-                  alt={character.name}
-                  onError={handleImageError}
-                  onLoad={() => setImageError(false)}
-                />
-                <AvatarFallback className="bg-muted/50 font-mono text-xs">
-                  {character.name.charAt(0).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <div className="font-bold text-sm text-primary font-mono">{character.name.toUpperCase()}</div>
-                <div className="text-xs text-muted-foreground flex items-center gap-1 font-mono">
-                  <MapPin className="w-3 h-3" />
-                  {character.currentLocation?.name?.toUpperCase() || "UNKNOWN_ZONE"}
+        {/* Desktop: Stacked Layout */}
+        <div className="hidden md:block">
+          {/* Top Row: Character Info with Stats and Settings */}
+          <div className="flex items-center justify-between p-3 border-b border-primary/20">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
+                <Avatar className="w-16 h-16 rounded-sm border border-primary/20">
+                  <AvatarImage
+                    src={getCharacterimage_url()}
+                    alt={character.name}
+                    onError={handleImageError}
+                    onLoad={() => setImageError(false)}
+                  />
+                  <AvatarFallback className="bg-muted/50 font-mono text-xs">
+                    {character.name.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <div className="gap-1 text-xs bg-green-500/10 p-1 mr-2 rounded float-left">
+                    <Activity className="w-3 h-3 animate-pulse text-green-500" />
+                  </div>
+                  <div className="font-bold text-sm text-primary font-mono">{character.name.toUpperCase()}</div>
+                  <div className="text-xs text-muted-foreground flex items-center gap-1 font-mono mb-1">
+                    <MapPin className="w-3 h-3" />
+                    {character.currentLocation?.name?.toUpperCase() || "UNKNOWN_ZONE"}
+                  </div>
+                  {/* Desktop Stats Row - Same as Mobile */}
+                  <div className="flex items-center gap-2 text-xs">
+                    <div className="flex items-center gap-0.5">
+                      <Coins className="w-2.5 h-2.5 text-yellow-500" />
+                      <span className="text-primary font-mono">{character.coins || 0}</span>
+                    </div>
+                    <div className="flex items-center gap-0.5">
+                      <Zap className="w-2.5 h-2.5 text-yellow-500" />
+                      <span className="text-primary font-mono">{character.energy || 0}%</span>
+                    </div>
+                    <div className="flex items-center gap-0.5">
+                      <Heart className="w-2.5 h-2.5 text-red-500" />
+                      <span className="text-primary font-mono">{character.health || 0}%</span>
+                    </div>
+                    <div className="flex items-center gap-0.5">
+                      <Star className="w-2.5 h-2.5 text-blue-500" />
+                      <span className="text-primary font-mono">L{character.level || 1}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Status Indicators */}
-            <div className="flex items-center gap-3 text-xs">
-              <div className="flex items-center gap-1">
-                <Zap className="w-3 h-3 text-yellow-500" />
-                <span className="text-primary font-mono">{character.energy || 0}%</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Heart className="w-3 h-3 text-red-500" />
-                <span className="text-primary font-mono">{character.health || 0}%</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Coins className="w-3 h-3 text-yellow-500" />
-                <span className="text-primary font-mono">{character.coins || 0}</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Star className="w-3 h-3 text-blue-500" />
-                <span className="text-primary font-mono">LVL{character.level || 1}</span>
-              </div>
+            {/* Top Right: Theme Toggle and Wallet */}
+            <div className="flex items-center gap-2">
+              <ModeToggle />
+              <WalletConnectButton />
             </div>
           </div>
 
-          {/* Mobile: Character Status */}
-          <div className="flex md:hidden items-center gap-3 flex-1 min-w-0">
+          {/* Bottom Row: Navigation */}
+          <div className="flex items-center justify-center p-2">
+            <div className="flex items-center gap-1">
+              {navItems.map((item) => {
+                const IconComponent = item.icon
+                const isAdmin = item.id === 'admin'
+
+                if (!item.action) return null
+
+                return (
+                  <Button
+                    key={item.id}
+                    size="sm"
+                    variant={item.current ? "default" : "ghost"}
+                    onClick={item.action}
+                    className={`h-8 px-3 font-mono text-xs ${item.current
+                      ? 'bg-primary/20 text-primary border border-primary/30'
+                      : 'hover:bg-muted/50'
+                      } ${isAdmin ? 'text-red-500 hover:text-red-400' : ''}`}
+                    title={item.label}
+                  >
+                    <IconComponent className={`w-4 h-4 mr-1 ${item.current ? 'text-primary' : item.color}`} />
+                    <span className="hidden lg:inline">{item.label}</span>
+                    {item.badge && (
+                      <Badge variant="secondary" className="ml-1 h-4 px-1 text-xs font-mono">{item.badge}</Badge>
+                    )}
+                  </Button>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile: Single Row Layout */}
+        <div className="flex md:hidden items-center justify-between p-3">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
             <Avatar className="w-14 h-14 flex-shrink-0 rounded-sm border border-primary/20">
               <AvatarImage
                 src={getCharacterimage_url()}
@@ -260,6 +305,9 @@ export function BottomDrawerNav({
               </AvatarFallback>
             </Avatar>
             <div className="min-w-0 flex-1">
+              <div className="gap-1 text-xs bg-green-500/10 p-1 mr-2 rounded float-left">
+                <Activity className="w-3 h-3 animate-pulse text-green-500" />
+              </div>
               <div className="font-bold text-sm truncate text-primary font-mono">{character.name.toUpperCase()}</div>
               <div className="text-xs text-muted-foreground flex items-center gap-1 font-mono mb-1">
                 <MapPin className="w-3 h-3 flex-shrink-0" />
@@ -287,51 +335,8 @@ export function BottomDrawerNav({
             </div>
           </div>
 
-          {/* Desktop: Terminal Navigation */}
-          <div className="hidden md:flex items-center gap-1">
-            {navItems.map((item) => {
-              const IconComponent = item.icon
-              const isAdmin = item.id === 'admin'
-
-              if (!item.action) return null
-
-              return (
-                <Button
-                  key={item.id}
-                  size="sm"
-                  variant={item.current ? "default" : "ghost"}
-                  onClick={item.action}
-                  className={`h-7 px-2 font-mono text-xs ${item.current
-                    ? 'bg-primary/20 text-primary border border-primary/30'
-                    : 'hover:bg-muted/50'
-                    } ${isAdmin ? 'text-red-500 hover:text-red-400' : ''}`}
-                  title={item.label}
-                >
-                  <IconComponent className={`w-3 h-3 ${item.current ? 'text-primary' : item.color}`} />
-                  {item.badge && (
-                    <Badge variant="secondary" className="ml-1 h-3 px-1 text-xs font-mono">{item.badge}</Badge>
-                  )}
-                </Button>
-              )
-            })}
-
-            <Separator orientation="vertical" className="h-6 mx-2 border-primary/20" />
-
-            <div className="flex items-center gap-1">
-              <Badge variant="outline" className="text-xs font-mono h-7 px-2">
-                <Activity className="w-3 h-3 mr-1 animate-pulse" />
-                ONLINE
-              </Badge>
-              <ModeToggle />
-              <WalletConnectButton />
-            </div>
-          </div>
-
           {/* Mobile: Terminal Menu */}
-          <div className="flex md:hidden items-center gap-2">
-            <Badge variant="outline" className="text-xs font-mono h-7 px-2">
-              <Activity className="w-3 h-3 mr-1 animate-pulse" />
-            </Badge>
+          <div className="flex items-center gap-2">
             <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
               <DrawerTrigger asChild>
                 <Button size="sm" variant="outline" className="h-12 w-12 px-3 font-mono border-primary/30">
@@ -430,6 +435,9 @@ export function BottomDrawerNav({
                               </AvatarFallback>
                             </Avatar>
                             <div className="flex-1">
+                              <div className="gap-1 text-xs bg-green-500/10 p-1 mr-2 rounded float-left">
+                                <Activity className="w-3 h-3 animate-pulse text-green-500" />
+                              </div>
                               <div className="flex items-center gap-2">
                                 <span className="font-bold text-primary font-mono">{character.name.toUpperCase()}</span>
                                 <Badge variant="secondary" className="text-xs font-mono">CHARACTER</Badge>
@@ -502,8 +510,8 @@ export function BottomDrawerNav({
         </div>
       </div>
 
-      {/* Terminal Spacer */}
-      <div className="h-16" />
+      {/* Terminal Spacer - Adjusted for new height */}
+      <div className="h-16 md:h-24" />
     </>
   )
 }

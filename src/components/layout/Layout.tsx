@@ -69,7 +69,7 @@ export function Layout({ children }: LayoutProps) {
             paddingBottom: '6rem' // Account for bottom nav
           }}
         >
-          <div className="max-w-2xl mx-auto">
+          <div className="max-w-2xl mx-auto md:pt-8">
             {children}
           </div>
         </main>

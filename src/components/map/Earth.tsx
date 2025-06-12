@@ -270,7 +270,7 @@ export default function Earth({
   const selectedLocation = selectedPath ? getLocation(selectedPath) : null
 
   return (
-    <div className="w-full h-[calc(100vh-64px)] bg-background overflow-hidden font-mono relative">
+    <div className="w-full h-[calc(100vh-144px)] bg-background overflow-hidden font-mono relative">
       {/* Terminal Header */}
       <div className="absolute top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur border-b border-border p-2">
         <div className="flex items-center justify-between">
