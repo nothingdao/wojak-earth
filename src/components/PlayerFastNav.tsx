@@ -1,12 +1,7 @@
 import { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import {
   User,
-  Backpack,
-  Map,
   Home,
-  Orbit,
   Activity,
   Terminal,
   Package,
@@ -44,7 +39,7 @@ export function PlayerFastNav({
       action: onProfileClick,
       isActive: currentView === 'profile',
       showAvatar: true,
-      color: 'text-cyan-500'
+      colorClass: 'text-cyan-500'
     },
     {
       id: 'inventory',
@@ -53,7 +48,7 @@ export function PlayerFastNav({
       action: onInventoryClick,
       isActive: currentView === 'inventory',
       showAvatar: false,
-      color: 'text-purple-500',
+      colorClass: 'text-purple-500',
       badge: character?.inventory?.length
     },
     {
@@ -63,7 +58,7 @@ export function PlayerFastNav({
       action: onMapClick,
       isActive: currentView === 'map',
       showAvatar: false,
-      color: 'text-green-500'
+      colorClass: 'text-green-500'
     },
     {
       id: 'home',
@@ -72,11 +67,11 @@ export function PlayerFastNav({
       action: onHomeClick,
       isActive: currentView === 'main',
       showAvatar: false,
-      color: 'text-orange-500'
+      colorClass: 'text-orange-500'
     }
   ]
 
-  const radius = 120 // px distance from center
+  const radius = 120
 
   const handleButtonClick = (action: () => void) => {
     setHovering(false)
@@ -85,16 +80,46 @@ export function PlayerFastNav({
 
   return (
     <div
-      className="fixed top-20 right-4 z-40 font-mono"
+      className="fixed top-20 right-4 z-[2147483647] font-mono"
+      style={{
+        all: 'unset',
+        position: 'fixed',
+        top: '80px',
+        right: '16px',
+        zIndex: 2147483647,
+        fontFamily: '"JetBrains Mono", ui-monospace, SFMono-Regular, monospace',
+        pointerEvents: 'auto',
+        userSelect: 'none',
+        boxSizing: 'border-box'
+      }}
       onMouseEnter={() => setHovering(true)}
       onMouseLeave={() => setHovering(false)}
     >
       {/* Terminal Center Hub */}
-      <div className="relative w-14 h-14 rounded bg-background border-2 border-primary/30 hover:border-primary/50 flex items-center justify-center shadow-lg transition-all duration-300 hover:scale-110 bg-muted/30">
+      <div
+        className={`
+          relative w-14 h-14 rounded bg-background border-2 border-primary/30 
+          hover:border-primary/50 flex items-center justify-center shadow-lg 
+          transition-all duration-300 hover:scale-110 bg-muted/30
+          ${hovering ? 'border-primary/50' : 'border-primary/30'}
+        `}
+        style={{
+          all: 'unset',
+          position: 'relative',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: '56px',
+          height: '56px',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          transform: hovering ? 'scale(1.1)' : 'scale(1)',
+          cursor: 'pointer',
+          boxSizing: 'border-box'
+        }}
+      >
         <div className="relative">
           <Terminal
-            className={`w-5 h-5 text-primary transition-transform duration-300 ${hovering ? 'rotate-90' : ''
-              }`}
+            className={`w-5 h-5 text-primary transition-transform duration-300 ${hovering ? 'rotate-90' : ''}`}
           />
           {/* Activity Indicator */}
           <div className="absolute -top-1 -right-1">
@@ -105,40 +130,63 @@ export function PlayerFastNav({
         {/* System Status */}
         {hovering && (
           <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
-            <Badge variant="outline" className="text-xs font-mono bg-background border-primary/30">
-              <Database className="w-3 h-3 mr-1" />
-              QUICK_ACCESS
-            </Badge>
+            <div className="inline-flex items-center px-2 py-1 bg-background border border-primary/30 rounded text-xs font-mono">
+              <Database className="w-3 h-3 mr-1 text-primary" />
+              <span className="text-primary">QUICK_ACCESS</span>
+            </div>
           </div>
         )}
       </div>
 
       {/* Terminal Radial Interface */}
       {buttons.map((btn, i) => {
-        // Quarter arc: from 180° (left) going DOWN to 270° (bottom)
         const angleDeg = 180 + (90 / (buttons.length - 1)) * i
         const angleRad = (angleDeg * Math.PI) / 180
         const x = radius * Math.cos(angleRad)
-        const y = Math.abs(radius * Math.sin(angleRad)) // Make Y positive to go down
+        const y = Math.abs(radius * Math.sin(angleRad))
         const IconComponent = btn.icon
 
         return (
           <div key={btn.id} className="relative">
-            <Button
-              size="lg"
-              variant="outline"
+            <button
               className={`
                 absolute w-12 h-12 rounded border-2 shadow-lg transition-all duration-300 ease-out font-mono
                 bg-background border-primary/30 hover:border-primary/50 text-primary hover:bg-muted/50
                 ${hovering ? 'opacity-100 scale-100' : 'opacity-0 scale-50'}
                 ${btn.isActive ? 'border-primary bg-primary/10 shadow-primary/20' : ''}
                 hover:scale-110 hover:shadow-xl
-                ${btn.id === 'profile' ? 'overflow-hidden p-0' : ''}
+                ${btn.id === 'profile' ? 'overflow-hidden p-0' : 'flex items-center justify-center'}
               `}
               style={{
-                left: `${-17 + x}px`, // Adjusted for center positioning
-                top: `${28 + y}px`,   // Adjusted for center positioning
+                // Selective resets instead of 'all: unset'
+                position: 'absolute',
+                left: `${-17 + x}px`,
+                top: `${28 + y}px`,
+                width: '48px',
+                height: '48px',
+                margin: '0',
+                padding: btn.id === 'profile' ? '0' : '12px',
+                // border: 'none', // Let Tailwind handle borders
+                border: '1px solid #333',
+                background: 'none', // Let Tailwind handle background
+                outline: 'none',
+                textDecoration: 'none',
+                fontFamily: 'inherit',
+                fontSize: 'inherit',
+                lineHeight: 'inherit',
+                color: 'inherit',
+                // Layout and animation properties
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                opacity: hovering ? '1' : '0',
+                transform: hovering ? 'scale(1)' : 'scale(0.5)',
                 transitionDelay: hovering ? `${i * 50}ms` : '0ms',
+                overflow: btn.id === 'profile' ? 'hidden' : 'visible',
+                boxSizing: 'border-box',
+                pointerEvents: 'auto',
               }}
               onClick={() => handleButtonClick(btn.action)}
               aria-label={btn.label}
@@ -154,22 +202,18 @@ export function PlayerFastNav({
                       target.src = '/wojak.png'
                     }}
                   />
-                  {/* Profile Active Indicator */}
                   {btn.isActive && (
                     <div className="absolute inset-0 border-2 border-primary bg-primary/20" />
                   )}
                 </div>
               ) : (
                 <div className="relative">
-                  <IconComponent className={`w-5 h-5 ${btn.isActive ? 'text-primary' : btn.color}`} />
+                  <IconComponent className={`w-5 h-5 ${btn.isActive ? 'text-primary' : btn.colorClass}`} />
                   {/* Badge for inventory count */}
                   {btn.badge && (
-                    <Badge
-                      variant="secondary"
-                      className="absolute -top-2 -right-2 h-4 w-4 p-0 text-xs font-mono bg-primary/20 text-primary border border-primary/30"
-                    >
+                    <div className="absolute -top-2 -right-2 h-4 w-4 p-0 text-xs font-mono bg-primary/20 text-primary border border-primary/30 rounded-full flex items-center justify-center">
                       {btn.badge > 99 ? '99+' : btn.badge}
-                    </Badge>
+                    </div>
                   )}
                   {/* Active Indicator */}
                   {btn.isActive && (
@@ -179,20 +223,20 @@ export function PlayerFastNav({
                   )}
                 </div>
               )}
-            </Button>
+            </button>
 
             {/* Terminal Labels */}
             {hovering && (
               <div
                 className="absolute text-xs font-mono text-primary whitespace-nowrap pointer-events-none"
                 style={{
-                  left: `${-17 + x + (x > 0 ? 50 : -80)}px`, // Position label to side of button
-                  top: `${28 + y + 15}px`, // Slightly below button
+                  left: `${-17 + x + (x > 0 ? 50 : -80)}px`,
+                  top: `${28 + y + 15}px`,
                 }}
               >
                 <div className="bg-background border border-primary/30 px-2 py-1 rounded shadow-lg">
                   <div className="flex items-center gap-1">
-                    <IconComponent className={`w-3 h-3 ${btn.color}`} />
+                    <IconComponent className={`w-3 h-3 ${btn.colorClass}`} />
                     <span>{btn.label}</span>
                   </div>
                   {btn.badge && (
@@ -246,4 +290,4 @@ export function PlayerFastNav({
       )}
     </div>
   )
-}
+} ``

@@ -38,14 +38,16 @@ export function Layout({ children }: LayoutProps) {
 
       {/* Player Fast Nav - only show when character is loaded */}
       {state.character && (
-        <PlayerFastNav
-          character={state.character}
-          currentView={state.currentView}
-          onProfileClick={() => actions.navigate('profile')}
-          onHomeClick={() => actions.navigate('main')}
-          onMapClick={() => actions.navigate('map')}
-          onInventoryClick={() => actions.navigate('inventory')}
-        />
+        <div className="top-72 right-24">
+          <PlayerFastNav
+            character={state.character}
+            currentView={state.currentView}
+            onProfileClick={() => actions.navigate('profile')}
+            onHomeClick={() => actions.navigate('main')}
+            onMapClick={() => actions.navigate('map')}
+            onInventoryClick={() => actions.navigate('inventory')}
+          />
+        </div>
       )}
 
       {/* Main content area with stable layout */}

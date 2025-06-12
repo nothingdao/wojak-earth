@@ -29,6 +29,7 @@ import {
   Heart,
   Coins,
   Terminal,
+  Star,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import type { Character, GameView } from '@/types'
@@ -236,6 +237,10 @@ export function BottomDrawerNav({
                 <Coins className="w-3 h-3 text-yellow-500" />
                 <span className="text-primary font-mono">{character.coins || 0}</span>
               </div>
+              <div className="flex items-center gap-1">
+                <Star className="w-3 h-3 text-blue-500" />
+                <span className="text-primary font-mono">LVL{character.level || 1}</span>
+              </div>
             </div>
           </div>
 
@@ -350,7 +355,7 @@ export function BottomDrawerNav({
                       </div>
 
                       {/* Vital Stats Grid */}
-                      <div className="grid grid-cols-3 gap-3 text-xs">
+                      <div className="grid grid-cols-4 gap-3 text-xs">
                         <div className="bg-muted/20 border border-primary/10 rounded p-2 text-center">
                           <div className="flex items-center justify-center gap-1 mb-1">
                             <Coins className="w-3 h-3 text-yellow-500" />
@@ -371,6 +376,13 @@ export function BottomDrawerNav({
                             <span className="text-muted-foreground font-mono">HEALTH</span>
                           </div>
                           <div className="font-bold text-primary font-mono">{character.health || 0}%</div>
+                        </div>
+                        <div className="bg-muted/20 border border-primary/10 rounded p-2 text-center">
+                          <div className="flex items-center justify-center gap-1 mb-1">
+                            <Star className="w-3 h-3 text-blue-500" />
+                            <span className="text-muted-foreground font-mono">LEVEL</span>
+                          </div>
+                          <div className="font-bold text-primary font-mono">{character.level || 1}</div>
                         </div>
                       </div>
                     </div>
