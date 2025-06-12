@@ -1,4 +1,5 @@
-// src/components/ViewRenderer.tsx - Clean view switching
+// src/components/ViewRenderer.tsx - Clean view switching with fullscreen chat
+import { useState } from 'react'
 import {
   MainView,
   ProfileView,
@@ -30,6 +31,8 @@ export function ViewRenderer({
   loadingItems,
   actions
 }: ViewRendererProps) {
+  // State to manage fullscreen chat
+  const [isFullscreenChat, setIsFullscreenChat] = useState(false)
 
   // Helper functions to adapt your existing component interfaces
   const handleSetPrimary = async (inventoryId: string, category: string) => {
@@ -106,6 +109,25 @@ export function ViewRenderer({
     actions.handleUseItem(inventoryId, itemName, energy_effect, health_effect)
   }
 
+  // Chat handlers
+  const openFullscreenChat = () => setIsFullscreenChat(true)
+  const closeFullscreenChat = () => setIsFullscreenChat(false)
+
+  // Render fullscreen chat overlay if active
+  if (isFullscreenChat) {
+    return (
+      <ChatView
+        character={character}
+        selectedLocation={gameData.selectedLocation}
+        chatMessages={gameData.chatMessages || []}
+        onSendMessage={actions.handleSendMessage}
+        onAddPresenceMessage={gameData.actions?.addPresenceMessage}
+        onExitChat={closeFullscreenChat}
+        loading={gameData.loading}
+      />
+    )
+  }
+
   switch (currentView) {
     case 'main':
       return (
@@ -114,7 +136,7 @@ export function ViewRenderer({
           playersAtLocation={gameData.playersAtLocation || []}
           onMineClick={() => actions.navigate('mine')}
           onMarketClick={() => actions.navigate('market')}
-          onChatClick={() => actions.navigate('chat')}
+          onChatClick={openFullscreenChat} // Changed to open fullscreen chat
           onEconomyClick={() => actions.navigate('economy')}
           onLeaderboardsClick={() => actions.navigate('leaderboards')}
           onRustMarketClick={() => actions.navigate('rust-market')}
@@ -174,6 +196,8 @@ export function ViewRenderer({
       )
 
     case 'chat':
+      // This case might not be needed anymore since we're using fullscreen chat
+      // But keeping it for backwards compatibility
       return (
         <ChatView
           character={character}
@@ -181,6 +205,7 @@ export function ViewRenderer({
           chatMessages={gameData.chatMessages || []}
           onSendMessage={actions.handleSendMessage}
           onAddPresenceMessage={gameData.actions?.addPresenceMessage}
+          onExitChat={closeFullscreenChat}
           loading={gameData.loading}
         />
       )
@@ -207,7 +232,7 @@ export function ViewRenderer({
           playersAtLocation={gameData.playersAtLocation || []}
           onMineClick={() => actions.navigate('mine')}
           onMarketClick={() => actions.navigate('market')}
-          onChatClick={() => actions.navigate('chat')}
+          onChatClick={openFullscreenChat} // Changed to open fullscreen chat
           onEconomyClick={() => actions.navigate('economy')}
           onLeaderboardsClick={() => actions.navigate('leaderboards')}
           onRustMarketClick={() => actions.navigate('rust-market')}

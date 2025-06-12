@@ -362,7 +362,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       }
 
       try {
-        console.log('🎯 Starting travel to:', location.name)
+        // console.log('🎯 Starting travel to:', location.name)
         dispatch({ type: 'START_TRAVEL', destination: location })
 
         // ADD THIS LINE - Start map animation:
@@ -401,7 +401,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (error) {
         console.error('❌ Travel error:', error)
-        toast.error('Travel failed. Please try again.')
+        // toast.error('Travel failed. Please try again.')
         // ADD THIS - Clear map animation on error:
         dispatch({ type: 'CLEAR_MAP_TRAVELING' })
       } finally {

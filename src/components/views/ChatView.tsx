@@ -9,7 +9,9 @@ import {
   Activity,
   Database,
   Eye,
-  ArrowDown
+  ArrowDown,
+  X,
+  Minimize2
 } from 'lucide-react'
 import { useChatPresence } from '@/hooks/useChatPresence'
 import type { Character, Location, ChatMessage } from '@/types'
@@ -20,6 +22,7 @@ interface ChatViewProps {
   chatMessages: ChatMessage[]
   onSendMessage: (message: string) => Promise<void>
   onAddPresenceMessage: (message: ChatMessage) => void
+  onExitChat: () => void // New prop to handle exiting fullscreen
   loading?: boolean
 }
 
@@ -39,6 +42,7 @@ export function ChatView({
   chatMessages,
   onSendMessage,
   onAddPresenceMessage,
+  onExitChat,
   loading = false
 }: ChatViewProps) {
   const [chatInput, setChatInput] = useState('')
@@ -55,6 +59,18 @@ export function ChatView({
   const lastMessageCountRef = useRef(0)
 
   const location_id = selectedLocation?.id || character.currentLocation.id
+
+  // Handle ESC key to exit chat
+  useEffect(() => {
+    const handleEscKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onExitChat()
+      }
+    }
+
+    document.addEventListener('keydown', handleEscKey)
+    return () => document.removeEventListener('keydown', handleEscKey)
+  }, [onExitChat])
 
   // Handle presence changes
   const handlePresenceChange = useCallback((currentPresence: Array<{ name: string }>) => {
@@ -208,16 +224,30 @@ export function ChatView({
   const currentLocationName = selectedLocation ? selectedLocation.name : character.currentLocation.name
 
   return (
-    <div className="bg-background sm:border sm:border-border sm:rounded font-mono h-[calc(100vh-theme(spacing.24))] flex flex-col">
-      {/* Terminal Header */}
-      <div className="flex items-center justify-between p-3 border-b border-border">
+    // Fullscreen overlay that breaks out of parent containers
+    <div className="fixed inset-0 z-50 bg-background font-mono flex flex-col">
+      {/* Terminal Header with Exit Button */}
+      <div className="flex items-center justify-between p-3 border-b border-border bg-background">
         <div className="flex items-center gap-2">
           <Terminal className="w-4 h-4 text-primary" />
           <span className="text-primary font-bold text-sm">COMMS_CHANNEL v2.089</span>
         </div>
-        <div className="flex items-center gap-2 text-xs">
-          <Signal className="w-3 h-3 animate-pulse text-green-500" />
-          <span className="text-green-500">ONLINE</span>
+
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 text-xs">
+            <Signal className="w-3 h-3 animate-pulse text-green-500" />
+            <span className="text-green-500">ONLINE</span>
+          </div>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onExitChat}
+            className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive"
+            title="Exit Chat (ESC)"
+          >
+            <X className="w-4 h-4" />
+          </Button>
         </div>
       </div>
 
@@ -239,11 +269,12 @@ export function ChatView({
         </div>
       </div>
 
-      {/* Chat Messages */}
+      {/* Chat Messages - Now uses full viewport height */}
       <div
         ref={chatContainerRef}
         onScroll={handleScroll}
         className="bg-muted/50 p-3 flex-1 overflow-y-auto relative"
+        style={{ height: 'calc(100vh - 140px)' }} // Subtract header + location + input heights
       >
         {!hasLoadedMessages ? (
           <div className="flex items-center justify-center h-full">
@@ -343,7 +374,7 @@ export function ChatView({
         </button>
       )}
 
-      {/* Input Section */}
+      {/* Input Section - Fixed at bottom */}
       <div className="bg-muted border-t border-border p-3">
         <div className="flex items-center gap-2 mb-2">
           <Eye className="w-3 h-3 text-primary" />
@@ -395,6 +426,10 @@ export function ChatView({
             TRANSMISSION_IN_PROGRESS...
           </div>
         )}
+
+        <div className="mt-1 text-xs text-muted-foreground/60 font-mono text-center">
+          Press ESC to exit fullscreen chat
+        </div>
       </div>
     </div>
   )

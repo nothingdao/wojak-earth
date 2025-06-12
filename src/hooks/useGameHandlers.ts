@@ -219,9 +219,9 @@ export function useGameHandlers({
       }
 
       // Error already handled in characterActions, but we'll add a fallback
-      if (!toast.isActive) {
-        toast.error('Travel failed. Please try again.')
-      }
+      // if (!toast.isActive) {
+      //   toast.error('Travel failed. Please try again.')
+      // }
     }
   }
 
