@@ -208,7 +208,7 @@ export function ChatView({
   const currentLocationName = selectedLocation ? selectedLocation.name : character.currentLocation.name
 
   return (
-    <div className="bg-background border border-border rounded font-mono">
+    <div className="bg-background sm:border sm:border-border sm:rounded font-mono h-[calc(100vh-theme(spacing.24))] flex flex-col">
       {/* Terminal Header */}
       <div className="flex items-center justify-between p-3 border-b border-border">
         <div className="flex items-center gap-2">
@@ -243,7 +243,7 @@ export function ChatView({
       <div
         ref={chatContainerRef}
         onScroll={handleScroll}
-        className="bg-muted/50 p-3 h-64 overflow-y-auto relative"
+        className="bg-muted/50 p-3 flex-1 overflow-y-auto relative"
       >
         {!hasLoadedMessages ? (
           <div className="flex items-center justify-center h-full">
@@ -384,7 +384,6 @@ export function ChatView({
             ) : (
               <>
                 <Send className="w-3 h-3 mr-1" />
-                SEND
               </>
             )}
           </Button>
