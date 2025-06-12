@@ -25,6 +25,7 @@ import {
   Eye,
   Copy,
   ExternalLink,
+  LayoutGrid,
 } from 'lucide-react'
 import type { Character } from '@/types'
 
@@ -117,7 +118,7 @@ const copyToClipboard = (text: string, label: string) => {
 
 export default function CharactersView() {
   const { characters, loading, error, refetch } = useCharacters()
-  const [gridSize, setGridSize] = useState<'2' | '3'>('3')
+  const [gridSize, setGridSize] = useState<'2' | '4' | '6'>('4') // Changed default to '4'
   const [searchQuery, setSearchQuery] = useState('')
   const [genderFilter, setGenderFilter] = useState<string>('all')
   const [typeFilter, setTypeFilter] = useState<string>('all')
@@ -204,7 +205,17 @@ export default function CharactersView() {
     inactive: characters.filter(c => c.status === 'INACTIVE').length,
   }
 
-  const gridCols = gridSize === '2' ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4' : 'grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6'
+  // Updated grid column classes for 2, 4, 6 columns
+  const getGridCols = (size: '2' | '4' | '6') => {
+    switch (size) {
+      case '2': return 'grid-cols-2 sm:grid-cols-2 md:grid-cols-2'
+      case '4': return 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4'
+      case '6': return 'grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6'
+      default: return 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4'
+    }
+  }
+
+  const gridCols = getGridCols(gridSize)
 
   const hasActiveFilters = searchQuery || genderFilter !== 'all' || typeFilter !== 'all' || statusFilter !== 'all' || levelFilter !== 'all' || biomeFilter !== 'all'
 
@@ -249,13 +260,16 @@ export default function CharactersView() {
           <ToggleGroup
             type="single"
             value={gridSize}
-            onValueChange={(value) => value && setGridSize(value as '2' | '3')}
+            onValueChange={(value) => value && setGridSize(value as '2' | '4' | '6')}
             className="border border-primary/20 p-1"
           >
-            <ToggleGroupItem value="2" aria-label="Large view" className="h-6 w-6 p-0">
+            <ToggleGroupItem value="2" aria-label="2 columns" className="h-6 w-6 p-0">
               <Grid2X2 className="h-3 w-3" />
             </ToggleGroupItem>
-            <ToggleGroupItem value="3" aria-label="Compact view" className="h-6 w-6 p-0">
+            <ToggleGroupItem value="4" aria-label="4 columns" className="h-6 w-6 p-0">
+              <LayoutGrid className="h-3 w-3" />
+            </ToggleGroupItem>
+            <ToggleGroupItem value="6" aria-label="6 columns" className="h-6 w-6 p-0">
               <Grid3X3 className="h-3 w-3" />
             </ToggleGroupItem>
           </ToggleGroup>
@@ -300,7 +314,7 @@ export default function CharactersView() {
           <div>
             <div className="text-muted-foreground mb-1">GRID_MODE</div>
             <div className="text-primary font-bold font-mono">
-              {gridSize === '2' ? 'EXPANDED' : 'COMPACT'}_VIEW
+              {gridSize === '2' ? 'LARGE' : gridSize === '4' ? 'MEDIUM' : 'COMPACT'}_VIEW
             </div>
           </div>
         </div>
