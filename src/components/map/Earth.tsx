@@ -305,7 +305,7 @@ export default function Earth({
   const selectedLocation = selectedPath ? getLocation(selectedPath) : null
 
   return (
-    <div className="w-full h-[calc(100vh-144px)] bg-background overflow-hidden font-mono relative">
+    <div className="w-full h-full bg-background overflow-hidden font-mono relative">
 
       {/* Terminal Header */}
       <div className="absolute top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur border-b border-border p-2">
@@ -431,11 +431,13 @@ export default function Earth({
 
       {/* Terminal SVG Map Container */}
       <div
-        className="w-full h-full select-none overflow-hidden mt-12 bg-gradient-to-br from-background/50 via-muted/10 to-background/50"
+        className="w-full select-none overflow-hidden bg-gradient-to-br from-background/50 via-muted/10 to-background/50"
         style={{
           cursor: transform.scale <= 1 ? 'default' : (isDragging ? 'grabbing' : 'grab'),
           transform: `scale(${transform.scale}) translate(${transform.translateX}px, ${transform.translateY}px)`,
-          transformOrigin: 'center center'
+          transformOrigin: 'center center',
+          height: 'calc(100vh - 48px)', // Account for terminal header
+          marginTop: '48px' // Space for terminal header
         }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
