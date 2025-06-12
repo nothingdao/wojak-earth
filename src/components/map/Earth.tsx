@@ -1,5 +1,5 @@
 // src/components/map/Earth.tsx
-import { useState, useCallback, useRef } from "react"
+import { useState, useCallback, useRef, useEffect } from "react"
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { baseSVGData } from "../../data/baseMapSVG"
@@ -69,30 +69,33 @@ export default function Earth({
   const [transform, setTransform] = useState({ scale: 1, translateX: 0, translateY: 0 })
   const [isDragging, setIsDragging] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0, translateX: 0, translateY: 0 })
+
+  // Touch-specific state
+  const [lastTouchDistance, setLastTouchDistance] = useState<number | null>(null)
+  const [touchStartTransform, setTouchStartTransform] = useState({ scale: 1, translateX: 0, translateY: 0 })
+  const [touchCenter, setTouchCenter] = useState({ x: 0, y: 0 })
+
+  // Saved position for testing
+  const [savedPosition, setSavedPosition] = useState<{ scale: number, translateX: number, translateY: number } | null>(null)
+
   const svgRef = useRef<SVGSVGElement>(null)
 
   // Location coordinates mapping
   const getLocationCoords = (pathId: string): { x: number, y: number } | null => {
-    // These coordinates are rough estimates based on your viewBox 0 0 788 1440
-    // You can adjust these to better match your actual map locations
     const coordinates: Record<string, { x: number, y: number }> = {
-      'drowning-mirror-lake': { x: 575, y: 655 },     // Top right area
-      'fungi-networks': { x: 500, y: 800 },           // Center-right area  
-      'the-centerlands': { x: 400, y: 700 },          // True center
-      'frostpine-reaches': { x: 520, y: 200 },        // Top area
-      'underland': { x: 200, y: 1000 },               // Bottom left
-      'underland-island': { x: 315, y: 1175 },        // Bottom center
-      'solana-beach': { x: 345, y: 790 },             // Center-left
-      // Add more locations as needed
+      'drowning-mirror-lake': { x: 575, y: 655 },
+      'fungi-networks': { x: 500, y: 800 },
+      'the-centerlands': { x: 400, y: 700 },
+      'frostpine-reaches': { x: 520, y: 200 },
+      'underland': { x: 200, y: 1000 },
+      'underland-island': { x: 315, y: 1175 },
+      'solana-beach': { x: 345, y: 790 },
     }
-
     return coordinates[pathId] || null
   }
 
   const handleMapTravel = async (location_id: string) => {
-    setSelectedPath(null) // Close the selection panel
-
-    // Call the travel handler passed from parent
+    setSelectedPath(null)
     if (onTravel) {
       await onTravel(location_id)
     }
@@ -115,23 +118,7 @@ export default function Earth({
     return locationLookup.get(pathId)
   }, [locationLookup])
 
-  // Pan and zoom handlers
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    if (e.button !== 0) return
-
-    // Disable panning when at initial zoom level
-    if (transform.scale <= 1) return
-
-    setIsDragging(true)
-    setDragStart({
-      x: e.clientX,
-      y: e.clientY,
-      translateX: transform.translateX,
-      translateY: transform.translateY
-    })
-  }, [transform])
-
-  // calculate pan boundaries
+  // Calculate pan boundaries
   const calculatePanBounds = useCallback((scale: number) => {
     if (!svgRef.current) return { minX: 0, maxX: 0, minY: 0, maxY: 0 }
 
@@ -141,11 +128,9 @@ export default function Earth({
     const containerWidth = container.clientWidth
     const containerHeight = container.clientHeight
 
-    // Calculate how much the scaled content exceeds the container
     const scaledWidth = containerWidth * scale
     const scaledHeight = containerHeight * scale
 
-    // Maximum translation is half the difference between scaled and container size
     const maxTranslateX = Math.max(0, (scaledWidth - containerWidth) / 2)
     const maxTranslateY = Math.max(0, (scaledHeight - containerHeight) / 2)
 
@@ -160,12 +145,240 @@ export default function Earth({
   // Helper function to constrain translation values
   const constrainTranslation = useCallback((translateX: number, translateY: number, scale: number) => {
     const bounds = calculatePanBounds(scale)
-
     return {
       translateX: Math.max(bounds.minX, Math.min(bounds.maxX, translateX)),
       translateY: Math.max(bounds.minY, Math.min(bounds.maxY, translateY))
     }
   }, [calculatePanBounds])
+
+  // URL state management for deep linking
+  const updateURLWithTransform = useCallback((newTransform: typeof transform) => {
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href)
+      url.searchParams.set('mapScale', newTransform.scale.toFixed(2))
+      url.searchParams.set('mapX', newTransform.translateX.toFixed(1))
+      url.searchParams.set('mapY', newTransform.translateY.toFixed(1))
+      window.history.replaceState({}, '', url.toString())
+    }
+  }, [])
+
+  // Load transform from URL on mount
+  const loadTransformFromURL = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const scale = parseFloat(params.get('mapScale') || '1')
+      const translateX = parseFloat(params.get('mapX') || '0')
+      const translateY = parseFloat(params.get('mapY') || '0')
+
+      if (scale !== 1 || translateX !== 0 || translateY !== 0) {
+        const constrained = constrainTranslation(translateX, translateY, scale)
+        setTransform({
+          scale: Math.max(0.5, Math.min(5, scale)),
+          translateX: constrained.translateX,
+          translateY: constrained.translateY
+        })
+      }
+    }
+  }, [constrainTranslation])
+
+  // Jump to specific coordinates
+  const jumpToCoordinates = useCallback((scale: number, translateX: number, translateY: number) => {
+    const constrained = constrainTranslation(translateX, translateY, scale)
+    const newTransform = {
+      scale: Math.max(0.5, Math.min(5, scale)),
+      translateX: constrained.translateX,
+      translateY: constrained.translateY
+    }
+    setTransform(newTransform)
+    updateURLWithTransform(newTransform)
+  }, [constrainTranslation, updateURLWithTransform])
+
+  // Generate shareable link
+  const generateShareableLink = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href)
+      url.searchParams.set('mapScale', transform.scale.toFixed(2))
+      url.searchParams.set('mapX', transform.translateX.toFixed(1))
+      url.searchParams.set('mapY', transform.translateY.toFixed(1))
+      return url.toString()
+    }
+    return ''
+  }, [transform])
+
+  // Save current position for testing
+  const saveCurrentPosition = useCallback(() => {
+    setSavedPosition({
+      scale: transform.scale,
+      translateX: transform.translateX,
+      translateY: transform.translateY
+    })
+    console.log('📍 Position saved:', { scale: transform.scale, x: transform.translateX, y: transform.translateY })
+  }, [transform])
+
+  // Jump to saved position
+  const jumpToSavedPosition = useCallback(() => {
+    if (savedPosition) {
+      const constrained = constrainTranslation(savedPosition.translateX, savedPosition.translateY, savedPosition.scale)
+      const newTransform = {
+        scale: savedPosition.scale,
+        translateX: constrained.translateX,
+        translateY: constrained.translateY
+      }
+      setTransform(newTransform)
+      updateURLWithTransform(newTransform)
+      console.log('🎯 Jumped to saved position:', savedPosition)
+    }
+  }, [savedPosition, constrainTranslation, updateURLWithTransform])
+
+  // Copy coordinates to clipboard
+  const copyCoordinatesToClipboard = useCallback(async () => {
+    const link = generateShareableLink()
+    try {
+      await navigator.clipboard.writeText(link)
+      console.log('Map coordinates copied to clipboard!')
+    } catch (err) {
+      console.log('Failed to copy coordinates:', err)
+    }
+  }, [generateShareableLink])
+
+  // Load from URL on component mount
+  useEffect(() => {
+    loadTransformFromURL()
+  }, [loadTransformFromURL])
+
+  // Touch helper functions
+  const getTouchDistance = (touches: TouchList) => {
+    if (touches.length < 2) return null
+    const dx = touches[0].clientX - touches[1].clientX
+    const dy = touches[0].clientY - touches[1].clientY
+    return Math.sqrt(dx * dx + dy * dy)
+  }
+
+  const getTouchCenter = (touches: TouchList) => {
+    if (touches.length === 1) {
+      return { x: touches[0].clientX, y: touches[0].clientY }
+    }
+    if (touches.length >= 2) {
+      return {
+        x: (touches[0].clientX + touches[1].clientX) / 2,
+        y: (touches[0].clientY + touches[1].clientY) / 2
+      }
+    }
+    return { x: 0, y: 0 }
+  }
+
+  // Touch event handlers
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    e.preventDefault()
+
+    if (e.touches.length === 1) {
+      // Single touch - start panning
+      if (transform.scale <= 1) return
+
+      setIsDragging(true)
+      const touch = e.touches[0]
+      setDragStart({
+        x: touch.clientX,
+        y: touch.clientY,
+        translateX: transform.translateX,
+        translateY: transform.translateY
+      })
+    } else if (e.touches.length === 2) {
+      // Multi-touch - start pinch zoom
+      setIsDragging(false)
+      const distance = getTouchDistance(e.touches)
+      const center = getTouchCenter(e.touches)
+
+      setLastTouchDistance(distance)
+      setTouchStartTransform(transform)
+      setTouchCenter(center)
+    }
+  }, [transform])
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    e.preventDefault()
+
+    if (e.touches.length === 1 && isDragging) {
+      // Single touch panning
+      const touch = e.touches[0]
+      const deltaX = touch.clientX - dragStart.x
+      const deltaY = touch.clientY - dragStart.y
+
+      const newTranslateX = dragStart.translateX + deltaX
+      const newTranslateY = dragStart.translateY + deltaY
+
+      const constrained = constrainTranslation(newTranslateX, newTranslateY, transform.scale)
+
+      setTransform(prev => ({
+        ...prev,
+        translateX: constrained.translateX,
+        translateY: constrained.translateY
+      }))
+    } else if (e.touches.length === 2 && lastTouchDistance !== null) {
+      // Pinch zoom
+      const currentDistance = getTouchDistance(e.touches)
+      const currentCenter = getTouchCenter(e.touches)
+
+      if (currentDistance && currentDistance > 0) {
+        const scaleRatio = currentDistance / lastTouchDistance
+        const newScale = Math.max(0.5, Math.min(5, touchStartTransform.scale * scaleRatio))
+
+        // Handle translation during pinch
+        const centerDeltaX = currentCenter.x - touchCenter.x
+        const centerDeltaY = currentCenter.y - touchCenter.y
+
+        const newTranslateX = touchStartTransform.translateX + centerDeltaX * 0.5
+        const newTranslateY = touchStartTransform.translateY + centerDeltaY * 0.5
+
+        const constrained = constrainTranslation(newTranslateX, newTranslateY, newScale)
+
+        setTransform({
+          scale: newScale,
+          translateX: constrained.translateX,
+          translateY: constrained.translateY
+        })
+      }
+    }
+  }, [isDragging, dragStart, lastTouchDistance, touchStartTransform, touchCenter, constrainTranslation])
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    e.preventDefault()
+
+    if (e.touches.length === 0) {
+      // All touches ended
+      setIsDragging(false)
+      setLastTouchDistance(null)
+    } else if (e.touches.length === 1) {
+      // Went from multi-touch to single touch
+      setLastTouchDistance(null)
+
+      // If we were zooming and now have one finger, prepare for panning
+      if (transform.scale > 1) {
+        const touch = e.touches[0]
+        setDragStart({
+          x: touch.clientX,
+          y: touch.clientY,
+          translateX: transform.translateX,
+          translateY: transform.translateY
+        })
+        setIsDragging(true)
+      }
+    }
+  }, [transform])
+
+  // Mouse event handlers (keep existing functionality)
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    if (e.button !== 0) return
+    if (transform.scale <= 1) return
+
+    setIsDragging(true)
+    setDragStart({
+      x: e.clientX,
+      y: e.clientY,
+      translateX: transform.translateX,
+      translateY: transform.translateY
+    })
+  }, [transform])
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (!isDragging) return
@@ -176,7 +389,6 @@ export default function Earth({
     const newTranslateX = dragStart.translateX + deltaX
     const newTranslateY = dragStart.translateY + deltaY
 
-    // Apply constraints
     const constrained = constrainTranslation(newTranslateX, newTranslateY, transform.scale)
 
     setTransform(prev => ({
@@ -193,9 +405,8 @@ export default function Earth({
   const handleWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault()
     const delta = e.deltaY > 0 ? 0.9 : 1.1
-    const newScale = Math.max(1.2, Math.min(5, transform.scale * delta))
+    const newScale = Math.max(0.5, Math.min(5, transform.scale * delta))
 
-    // Constrain translation for the new scale
     const constrained = constrainTranslation(transform.translateX, transform.translateY, newScale)
 
     setTransform(() => ({
@@ -235,12 +446,11 @@ export default function Earth({
     const isTravelingToHere = location && mapTravelDestination === location.id
     const isTravelingFromHere = location && character?.current_location_id === location.id && isTravelingOnMap
 
-    // Get computed colors from CSS custom properties
     const style = getComputedStyle(document.documentElement)
     const isDark = document.documentElement.classList.contains('dark')
 
-    let fill = isDark ? '#374151' : '#9ca3af' // Default gray
-    let stroke = isDark ? '#4b5563' : '#d1d5db' // Border gray
+    let fill = isDark ? '#374151' : '#9ca3af'
+    let stroke = isDark ? '#4b5563' : '#d1d5db'
     let strokeWidth = '0.5'
     let opacity = '0.8'
     let filter = 'none'
@@ -252,38 +462,36 @@ export default function Earth({
       stroke = isDark ? '#6b7280' : '#9ca3af'
     }
 
-    // Add glitch effects during travel
     if (isTravelingOnMap && (isTravelingFromHere || isTravelingToHere)) {
-      // Glitch effect for source and destination
       filter = 'hue-rotate(90deg) saturate(150%)'
       opacity = '1'
 
       if (isTravelingFromHere) {
-        fill = '#ef4444' // Red for departure
+        fill = '#ef4444'
         stroke = '#ffffff'
         strokeWidth = '2'
       }
 
       if (isTravelingToHere) {
-        fill = '#f59e0b' // Orange for destination
+        fill = '#f59e0b'
         stroke = '#ffffff'
         strokeWidth = '2'
       }
     }
 
     if (isSelected) {
-      fill = isDark ? '#3b82f6' : '#2563eb' // Blue
+      fill = isDark ? '#3b82f6' : '#2563eb'
       stroke = isDark ? '#ffffff' : '#1e40af'
       strokeWidth = '2'
       opacity = '1'
     } else if (isPlayerHere && !isTravelingOnMap) {
-      stroke = '#22c55e' // Green for current location
+      stroke = '#22c55e'
       strokeWidth = '3'
       opacity = '1'
     } else if (isHovered) {
       opacity = '1'
       strokeWidth = '1.5'
-      stroke = isDark ? '#60a5fa' : '#3b82f6' // Light blue
+      stroke = isDark ? '#60a5fa' : '#3b82f6'
     }
 
     return {
@@ -360,13 +568,9 @@ export default function Earth({
       )}
 
       {/* SCREEN EFFECTS DURING TRAVEL */}
-
       {isTravelingOnMap && (
         <>
-          {/* Subtle screen flash */}
           <div className="absolute inset-0 bg-primary/5 pointer-events-none z-20 travel-flash" />
-
-          {/* Scanning lines */}
           <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden">
             <div className="absolute w-full h-0.5 bg-primary/60 scan-line" style={{ top: '20%' }} />
             <div
@@ -405,7 +609,7 @@ export default function Earth({
               size="sm"
               variant="outline"
               onClick={() => {
-                const newScale = Math.max(0.1, transform.scale * 0.8)
+                const newScale = Math.max(0.5, transform.scale * 0.8)
                 const constrained = constrainTranslation(transform.translateX, transform.translateY, newScale)
                 setTransform(() => ({
                   scale: newScale,
@@ -427,6 +631,32 @@ export default function Earth({
             </Button>
           </div>
         </div>
+
+        {/* Position Testing Controls */}
+        <div className="bg-background/95 border border-border rounded p-2">
+          <div className="text-xs text-muted-foreground mb-2 font-mono">POSITION_TEST</div>
+          <div className="flex flex-col gap-1">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={saveCurrentPosition}
+              className="h-8 w-8 p-0 font-mono"
+              title="Save current position"
+            >
+              💾
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={jumpToSavedPosition}
+              disabled={!savedPosition}
+              className={`h-8 w-8 p-0 font-mono ${!savedPosition ? 'opacity-50' : ''}`}
+              title="Jump to saved position"
+            >
+              🎯
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* Terminal SVG Map Container */}
@@ -436,14 +666,18 @@ export default function Earth({
           cursor: transform.scale <= 1 ? 'default' : (isDragging ? 'grabbing' : 'grab'),
           transform: `scale(${transform.scale}) translate(${transform.translateX}px, ${transform.translateY}px)`,
           transformOrigin: 'center center',
-          height: 'calc(100vh - 48px)', // Account for terminal header
-          marginTop: '48px' // Space for terminal header
+          height: 'calc(100vh - 48px)',
+          marginTop: '48px',
+          touchAction: 'none'
         }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
         onWheel={handleWheel}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       >
         <svg
           ref={svgRef}
@@ -462,7 +696,6 @@ export default function Earth({
                 opacity="0.2"
               />
             </pattern>
-            {/* Add a subtle glow filter for better visibility */}
             <filter id="glow">
               <feGaussianBlur stdDeviation="1" result="coloredBlur" />
               <feMerge>
@@ -513,7 +746,6 @@ export default function Earth({
 
             return (
               <g>
-                {/* Main player indicator */}
                 <circle
                   cx={coords.x} cy={coords.y}
                   r="8"
@@ -522,7 +754,6 @@ export default function Earth({
                   strokeWidth="2"
                   opacity="1"
                 />
-                {/* Expanding ring 1 */}
                 <circle
                   cx={coords.x} cy={coords.y}
                   r="15"
@@ -531,7 +762,6 @@ export default function Earth({
                   strokeWidth="2"
                   className="animate-ping"
                 />
-                {/* Expanding ring 2 */}
                 <circle
                   cx={coords.x} cy={coords.y}
                   r="25"
@@ -555,7 +785,6 @@ export default function Earth({
 
             return (
               <g>
-                {/* Main destination marker */}
                 <circle
                   cx={coords.x} cy={coords.y}
                   r="10"
@@ -564,7 +793,6 @@ export default function Earth({
                   strokeWidth="2"
                   opacity="1"
                 />
-                {/* Multiple expanding destination rings */}
                 {[1, 2, 3, 4].map(i => (
                   <circle
                     key={`destination-${i}`}
@@ -577,7 +805,6 @@ export default function Earth({
                     style={{ animationDelay: `${i * 0.3}s` }}
                   />
                 ))}
-                {/* Beacon effect */}
                 <circle
                   cx={coords.x} cy={coords.y}
                   r="5"
@@ -778,11 +1005,38 @@ export default function Earth({
       )}
 
       {/* Terminal Debug Info */}
-      <div className="absolute bottom-16 left-4 bg-background/95 border border-border px-2 py-1 rounded text-xs font-mono">
+      <div className="absolute bottom-16 left-4 bg-background/95 border border-border px-2 py-1 rounded text-xs font-mono space-y-1">
         <div className="flex items-center gap-2 text-muted-foreground">
           <Database className="w-3 h-3" />
           <span>MAPPED: {locationLookup.size}/{baseSVGData.paths.length}</span>
           {selectedPath && <span>• SELECTED: {selectedPath}</span>}
+        </div>
+
+        {/* Transform Debug Info with Copy Button */}
+        <div className="text-muted-foreground border-t border-border pt-1">
+          <div className="flex items-center justify-between">
+            <div>
+              <div>SCALE: {transform.scale.toFixed(2)}x</div>
+              <div>TRANSLATE: X={transform.translateX.toFixed(1)}, Y={transform.translateY.toFixed(1)}</div>
+              <div className="text-chart-3">
+                {isDragging ? 'DRAGGING' : lastTouchDistance !== null ? 'PINCHING' : 'IDLE'}
+              </div>
+              {savedPosition && (
+                <div className="text-chart-1 text-xs">
+                  SAVED: {savedPosition.scale.toFixed(2)}x, X={savedPosition.translateX.toFixed(1)}, Y={savedPosition.translateY.toFixed(1)}
+                </div>
+              )}
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={copyCoordinatesToClipboard}
+              className="h-6 w-6 p-0 ml-2"
+              title="Copy map coordinates link"
+            >
+              📋
+            </Button>
+          </div>
         </div>
       </div>
 

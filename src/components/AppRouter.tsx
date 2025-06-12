@@ -547,8 +547,25 @@ function EnteringGameScreen() {
         </div>
 
         <div className="text-center space-y-4">
-          <div className="w-16 h-16 mx-auto mb-4 bg-muted/30 rounded-full flex items-center justify-center border border-primary/20">
-            <Zap className="w-8 h-8 text-primary" />
+          {/* Character Image Display */}
+          <div className="w-24 h-24 mx-auto mb-4 bg-muted/30 rounded-xs flex items-center justify-center border-0 border-primary/30 overflow-hidden">
+            {state.character?.current_image_url ? (
+              <img
+                src={state.character.current_image_url}
+                alt={state.character.name || 'Character'}
+                className="w-full h-full object-cover rounded-xs"
+                onError={(e) => {
+                  // Fallback to icon if image fails to load
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  const fallback = target.nextElementSibling as HTMLElement;
+                  if (fallback) fallback.style.display = 'block';
+                }}
+              />
+            ) : null}
+            <Zap
+              className={`w-8 h-8 text-primary ${state.character?.current_image_url ? 'hidden' : 'block'}`}
+            />
           </div>
 
           <div>
@@ -637,7 +654,6 @@ function EnteringGameScreen() {
     </div>
   )
 }
-
 function ErrorScreen({ error, onRetry }: { error?: string, onRetry: () => void }) {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
