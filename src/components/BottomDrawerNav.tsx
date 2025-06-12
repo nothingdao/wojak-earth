@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button'
 import { Drawer, DrawerContent, DrawerHeader, DrawerTrigger } from '@/components/ui/drawer'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ModeToggle } from './mode-toggle'
 import { WalletConnectButton } from './wallet-connect-button'
@@ -89,15 +88,14 @@ export function BottomDrawerNav({
     action()
   }
 
-  // Build navigation items with terminal styling
+  // Build navigation items without explicit colors
   const navItems = [
     {
       id: 'home',
-      icon: Home,
+      icon: MapPin,
       label: 'HOME_BASE',
       action: onHomeClick,
       current: currentView === 'main',
-      color: 'text-green-500'
     },
     {
       id: 'map',
@@ -105,7 +103,6 @@ export function BottomDrawerNav({
       label: 'WORLD_MAP',
       action: onMapClick,
       current: currentView === 'map',
-      color: 'text-blue-500'
     },
     {
       id: 'inventory',
@@ -114,7 +111,6 @@ export function BottomDrawerNav({
       action: onInventoryClick,
       current: currentView === 'inventory',
       badge: character?.inventory?.length,
-      color: 'text-purple-500'
     },
     {
       id: 'characters',
@@ -122,7 +118,6 @@ export function BottomDrawerNav({
       label: 'PLAYERS',
       action: onCharactersClick,
       current: currentView === 'characters',
-      color: 'text-orange-500'
     },
     {
       id: 'leaderboards',
@@ -130,7 +125,6 @@ export function BottomDrawerNav({
       label: 'RANKINGS',
       action: onLeaderboardsClick,
       current: currentView === 'leaderboards',
-      color: 'text-yellow-500'
     },
     {
       id: 'rust-market',
@@ -138,7 +132,6 @@ export function BottomDrawerNav({
       label: 'EXCHANGE',
       action: onRustMarketClick,
       current: currentView === 'rust-market',
-      color: 'text-cyan-500'
     },
     {
       id: 'profile',
@@ -146,7 +139,6 @@ export function BottomDrawerNav({
       label: 'PROFILE',
       action: onProfileClick,
       current: currentView === 'profile',
-      color: 'text-pink-500'
     },
     {
       id: 'economy',
@@ -154,7 +146,6 @@ export function BottomDrawerNav({
       label: 'ECONOMY',
       action: onEconomyClick,
       current: currentView === 'economy',
-      color: 'text-emerald-500'
     }
   ]
 
@@ -166,7 +157,6 @@ export function BottomDrawerNav({
       label: 'ADMIN_PANEL',
       action: onAdminClick,
       current: currentView === 'admin',
-      color: 'text-red-500'
     })
   }
 
@@ -272,13 +262,15 @@ export function BottomDrawerNav({
                     size="sm"
                     variant={item.current ? "default" : "ghost"}
                     onClick={item.action}
-                    className={`h-8 px-3 font-mono text-xs ${item.current
-                      ? 'bg-primary/20 text-primary border border-primary/30'
-                      : 'hover:bg-muted/50'
-                      } ${isAdmin ? 'text-red-500 hover:text-red-400' : ''}`}
+                    className={`h-8 px-3 font-mono text-xs ${isAdmin
+                      ? item.current
+                        ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90'
+                        : 'text-destructive hover:text-destructive hover:bg-destructive/10'
+                      : ''
+                      }`}
                     title={item.label}
                   >
-                    <IconComponent className={`w-4 h-4 mr-1 ${item.current ? 'text-primary' : item.color}`} />
+                    <IconComponent className="w-4 h-4 mr-1" />
                     <span className="hidden lg:inline">{item.label}</span>
                     {item.badge && (
                       <Badge variant="secondary" className="ml-1 h-4 px-1 text-xs font-mono">{item.badge}</Badge>
@@ -391,18 +383,16 @@ export function BottomDrawerNav({
                             return (
                               <Button
                                 key={item.id}
-                                className={`w-full justify-start h-12 font-mono text-xs ${item.current
-                                  ? (isAdmin
-                                    ? 'bg-red-500/20 border-red-500/30 text-red-500'
-                                    : 'bg-primary/20 border-primary/30 text-primary'
-                                  )
-                                  : 'hover:bg-muted/50'
-                                  } ${isAdmin && !item.current ? 'text-red-500 hover:text-red-400' : ''}`}
+                                className={`w-full justify-start h-12 font-mono text-xs ${isAdmin
+                                  ? item.current
+                                    ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90 border-destructive'
+                                    : 'text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/20'
+                                  : ''
+                                  }`}
                                 variant={item.current ? "default" : "outline"}
                                 onClick={() => handleNavigation(item.action)}
                               >
-                                <IconComponent className={`w-4 h-4 mr-3 ${item.current ? (isAdmin ? 'text-red-500' : 'text-primary') : item.color
-                                  }`} />
+                                <IconComponent className="w-4 h-4 mr-3" />
                                 <span className="font-mono">{item.label}</span>
                                 {item.badge && (
                                   <Badge variant="secondary" className="ml-auto mr-2 font-mono text-xs">
@@ -462,9 +452,9 @@ export function BottomDrawerNav({
                               COPY_ADDR
                             </Button>
                             <Button
-                              variant="outline"
+                              variant="destructive"
                               size="sm"
-                              className="text-red-500 hover:text-red-400 font-mono text-xs"
+                              className="font-mono text-xs"
                               onClick={disconnect}
                             >
                               <LogOut className="w-3 h-3 mr-2" />
