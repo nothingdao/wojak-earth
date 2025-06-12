@@ -15,6 +15,7 @@ import {
   EconomyView
 } from './views'
 import type { Character, GameView } from '@/types'
+import { useGame } from '@/providers/GameProvider'
 
 interface ViewRendererProps {
   currentView: GameView
@@ -33,6 +34,8 @@ export function ViewRenderer({
 }: ViewRendererProps) {
   // State to manage fullscreen chat
   const [isFullscreenChat, setIsFullscreenChat] = useState(false)
+
+  const { state } = useGame()
 
   // Helper functions to adapt your existing component interfaces
   const handleSetPrimary = async (inventoryId: string, category: string) => {
@@ -157,8 +160,8 @@ export function ViewRenderer({
           locations={gameData.locations || []}
           character={character}
           onTravel={actions.handleTravel}
-          isTravelingOnMap={gameData.isTravelingOnMap}
-          mapTravelDestination={gameData.mapTravelDestination}
+          isTravelingOnMap={state.isTravelingOnMap}
+          mapTravelDestination={state.mapTravelDestination}
         />
       )
 

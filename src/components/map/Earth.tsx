@@ -1,5 +1,5 @@
 // src/components/map/Earth.tsx
-import { useState, useCallback, useRef, useEffect } from "react"
+import { useState, useCallback, useRef } from "react"
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { baseSVGData } from "../../data/baseMapSVG"
@@ -46,6 +46,7 @@ interface DatabaseLocation {
   parentlocation_id?: string | null
   created_at: string
   updated_at: string
+  is_private?: boolean
 }
 
 interface EarthProps {
@@ -303,24 +304,6 @@ export default function Earth({
 
   const selectedLocation = selectedPath ? getLocation(selectedPath) : null
 
-  // DEBUG: Log theme and CSS variables on mount
-  useEffect(() => {
-    const isDark = document.documentElement.classList.contains('dark')
-    const style = getComputedStyle(document.documentElement)
-    console.log('[DEBUG] Theme:', isDark ? 'dark' : 'light')
-    console.log('[DEBUG] --map-forest:', style.getPropertyValue('--map-forest'))
-    console.log('[DEBUG] --map-default:', style.getPropertyValue('--map-default'))
-  }, [])
-
-  // DEBUG: Log animation-related state changes
-  useEffect(() => {
-    console.log('[DEBUG] isTravelingOnMap:', isTravelingOnMap)
-    console.log('[DEBUG] selectedPath:', selectedPath)
-    console.log('[DEBUG] hoveredPath:', hoveredPath)
-    console.log('[DEBUG] mapTravelDestination:', mapTravelDestination)
-    console.log('[DEBUG] transform:', transform)
-  }, [isTravelingOnMap, selectedPath, hoveredPath, mapTravelDestination, transform])
-
   return (
     <div className="w-full h-[calc(100vh-144px)] bg-background overflow-hidden font-mono relative">
 
@@ -349,7 +332,7 @@ export default function Earth({
             <div className="flex items-center gap-3 text-xs font-mono">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-destructive rounded-full animate-pulse" />
-                <span className="text-destructive font-bold">NEURAL_LINK_ACTIVE</span>
+                <span className="text-destructive font-bold">TRAVEL_LINK_ACTIVE</span>
               </div>
 
               <div className="flex-1 bg-muted/50 rounded-full h-2 overflow-hidden border border-border">
@@ -389,20 +372,11 @@ export default function Earth({
             <div
               className="absolute w-full h-0.5 bg-primary/40 scan-line"
               style={{
-                top: '60%',
+                top: '90%',
                 animationDelay: '1s'
               }}
             />
           </div>
-
-          {/* Corner brackets */}
-          <div className="absolute top-4 left-4 w-6 h-6 border-l-2 border-t-2 border-destructive animate-pulse z-30" />
-          <div className="absolute top-4 right-4 w-6 h-6 border-r-2 border-t-2 border-destructive animate-pulse z-30"
-            style={{ animationDelay: '0.2s' }} />
-          <div className="absolute bottom-20 left-4 w-6 h-6 border-l-2 border-b-2 border-destructive animate-pulse z-30"
-            style={{ animationDelay: '0.4s' }} />
-          <div className="absolute bottom-20 right-4 w-6 h-6 border-r-2 border-b-2 border-destructive animate-pulse z-30"
-            style={{ animationDelay: '0.6s' }} />
         </>
       )}
 
@@ -505,11 +479,6 @@ export default function Earth({
             const isTravelingFromHere = location && character?.current_location_id === location.id && isTravelingOnMap
             const isTravelingToHere = location && mapTravelDestination === location.id
 
-            // DEBUG: Log when a path is rendered with animation
-            if (isTravelingOnMap && (isTravelingFromHere || isTravelingToHere)) {
-              console.log(`[DEBUG] Path ${path.id} has animate-pulse:`, isTravelingFromHere || isTravelingToHere)
-            }
-
             return (
               <g key={path.id}>
                 <path
@@ -540,20 +509,8 @@ export default function Earth({
             const coords = getLocationCoords(currentLocation.svg_path_id)
             if (!coords) return null
 
-            // DEBUG: Log when player indicator is rendered
-            console.log('[DEBUG] Rendering player indicator at', coords)
-
             return (
               <g>
-                {/* DEBUG OVERLAY CIRCLE */}
-                <circle
-                  cx={coords.x}
-                  cy={coords.y}
-                  r="30"
-                  fill="red"
-                  opacity="0.3"
-                  style={{ pointerEvents: 'none' }}
-                />
                 {/* Main player indicator */}
                 <circle
                   cx={coords.x} cy={coords.y}
@@ -570,7 +527,6 @@ export default function Earth({
                   fill="none"
                   stroke="#22c55e"
                   strokeWidth="2"
-                  opacity="0"
                   className="animate-ping"
                 />
                 {/* Expanding ring 2 */}
@@ -580,7 +536,6 @@ export default function Earth({
                   fill="none"
                   stroke="#22c55e"
                   strokeWidth="1"
-                  opacity="0"
                   className="animate-ping"
                   style={{ animationDelay: '0.5s' }}
                 />
@@ -596,20 +551,8 @@ export default function Earth({
             const coords = getLocationCoords(destLocation.svg_path_id)
             if (!coords) return null
 
-            // DEBUG: Log when travel destination indicator is rendered
-            console.log('[DEBUG] Rendering travel destination indicator at', coords)
-
             return (
               <g>
-                {/* DEBUG OVERLAY CIRCLE */}
-                <circle
-                  cx={coords.x}
-                  cy={coords.y}
-                  r="30"
-                  fill="red"
-                  opacity="0.3"
-                  style={{ pointerEvents: 'none' }}
-                />
                 {/* Main destination marker */}
                 <circle
                   cx={coords.x} cy={coords.y}
@@ -628,7 +571,6 @@ export default function Earth({
                     fill="none"
                     stroke="#f59e0b"
                     strokeWidth="1"
-                    opacity="0"
                     className="animate-ping"
                     style={{ animationDelay: `${i * 0.3}s` }}
                   />
@@ -638,7 +580,6 @@ export default function Earth({
                   cx={coords.x} cy={coords.y}
                   r="5"
                   fill="#fbbf24"
-                  opacity="0"
                   className="animate-ping"
                   style={{ animationDuration: '0.8s' }}
                 />
@@ -799,7 +740,8 @@ export default function Earth({
                 disabled={
                   character.current_location_id === selectedLocation.id ||
                   (!!selectedLocation.min_level && character.level < selectedLocation.min_level) ||
-                  (!!selectedLocation.entry_cost && selectedLocation.entry_cost > (character.coins || 0))
+                  (!!selectedLocation.entry_cost && selectedLocation.entry_cost > (character.coins || 0)) ||
+                  !!selectedLocation.is_private
                 }
                 className={`w-full h-8 text-xs font-mono ${character.current_location_id === selectedLocation.id
                   ? 'bg-muted text-muted-foreground cursor-not-allowed'
@@ -842,17 +784,11 @@ export default function Earth({
         </div>
       </div>
 
-      {/* DEBUG PANEL */}
-      <div className="absolute bottom-4 right-1 bg-background/95 border border-destructive px-2 py-1 rounded text-xs font-mono z-50 shadow-lg" style={{ minWidth: 220 }}>
-        <div className="text-destructive font-bold mb-1">DEBUG PANEL</div>
-        <div>isTravelingOnMap: <span className="font-mono">{String(isTravelingOnMap)}</span></div>
-        <div>selectedPath: <span className="font-mono">{selectedPath || 'null'}</span></div>
-        <div>hoveredPath: <span className="font-mono">{hoveredPath || 'null'}</span></div>
-        <div>mapTravelDestination: <span className="font-mono">{mapTravelDestination || 'null'}</span></div>
-        <div>transform: <span className="font-mono">{JSON.stringify(transform)}</span></div>
-        <div>Theme: <span className="font-mono">{document.documentElement.classList.contains('dark') ? 'dark' : 'light'}</span></div>
-        <div>SVG Anim Classes: <span className="font-mono">animate-pulse, ping</span></div>
-      </div>
+      {selectedLocation && (
+        <div style={{ color: 'red', fontSize: 12 }}>
+          is_private: {String(selectedLocation.is_private)}
+        </div>
+      )}
     </div>
   )
 }
