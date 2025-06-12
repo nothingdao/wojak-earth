@@ -1,5 +1,5 @@
 // src/components/map/Earth.tsx
-import { useState, useCallback, useRef } from "react"
+import { useState, useCallback, useRef, useEffect } from "react"
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { baseSVGData } from "../../data/baseMapSVG"
@@ -69,6 +69,24 @@ export default function Earth({
   const [isDragging, setIsDragging] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0, translateX: 0, translateY: 0 })
   const svgRef = useRef<SVGSVGElement>(null)
+
+  // Location coordinates mapping
+  const getLocationCoords = (pathId: string): { x: number, y: number } | null => {
+    // These coordinates are rough estimates based on your viewBox 0 0 788 1440
+    // You can adjust these to better match your actual map locations
+    const coordinates: Record<string, { x: number, y: number }> = {
+      'drowning-mirror-lake': { x: 575, y: 655 },     // Top right area
+      'fungi-networks': { x: 500, y: 800 },           // Center-right area  
+      'the-centerlands': { x: 400, y: 700 },          // True center
+      'frostpine-reaches': { x: 520, y: 200 },        // Top area
+      'underland': { x: 200, y: 1000 },               // Bottom left
+      'underland-island': { x: 315, y: 1175 },        // Bottom center
+      'solana-beach': { x: 345, y: 790 },             // Center-left
+      // Add more locations as needed
+    }
+
+    return coordinates[pathId] || null
+  }
 
   const handleMapTravel = async (location_id: string) => {
     setSelectedPath(null) // Close the selection panel
@@ -214,6 +232,7 @@ export default function Earth({
     const isHovered = pathId === hoveredPath
     const isPlayerHere = location && character?.current_location_id === location.id
     const isTravelingToHere = location && mapTravelDestination === location.id
+    const isTravelingFromHere = location && character?.current_location_id === location.id && isTravelingOnMap
 
     // Get computed colors from CSS custom properties
     const style = getComputedStyle(document.documentElement)
@@ -223,6 +242,7 @@ export default function Earth({
     let stroke = isDark ? '#4b5563' : '#d1d5db' // Border gray
     let strokeWidth = '0.5'
     let opacity = '0.8'
+    let filter = 'none'
 
     if (location) {
       fill = getBiomeColor(location.biome)
@@ -231,19 +251,33 @@ export default function Earth({
       stroke = isDark ? '#6b7280' : '#9ca3af'
     }
 
+    // Add glitch effects during travel
+    if (isTravelingOnMap && (isTravelingFromHere || isTravelingToHere)) {
+      // Glitch effect for source and destination
+      filter = 'hue-rotate(90deg) saturate(150%)'
+      opacity = '1'
+
+      if (isTravelingFromHere) {
+        fill = '#ef4444' // Red for departure
+        stroke = '#ffffff'
+        strokeWidth = '2'
+      }
+
+      if (isTravelingToHere) {
+        fill = '#f59e0b' // Orange for destination
+        stroke = '#ffffff'
+        strokeWidth = '2'
+      }
+    }
+
     if (isSelected) {
       fill = isDark ? '#3b82f6' : '#2563eb' // Blue
       stroke = isDark ? '#ffffff' : '#1e40af'
       strokeWidth = '2'
       opacity = '1'
-    } else if (isPlayerHere) {
+    } else if (isPlayerHere && !isTravelingOnMap) {
       stroke = '#22c55e' // Green for current location
       strokeWidth = '3'
-      opacity = '1'
-    } else if (isTravelingToHere && isTravelingOnMap) {
-      fill = isDark ? '#f59e0b' : '#f97316' // Orange for destination
-      stroke = isDark ? '#fbbf24' : '#ea580c'
-      strokeWidth = '2'
       opacity = '1'
     } else if (isHovered) {
       opacity = '1'
@@ -256,10 +290,10 @@ export default function Earth({
       stroke,
       strokeWidth,
       opacity,
+      filter,
       cursor: 'pointer'
     }
   }, [getLocation, selectedPath, hoveredPath, character, getBiomeColor, isTravelingOnMap, mapTravelDestination])
-
 
   // Handle path clicks
   const handlePathClick = useCallback((pathId: string) => {
@@ -269,8 +303,27 @@ export default function Earth({
 
   const selectedLocation = selectedPath ? getLocation(selectedPath) : null
 
+  // DEBUG: Log theme and CSS variables on mount
+  useEffect(() => {
+    const isDark = document.documentElement.classList.contains('dark')
+    const style = getComputedStyle(document.documentElement)
+    console.log('[DEBUG] Theme:', isDark ? 'dark' : 'light')
+    console.log('[DEBUG] --map-forest:', style.getPropertyValue('--map-forest'))
+    console.log('[DEBUG] --map-default:', style.getPropertyValue('--map-default'))
+  }, [])
+
+  // DEBUG: Log animation-related state changes
+  useEffect(() => {
+    console.log('[DEBUG] isTravelingOnMap:', isTravelingOnMap)
+    console.log('[DEBUG] selectedPath:', selectedPath)
+    console.log('[DEBUG] hoveredPath:', hoveredPath)
+    console.log('[DEBUG] mapTravelDestination:', mapTravelDestination)
+    console.log('[DEBUG] transform:', transform)
+  }, [isTravelingOnMap, selectedPath, hoveredPath, mapTravelDestination, transform])
+
   return (
     <div className="w-full h-[calc(100vh-144px)] bg-background overflow-hidden font-mono relative">
+
       {/* Terminal Header */}
       <div className="absolute top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur border-b border-border p-2">
         <div className="flex items-center justify-between">
@@ -289,8 +342,27 @@ export default function Earth({
         </div>
       </div>
 
+      {/* PROGRESS BAR */}
+      {isTravelingOnMap && (
+        <div className="absolute top-12 left-0 right-0 z-40 px-4">
+          <div className="bg-background/95 border border-border rounded px-3 py-2 backdrop-blur">
+            <div className="flex items-center gap-3 text-xs font-mono">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-destructive rounded-full animate-pulse" />
+                <span className="text-destructive font-bold">NEURAL_LINK_ACTIVE</span>
+              </div>
 
-      // Add this traveling status display after your existing terminal header
+              <div className="flex-1 bg-muted/50 rounded-full h-2 overflow-hidden border border-border">
+                <div className="h-full bg-gradient-to-r from-destructive via-chart-3 to-chart-2 travel-progress" />
+              </div>
+
+              <span className="text-muted-foreground">TRANSFERRING_CONSCIOUSNESS</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Original traveling status display */}
       {isTravelingOnMap && (
         <div className="absolute top-16 right-4 bg-background/95 border border-border px-3 py-2 rounded shadow-lg z-40 font-mono">
           <div className="flex items-center gap-2 text-xs">
@@ -302,6 +374,36 @@ export default function Earth({
             })()}
           </div>
         </div>
+      )}
+
+      {/* SCREEN EFFECTS DURING TRAVEL */}
+
+      {isTravelingOnMap && (
+        <>
+          {/* Subtle screen flash */}
+          <div className="absolute inset-0 bg-primary/5 pointer-events-none z-20 travel-flash" />
+
+          {/* Scanning lines */}
+          <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden">
+            <div className="absolute w-full h-0.5 bg-primary/60 scan-line" style={{ top: '20%' }} />
+            <div
+              className="absolute w-full h-0.5 bg-primary/40 scan-line"
+              style={{
+                top: '60%',
+                animationDelay: '1s'
+              }}
+            />
+          </div>
+
+          {/* Corner brackets */}
+          <div className="absolute top-4 left-4 w-6 h-6 border-l-2 border-t-2 border-destructive animate-pulse z-30" />
+          <div className="absolute top-4 right-4 w-6 h-6 border-r-2 border-t-2 border-destructive animate-pulse z-30"
+            style={{ animationDelay: '0.2s' }} />
+          <div className="absolute bottom-20 left-4 w-6 h-6 border-l-2 border-b-2 border-destructive animate-pulse z-30"
+            style={{ animationDelay: '0.4s' }} />
+          <div className="absolute bottom-20 right-4 w-6 h-6 border-r-2 border-b-2 border-destructive animate-pulse z-30"
+            style={{ animationDelay: '0.6s' }} />
+        </>
       )}
 
       {/* Terminal Control Panel */}
@@ -395,10 +497,18 @@ export default function Earth({
           </defs>
           <rect width="100%" height="100%" fill="url(#grid)" opacity="0.3" />
 
+          {/* MAP PATHS */}
           {baseSVGData.paths.map((path) => {
             const style = getPathStyle(path.id)
             const location = getLocation(path.id)
             const isPlayerHere = location && character?.current_location_id === location.id
+            const isTravelingFromHere = location && character?.current_location_id === location.id && isTravelingOnMap
+            const isTravelingToHere = location && mapTravelDestination === location.id
+
+            // DEBUG: Log when a path is rendered with animation
+            if (isTravelingOnMap && (isTravelingFromHere || isTravelingToHere)) {
+              console.log(`[DEBUG] Path ${path.id} has animate-pulse:`, isTravelingFromHere || isTravelingToHere)
+            }
 
             return (
               <g key={path.id}>
@@ -409,50 +519,132 @@ export default function Earth({
                   stroke={style.stroke}
                   strokeWidth={style.strokeWidth}
                   opacity={style.opacity}
+                  filter={style.filter}
                   style={{ cursor: style.cursor }}
+                  className={`
+                    ${isTravelingOnMap && (isTravelingFromHere || isTravelingToHere) ? 'animate-pulse' : ''}
+                  `}
                   onClick={() => handlePathClick(path.id)}
                   onMouseEnter={() => setHoveredPath(path.id)}
                   onMouseLeave={() => setHoveredPath(null)}
                 />
-                {/* Player location indicator */}
-                {isPlayerHere && (
-                  <circle
-                    cx="0" cy="0"
-                    r="3"
-                    fill="#22c55e"
-                    stroke="#ffffff"
-                    strokeWidth="1"
-                    opacity="1"
-                    className="animate-pulse"
-                    style={{
-                      transform: `translate(${path.id === 'california' ? '100px' : '0px'}, ${path.id === 'california' ? '100px' : '0px'})`
-                    }}
-                  />
-                )}
-
-                {isTravelingOnMap && mapTravelDestination && (() => {
-                  const destLocation = locations.find(loc => loc.id === mapTravelDestination)
-                  const destPath = baseSVGData.paths.find(path => path.id === destLocation?.svg_path_id)
-                  if (!destPath) return null
-
-                  return (
-                    <circle
-                      cx="0" cy="0"
-                      r="4"
-                      fill="#f59e0b"
-                      stroke="#ffffff"
-                      strokeWidth="2"
-                      opacity="0.8"
-                      className="animate-ping"
-                      style={{
-                        transform: `translate(${destPath.id === 'california' ? '100px' : '0px'}, ${destPath.id === 'california' ? '100px' : '0px'})`
-                      }}
-                    />
-                  )
-                })()}
               </g>
             )
           })}
+
+          {/* LOCATION INDICATORS */}
+          {character && character.current_location_id && !isTravelingOnMap && (() => {
+            const currentLocation = locations.find(loc => loc.id === character.current_location_id)
+            if (!currentLocation?.svg_path_id) return null
+
+            const coords = getLocationCoords(currentLocation.svg_path_id)
+            if (!coords) return null
+
+            // DEBUG: Log when player indicator is rendered
+            console.log('[DEBUG] Rendering player indicator at', coords)
+
+            return (
+              <g>
+                {/* DEBUG OVERLAY CIRCLE */}
+                <circle
+                  cx={coords.x}
+                  cy={coords.y}
+                  r="30"
+                  fill="red"
+                  opacity="0.3"
+                  style={{ pointerEvents: 'none' }}
+                />
+                {/* Main player indicator */}
+                <circle
+                  cx={coords.x} cy={coords.y}
+                  r="8"
+                  fill="#22c55e"
+                  stroke="#ffffff"
+                  strokeWidth="2"
+                  opacity="1"
+                />
+                {/* Expanding ring 1 */}
+                <circle
+                  cx={coords.x} cy={coords.y}
+                  r="15"
+                  fill="none"
+                  stroke="#22c55e"
+                  strokeWidth="2"
+                  opacity="0"
+                  className="animate-ping"
+                />
+                {/* Expanding ring 2 */}
+                <circle
+                  cx={coords.x} cy={coords.y}
+                  r="25"
+                  fill="none"
+                  stroke="#22c55e"
+                  strokeWidth="1"
+                  opacity="0"
+                  className="animate-ping"
+                  style={{ animationDelay: '0.5s' }}
+                />
+              </g>
+            )
+          })()}
+
+          {/* TRAVEL DESTINATION INDICATOR */}
+          {isTravelingOnMap && mapTravelDestination && (() => {
+            const destLocation = locations.find(loc => loc.id === mapTravelDestination)
+            if (!destLocation?.svg_path_id) return null
+
+            const coords = getLocationCoords(destLocation.svg_path_id)
+            if (!coords) return null
+
+            // DEBUG: Log when travel destination indicator is rendered
+            console.log('[DEBUG] Rendering travel destination indicator at', coords)
+
+            return (
+              <g>
+                {/* DEBUG OVERLAY CIRCLE */}
+                <circle
+                  cx={coords.x}
+                  cy={coords.y}
+                  r="30"
+                  fill="red"
+                  opacity="0.3"
+                  style={{ pointerEvents: 'none' }}
+                />
+                {/* Main destination marker */}
+                <circle
+                  cx={coords.x} cy={coords.y}
+                  r="10"
+                  fill="#f59e0b"
+                  stroke="#ffffff"
+                  strokeWidth="2"
+                  opacity="1"
+                />
+                {/* Multiple expanding destination rings */}
+                {[1, 2, 3, 4].map(i => (
+                  <circle
+                    key={`destination-${i}`}
+                    cx={coords.x} cy={coords.y}
+                    r={15 + (i * 5)}
+                    fill="none"
+                    stroke="#f59e0b"
+                    strokeWidth="1"
+                    opacity="0"
+                    className="animate-ping"
+                    style={{ animationDelay: `${i * 0.3}s` }}
+                  />
+                ))}
+                {/* Beacon effect */}
+                <circle
+                  cx={coords.x} cy={coords.y}
+                  r="5"
+                  fill="#fbbf24"
+                  opacity="0"
+                  className="animate-ping"
+                  style={{ animationDuration: '0.8s' }}
+                />
+              </g>
+            )
+          })()}
         </svg>
       </div>
 
@@ -648,6 +840,18 @@ export default function Earth({
           <span>MAPPED: {locationLookup.size}/{baseSVGData.paths.length}</span>
           {selectedPath && <span>• SELECTED: {selectedPath}</span>}
         </div>
+      </div>
+
+      {/* DEBUG PANEL */}
+      <div className="absolute bottom-4 right-1 bg-background/95 border border-destructive px-2 py-1 rounded text-xs font-mono z-50 shadow-lg" style={{ minWidth: 220 }}>
+        <div className="text-destructive font-bold mb-1">DEBUG PANEL</div>
+        <div>isTravelingOnMap: <span className="font-mono">{String(isTravelingOnMap)}</span></div>
+        <div>selectedPath: <span className="font-mono">{selectedPath || 'null'}</span></div>
+        <div>hoveredPath: <span className="font-mono">{hoveredPath || 'null'}</span></div>
+        <div>mapTravelDestination: <span className="font-mono">{mapTravelDestination || 'null'}</span></div>
+        <div>transform: <span className="font-mono">{JSON.stringify(transform)}</span></div>
+        <div>Theme: <span className="font-mono">{document.documentElement.classList.contains('dark') ? 'dark' : 'light'}</span></div>
+        <div>SVG Anim Classes: <span className="font-mono">animate-pulse, ping</span></div>
       </div>
     </div>
   )

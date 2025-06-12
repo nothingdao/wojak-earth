@@ -166,3 +166,91 @@ body {
 * {
   touch-action: manipulation;
 }
+
+/* Travel effect animations */
+@keyframes travel-flash {
+  0% {
+    opacity: 0.3;
+  }
+
+  100% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes scan-line {
+  0% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+
+  50% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+@keyframes travel-progress {
+  0% {
+    transform: translateX(-20%);
+  }
+
+  100% {
+    transform: translateX(0%);
+  }
+}
+
+/* Core animations that should work */
+@keyframes ping {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  75%,
+  100% {
+    opacity: 0;
+    transform: scale(2);
+  }
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Utility classes */
+.animate-ping {
+  animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+      transform-box: fill-box;
+        transform-origin: center;
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      transform-box: fill-box;
+        transform-origin: center;
+}
+
+/* Travel-specific animations */
+.travel-flash {
+  animation: travel-flash 0.8s ease-out infinite alternate;
+}
+
+.scan-line {
+  animation: scan-line 3s linear infinite;
+}
+
+.travel-progress {
+  animation: travel-progress 2s ease-in-out infinite alternate;
+}
