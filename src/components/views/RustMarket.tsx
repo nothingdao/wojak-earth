@@ -850,7 +850,7 @@ const RustMarket: React.FC = () => {
       </div>
 
       {/* Market Stats */}
-      <div className="grid grid-cols-4 gap-4 mb-4">
+      <div className="grid grid-cols-3 sm:grid-cols-4 gap-4 mb-4">
         <div className="bg-muted/50 border border-primary/20 p-3 rounded">
           <div className="text-muted-foreground text-xs mb-1">SOL/SHARD</div>
           <div className="text-primary text-lg font-bold">{formatRate(currentRate)}</div>
@@ -861,7 +861,7 @@ const RustMarket: React.FC = () => {
         </div>
 
         <div className="bg-muted/50 border border-primary/20 p-3 rounded">
-          <div className="text-muted-foreground text-xs mb-1">24H VOLUME</div>
+          <div className="text-muted-foreground text-xs mb-1">24H VOL<span className="hidden sm:inline">UME</span></div>
           <div className="text-primary text-lg font-bold">{formatVolume(volume24h)}</div>
           <div className="text-muted-foreground text-xs">SOL</div>
         </div>
@@ -872,7 +872,7 @@ const RustMarket: React.FC = () => {
           <div className="text-muted-foreground text-xs">24H</div>
         </div>
 
-        <div className="bg-muted/50 border border-primary/20 p-3 rounded">
+        <div className="bg-muted/50 border border-primary/20 p-3 rounded hidden sm:block">
           <div className="text-muted-foreground text-xs mb-1">NETWORK</div>
           <div className="text-primary text-lg font-bold flex items-center gap-1">
             <Zap className="w-3 h-3" />
