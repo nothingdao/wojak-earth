@@ -353,7 +353,7 @@ const RustMarket: React.FC = () => {
 
           {/* Footer */}
           <div className="mt-4 pt-2 border-t border-primary/20 text-muted-foreground/60 text-xs text-center">
-            {'>'} WASTELAND_TREASURY_AMM_v2.089
+            {'>'} EARTH_TREASURY_AMM_v2.089
           </div>
         </div>
       </div>
@@ -572,7 +572,7 @@ const RustMarket: React.FC = () => {
               {/* Footer */}
               <div className="text-center py-8">
                 <div className="text-muted-foreground/60 text-sm">
-                  {'>'} WASTELAND_TREASURY_AMM_DOCUMENTATION_v2.089
+                  {'>'} EARTH_TREASURY_AMM_DOCUMENTATION_v2.089
                 </div>
                 <div className="text-muted-foreground/60 text-sm mt-2">
                   BUILT_FOR_THE_FUTURE_OF_GAMING_FINANCE

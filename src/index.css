@@ -247,10 +247,8 @@ body {
   animation: travel-flash 0.8s ease-out infinite alternate;
 }
 
-.scan-line {
-  animation: scan-line 3s linear infinite;
-}
-
 .travel-progress {
   animation: travel-progress 2s ease-in-out infinite alternate;
 }
+
+

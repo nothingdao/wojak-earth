@@ -236,7 +236,7 @@ const RustSwap: React.FC<RustSwapProps> = ({ isOpen, onClose, currentRate }) => 
 
         {/* Footer */}
         <div className="mt-4 pt-2 border-t border-primary/20 text-muted-foreground/60 text-xs text-center">
-          {'>'} WASTELAND_TREASURY_AMM_v2.089
+          {'>'} EARTH_TREASURY_AMM_v2.089
         </div>
       </div>
     </div>

@@ -20,7 +20,9 @@ import {
   Signal,
   Eye,
   Navigation,
-  AlertTriangle
+  AlertTriangle,
+  Bookmark,
+  MapPin
 } from 'lucide-react'
 
 import type { Tables } from '@/types'
@@ -222,18 +224,6 @@ export default function Earth({
       }
     }
   }, [constrainTranslation])
-
-  // Jump to specific coordinates
-  const jumpToCoordinates = useCallback((scale: number, translateX: number, translateY: number) => {
-    const constrained = constrainTranslation(translateX, translateY, scale)
-    const newTransform = {
-      scale: Math.max(0.5, Math.min(5, scale)),
-      translateX: constrained.translateX,
-      translateY: constrained.translateY
-    }
-    setTransform(newTransform)
-    updateURLWithTransform(newTransform)
-  }, [constrainTranslation, updateURLWithTransform])
 
   // Generate shareable link
   const generateShareableLink = useCallback(() => {
@@ -492,8 +482,6 @@ export default function Earth({
     const isTravelingToHere = location && mapTravelDestination === location.id
     const isTravelingFromHere = location && visualLocationId === location.id && isTravelingOnMap
 
-
-    const style = getComputedStyle(document.documentElement)
     const isDark = document.documentElement.classList.contains('dark')
 
     let fill = isDark ? '#374151' : '#9ca3af'
@@ -533,7 +521,7 @@ export default function Earth({
       opacity = '1'
     } else if (isPlayerHere && !isTravelingOnMap) {
       stroke = '#22c55e'
-      strokeWidth = '3'
+      strokeWidth = '1'
       opacity = '1'
     } else if (isHovered) {
       opacity = '1'
@@ -614,27 +602,9 @@ export default function Earth({
         </div>
       )}
 
-      {/* SCREEN EFFECTS DURING TRAVEL */}
-      {isTravelingOnMap && (
-        <>
-          <div className="absolute inset-0 bg-primary/5 pointer-events-none z-20 travel-flash" />
-          <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden">
-            <div className="absolute w-full h-0.5 bg-primary/60 scan-line" style={{ top: '20%' }} />
-            <div
-              className="absolute w-full h-0.5 bg-primary/40 scan-line"
-              style={{
-                top: '90%',
-                animationDelay: '1s'
-              }}
-            />
-          </div>
-        </>
-      )}
-
       {/* Terminal Control Panel */}
       <div className="absolute bottom-4 right-4 z-50 flex flex-col gap-2">
         <div className="bg-background/95 border border-border rounded p-2">
-          <div className="text-xs text-muted-foreground mb-2 font-mono">ZOOM_CONTROLS</div>
           <div className="flex flex-col gap-1">
             <Button
               size="sm"
@@ -679,31 +649,6 @@ export default function Earth({
           </div>
         </div>
 
-        {/* Position Testing Controls */}
-        <div className="bg-background/95 border border-border rounded p-2">
-          <div className="text-xs text-muted-foreground mb-2 font-mono">POSITION_TEST</div>
-          <div className="flex flex-col gap-1">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={saveCurrentPosition}
-              className="h-8 w-8 p-0 font-mono"
-              title="Save current position"
-            >
-              💾
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={jumpToSavedPosition}
-              disabled={!savedPosition}
-              className={`h-8 w-8 p-0 font-mono ${!savedPosition ? 'opacity-50' : ''}`}
-              title="Jump to saved position"
-            >
-              🎯
-            </Button>
-          </div>
-        </div>
       </div>
 
       {/* Terminal SVG Map Container */}
@@ -868,7 +813,7 @@ export default function Earth({
 
       {/* Terminal Hover Display */}
       {hoveredPath && (
-        <div className="absolute top-16 left-4 bg-background/95 border border-border px-3 py-2 rounded shadow-lg z-40 font-mono">
+        <div className="absolute top-24 md:top-40 left-4 bg-background/95 border border-border px-3 py-2 rounded shadow-lg z-40 font-mono">
           {(() => {
             const location = getLocation(hoveredPath)
             if (!location) {
@@ -907,7 +852,7 @@ export default function Earth({
 
       {/* Terminal Location Analysis Panel */}
       {selectedLocation && (
-        <div className="absolute top-16 left-4 bg-background/95 border border-border rounded shadow-lg max-w-sm z-40 font-mono">
+        <div className="absolute top-40 left-4 bg-background/95 border border-border rounded shadow-lg max-w-sm z-40 font-mono">
           {/* Panel Header */}
           <div className="flex items-center justify-between p-3 border-b border-border">
             <div className="flex items-center gap-2">
@@ -1053,7 +998,7 @@ export default function Earth({
       )}
 
       {/* Terminal Debug Info */}
-      <div className="absolute bottom-16 left-4 bg-background/95 border border-border px-2 py-1 rounded text-xs font-mono space-y-1">
+      <div className="absolute bottom-12 left-4 bg-background/95 border border-border px-2 py-1 rounded text-xs font-mono space-y-1">
         <div className="flex items-center gap-2 text-muted-foreground">
           <Database className="w-3 h-3" />
           <span>MAPPED: {locationLookup.size}/{baseSVGData.paths.length}</span>
@@ -1083,6 +1028,28 @@ export default function Earth({
               title="Copy map coordinates link"
             >
               📋
+            </Button>
+          </div>
+          {/* Position Controls */}
+          <div className="flex items-center gap-1 ml-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={saveCurrentPosition}
+              className="h-5 w-5 p-0 hover:bg-muted/50"
+              title="Save current position"
+            >
+              <Bookmark className="w-3 h-3" />
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={jumpToSavedPosition}
+              disabled={!savedPosition}
+              className={`h-5 w-5 p-0 hover:bg-muted/50 ${!savedPosition ? 'opacity-30' : ''}`}
+              title="Jump to saved position"
+            >
+              <MapPin className="w-3 h-3" />
             </Button>
           </div>
         </div>
