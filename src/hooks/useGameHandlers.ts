@@ -139,7 +139,6 @@ export function useGameHandlers({
   }
 
   const handleTravel = async (location_id: string) => {
-    // FIXED: Add extensive debugging
     console.log('🗺️ handleTravel called with:', {
       location_id,
       hasCharacter: !!character,
@@ -183,45 +182,48 @@ export function useGameHandlers({
       console.warn('⚠️ Destination not found in locations array')
     }
 
+    // Start map animation immediately
+    setIsTravelingOnMap?.(true)
+    setMapTravelDestination?.(location_id)
+
+    toast.success(`Traveling to ${destination?.name || 'destination'}...`)
+
     try {
-      console.log('🚀 Calling characterActions.travel with:', location_id)
-
-      await characterActions.travel(location_id)
-
-      console.log('✅ Travel successful, setting timeout for UI update')
-
+      // DELAY THE API CALL - Wait for animation to complete FIRST
       setTimeout(async () => {
-        await refetchCharacter()
-        await loadGameData()
-        setTravelingTo(null)
+        try {
+          console.log('🚀 Animation complete, now calling API...')
+          await characterActions.travel(location_id)
+          console.log('✅ Travel API successful')
 
-        // Clear map animation states (only if functions are provided)
-        setIsTravelingOnMap?.(false)
-        setMapTravelDestination?.(null)
+          // Update character and game data
+          await refetchCharacter()
+          await loadGameData()
 
-        setCurrentView('main')
-        console.log('✅ Travel UI updates completed')
-      }, 2800)
+          console.log('✅ Travel UI updates completed')
+        } catch (error) {
+          console.error('❌ Travel API failed:', error)
+          toast.error('Travel failed. Please try again.')
+        } finally {
+          // Clear all travel states
+          setTravelingTo(null)
+          setIsTravelingOnMap?.(false)
+          setMapTravelDestination?.(null)
+        }
+      }, 2800) // Wait for animation to complete
+
+      // Switch view immediately (before API call)
+      setCurrentView('main')
     } catch (error) {
-      console.error('❌ Travel failed:', error)
+      // This catches immediate errors (validation, etc.)
+      console.error('❌ Travel setup failed:', error)
       setTravelingTo(null)
-
-      // Clear map animation on error (only if functions are provided)
       setIsTravelingOnMap?.(false)
       setMapTravelDestination?.(null)
 
-      // More detailed error logging
       if (error instanceof Error) {
-        console.error('❌ Error details:', {
-          message: error.message,
-          stack: error.stack,
-        })
+        toast.error(error.message)
       }
-
-      // Error already handled in characterActions, but we'll add a fallback
-      // if (!toast.isActive) {
-      //   toast.error('Travel failed. Please try again.')
-      // }
     }
   }
 

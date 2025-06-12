@@ -1,5 +1,6 @@
-// src/components/ViewRenderer.tsx - Clean view switching with fullscreen chat
+// src/components/ViewRenderer.tsx - Fixed with game handlers
 import { useState } from 'react'
+import { toast } from 'sonner'
 import {
   MainView,
   ProfileView,
@@ -16,6 +17,7 @@ import {
 } from './views'
 import type { Character, GameView } from '@/types'
 import { useGame } from '@/providers/GameProvider'
+import { useGameHandlers } from '@/hooks/useGameHandlers'
 
 interface ViewRendererProps {
   currentView: GameView
@@ -36,6 +38,57 @@ export function ViewRenderer({
   const [isFullscreenChat, setIsFullscreenChat] = useState(false)
 
   const { state } = useGame()
+
+  // Simple travel handler that delegates to GameProvider with animation delay
+  const handleTravel = async (location_id: string) => {
+    console.log('🗺️ ViewRenderer handleTravel called with:', location_id)
+
+    if (!character) {
+      console.error('❌ No character found for travel')
+      toast.error('No character found')
+      return
+    }
+
+    // Set map animation state immediately - STAY ON MAP
+    state.dispatch?.({
+      type: 'SET_MAP_TRAVELING',
+      isTraveling: true,
+      destination: location_id
+    })
+
+    toast.success('Traveling...')
+
+    try {
+      // Delay the actual travel to allow animation, then use GameProvider's travel action
+      setTimeout(async () => {
+        try {
+          console.log('🚀 Animation complete, now calling GameProvider travel...')
+
+          // Use the GameProvider's travel action which handles all the API logic
+          if (actions.handleTravel) {
+            await actions.handleTravel(location_id)
+
+            console.log('✅ Travel complete - staying on map view')
+            // DON'T switch views - stay on the map after successful travel
+            // actions.navigate('main') // REMOVED
+          } else {
+            throw new Error('Travel action not available')
+          }
+
+        } catch (error) {
+          console.error('❌ Travel failed:', error)
+          toast.error(`Travel failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+          // Clear animation state on error
+          state.dispatch?.({ type: 'CLEAR_MAP_TRAVELING' })
+        }
+      }, 2800) // Wait for animation to complete
+
+    } catch (error) {
+      console.error('❌ Travel setup failed:', error)
+      state.dispatch?.({ type: 'CLEAR_MAP_TRAVELING' })
+      toast.error('Travel setup failed')
+    }
+  }
 
   // Helper functions to adapt your existing component interfaces
   const handleSetPrimary = async (inventoryId: string, category: string) => {
@@ -94,6 +147,7 @@ export function ViewRenderer({
   const handlePurchaseAdapter = (item_id: string, cost: number) => {
     const marketItem = gameData.marketItems?.find((item: any) => item.id === item_id)
     const itemName = marketItem?.name || 'Unknown Item'
+    // Use existing purchase action from GameProvider
     actions.handlePurchase(item_id, cost, itemName)
   }
 
@@ -101,6 +155,7 @@ export function ViewRenderer({
     const isCurrentlyEquipped = character?.equippedItems?.some(
       (equipped: any) => equipped.inventoryId === inventoryId
     ) || false
+    // Use existing equip action from GameProvider
     actions.handleEquipItem(inventoryId, isCurrentlyEquipped)
   }
 
@@ -109,6 +164,7 @@ export function ViewRenderer({
     const itemName = inventoryItem?.name || 'Unknown Item'
     const energy_effect = inventoryItem?.effects?.energy
     const health_effect = inventoryItem?.effects?.health
+    // Use existing use item action from GameProvider
     actions.handleUseItem(inventoryId, itemName, energy_effect, health_effect)
   }
 
@@ -123,7 +179,7 @@ export function ViewRenderer({
         character={character}
         selectedLocation={gameData.selectedLocation}
         chatMessages={gameData.chatMessages || []}
-        onSendMessage={actions.handleSendMessage}
+        onSendMessage={handleSendMessage}
         onAddPresenceMessage={gameData.actions?.addPresenceMessage}
         onExitChat={closeFullscreenChat}
         loading={gameData.loading}
@@ -139,7 +195,7 @@ export function ViewRenderer({
           playersAtLocation={gameData.playersAtLocation || []}
           onMineClick={() => actions.navigate('mine')}
           onMarketClick={() => actions.navigate('market')}
-          onChatClick={openFullscreenChat} // Changed to open fullscreen chat
+          onChatClick={openFullscreenChat}
           onEconomyClick={() => actions.navigate('economy')}
           onLeaderboardsClick={() => actions.navigate('leaderboards')}
           onRustMarketClick={() => actions.navigate('rust-market')}
@@ -159,7 +215,7 @@ export function ViewRenderer({
         <WorldMapView
           locations={gameData.locations || []}
           character={character}
-          onTravel={actions.handleTravel}
+          onTravel={handleTravel} // ✅ Use our custom travel handler
           isTravelingOnMap={state.isTravelingOnMap}
           mapTravelDestination={state.mapTravelDestination}
         />
@@ -182,7 +238,7 @@ export function ViewRenderer({
         <MiningView
           character={character}
           loadingItems={loadingItems}
-          onMine={() => actions.handleMining()}
+          onMine={() => actions.handleMining()} // ✅ Use existing GameProvider mining
         />
       )
 
@@ -199,14 +255,12 @@ export function ViewRenderer({
       )
 
     case 'chat':
-      // This case might not be needed anymore since we're using fullscreen chat
-      // But keeping it for backwards compatibility
       return (
         <ChatView
           character={character}
           selectedLocation={gameData.selectedLocation}
           chatMessages={gameData.chatMessages || []}
-          onSendMessage={actions.handleSendMessage}
+          onSendMessage={handleSendMessage}
           onAddPresenceMessage={gameData.actions?.addPresenceMessage}
           onExitChat={closeFullscreenChat}
           loading={gameData.loading}
@@ -235,7 +289,7 @@ export function ViewRenderer({
           playersAtLocation={gameData.playersAtLocation || []}
           onMineClick={() => actions.navigate('mine')}
           onMarketClick={() => actions.navigate('market')}
-          onChatClick={openFullscreenChat} // Changed to open fullscreen chat
+          onChatClick={openFullscreenChat}
           onEconomyClick={() => actions.navigate('economy')}
           onLeaderboardsClick={() => actions.navigate('leaderboards')}
           onRustMarketClick={() => actions.navigate('rust-market')}

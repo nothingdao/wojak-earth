@@ -14,7 +14,7 @@ interface WorldMapViewProps {
 export function WorldMapView({
   locations = [],
   character,
-  onTravel,
+  onTravel, // <- Use the prop that's passed in
   isTravelingOnMap = false,
   mapTravelDestination = null
 }: WorldMapViewProps) {
@@ -37,7 +37,7 @@ export function WorldMapView({
       <Earth
         locations={locations}
         character={character || undefined}
-        onTravel={onTravel}
+        onTravel={onTravel} // <- Pass through the onTravel prop directly
         isTravelingOnMap={isTravelingOnMap}
         mapTravelDestination={mapTravelDestination}
       />

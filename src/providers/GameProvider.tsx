@@ -1,4 +1,4 @@
-// src/providers/GameProvider.tsx - Explicit State Machine Version
+// src/providers/GameProvider.tsx - Cleaned up travel handling
 import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { usePlayerCharacter, useCharacterActions } from '@/hooks/usePlayerCharacter'
@@ -6,14 +6,13 @@ import { useGameData } from '@/hooks/useGameData'
 import { toast } from 'sonner'
 import type { GameView, DatabaseLocation, Character } from '@/types'
 
-// Simplified app states - only what user sees
 type AppState =
-  | 'wallet-required'      // Show wallet connect
-  | 'checking-character'   // Loading spinner only
-  | 'character-required'   // Show character creation
-  | 'entering-game'        // Loading game data
-  | 'ready'               // Game is ready
-  | 'error'               // Show error
+  | 'wallet-required'
+  | 'checking-character'
+  | 'character-required'
+  | 'entering-game'
+  | 'ready'
+  | 'error'
 
 interface GameState {
   appState: AppState
@@ -26,14 +25,10 @@ interface GameState {
   loadingItems: Set<string>
   travelingTo?: DatabaseLocation
   selectedLocation?: DatabaseLocation | undefined
-
-  // New: track what checks we've completed
   hasCheckedCharacter: boolean
   hasLoadedGameData: boolean
-
   isTravelingOnMap: boolean
   mapTravelDestination: string | null
-
 }
 
 type GameAction =
@@ -136,33 +131,24 @@ interface GameContextType {
   state: GameState
   dispatch: React.Dispatch<GameAction>
   actions: {
-    // Navigation
     navigate: (view: GameView) => void
     setSelectedLocation: (location: DatabaseLocation | undefined) => void
-
-    // Character actions
     refetchCharacter: () => Promise<void>
-
-    // New: explicit user actions
     checkForCharacter: () => Promise<void>
     enterGame: () => Promise<void>
     createCharacterComplete: () => void
-
-    // Game actions (same as before)
     handleMining: () => Promise<void>
-    handleTravel: (location_id: string) => void
+    handleTravel: (location_id: string) => Promise<void>
     handlePurchase: (item_id: string, cost: number, itemName: string) => Promise<void>
     handleEquipItem: (inventoryId: string, isCurrentlyEquipped: boolean) => Promise<void>
     handleUseItem: (inventoryId: string, itemName: string, energy_effect?: number, health_effect?: number) => Promise<void>
     handleSendMessage: (message: string) => Promise<void>
-
-    // Error handling
     handleRetry: () => void
     handleRefresh: () => void
   }
 }
 
-const GameContext = createContext<GameContextType | null>(null)
+const GameContext = createContext<GameContextType | undefined>(undefined)
 
 export function GameProvider({ children }: { children: React.ReactNode }) {
   const wallet = useWallet()
@@ -181,14 +167,14 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     hasLoadedGameData: false,
     isTravelingOnMap: false,
     mapTravelDestination: null
-
   })
 
   const gameData = useGameData(character, state.currentView, state.selectedLocation)
 
-  // Update character data when hooks change
+  // Character location updates
   useEffect(() => {
     if (character) {
+      console.log('🔥 CHARACTER LOCATION UPDATED:', character.current_location_id)
       dispatch({
         type: 'SET_CHARACTER_DATA',
         character: character,
@@ -198,44 +184,30 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     }
   }, [character, hasCharacter, characterLoading])
 
-  // Only handle wallet connection/disconnection automatically
+  // Wallet connection handling
   useEffect(() => {
     if (!wallet.connected) {
       dispatch({ type: 'SET_APP_STATE', appState: 'wallet-required' })
       dispatch({ type: 'CLEAR_ERROR' })
       dispatch({ type: 'SET_VIEW', view: 'main' })
     } else if (wallet.connected && state.appState === 'wallet-required') {
-      // When wallet connects, check for character
       dispatch({ type: 'SET_APP_STATE', appState: 'checking-character' })
     }
   }, [wallet.connected, state.appState])
 
-
-  // Fallback fix: If we have a character object but hasCharacter is false, fix it
+  // Character detection
   useEffect(() => {
     if (character && character.id && !hasCharacter && !characterLoading) {
-      console.log('🔧 FIXING character detection - character exists but hasCharacter is false')
-      console.log('Character found via real-time:', {
-        id: character.id,
-        name: character.name,
-        hasCharacter,
-        appState: state.appState
-      })
-
-      // Force the character check to complete with the correct hasCharacter value
       dispatch({
         type: 'CHARACTER_CHECK_COMPLETE',
-        hasCharacter: true // Force this to true since we have a character
+        hasCharacter: true
       })
     }
-  }, [character, hasCharacter, characterLoading, state.appState])
+  }, [character, hasCharacter, characterLoading])
 
-  // Check if the character is loaded but we're still in wrong state
+  // App state management
   useEffect(() => {
     if (character && character.id && hasCharacter && state.appState === 'character-required') {
-      console.log('🔧 FIXING app state - have character but still showing character-required')
-
-      // If we have a character and hasCharacter is true, but we're still showing character-required
       dispatch({
         type: 'SET_APP_STATE',
         appState: 'entering-game'
@@ -243,9 +215,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     }
   }, [character, hasCharacter, state.appState])
 
-  // Actions
   const actions = {
-    // Navigation
     navigate: useCallback((view: GameView) => {
       dispatch({ type: 'SET_VIEW', view })
     }, []),
@@ -254,26 +224,19 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: 'SET_SELECTED_LOCATION', location })
     }, []),
 
-    // NEW: Explicit character checking
     checkForCharacter: useCallback(async () => {
       if (!wallet.connected) return
-
       try {
         await refetchCharacter()
-        // The character data will update via useEffect above
-        // Then we dispatch completion
         dispatch({ type: 'CHARACTER_CHECK_COMPLETE', hasCharacter })
       } catch (error) {
         dispatch({ type: 'SET_ERROR', error: 'Failed to check character' })
       }
     }, [wallet.connected, refetchCharacter, hasCharacter]),
 
-    // NEW: Explicit game entry
     enterGame: useCallback(async () => {
       if (!character) return
-
       try {
-        // Wait for game data to load
         await gameData.actions.loadGameData()
         dispatch({ type: 'GAME_DATA_LOADED' })
       } catch (error) {
@@ -281,25 +244,20 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       }
     }, [character, gameData.actions]),
 
-    // NEW: Called after character creation completes
     createCharacterComplete: useCallback(() => {
       dispatch({ type: 'USER_WANTS_TO_ENTER_GAME' })
     }, []),
 
-    // Character
     refetchCharacter: useCallback(async () => {
       try {
         await refetchCharacter()
       } catch (error) {
-        console.error('Failed to refetch character:', error)
         dispatch({ type: 'SET_ERROR', error: 'Failed to refresh character data' })
       }
     }, [refetchCharacter]),
 
-    // Game Actions (from your existing code)
     handleMining: useCallback(async () => {
       if (!character) return
-
       if (character.energy < 10) {
         toast.error('Not enough energy! Need at least 10 energy to mine.')
         return
@@ -323,7 +281,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           toast.error(result.message || 'Mining failed')
         }
       } catch (error) {
-        console.error('Mining failed:', error)
         toast.error('Mining failed. Please try again.')
       } finally {
         dispatch({ type: 'SET_LOADING_ITEM', item_id: 'mining', loading: false })
@@ -331,84 +288,46 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     }, [character, characterActions, refetchCharacter]),
 
     handleTravel: useCallback(async (location_id: string) => {
-      if (!character) {
-        toast.error('No character found')
-        return
-      }
-
-      const location = gameData.locations?.find((l: any) => l.id === location_id)
-      if (!location) {
-        console.error('Location not found:', location_id)
-        toast.error('Location not found')
-        return
-      }
-
-      // Check if already at this location
-      if (character.current_location_id === location_id) {
-        toast.info('You are already at this location')
-        return
-      }
-
-      // Check level requirements
-      if (location.min_level && character.level < location.min_level) {
-        toast.error(`You need to be level ${location.min_level} to travel here`)
-        return
-      }
-
-      // Check entry cost
-      if (location.entry_cost && location.entry_cost > (character.coins || 0)) {
-        toast.error(`You need ${location.entry_cost} RUST to travel here`)
-        return
-      }
+      if (!character) return
 
       try {
-        // console.log('🎯 Starting travel to:', location.name)
-        dispatch({ type: 'START_TRAVEL', destination: location })
-
-        // ADD THIS LINE - Start map animation:
+        // Set map animation state
         dispatch({ type: 'SET_MAP_TRAVELING', isTraveling: true, destination: location_id })
 
-        // Make the actual API call to travel
-        console.log('🌐 Making API call to travel...')
-        const result = await characterActions.travel(location_id)
-        console.log('📋 Travel API result:', result)
+        // Use the correct travel-action endpoint with proper parameters
+        const response = await fetch('/.netlify/functions/travel-action', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            wallet_address: character.wallet_address,
+            destinationId: location_id
+          })
+        })
 
-        if (result.success) {
-          toast.success(`Traveled to ${location.name}!`)
-
-          // Update character data
-          console.log('🔄 Refetching character data...')
-          await refetchCharacter()
-
-          // Reload game data for new location
-          console.log('🔄 Reloading game data...')
-          await gameData.actions.loadGameData()
-
-          // ADD THIS - Clear map animation after delay:
-          setTimeout(() => {
-            dispatch({ type: 'CLEAR_MAP_TRAVELING' })
-          }, 2800)
-
-          // Switch to main view after successful travel
-          if (state.currentView !== 'map') {
-            dispatch({ type: 'SET_VIEW', view: 'main' })
-          } console.log('✅ Travel completed successfully!')
-        } else {
-          console.error('❌ Travel failed:', result.message)
-          toast.error(result.message || 'Travel failed')
-          // ADD THIS - Clear map animation on error:
-          dispatch({ type: 'CLEAR_MAP_TRAVELING' })
+        if (!response.ok) {
+          const errorText = await response.text()
+          let errorMessage = 'Travel failed'
+          try {
+            const errorData = JSON.parse(errorText)
+            errorMessage = errorData.error || errorData.message || errorMessage
+          } catch {
+            errorMessage = errorText || errorMessage
+          }
+          throw new Error(errorMessage)
         }
-      } catch (error) {
-        console.error('❌ Travel error:', error)
-        // toast.error('Travel failed. Please try again.')
-        // ADD THIS - Clear map animation on error:
-        dispatch({ type: 'CLEAR_MAP_TRAVELING' })
-      } finally {
-        dispatch({ type: 'END_TRAVEL' })
-      }
-    }, [character, gameData.locations, characterActions, refetchCharacter, gameData.actions]),
 
+        const result = await response.json()
+        toast.success(`Traveled to ${result.destination?.name || 'destination'}!`)
+
+        await refetchCharacter()
+        await gameData.actions.loadGameData()
+      } catch (error) {
+        console.error('Travel failed:', error)
+        toast.error(error instanceof Error ? error.message : 'Travel failed')
+      } finally {
+        dispatch({ type: 'CLEAR_MAP_TRAVELING' })
+      }
+    }, [character, characterActions, refetchCharacter, gameData.actions]),
 
     handlePurchase: useCallback(async (item_id: string, cost: number, itemName: string) => {
       if (!character) return
@@ -425,7 +344,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           toast.error(result.message || 'Purchase failed')
         }
       } catch (error) {
-        console.error('Purchase failed:', error)
         toast.error('Purchase failed. Please try again.')
       } finally {
         dispatch({ type: 'SET_LOADING_ITEM', item_id, loading: false })
@@ -447,7 +365,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           toast.error(result.message || 'Failed to equip item')
         }
       } catch (error) {
-        console.error('Equip item failed:', error)
         toast.error('Failed to equip item. Please try again.')
       } finally {
         dispatch({ type: 'SET_LOADING_ITEM', item_id: inventoryId, loading: false })
@@ -472,7 +389,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           toast.error(result.message || 'Failed to use item')
         }
       } catch (error) {
-        console.error('Use item failed:', error)
         toast.error('Failed to use item. Please try again.')
       } finally {
         dispatch({ type: 'SET_LOADING_ITEM', item_id: inventoryId, loading: false })
@@ -492,11 +408,10 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           toast.error(result.message || 'Failed to send message')
         }
       } catch (error) {
-        console.error('Send message failed:', error)
         toast.error('Failed to send message. Please try again.')
       }
-    }, [character, characterActions, gameData.actions, state.selectedLocation])
-    ,
+    }, [character, characterActions, gameData.actions, state.selectedLocation]),
+
     handleRetry: useCallback(() => {
       dispatch({ type: 'CLEAR_ERROR' })
       if (wallet.connected) {

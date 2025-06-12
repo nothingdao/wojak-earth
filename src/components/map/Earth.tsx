@@ -80,6 +80,48 @@ export default function Earth({
 
   const svgRef = useRef<SVGSVGElement>(null)
 
+
+  const [visualLocationId, setVisualLocationId] = useState<string | null>(null)
+
+  useEffect(() => {
+    console.log('🎯 VISUAL LOCATION DEBUG:', {
+      characterLocationId: character?.current_location_id,
+      isTravelingOnMap,
+      currentVisualLocationId: visualLocationId,
+      willUpdate: !isTravelingOnMap
+    })
+
+    if (!character?.current_location_id) return
+
+    if (isTravelingOnMap) {
+      // During travel, keep showing the old location
+      if (!visualLocationId) {
+        console.log('🎯 Setting initial visual location during travel')
+        setVisualLocationId(character.current_location_id)
+      }
+      // Don't update visual location during travel
+    } else {
+      // When not traveling, ALWAYS update to show current location
+      console.log('🎯 Travel ended, updating visual location to:', character.current_location_id)
+      setVisualLocationId(character.current_location_id)
+    }
+  }, [character?.current_location_id, isTravelingOnMap]) // Remove visualLocationId from dependencies!
+
+  useEffect(() => {
+    if (!character?.current_location_id) return
+
+    if (isTravelingOnMap) {
+      // During travel, keep showing the old location
+      if (!visualLocationId) {
+        setVisualLocationId(character.current_location_id)
+      }
+    } else {
+      // When not traveling, update to show current location
+      setVisualLocationId(character.current_location_id)
+    }
+  }, [character?.current_location_id, isTravelingOnMap, visualLocationId])
+
+
   // Location coordinates mapping
   const getLocationCoords = (pathId: string): { x: number, y: number } | null => {
     const coordinates: Record<string, { x: number, y: number }> = {
@@ -438,13 +480,18 @@ export default function Earth({
   }, [])
 
   // Path styling function using computed colors that work in SVG
+  // Replace your getPathStyle function with this:
+
+  // KEEP: Path styling using visualLocationId
   const getPathStyle = useCallback((pathId: string) => {
     const location = getLocation(pathId)
     const isSelected = pathId === selectedPath
     const isHovered = pathId === hoveredPath
-    const isPlayerHere = location && character?.current_location_id === location.id
+
+    const isPlayerHere = !isTravelingOnMap && location && visualLocationId === location.id
     const isTravelingToHere = location && mapTravelDestination === location.id
-    const isTravelingFromHere = location && character?.current_location_id === location.id && isTravelingOnMap
+    const isTravelingFromHere = location && visualLocationId === location.id && isTravelingOnMap
+
 
     const style = getComputedStyle(document.documentElement)
     const isDark = document.documentElement.classList.contains('dark')
@@ -502,7 +549,7 @@ export default function Earth({
       filter,
       cursor: 'pointer'
     }
-  }, [getLocation, selectedPath, hoveredPath, character, getBiomeColor, isTravelingOnMap, mapTravelDestination])
+  }, [getLocation, selectedPath, hoveredPath, visualLocationId, getBiomeColor, isTravelingOnMap, mapTravelDestination])
 
   // Handle path clicks
   const handlePathClick = useCallback((pathId: string) => {
@@ -710,9 +757,10 @@ export default function Earth({
           {baseSVGData.paths.map((path) => {
             const style = getPathStyle(path.id)
             const location = getLocation(path.id)
-            const isPlayerHere = location && character?.current_location_id === location.id
-            const isTravelingFromHere = location && character?.current_location_id === location.id && isTravelingOnMap
+            const isPlayerHere = location && visualLocationId === location.id
+            const isTravelingFromHere = location && visualLocationId === location.id && isTravelingOnMap
             const isTravelingToHere = location && mapTravelDestination === location.id
+
 
             return (
               <g key={path.id}>
@@ -726,8 +774,8 @@ export default function Earth({
                   filter={style.filter}
                   style={{ cursor: style.cursor }}
                   className={`
-                    ${isTravelingOnMap && (isTravelingFromHere || isTravelingToHere) ? 'animate-pulse' : ''}
-                  `}
+          ${isTravelingOnMap && (isTravelingFromHere || isTravelingToHere) ? 'animate-pulse' : ''}
+        `}
                   onClick={() => handlePathClick(path.id)}
                   onMouseEnter={() => setHoveredPath(path.id)}
                   onMouseLeave={() => setHoveredPath(null)}
@@ -737,8 +785,8 @@ export default function Earth({
           })}
 
           {/* LOCATION INDICATORS */}
-          {character && character.current_location_id && !isTravelingOnMap && (() => {
-            const currentLocation = locations.find(loc => loc.id === character.current_location_id)
+          {visualLocationId && !isTravelingOnMap && (() => {
+            const currentLocation = locations.find(loc => loc.id === visualLocationId)
             if (!currentLocation?.svg_path_id) return null
 
             const coords = getLocationCoords(currentLocation.svg_path_id)
