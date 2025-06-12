@@ -43,7 +43,7 @@ export function CharacterCreationScreen() {
           <div className="text-center">
             <div className="text-primary font-bold text-lg mb-1">WELCOME_TO_EARTH</div>
             <div className="text-muted-foreground text-sm">
-              INITIALIZE_SURVIVOR_PROFILE_TO_BEGIN
+              INITIALIZE_PROFILE_TO_BEGIN
             </div>
           </div>
         </div>

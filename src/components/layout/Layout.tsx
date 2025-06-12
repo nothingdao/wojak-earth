@@ -1,7 +1,7 @@
 // src/components/layout/Layout.tsx
 import { type ReactNode } from 'react'
 import { BottomDrawerNav } from '../BottomDrawerNav'
-import { PlayerFastNav } from '../PlayerFastNav'
+// import { PlayerFastNav } from '../PlayerFastNav'
 import { useGame } from '@/providers/GameProvider'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { isAdmin } from '@/config/admins'
@@ -38,16 +38,17 @@ export function Layout({ children }: LayoutProps) {
 
       {/* Player Fast Nav - only show when character is loaded */}
       {state.character && (
-        <div className="top-72 right-24">
-          <PlayerFastNav
-            character={state.character}
-            currentView={state.currentView}
-            onProfileClick={() => actions.navigate('profile')}
-            onHomeClick={() => actions.navigate('main')}
-            onMapClick={() => actions.navigate('map')}
-            onInventoryClick={() => actions.navigate('inventory')}
-          />
-        </div>
+        // <div className="top-72 right-24">
+        //   <PlayerFastNav
+        //     character={state.character}
+        //     currentView={state.currentView}
+        //     onProfileClick={() => actions.navigate('profile')}
+        //     onHomeClick={() => actions.navigate('main')}
+        //     onMapClick={() => actions.navigate('map')}
+        //     onInventoryClick={() => actions.navigate('inventory')}
+        //   />
+        // </div>
+        console.log('Player Fast Nav is currently disabled becuase css is hard')
       )}
 
       {/* Main content area with stable layout */}

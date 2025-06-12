@@ -837,54 +837,58 @@ const RustMarket: React.FC = () => {
 
       {/* Trading Menu Bar */}
       <div className="mb-4">
-        <div className="flex items-center justify-between border border-primary/30 rounded p-2">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowSwap(true)}
-              className="bg-primary/10 border border-primary text-primary px-3 py-1 rounded text-xs font-bold hover:bg-primary/20 transition-colors flex items-center gap-1"
-            >
-              <ArrowUpDown className="w-3 h-3" />
-              SWAP
-            </button>
+        <div className="flex border border-primary/30 rounded overflow-hidden">
+          {/* Left side - scrollable buttons */}
+          <div className="flex-1 overflow-x-auto">
+            <div className="flex items-center gap-2 p-2 min-w-max">
+              <button
+                onClick={() => setShowSwap(true)}
+                className="bg-primary/10 border border-primary text-primary px-3 py-1 rounded text-xs font-bold hover:bg-primary/20 transition-colors flex items-center gap-1 whitespace-nowrap"
+              >
+                <ArrowUpDown className="w-3 h-3" />
+                SWAP
+              </button>
 
-            <button
-              onClick={() => setShowCharacterLookup(true)}
-              className="bg-muted/50 border border-primary/30 text-primary px-3 py-1 rounded text-xs font-bold hover:border-primary/50 transition-colors flex items-center gap-1"
-            >
-              <Search className="w-3 h-3" />
-              LOOKUP
-            </button>
+              <button
+                onClick={() => setShowCharacterLookup(true)}
+                className="bg-muted/50 border border-primary/30 text-primary px-3 py-1 rounded text-xs font-bold hover:border-primary/50 transition-colors flex items-center gap-1 whitespace-nowrap"
+              >
+                <Search className="w-3 h-3" />
+                LOOKUP
+              </button>
 
-            <button
-              onClick={() => console.log('Analytics clicked')}
-              className="bg-muted/50 border border-primary/30 text-primary px-3 py-1 rounded text-xs font-bold hover:border-primary/50 transition-colors flex items-center gap-1"
-            >
-              <BarChart3 className="w-3 h-3" />
-              ANALYTICS
-            </button>
+              <button
+                onClick={() => console.log('Analytics clicked')}
+                className="bg-muted/50 border border-primary/30 text-primary px-3 py-1 rounded text-xs font-bold hover:border-primary/50 transition-colors flex items-center gap-1 whitespace-nowrap"
+              >
+                <BarChart3 className="w-3 h-3" />
+                ANALYTICS
+              </button>
 
-            <button
-              onClick={() => console.log('History clicked')}
-              className="bg-muted/50 border border-primary/30 text-primary px-3 py-1 rounded text-xs font-bold hover:border-primary/50 transition-colors flex items-center gap-1"
-            >
-              <History className="w-3 h-3" />
-              HISTORY
-            </button>
+              <button
+                onClick={() => console.log('History clicked')}
+                className="bg-muted/50 border border-primary/30 text-primary px-3 py-1 rounded text-xs font-bold hover:border-primary/50 transition-colors flex items-center gap-1 whitespace-nowrap"
+              >
+                <History className="w-3 h-3" />
+                HISTORY
+              </button>
 
-            <button
-              onClick={() => setShowDocumentation(true)}
-              className="bg-muted/50 border border-primary/30 text-primary px-3 py-1 rounded text-xs font-bold hover:border-primary/50 transition-colors flex items-center gap-1"
-            >
-              <Info className="w-3 h-3" />
-              INFO
-            </button>
+              <button
+                onClick={() => setShowDocumentation(true)}
+                className="bg-muted/50 border border-primary/30 text-primary px-3 py-1 rounded text-xs font-bold hover:border-primary/50 transition-colors flex items-center gap-1 whitespace-nowrap"
+              >
+                <Info className="w-3 h-3" />
+                INFO
+              </button>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-muted-foreground text-xs">TRADING_TOOLS</span>
+          {/* Right side - settings (always visible) */}
+          <div className="flex items-center gap-2 p-2 border-l border-primary/30 bg-muted/20">
+            <span className="text-muted-foreground text-xs whitespace-nowrap hidden sm:inline">TRADING_TOOLS</span>
             <button
               onClick={() => console.log('Settings clicked')}
-              className="bg-muted/50 border border-primary/30 text-primary px-2 py-1 rounded text-xs hover:border-primary/50 transition-colors"
+              className="bg-muted/50 border border-primary/30 text-primary px-2 py-1 rounded text-xs hover:border-primary/50 transition-colors flex-shrink-0"
             >
               <Settings className="w-3 h-3" />
             </button>

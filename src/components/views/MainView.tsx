@@ -174,8 +174,8 @@ export const MainView: React.FC<MainViewProps> = ({
         </div>
       </div>
 
-      {/* Location Status */}
-      <div className="grid grid-cols-3 gap-4 mb-4">
+      {/* Desktop version - unchanged */}
+      <div className="hidden sm:grid sm:grid-cols-3 gap-4 mb-4">
         <div className="bg-muted/50 border border-primary/20 p-3 rounded">
           <div className="text-muted-foreground text-xs mb-1">COORDINATES</div>
           <div className="text-primary text-sm font-bold flex items-center gap-1">
@@ -203,6 +203,46 @@ export const MainView: React.FC<MainViewProps> = ({
             {playersAtLocation.length} ACTIVE
           </div>
           <div className="text-muted-foreground text-xs">HUMANS</div>
+        </div>
+      </div>
+
+      {/* Mobile-only version - optimized for small screens */}
+      <div className="sm:hidden space-y-2 mb-4">
+        <div className="bg-muted/50 border border-primary/20 p-2 rounded">
+          <div className="flex items-center justify-between">
+            <div className="text-muted-foreground text-[10px]">COORDINATES</div>
+            <div className="text-primary text-xs font-bold flex items-center gap-1">
+              <MapPin className="w-2.5 h-2.5 shrink-0" />
+              <span className="truncate">{location.name.toUpperCase()}</span>
+            </div>
+          </div>
+          <div className="text-muted-foreground text-[10px] text-right">
+            {location.biome?.toUpperCase() || 'UNKNOWN'}
+          </div>
+        </div>
+
+        <div className="bg-muted/50 border border-primary/20 p-2 rounded">
+          <div className="flex items-center justify-between">
+            <div className="text-muted-foreground text-[10px]">REQUIRED LEVEL</div>
+            <div className={`text-xs font-bold flex items-center gap-1 ${getDifficultyColor(location.difficulty)}`}>
+              <Shield className="w-2.5 h-2.5 shrink-0" />
+              <span>LEVEL {location.difficulty}</span>
+            </div>
+          </div>
+          <div className="text-muted-foreground text-[10px] text-right">
+            {location.difficulty <= 1 ? 'SECURE' : location.difficulty <= 3 ? 'CAUTION' : 'HOSTILE'}
+          </div>
+        </div>
+
+        <div className="bg-muted/50 border border-primary/20 p-2 rounded">
+          <div className="flex items-center justify-between">
+            <div className="text-muted-foreground text-[10px]">POPULATION</div>
+            <div className="text-primary text-xs font-bold flex items-center gap-1">
+              <Users className="w-2.5 h-2.5 shrink-0" />
+              <span>{playersAtLocation.length} ACTIVE</span>
+            </div>
+          </div>
+          <div className="text-muted-foreground text-[10px] text-right">HUMANS</div>
         </div>
       </div>
 
@@ -433,8 +473,8 @@ export const MainView: React.FC<MainViewProps> = ({
 
   return (
     <div className="space-y-4">
-
       <LocalRadio location_id={'mining-plains'} />
+
       {/* Activity Monitor Section */}
       <div className="bg-background border border-primary/30 rounded-lg p-4 font-mono">
         <div className="flex items-center justify-between mb-3">
@@ -462,13 +502,14 @@ export const MainView: React.FC<MainViewProps> = ({
         )}
       </div>
 
+      <AtmosphericHeader />
+      <ActionPreviewButtons />
+      <DetailedResourcePreview />
+
       {/* Footer */}
       <div className="text-xs text-muted-foreground/60 font-mono text-center border-t border-primary/20 pt-2">
         LOCATION_INTERFACE_v2089 | LAST_UPDATE: {new Date().toLocaleTimeString()}
       </div>
-      <AtmosphericHeader />
-      <ActionPreviewButtons />
-      <DetailedResourcePreview />
     </div>
   )
 }

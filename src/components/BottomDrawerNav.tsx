@@ -1,4 +1,4 @@
-// src/components/BottomDrawerNav.tsx - Terminal Style Navigation
+// src/components/BottomDrawerNav.tsx - Terminal Style Navigation with Tabs
 import { useState } from 'react'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { Button } from '@/components/ui/button'
@@ -6,6 +6,7 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTrigger } from '@/components
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ModeToggle } from './mode-toggle'
 import { WalletConnectButton } from './wallet-connect-button'
 import {
@@ -30,6 +31,7 @@ import {
   Coins,
   Terminal,
   Star,
+  Settings,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import type { Character, GameView } from '@/types'
@@ -246,7 +248,7 @@ export function BottomDrawerNav({
 
           {/* Mobile: Character Status */}
           <div className="flex md:hidden items-center gap-3 flex-1 min-w-0">
-            <Avatar className="w-10 h-10 flex-shrink-0 border border-primary/20">
+            <Avatar className="w-14 h-14 flex-shrink-0 rounded-sm border border-primary/20">
               <AvatarImage
                 src={getCharacterimage_url()}
                 alt={character.name}
@@ -259,9 +261,28 @@ export function BottomDrawerNav({
             </Avatar>
             <div className="min-w-0 flex-1">
               <div className="font-bold text-sm truncate text-primary font-mono">{character.name.toUpperCase()}</div>
-              <div className="text-xs text-muted-foreground flex items-center gap-1 font-mono">
+              <div className="text-xs text-muted-foreground flex items-center gap-1 font-mono mb-1">
                 <MapPin className="w-3 h-3 flex-shrink-0" />
                 <span className="truncate">{character.currentLocation?.name?.toUpperCase() || "UNKNOWN"}</span>
+              </div>
+              {/* Mobile Stats Row */}
+              <div className="flex items-center gap-2 text-xs">
+                <div className="flex items-center gap-0.5">
+                  <Coins className="w-2.5 h-2.5 text-yellow-500" />
+                  <span className="text-primary font-mono">{character.coins || 0}</span>
+                </div>
+                <div className="flex items-center gap-0.5">
+                  <Zap className="w-2.5 h-2.5 text-yellow-500" />
+                  <span className="text-primary font-mono">{character.energy || 0}%</span>
+                </div>
+                <div className="flex items-center gap-0.5">
+                  <Heart className="w-2.5 h-2.5 text-red-500" />
+                  <span className="text-primary font-mono">{character.health || 0}%</span>
+                </div>
+                <div className="flex items-center gap-0.5">
+                  <Star className="w-2.5 h-2.5 text-blue-500" />
+                  <span className="text-primary font-mono">L{character.level || 1}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -310,183 +331,170 @@ export function BottomDrawerNav({
           <div className="flex md:hidden items-center gap-2">
             <Badge variant="outline" className="text-xs font-mono h-7 px-2">
               <Activity className="w-3 h-3 mr-1 animate-pulse" />
-              ACTIVE
             </Badge>
             <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
               <DrawerTrigger asChild>
-                <Button size="sm" variant="outline" className="h-10 px-3 font-mono border-primary/30">
+                <Button size="sm" variant="outline" className="h-12 w-12 px-3 font-mono border-primary/30">
                   <Terminal className="w-4 h-4" />
                 </Button>
               </DrawerTrigger>
-              <DrawerContent className="h-[75vh] bg-background border-t border-primary/30 font-mono">
+              <DrawerContent className="h-[80vh] bg-background border-t border-primary/30 font-mono">
                 {/* Terminal Drawer Header */}
-                <DrawerHeader className="pb-4 border-b border-primary/20">
-                  <div className="space-y-4">
-                    {/* System Header */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Database className="w-4 h-4 text-primary" />
-                        <span className="text-primary font-bold font-mono">MOBILE_INTERFACE v2.089</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Activity className="w-3 h-3 animate-pulse text-green-500" />
-                        <span className="text-green-500 text-xs font-mono">ACTIVE</span>
-                      </div>
+                <DrawerHeader className="pb-3 border-b border-primary/20">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Database className="w-4 h-4 text-primary" />
+                      <span className="text-primary font-bold font-mono">MOBILE_INTERFACE v2.089</span>
                     </div>
-
-                    {/* Character Status Panel */}
-                    <div className="bg-muted/30 border border-primary/20 rounded p-3">
-                      <div className="flex items-center gap-3 mb-3">
-                        <Avatar className="w-12 h-12 border border-primary/20">
-                          <AvatarImage src={getCharacterimage_url()} alt={character.name} onError={handleImageError} />
-                          <AvatarFallback className="bg-muted/50 font-mono">
-                            {character.name.charAt(0).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1">
-                          <div className="font-bold text-primary font-mono">{character.name.toUpperCase()}</div>
-                          <div className="text-xs text-muted-foreground font-mono">CLEARANCE_LVL_{character.level || 1}</div>
-                          <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1 font-mono">
-                            <MapPin className="w-3 h-3" />
-                            {character.currentLocation?.name?.toUpperCase() || "UNKNOWN_SECTOR"}
-                          </div>
-                        </div>
-                        <ModeToggle />
-                      </div>
-
-                      {/* Vital Stats Grid */}
-                      <div className="grid grid-cols-4 gap-3 text-xs">
-                        <div className="bg-muted/20 border border-primary/10 rounded p-2 text-center">
-                          <div className="flex items-center justify-center gap-1 mb-1">
-                            <Coins className="w-3 h-3 text-yellow-500" />
-                            <span className="text-muted-foreground font-mono">RUST</span>
-                          </div>
-                          <div className="font-bold text-primary font-mono">{character.coins || 0}</div>
-                        </div>
-                        <div className="bg-muted/20 border border-primary/10 rounded p-2 text-center">
-                          <div className="flex items-center justify-center gap-1 mb-1">
-                            <Zap className="w-3 h-3 text-yellow-500" />
-                            <span className="text-muted-foreground font-mono">ENERGY</span>
-                          </div>
-                          <div className="font-bold text-primary font-mono">{character.energy || 0}%</div>
-                        </div>
-                        <div className="bg-muted/20 border border-primary/10 rounded p-2 text-center">
-                          <div className="flex items-center justify-center gap-1 mb-1">
-                            <Heart className="w-3 h-3 text-red-500" />
-                            <span className="text-muted-foreground font-mono">HEALTH</span>
-                          </div>
-                          <div className="font-bold text-primary font-mono">{character.health || 0}%</div>
-                        </div>
-                        <div className="bg-muted/20 border border-primary/10 rounded p-2 text-center">
-                          <div className="flex items-center justify-center gap-1 mb-1">
-                            <Star className="w-3 h-3 text-blue-500" />
-                            <span className="text-muted-foreground font-mono">LEVEL</span>
-                          </div>
-                          <div className="font-bold text-primary font-mono">{character.level || 1}</div>
-                        </div>
-                      </div>
+                    <div className="flex items-center gap-2">
+                      <Activity className="w-3 h-3 animate-pulse text-green-500" />
+                      <span className="text-green-500 text-xs font-mono">ACTIVE</span>
+                      <ModeToggle />
                     </div>
-
-                    {/* Wallet Terminal */}
-                    {connected && publicKey && wallet ? (
-                      <div className="bg-muted/30 border border-primary/20 rounded p-3">
-                        <div className="flex items-center gap-2 mb-3 border-b border-primary/20 pb-2">
-                          <Wallet className="w-4 h-4 text-primary" />
-                          <span className="text-primary font-bold text-sm font-mono">WALLET_INTERFACE</span>
-                        </div>
-
-                        <div className="flex items-center gap-3 mb-3">
-                          <Avatar className="w-10 h-10 border border-primary/20">
-                            <AvatarImage src={wallet.adapter.icon} alt={wallet.adapter.name} />
-                            <AvatarFallback className="bg-muted/50">
-                              <Wallet className="w-5 h-5" />
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <span className="font-bold text-primary font-mono">{wallet.adapter.name.toUpperCase()}</span>
-                              <Badge variant="secondary" className="text-xs font-mono">LINKED</Badge>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="bg-muted/20 border border-primary/10 rounded p-2 mb-3">
-                          <div className="text-xs text-muted-foreground mb-1 font-mono">WALLET_ADDRESS</div>
-                          <div className="text-xs font-mono text-primary break-all">
-                            {publicKey.toBase58()}
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-2">
-                          <Button variant="outline" size="sm" onClick={copyAddress} className="font-mono text-xs">
-                            <Copy className="w-3 h-3 mr-2" />
-                            COPY_ADDR
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-red-500 hover:text-red-400 font-mono text-xs"
-                            onClick={disconnect}
-                          >
-                            <LogOut className="w-3 h-3 mr-2" />
-                            DISCONNECT
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="bg-muted/30 border border-primary/20 rounded p-4 text-center">
-                        <div className="text-muted-foreground font-mono mb-3">
-                          <div className="text-sm mb-1">WALLET_INTERFACE_OFFLINE</div>
-                          <div className="text-xs">CONNECTION_REQUIRED</div>
-                        </div>
-                        <WalletConnectButton />
-                      </div>
-                    )}
                   </div>
                 </DrawerHeader>
 
-                {/* Terminal Navigation Menu */}
-                <div className="flex-1 overflow-y-auto px-4 pb-6">
-                  <div className="bg-muted/30 border border-primary/20 rounded p-3">
-                    <div className="flex items-center gap-2 mb-3 border-b border-primary/20 pb-2">
-                      <Terminal className="w-4 h-4 text-primary" />
-                      <span className="text-primary font-bold text-sm font-mono">NAVIGATION_MENU</span>
-                    </div>
+                {/* Tabbed Interface */}
+                <div className="flex-1 overflow-hidden">
+                  <Tabs defaultValue="navigation" className="h-full flex flex-col">
+                    <TabsList className="grid w-full grid-cols-2 m-4 mb-2 bg-muted/30 border border-primary/20">
+                      <TabsTrigger value="navigation" className="font-mono text-xs data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
+                        <Terminal className="w-3 h-3 mr-2" />
+                        NAVIGATION
+                      </TabsTrigger>
+                      <TabsTrigger value="wallet" className="font-mono text-xs data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
+                        <Settings className="w-3 h-3 mr-2" />
+                        SETTINGS
+                      </TabsTrigger>
+                    </TabsList>
 
-                    <div className="space-y-1">
-                      {navItems.map((item) => {
-                        const IconComponent = item.icon
-                        const isAdmin = item.id === 'admin'
+                    {/* Navigation Tab */}
+                    <TabsContent value="navigation" className="flex-1 overflow-y-auto px-4 pb-6 mt-0">
+                      <div className="bg-muted/30 border border-primary/20 rounded p-3">
+                        <div className="flex items-center gap-2 mb-3 border-b border-primary/20 pb-2">
+                          <Terminal className="w-4 h-4 text-primary" />
+                          <span className="text-primary font-bold text-sm font-mono">NAVIGATION_MENU</span>
+                        </div>
 
-                        if (!item.action) return null
+                        <div className="space-y-1">
+                          {navItems.map((item) => {
+                            const IconComponent = item.icon
+                            const isAdmin = item.id === 'admin'
 
-                        return (
-                          <Button
-                            key={item.id}
-                            className={`w-full justify-start h-10 font-mono text-xs ${item.current
-                              ? (isAdmin
-                                ? 'bg-red-500/20 border-red-500/30 text-red-500'
-                                : 'bg-primary/20 border-primary/30 text-primary'
-                              )
-                              : 'hover:bg-muted/50'
-                              } ${isAdmin && !item.current ? 'text-red-500 hover:text-red-400' : ''}`}
-                            variant={item.current ? "default" : "outline"}
-                            onClick={() => handleNavigation(item.action)}
-                          >
-                            <IconComponent className={`w-4 h-4 mr-3 ${item.current ? (isAdmin ? 'text-red-500' : 'text-primary') : item.color
-                              }`} />
-                            <span className="font-mono">{item.label}</span>
-                            {item.badge && (
-                              <Badge variant="secondary" className="ml-auto mr-2 font-mono text-xs">
-                                {item.badge}
-                              </Badge>
-                            )}
-                            <ChevronRight className="w-3 h-3 ml-auto" />
-                          </Button>
-                        )
-                      })}
-                    </div>
-                  </div>
+                            if (!item.action) return null
+
+                            return (
+                              <Button
+                                key={item.id}
+                                className={`w-full justify-start h-12 font-mono text-xs ${item.current
+                                  ? (isAdmin
+                                    ? 'bg-red-500/20 border-red-500/30 text-red-500'
+                                    : 'bg-primary/20 border-primary/30 text-primary'
+                                  )
+                                  : 'hover:bg-muted/50'
+                                  } ${isAdmin && !item.current ? 'text-red-500 hover:text-red-400' : ''}`}
+                                variant={item.current ? "default" : "outline"}
+                                onClick={() => handleNavigation(item.action)}
+                              >
+                                <IconComponent className={`w-4 h-4 mr-3 ${item.current ? (isAdmin ? 'text-red-500' : 'text-primary') : item.color
+                                  }`} />
+                                <span className="font-mono">{item.label}</span>
+                                {item.badge && (
+                                  <Badge variant="secondary" className="ml-auto mr-2 font-mono text-xs">
+                                    {item.badge}
+                                  </Badge>
+                                )}
+                                <ChevronRight className="w-3 h-3 ml-auto" />
+                              </Button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    </TabsContent>
+
+                    {/* Interface/Wallet Tab */}
+                    <TabsContent value="wallet" className="flex-1 overflow-y-auto px-4 pb-6 mt-0">
+                      {/* Wallet Terminal */}
+                      {connected && publicKey && wallet ? (
+                        <div className="bg-muted/30 border border-primary/20 rounded p-3">
+                          <div className="flex items-center gap-2 mb-3 border-b border-primary/20 pb-2">
+                            <Wallet className="w-4 h-4 text-primary" />
+                            <span className="text-primary font-bold text-sm font-mono">WALLET_INTERFACE</span>
+                          </div>
+
+                          <div className="flex items-center gap-3 mb-3">
+                            <Avatar className="w-10 h-10 border border-primary/20">
+                              <AvatarImage src={getCharacterimage_url()} alt={character.name} onError={handleImageError} />
+                              <AvatarFallback className="bg-muted/50 font-mono">
+                                {character.name.charAt(0).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-primary font-mono">{character.name.toUpperCase()}</span>
+                                <Badge variant="secondary" className="text-xs font-mono">CHARACTER</Badge>
+                              </div>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="font-bold text-primary font-mono">{wallet.adapter.name.toUpperCase()}</span>
+                                <Badge variant="secondary" className="text-xs font-mono">LINKED</Badge>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="bg-muted/20 border border-primary/10 rounded p-2 mb-3">
+                            <div className="text-xs text-muted-foreground mb-1 font-mono">WALLET_ADDRESS</div>
+                            <div className="text-xs font-mono text-primary break-all">
+                              {publicKey.toBase58()}
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2">
+                            <Button variant="outline" size="sm" onClick={copyAddress} className="font-mono text-xs">
+                              <Copy className="w-3 h-3 mr-2" />
+                              COPY_ADDR
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-red-500 hover:text-red-400 font-mono text-xs"
+                              onClick={disconnect}
+                            >
+                              <LogOut className="w-3 h-3 mr-2" />
+                              DISCONNECT
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="bg-muted/30 border border-primary/20 rounded p-3">
+                          <div className="flex items-center gap-2 mb-3 border-b border-primary/20 pb-2">
+                            <Wallet className="w-4 h-4 text-primary" />
+                            <span className="text-primary font-bold text-sm font-mono">WALLET_INTERFACE</span>
+                          </div>
+
+                          <div className="flex items-center gap-3 mb-3">
+                            <Avatar className="w-10 h-10 border border-primary/20">
+                              <AvatarImage src={getCharacterimage_url()} alt={character.name} onError={handleImageError} />
+                              <AvatarFallback className="bg-muted/50 font-mono">
+                                {character.name.charAt(0).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-primary font-mono">{character.name.toUpperCase()}</span>
+                                <Badge variant="secondary" className="text-xs font-mono">CHARACTER</Badge>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="text-muted-foreground font-mono text-center">
+                            <div className="text-sm mb-1">WALLET_INTERFACE_OFFLINE</div>
+                            <div className="text-xs mb-3">CONNECTION_REQUIRED</div>
+                          </div>
+                          <WalletConnectButton />
+                        </div>
+                      )}
+                    </TabsContent>
+                  </Tabs>
                 </div>
               </DrawerContent>
             </Drawer>

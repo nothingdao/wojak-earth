@@ -583,7 +583,7 @@ export const CharacterCreationView: React.FC<CharacterCreationViewProps> = ({ ch
     <div className="space-y-6">
       {/* Simple Payment Modal */}
       {showPayment && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2 sm:p-4">
           <SimplePayment
             characterData={{
               gender: currentGender,
@@ -597,12 +597,12 @@ export const CharacterCreationView: React.FC<CharacterCreationViewProps> = ({ ch
 
       {/* Manifest Error State */}
       {manifestError && (
-        <div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg p-4">
+        <div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg p-3 sm:p-4">
           <div className="flex items-center gap-2 text-red-800 dark:text-red-200">
-            <AlertCircle className="w-5 h-5" />
-            <span className="font-medium">Asset Loading Error</span>
+            <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="font-medium text-sm sm:text-base">Asset Loading Error</span>
           </div>
-          <p className="text-sm text-red-700 dark:text-red-300 mt-1">
+          <p className="text-xs sm:text-sm text-red-700 dark:text-red-300 mt-1">
             {manifestError}
           </p>
           <Button
@@ -613,7 +613,7 @@ export const CharacterCreationView: React.FC<CharacterCreationViewProps> = ({ ch
               setManifestError(null)
               loadLayersManifest()
             }}
-            className="mt-2"
+            className="mt-2 h-7 sm:h-8 text-xs sm:text-sm"
           >
             Retry Loading Assets
           </Button>
@@ -622,35 +622,35 @@ export const CharacterCreationView: React.FC<CharacterCreationViewProps> = ({ ch
 
       {/* Character Creation In Progress */}
       {creatingCharacter && (
-        <div className="bg-card border rounded-lg p-6">
-          <div className="text-center space-y-4">
-            <div className="w-16 h-16 mx-auto mb-4 bg-muted rounded-full flex items-center justify-center">
-              <Loader2 className="w-8 h-8 animate-spin" />
+        <div className="bg-card border rounded-lg p-4 sm:p-6">
+          <div className="text-center space-y-3 sm:space-y-4">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-2 sm:mb-4 bg-muted rounded-full flex items-center justify-center">
+              <Loader2 className="w-6 h-6 sm:w-8 sm:h-8 animate-spin" />
             </div>
-            <h3 className="text-xl font-semibold">
+            <h3 className="text-lg sm:text-xl font-semibold">
               Creating Your Character
             </h3>
-            <p className="text-muted-foreground text-sm">
+            <p className="text-muted-foreground text-xs sm:text-sm">
               Payment confirmed! Your NFT character is being minted...
             </p>
 
             {generatedImage && (
-              <div className="flex justify-center mt-4">
+              <div className="flex justify-center mt-2 sm:mt-4">
                 <img
                   src={generatedImage}
                   alt={`Your ${currentGender.toLowerCase()} character`}
-                  className="w-32 h-32 sm:w-40 sm:h-40 rounded-lg border-2 border-border"
+                  className="w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 rounded-lg border-2 border-border"
                 />
               </div>
             )}
 
-            <div className="space-y-2 text-sm">
+            <div className="space-y-1 sm:space-y-2 text-xs sm:text-sm">
               <div className="flex items-center justify-center gap-2">
-                <CheckCircle className="w-4 h-4" />
+                <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4" />
                 <span>Payment verified</span>
               </div>
               <div className="flex items-center justify-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" />
                 <span>Minting NFT...</span>
               </div>
             </div>
@@ -660,17 +660,18 @@ export const CharacterCreationView: React.FC<CharacterCreationViewProps> = ({ ch
 
       {/* Main Character Creation */}
       {walletInfo.connected && !character && !showPayment && !creatingCharacter && (
-        <div className="space-y-6">
-          {/* Gender Filter Row */}
-          <div className="flex items-center justify-between">
-            <div className="flex gap-2">
+        <div className="space-y-3 sm:space-y-6">
+          {/* Gender Filter Row - Tighter mobile spacing */}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex gap-1 sm:gap-2">
               <Button
                 variant={genderFilter === 'ALL' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => handleGenderFilterChange('ALL')}
                 disabled={imageLoading}
+                className="h-7 sm:h-8 px-2 sm:px-3 text-xs sm:text-sm"
               >
-                <Shuffle className="w-4 h-4 mr-2" />
+                <Shuffle className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                 All
               </Button>
               <Button
@@ -678,8 +679,9 @@ export const CharacterCreationView: React.FC<CharacterCreationViewProps> = ({ ch
                 size="sm"
                 onClick={() => handleGenderFilterChange('MALE')}
                 disabled={imageLoading}
+                className="h-7 sm:h-8 px-2 sm:px-3 text-xs sm:text-sm"
               >
-                <User className="w-4 h-4 mr-2" />
+                <User className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                 Male
               </Button>
               <Button
@@ -687,8 +689,9 @@ export const CharacterCreationView: React.FC<CharacterCreationViewProps> = ({ ch
                 size="sm"
                 onClick={() => handleGenderFilterChange('FEMALE')}
                 disabled={imageLoading}
+                className="h-7 sm:h-8 px-2 sm:px-3 text-xs sm:text-sm"
               >
-                <Users className="w-4 h-4 mr-2" />
+                <Users className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                 Female
               </Button>
             </div>
@@ -698,31 +701,31 @@ export const CharacterCreationView: React.FC<CharacterCreationViewProps> = ({ ch
               size="sm"
               onClick={generateCharacterImage}
               disabled={imageLoading || manifestError !== null}
-              className="shrink-0"
+              className="shrink-0 h-7 sm:h-8 w-7 sm:w-8 p-0"
             >
               {imageLoading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" />
               ) : (
-                <RefreshCw className="w-4 h-4" />
+                <RefreshCw className="w-3 h-3 sm:w-4 sm:h-4" />
               )}
             </Button>
           </div>
 
-          {/* Character Display - FIXED HEIGHT, NO LAYOUT SHIFT */}
-          <div className="bg-card border rounded-lg p-6">
-            <div className="text-center space-y-4">
-              <h3 className="text-lg font-semibold">
+          {/* Character Display - FIXED HEIGHT, MOBILE OPTIMIZED */}
+          <div className="bg-card border rounded-lg p-3 sm:p-6">
+            <div className="text-center space-y-2 sm:space-y-4">
+              <h3 className="text-base sm:text-lg font-semibold">
                 Character Preview
                 {currentGender && (
-                  <span className="text-sm text-muted-foreground ml-2">
+                  <span className="text-xs sm:text-sm text-muted-foreground ml-2">
                     ({currentGender.toLowerCase()})
                   </span>
                 )}
               </h3>
 
-              {/* FIXED HEIGHT CONTAINER - PREVENTS LAYOUT SHIFT */}
+              {/* FIXED HEIGHT CONTAINER - MOBILE OPTIMIZED */}
               <div className="flex justify-center">
-                <div className="w-64 h-64 sm:w-80 sm:h-80 rounded-lg border-2 bg-muted/20 flex items-center justify-center relative overflow-hidden">
+                <div className="w-48 h-48 sm:w-64 sm:h-64 md:w-80 md:h-80 rounded-lg border-2 bg-muted/20 flex items-center justify-center relative overflow-hidden">
                   {generatedImage ? (
                     <img
                       src={generatedImage}
@@ -730,22 +733,22 @@ export const CharacterCreationView: React.FC<CharacterCreationViewProps> = ({ ch
                       className="w-full h-full object-cover rounded-lg"
                     />
                   ) : imageLoading ? (
-                    <div className="flex flex-col items-center gap-3">
-                      <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                    <div className="flex flex-col items-center gap-2 sm:gap-3">
+                      <Loader2 className="w-6 h-6 sm:w-8 sm:h-8 animate-spin text-primary" />
                       <div className="text-center">
-                        <p className="font-medium">Generating...</p>
-                        <p className="text-sm text-muted-foreground">Creating character</p>
+                        <p className="font-medium text-sm sm:text-base">Generating...</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground">Creating character</p>
                       </div>
                     </div>
                   ) : manifestError ? (
                     <div className="flex flex-col items-center gap-2 text-red-500">
-                      <AlertCircle className="w-8 h-8" />
-                      <span className="text-sm">Assets not loaded</span>
+                      <AlertCircle className="w-6 h-6 sm:w-8 sm:h-8" />
+                      <span className="text-xs sm:text-sm">Assets not loaded</span>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center gap-2">
-                      <ImageIcon className="w-8 h-8 text-muted-foreground" />
-                      <span className="text-sm text-muted-foreground">No character yet</span>
+                      <ImageIcon className="w-6 h-6 sm:w-8 sm:h-8 text-muted-foreground" />
+                      <span className="text-xs sm:text-sm text-muted-foreground">No character yet</span>
                     </div>
                   )}
                 </div>
@@ -753,27 +756,26 @@ export const CharacterCreationView: React.FC<CharacterCreationViewProps> = ({ ch
             </div>
           </div>
 
-          {/* Create Character Section */}
-          <div className="bg-card border rounded-lg p-6 space-y-4">
+          {/* Create Character Section - Tighter mobile spacing */}
+          <div className="bg-card border rounded-lg p-4 sm:p-6 space-y-3 sm:space-y-4">
             <div className="text-center">
-              <div className="text-2xl font-bold mb-1">0.01 SOL</div>
-              <div className="text-sm text-muted-foreground">Character NFT minting cost</div>
+              <div className="text-xl sm:text-2xl font-bold mb-0.5 sm:mb-1">2 SOL</div>
             </div>
 
             <Button
               onClick={handleStartCreation}
               disabled={!generatedImage || manifestError !== null || imageLoading}
-              className="w-full"
+              className="w-full h-10 sm:h-11"
               size="lg"
             >
               <Coins className="w-4 h-4 mr-2" />
-              Pay 0.01 SOL & Create Character
+              <span className="text-sm sm:text-base">MAKE_PAYMENT</span>
             </Button>
 
-            {/* Status Message - FIXED HEIGHT */}
-            <div className="h-5 flex items-center justify-center">
+            {/* Status Message - FIXED HEIGHT, smaller on mobile */}
+            <div className="h-4 sm:h-5 flex items-center justify-center">
               {manifestError && (
-                <p className="text-sm text-red-500 text-center">
+                <p className="text-xs sm:text-sm text-red-500 text-center">
                   Cannot create character until assets are loaded
                 </p>
               )}
@@ -782,11 +784,11 @@ export const CharacterCreationView: React.FC<CharacterCreationViewProps> = ({ ch
         </div>
       )}
 
-      {/* Wallet not connected state */}
+      {/* Wallet not connected state - Tighter mobile spacing */}
       {!walletInfo.connected && (
-        <div className="bg-card border rounded-lg p-6 text-center space-y-4">
-          <h3 className="text-lg font-semibold">Connect Wallet</h3>
-          <p className="text-muted-foreground">
+        <div className="bg-card border rounded-lg p-4 sm:p-6 text-center space-y-2 sm:space-y-4">
+          <h3 className="text-base sm:text-lg font-semibold">Connect Wallet</h3>
+          <p className="text-muted-foreground text-sm">
             Connect your Solana wallet to create a character
           </p>
         </div>
