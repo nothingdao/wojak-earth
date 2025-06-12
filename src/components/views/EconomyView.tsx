@@ -149,7 +149,7 @@ const EconomyView: React.FC = () => {
     return num.toLocaleString();
   };
 
-  const formatCurrency = (amount: number) => `${formatNumber(amount)} RUST`;
+  const formatCurrency = (amount: number) => `${formatNumber(amount)} SHARD`;
 
   const wealthChartData = economyData ? [
     { name: 'POOR', value: economyData.wealthDistribution.poor, color: '#ef4444' },
@@ -212,7 +212,7 @@ const EconomyView: React.FC = () => {
         </div>
 
         <div className="bg-muted/50 border border-primary/20 p-3 rounded">
-          <div className="text-muted-foreground text-xs mb-1">SOL/RUST</div>
+          <div className="text-muted-foreground text-xs mb-1">SOL/SHARD</div>
           <div className="text-primary text-lg font-bold">
             {rustMarketData ? rustMarketData.currentRate.toFixed(2) : '--'}
           </div>
@@ -358,7 +358,7 @@ const EconomyView: React.FC = () => {
           <div className="text-muted-foreground text-xs mb-3">DUAL-CURRENCY ECONOMY</div>
           <div className="space-y-2">
             <div className="flex justify-between">
-              <span className="text-muted-foreground text-xs">RUST CIRCULATION</span>
+              <span className="text-muted-foreground text-xs">SHARD CIRCULATION</span>
               <span className="text-primary">
                 {gameEconomyFlow ? formatCurrency(gameEconomyFlow.rustCirculation.playerBalances) : '--'}
               </span>
@@ -378,7 +378,7 @@ const EconomyView: React.FC = () => {
             <div className="border-t border-primary/20 pt-2 mt-2">
               <div className="text-xs text-muted-foreground mb-1">CURRENCY DOMINANCE</div>
               <div className="text-xs">
-                <span className="text-orange-500">RUST: {gameEconomyFlow ? `${(gameEconomyFlow.totalEconomicValue.rustDominance * 100).toFixed(1)}%` : '--'}</span>
+                <span className="text-orange-500">SHARD: {gameEconomyFlow ? `${(gameEconomyFlow.totalEconomicValue.rustDominance * 100).toFixed(1)}%` : '--'}</span>
                 <span className="text-muted-foreground mx-1">|</span>
                 <span className="text-blue-500">SOL: {gameEconomyFlow ? `${(gameEconomyFlow.totalEconomicValue.solDominance * 100).toFixed(1)}%` : '--'}</span>
               </div>
@@ -390,9 +390,9 @@ const EconomyView: React.FC = () => {
       {/* NEW: Dual Currency Analytics Section */}
       {gameEconomyFlow && (
         <div className="grid grid-cols-3 gap-6 mb-6">
-          {/* RUST Economy Health */}
+          {/* SHARD Economy Health */}
           <div className="bg-muted/30 border border-primary/20 rounded p-4">
-            <div className="text-muted-foreground text-xs mb-3">RUST ECONOMY</div>
+            <div className="text-muted-foreground text-xs mb-3">SHARD ECONOMY</div>
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span className="text-muted-foreground text-xs">PLAYER BALANCES</span>
@@ -441,11 +441,11 @@ const EconomyView: React.FC = () => {
             <div className="text-muted-foreground text-xs mb-3">CURRENCY EXCHANGE</div>
             <div className="space-y-2">
               <div className="flex justify-between">
-                <span className="text-muted-foreground text-xs">SOL→RUST</span>
+                <span className="text-muted-foreground text-xs">SHARD</span>
                 <span className="text-green-500">{gameEconomyFlow.crossCurrencyFlow.solToRustTrades.toFixed(3)} SOL</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground text-xs">RUST→SOL</span>
+                <span className="text-muted-foreground text-xs">SHARD</span>
                 <span className="text-red-500">{gameEconomyFlow.crossCurrencyFlow.rustToSolTrades.toFixed(3)} SOL</span>
               </div>
               <div className="border-t border-primary/20 pt-2 mt-2">

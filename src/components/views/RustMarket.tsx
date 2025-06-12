@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { TrendingUp, TrendingDown, Zap, Database, Activity, ArrowUpDown, AlertTriangle, X, Search, BarChart3, History, Settings, Info } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
@@ -43,6 +43,8 @@ const RustMarket: React.FC = () => {
   const [showDocumentation, setShowDocumentation] = useState(false);
   const [newTransactionIds, setNewTransactionIds] = useState<Set<string>>(new Set());
 
+  // Add ref to track documentation scroll position
+  const documentationScrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchMarketData();
@@ -74,6 +76,12 @@ const RustMarket: React.FC = () => {
 
   const fetchMarketData = async () => {
     try {
+      // Store current scroll position if documentation is open
+      let savedScrollTop = 0;
+      if (showDocumentation && documentationScrollRef.current) {
+        savedScrollTop = documentationScrollRef.current.scrollTop;
+      }
+
       const response = await fetch('/.netlify/functions/rust-market');
       const data = await response.json();
 
@@ -91,26 +99,34 @@ const RustMarket: React.FC = () => {
           // Set recent individual transactions for detailed view
           const newTransactions = data.transactions.slice(0, 10);
 
-          // Track new transactions for animation
-          if (recentTransactions.length > 0) {
-            const existingIds = new Set(recentTransactions.map(tx => tx.id || tx.txn_shard || tx.wasteland_block));
-            const newIds = new Set();
+          // Only update recent transactions if they're actually different
+          const hasNewTransactions = !arraysEqual(
+            recentTransactions.map((tx: Transaction) => tx.txn_shard || tx.wasteland_block),
+            newTransactions.map((tx: Transaction) => tx.txn_shard || tx.wasteland_block)
+          );
 
-            newTransactions.forEach(tx => {
-              const txId = tx.id || tx.txn_shard || tx.wasteland_block;
-              if (!existingIds.has(txId)) {
-                newIds.add(txId);
+          if (hasNewTransactions) {
+            // Track new transactions for animation
+            if (recentTransactions.length > 0) {
+              const existingIds = new Set(recentTransactions.map((tx: Transaction) => tx.txn_shard || tx.wasteland_block));
+              const newIds = new Set<string>();
+
+              newTransactions.forEach((tx: Transaction) => {
+                const txId = tx.txn_shard || tx.wasteland_block;
+                if (txId && !existingIds.has(txId)) {
+                  newIds.add(String(txId));
+                }
+              });
+
+              if (newIds.size > 0) {
+                setNewTransactionIds(newIds);
+                // Clear the animation after 3 seconds
+                setTimeout(() => setNewTransactionIds(new Set()), 3000);
               }
-            });
-
-            if (newIds.size > 0) {
-              setNewTransactionIds(newIds);
-              // Clear the animation after 3 seconds
-              setTimeout(() => setNewTransactionIds(new Set()), 3000);
             }
-          }
 
-          setRecentTransactions(newTransactions);
+            setRecentTransactions(newTransactions);
+          }
 
           // Calculate simple stats
           const totalVol = processedData.reduce((sum, d) => sum + d.volume, 0);
@@ -131,10 +147,29 @@ const RustMarket: React.FC = () => {
       }
 
       setIsLoading(false);
+
+      // Restore scroll position after state update
+      if (showDocumentation && documentationScrollRef.current && savedScrollTop > 0) {
+        setTimeout(() => {
+          if (documentationScrollRef.current) {
+            documentationScrollRef.current.scrollTop = savedScrollTop;
+          }
+        }, 0);
+      }
+
     } catch (error) {
       console.error('Failed to fetch market data:', error);
       setIsLoading(false);
     }
+  };
+
+  // Helper function to compare arrays
+  const arraysEqual = (a: (string | number | undefined)[], b: (string | number | undefined)[]) => {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+      if (a[i] !== b[i]) return false;
+    }
+    return true;
   };
 
   const processTransactionData = (transactions: Transaction[]): MarketData[] => {
@@ -175,7 +210,7 @@ const RustMarket: React.FC = () => {
     const [fromAmount, setFromAmount] = useState('');
     const [toAmount, setToAmount] = useState('');
     const [fromToken, setFromToken] = useState('SOL');
-    const [toToken, setToToken] = useState('RUST');
+    const [toToken, setToToken] = useState('SHARD');
     const [isProcessing, setIsProcessing] = useState(false);
 
     // Calculate conversion
@@ -237,7 +272,7 @@ const RustMarket: React.FC = () => {
           <div className="bg-muted/50 border border-primary/20 p-3 rounded mb-4">
             <div className="text-muted-foreground text-xs mb-1">EXCHANGE_RATE</div>
             <div className="text-primary font-bold">
-              1 SOL = {formatRate(currentRate)} RUST
+              1 SOL = {formatRate(currentRate)} SHARD
             </div>
             <div className="text-muted-foreground text-xs mt-1">
               {'>'} LIVE_FEED_ACTIVE
@@ -327,12 +362,12 @@ const RustMarket: React.FC = () => {
 
     return (
       <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div className="w-full max-w-4xl bg-background border border-primary/30 rounded-lg p-4 font-mono text-xs text-primary max-h-[80vh] overflow-y-auto">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-4 border-b border-primary/20 pb-2">
+        <div className="w-full max-w-4xl bg-background border border-primary/30 rounded-lg p-4 font-mono text-xs text-primary max-h-[80vh] flex flex-col">
+          {/* Header - Fixed */}
+          <div className="flex items-center justify-between mb-4 border-b border-primary/20 pb-2 flex-shrink-0">
             <div className="flex items-center gap-2">
               <Info className="w-4 h-4" />
-              <span className="text-primary font-bold">RUST_MARKET_DOCUMENTATION v2.089</span>
+              <span className="text-primary font-bold">SHARD_MARKET_DOCUMENTATION v2.089</span>
             </div>
             <button
               onClick={() => setShowDocumentation(false)}
@@ -342,200 +377,217 @@ const RustMarket: React.FC = () => {
             </button>
           </div>
 
-          {/* Documentation Content */}
-          <div className="space-y-6">
-
-            {/* Overview */}
-            <section className="bg-muted/30 border border-primary/20 rounded p-4">
-              <h2 className="text-primary font-bold mb-3 flex items-center gap-2">
-                <Database className="w-4 h-4" />
-                OVERVIEW
-              </h2>
-              <p className="text-muted-foreground leading-relaxed mb-2">
-                The RUST Market is a hybrid off-chain/on-chain automated market maker (AMM) that enables seamless
-                trading between SOL and RUST tokens. Built for the Wasteland gaming ecosystem, it combines the
-                efficiency of off-chain processing with the security of on-chain asset backing.
-              </p>
-              <div className="bg-primary/10 border border-primary/30 p-2 rounded mt-2">
-                <span className="text-primary font-bold">KEY PRINCIPLE:</span>
-                <span className="text-muted-foreground ml-2">1 RUST = 1 USDC (pegged value)</span>
+          {/* Scrollable Content Container */}
+          <div className="flex-1 overflow-y-auto documentation-scroll" ref={documentationScrollRef}>
+            {/* Header */}
+            {/* <div className="flex items-center justify-between mb-4 border-b border-primary/20 pb-2 sticky top-0 bg-background">
+              <div className="flex items-center gap-2">
+                <Info className="w-4 h-4" />
+                <span className="text-primary font-bold">SHARD_MARKET_DOCUMENTATION v2.089</span>
               </div>
-            </section>
+              <button
+                onClick={() => setShowDocumentation(false)}
+                className="text-muted-foreground hover:text-destructive transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div> */}
 
-            {/* Vault System */}
-            <section className="bg-muted/30 border border-primary/20 rounded p-4">
-              <h2 className="text-primary font-bold mb-3 flex items-center gap-2">
-                <Zap className="w-4 h-4" />
-                VAULT_SYSTEM
-              </h2>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-muted/50 border border-primary/20 p-3 rounded">
-                  <div className="text-green-500 font-bold mb-1">SCRAP_SOL</div>
-                  <div className="text-muted-foreground text-xs leading-relaxed">
-                    Real SOL tokens held in our on-chain treasury wallet. Provides actual liquidity backing
-                    for all RUST redemptions. Balance visible on Solana blockchain.
+            {/* Documentation Content */}
+            <div className="space-y-6">
+
+              {/* Overview */}
+              <section className="bg-muted/30 border border-primary/20 rounded p-4">
+                <h2 className="text-primary font-bold mb-3 flex items-center gap-2">
+                  <Database className="w-4 h-4" />
+                  OVERVIEW
+                </h2>
+                <p className="text-muted-foreground leading-relaxed mb-2">
+                  The SHARD Market is a hybrid off-chain/on-chain automated market maker (AMM) that enables seamless
+                  trading between SOL and SHARD tokens. Built for the Earth gaming ecosystem, it combines the
+                  efficiency of off-chain processing with the security of on-chain asset backing on Solana.
+                </p>
+                <div className="bg-primary/10 border border-primary/30 p-2 rounded mt-2">
+                  <span className="text-primary font-bold">KEY PRINCIPLE:</span>
+                  <span className="text-muted-foreground ml-2">1 SHARD = 1 USDC (pegged value) - No Fractional Reserve</span>
+                </div>
+              </section>
+
+              {/* Vault System */}
+              <section className="bg-muted/30 border border-primary/20 rounded p-4">
+                <h2 className="text-primary font-bold mb-3 flex items-center gap-2">
+                  <Zap className="w-4 h-4" />
+                  VAULT_SYSTEM
+                </h2>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-muted/50 border border-primary/20 p-3 rounded">
+                    <div className="text-green-500 font-bold mb-1">SCRAP_SOL</div>
+                    <div className="text-muted-foreground text-xs leading-relaxed">
+                      Real SOL tokens held in our on-chain treasury wallet. Provides actual liquidity backing
+                      for all SHARD redemptions. Balance visible on Solana blockchain.
+                    </div>
+                  </div>
+                  <div className="bg-muted/50 border border-primary/20 p-3 rounded">
+                    <div className="text-orange-500 font-bold mb-1">SHARD_COIN</div>
+                    <div className="text-muted-foreground text-xs leading-relaxed">
+                      Off-chain SHARD tokens stored in our database. Pegged 1:1 with USDC value.
+                      Instantly transferable between game characters with zero gas fees. Off-chain validators verify supply is true.
+                    </div>
                   </div>
                 </div>
-                <div className="bg-muted/50 border border-primary/20 p-3 rounded">
-                  <div className="text-orange-500 font-bold mb-1">RUST_COIN</div>
-                  <div className="text-muted-foreground text-xs leading-relaxed">
-                    Off-chain RUST tokens stored in our Supabase database. Pegged 1:1 with USDC value.
-                    Instantly transferable between game characters with zero gas fees.
+              </section>
+
+              {/* Value Pegging */}
+              <section className="bg-muted/30 border border-primary/20 rounded p-4">
+                <h2 className="text-primary font-bold mb-3 flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4" />
+                  VALUE_PEGGING_MECHANISM
+                </h2>
+                <div className="space-y-3">
+                  <div className="bg-muted/50 border border-primary/20 p-3 rounded">
+                    <div className="text-primary font-bold mb-1">USDC_PEG_FORMULA:</div>
+                    <code className="text-green-500">SHARD_VALUE = 1 USDC</code>
+                    <div className="text-muted-foreground text-xs mt-1">
+                      SHARD maintains stable purchasing power regardless of SOL price volatility.
+                    </div>
+                  </div>
+                  <div className="bg-muted/50 border border-primary/20 p-3 rounded">
+                    <div className="text-primary font-bold mb-1">EXCHANGE_RATE_CALCULATION:</div>
+                    <code className="text-green-500">SOL_TO_SHARD_RATE = SOL_USD_PRICE / 1</code>
+                    <div className="text-muted-foreground text-xs mt-1">
+                      Dynamic rate based on real-time SOL/USD pricing from Jupiter/Helius APIs.
+                    </div>
                   </div>
                 </div>
-              </div>
-            </section>
+              </section>
 
-            {/* Value Pegging */}
-            <section className="bg-muted/30 border border-primary/20 rounded p-4">
-              <h2 className="text-primary font-bold mb-3 flex items-center gap-2">
-                <TrendingUp className="w-4 h-4" />
-                VALUE_PEGGING_MECHANISM
-              </h2>
-              <div className="space-y-3">
-                <div className="bg-muted/50 border border-primary/20 p-3 rounded">
-                  <div className="text-primary font-bold mb-1">USDC_PEG_FORMULA:</div>
-                  <code className="text-green-500">RUST_VALUE = 1 USDC</code>
-                  <div className="text-muted-foreground text-xs mt-1">
-                    RUST maintains stable purchasing power regardless of SOL price volatility.
+              {/* Hybrid AMM */}
+              <section className="bg-muted/30 border border-primary/20 rounded p-4">
+                <h2 className="text-primary font-bold mb-3 flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4" />
+                  HYBRID_AMM_ARCHITECTURE
+                </h2>
+                <div className="grid grid-cols-1 gap-3">
+                  <div className="bg-muted/50 border border-primary/20 p-3 rounded">
+                    <div className="text-blue-500 font-bold mb-1">ON_CHAIN_COMPONENT:</div>
+                    <div className="text-muted-foreground text-xs">
+                      • Treasury wallet holds real SOL on Solana devnet<br />
+                      • Transparent, auditable reserves<br />
+                      • Future migration path to full on-chain AMM
+                    </div>
+                  </div>
+                  <div className="bg-muted/50 border border-primary/20 p-3 rounded">
+                    <div className="text-purple-500 font-bold mb-1">OFF_CHAIN_COMPONENT:</div>
+                    <div className="text-muted-foreground text-xs">
+                      • SHARD balances in Supabase for instant transfers<br />
+                      • Zero gas fees for in-game transactions<br />
+                      • Real-time market data processing
+                    </div>
                   </div>
                 </div>
-                <div className="bg-muted/50 border border-primary/20 p-3 rounded">
-                  <div className="text-primary font-bold mb-1">EXCHANGE_RATE_CALCULATION:</div>
-                  <code className="text-green-500">SOL_TO_RUST_RATE = SOL_USD_PRICE / 1</code>
-                  <div className="text-muted-foreground text-xs mt-1">
-                    Dynamic rate based on real-time SOL/USD pricing from Jupiter/CoinGecko APIs.
+              </section>
+
+              {/* Market Dynamics */}
+              <section className="bg-muted/30 border border-primary/20 rounded p-4">
+                <h2 className="text-primary font-bold mb-3 flex items-center gap-2">
+                  <Activity className="w-4 h-4" />
+                  MARKET_DYNAMICS
+                </h2>
+                <div className="space-y-3">
+                  <div className="bg-muted/50 border border-primary/20 p-3 rounded">
+                    <div className="text-primary font-bold mb-1">PRICE_DISCOVERY:</div>
+                    <div className="text-muted-foreground text-xs">
+                      SOL price fluctuates based on real crypto markets. SHARD maintains stable USD value.
+                      Exchange rate automatically adjusts to reflect current SOL/USD pricing.
+                    </div>
+                  </div>
+                  <div className="bg-muted/50 border border-primary/20 p-3 rounded">
+                    <div className="text-primary font-bold mb-1">LIQUIDITY_MANAGEMENT:</div>
+                    <div className="text-muted-foreground text-xs">
+                      Treasury SOL reserves back all SHARD redemptions. No impermanent loss for users.
+                      Slippage-free trading due to external price oracle integration.
+                    </div>
                   </div>
                 </div>
-              </div>
-            </section>
+              </section>
 
-            {/* Hybrid AMM */}
-            <section className="bg-muted/30 border border-primary/20 rounded p-4">
-              <h2 className="text-primary font-bold mb-3 flex items-center gap-2">
-                <BarChart3 className="w-4 h-4" />
-                HYBRID_AMM_ARCHITECTURE
-              </h2>
-              <div className="grid grid-cols-1 gap-3">
+              {/* Trading Examples */}
+              <section className="bg-muted/30 border border-primary/20 rounded p-4">
+                <h2 className="text-primary font-bold mb-3 flex items-center gap-2">
+                  <ArrowUpDown className="w-4 h-4" />
+                  TRADING_EXAMPLES
+                </h2>
                 <div className="bg-muted/50 border border-primary/20 p-3 rounded">
-                  <div className="text-blue-500 font-bold mb-1">ON_CHAIN_COMPONENT:</div>
-                  <div className="text-muted-foreground text-xs">
-                    • Treasury wallet holds real SOL on Solana devnet<br />
-                    • Transparent, auditable reserves<br />
-                    • Future migration path to full on-chain AMM
+                  <div className="text-primary font-bold mb-2">SCENARIO: SOL = $150 USD</div>
+                  <div className="text-muted-foreground text-xs space-y-1">
+                    <div>• Player trades 1 SOL → receives 150 SHARD</div>
+                    <div>• Player trades 75 SHARD → receives 0.5 SOL</div>
+                    <div>• SHARD purchasing power: 1 SHARD = $1 USD equivalent</div>
+                    <div>• All rates update automatically with SOL price changes</div>
                   </div>
                 </div>
-                <div className="bg-muted/50 border border-primary/20 p-3 rounded">
-                  <div className="text-purple-500 font-bold mb-1">OFF_CHAIN_COMPONENT:</div>
-                  <div className="text-muted-foreground text-xs">
-                    • RUST balances in Supabase for instant transfers<br />
-                    • Zero gas fees for in-game transactions<br />
-                    • Real-time market data processing
+              </section>
+
+              {/* Future Roadmap */}
+              <section className="bg-muted/30 border border-primary/20 rounded p-4">
+                <h2 className="text-primary font-bold mb-3 flex items-center gap-2">
+                  <Settings className="w-4 h-4" />
+                  MAINNET_MIGRATION_PATH
+                </h2>
+                <div className="space-y-2">
+                  <div className="bg-green-500/10 border border-green-500/30 p-2 rounded">
+                    <span className="text-green-500 font-bold">PHASE_1:</span>
+                    <span className="text-muted-foreground ml-2 text-xs">
+                      Current hybrid system with USDC reserves backing
+                    </span>
+                  </div>
+                  <div className="bg-yellow-500/10 border border-yellow-500/30 p-2 rounded">
+                    <span className="text-yellow-500 font-bold">PHASE_2:</span>
+                    <span className="text-muted-foreground ml-2 text-xs">
+                      SPL token deployment with on-chain SHARD minting
+                    </span>
+                  </div>
+                  <div className="bg-blue-500/10 border border-blue-500/30 p-2 rounded">
+                    <span className="text-blue-500 font-bold">PHASE_3:</span>
+                    <span className="text-muted-foreground ml-2 text-xs">
+                      Full decentralized AMM with liquidity provider rewards
+                    </span>
                   </div>
                 </div>
-              </div>
-            </section>
+              </section>
 
-            {/* Market Dynamics */}
-            <section className="bg-muted/30 border border-primary/20 rounded p-4">
-              <h2 className="text-primary font-bold mb-3 flex items-center gap-2">
-                <Activity className="w-4 h-4" />
-                MARKET_DYNAMICS
-              </h2>
-              <div className="space-y-3">
-                <div className="bg-muted/50 border border-primary/20 p-3 rounded">
-                  <div className="text-primary font-bold mb-1">PRICE_DISCOVERY:</div>
-                  <div className="text-muted-foreground text-xs">
-                    SOL price fluctuates based on real crypto markets. RUST maintains stable USD value.
-                    Exchange rate automatically adjusts to reflect current SOL/USD pricing.
+              {/* Technical Specs */}
+              <section className="bg-muted/30 border border-primary/20 rounded p-4">
+                <h2 className="text-primary font-bold mb-3">TECHNICAL_SPECIFICATIONS</h2>
+                <div className="grid grid-cols-2 gap-4 text-xs">
+                  <div>
+                    <div className="text-muted-foreground mb-1">NETWORK:</div>
+                    <div className="text-primary">Solana Devnet</div>
+                  </div>
+                  <div>
+                    <div className="text-muted-foreground mb-1">PRICE_ORACLE:</div>
+                    <div className="text-primary">Jupiter API + Helius</div>
+                  </div>
+                  <div>
+                    <div className="text-muted-foreground mb-1">DATABASE:</div>
+                    <div className="text-primary">Supabase PostgreSQL</div>
+                  </div>
+                  <div>
+                    <div className="text-muted-foreground mb-1">UPDATE_FREQUENCY:</div>
+                    <div className="text-primary">30 seconds</div>
                   </div>
                 </div>
-                <div className="bg-muted/50 border border-primary/20 p-3 rounded">
-                  <div className="text-primary font-bold mb-1">LIQUIDITY_MANAGEMENT:</div>
-                  <div className="text-muted-foreground text-xs">
-                    Treasury SOL reserves back all RUST redemptions. No impermanent loss for users.
-                    Slippage-free trading due to external price oracle integration.
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            {/* Trading Examples */}
-            <section className="bg-muted/30 border border-primary/20 rounded p-4">
-              <h2 className="text-primary font-bold mb-3 flex items-center gap-2">
-                <ArrowUpDown className="w-4 h-4" />
-                TRADING_EXAMPLES
-              </h2>
-              <div className="bg-muted/50 border border-primary/20 p-3 rounded">
-                <div className="text-primary font-bold mb-2">SCENARIO: SOL = $150 USD</div>
-                <div className="text-muted-foreground text-xs space-y-1">
-                  <div>• Player trades 1 SOL → receives 150 RUST</div>
-                  <div>• Player trades 75 RUST → receives 0.5 SOL</div>
-                  <div>• RUST purchasing power: 1 RUST = $1 USD equivalent</div>
-                  <div>• All rates update automatically with SOL price changes</div>
-                </div>
-              </div>
-            </section>
-
-            {/* Future Roadmap */}
-            <section className="bg-muted/30 border border-primary/20 rounded p-4">
-              <h2 className="text-primary font-bold mb-3 flex items-center gap-2">
-                <Settings className="w-4 h-4" />
-                MAINNET_MIGRATION_PATH
-              </h2>
-              <div className="space-y-2">
-                <div className="bg-green-500/10 border border-green-500/30 p-2 rounded">
-                  <span className="text-green-500 font-bold">PHASE_1:</span>
-                  <span className="text-muted-foreground ml-2 text-xs">
-                    Current hybrid system with USDC reserves backing
-                  </span>
-                </div>
-                <div className="bg-yellow-500/10 border border-yellow-500/30 p-2 rounded">
-                  <span className="text-yellow-500 font-bold">PHASE_2:</span>
-                  <span className="text-muted-foreground ml-2 text-xs">
-                    SPL token deployment with on-chain RUST minting
-                  </span>
-                </div>
-                <div className="bg-blue-500/10 border border-blue-500/30 p-2 rounded">
-                  <span className="text-blue-500 font-bold">PHASE_3:</span>
-                  <span className="text-muted-foreground ml-2 text-xs">
-                    Full decentralized AMM with liquidity provider rewards
-                  </span>
-                </div>
-              </div>
-            </section>
-
-            {/* Technical Specs */}
-            <section className="bg-muted/30 border border-primary/20 rounded p-4">
-              <h2 className="text-primary font-bold mb-3">TECHNICAL_SPECIFICATIONS</h2>
-              <div className="grid grid-cols-2 gap-4 text-xs">
-                <div>
-                  <div className="text-muted-foreground mb-1">NETWORK:</div>
-                  <div className="text-primary">Solana Devnet</div>
-                </div>
-                <div>
-                  <div className="text-muted-foreground mb-1">PRICE_ORACLE:</div>
-                  <div className="text-primary">Jupiter API + CoinGecko</div>
-                </div>
-                <div>
-                  <div className="text-muted-foreground mb-1">DATABASE:</div>
-                  <div className="text-primary">Supabase PostgreSQL</div>
-                </div>
-                <div>
-                  <div className="text-muted-foreground mb-1">UPDATE_FREQUENCY:</div>
-                  <div className="text-primary">30 seconds</div>
-                </div>
-              </div>
-            </section>
-          </div>
-
-          {/* Footer */}
-          <div className="mt-6 pt-4 border-t border-primary/20 text-center">
-            <div className="text-muted-foreground/60 text-xs">
-              {'>'} WASTELAND_TREASURY_AMM_DOCUMENTATION_v2.089
+              </section>
             </div>
-            <div className="text-muted-foreground/60 text-xs mt-1">
-              BUILT_FOR_THE_FUTURE_OF_GAMING_FINANCE
+
+            {/* Footer */}
+            <div className="mt-6 pt-4 border-t border-primary/20 text-center">
+              <div className="text-muted-foreground/60 text-xs">
+                {'>'} WASTELAND_TREASURY_AMM_DOCUMENTATION_v2.089
+              </div>
+              <div className="text-muted-foreground/60 text-xs mt-1">
+                BUILT_FOR_THE_FUTURE_OF_GAMING_FINANCE
+              </div>
             </div>
           </div>
         </div>
@@ -543,7 +595,7 @@ const RustMarket: React.FC = () => {
     );
   };
 
-  // Character Lookup Modal
+
   const CharacterLookup = () => {
     const [isSearching, setIsSearching] = useState(false);
 
@@ -556,10 +608,9 @@ const RustMarket: React.FC = () => {
         await new Promise(resolve => setTimeout(resolve, 1000));
 
         // Mock data - replace with actual character transaction lookup
-        const mockHistory = recentTransactions.filter(tx =>
+        const mockHistory = recentTransactions.filter((tx: Transaction) =>
           tx.sender_shard === lookupCharacter ||
-          tx.character_id === lookupCharacter ||
-          tx.receiver_shard === lookupCharacter
+          tx.txn_shard === lookupCharacter
         );
 
         setCharacterHistory(mockHistory);
@@ -621,7 +672,7 @@ const RustMarket: React.FC = () => {
               <div className="text-muted-foreground text-xs mb-2">
                 TRANSACTION_HISTORY ({characterHistory.length} found):
               </div>
-              <div className="bg-muted/30 border border-primary/20 rounded p-2 max-h-64 overflow-y-auto">
+              <div className="bg-muted/30 border border-primary/20 rounded p-2 max-h-64 overflow-y-auto character-history-scroll">
                 {characterHistory.map((tx, idx) => {
                   const isBuy = tx.from_vault === 'SCRAP_SOL';
                   return (
@@ -637,7 +688,7 @@ const RustMarket: React.FC = () => {
                         <div className="flex items-center gap-2">
                           <span className={`font-bold flex items-center gap-1 ${isBuy ? 'text-green-500' : 'text-red-500'}`}>
                             {isBuy ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                            {isBuy ? 'BUY_RUST' : 'SELL_RUST'}
+                            {isBuy ? 'BUY_SHARD' : 'SELL_SHARD'}
                           </span>
                           <span className="text-muted-foreground text-xs">BLK{tx.wasteland_block % 10000}</span>
                         </div>
@@ -677,7 +728,7 @@ const RustMarket: React.FC = () => {
     );
   };
 
-  // Transaction Explorer Modal
+
   const TransactionExplorer = () => {
     if (!selectedTransaction) return null;
 
@@ -691,7 +742,7 @@ const RustMarket: React.FC = () => {
           <div className="flex items-center justify-between mb-4 border-b border-primary/20 pb-2">
             <div className="flex items-center gap-2">
               <Database className="w-4 h-4" />
-              <span className="text-primary font-bold">RUST_BLOCK_EXPLORER v2.089</span>
+              <span className="text-primary font-bold">SHARD_BLOCK_EXPLORER v2.089</span>
             </div>
             <button
               onClick={() => setSelectedTransaction(null)}
@@ -705,7 +756,7 @@ const RustMarket: React.FC = () => {
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div className="bg-muted/50 border border-primary/20 p-3 rounded">
               <div className="text-muted-foreground text-xs mb-1">TRANSACTION_ID</div>
-              <div className="text-primary font-bold break-all">{tx.id || tx.txn_shard || 'N/A'}</div>
+              <div className="text-primary font-bold break-all">{tx.txn_shard || tx.wasteland_block || 'N/A'}</div>
             </div>
 
             <div className="bg-muted/50 border border-primary/20 p-3 rounded">
@@ -717,7 +768,7 @@ const RustMarket: React.FC = () => {
               <div className="text-muted-foreground text-xs mb-1">OPERATION_TYPE</div>
               <div className={`font-bold flex items-center gap-1 ${isBuy ? 'text-green-500' : 'text-red-500'}`}>
                 {isBuy ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                {isBuy ? 'BUY_RUST' : 'SELL_RUST'}
+                {isBuy ? 'BUY_SHARD' : 'SELL_SHARD'}
               </div>
             </div>
 
@@ -755,7 +806,7 @@ const RustMarket: React.FC = () => {
             <div className="border-t border-primary/20 pt-3">
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground text-xs">EXCHANGE_RATE:</span>
-                <span className="text-primary font-bold">{formatRate(tx.exchange_flux)} RUST/SOL</span>
+                <span className="text-primary font-bold">{formatRate(tx.exchange_flux)} SHARD/SOL</span>
               </div>
             </div>
           </div>
@@ -766,15 +817,11 @@ const RustMarket: React.FC = () => {
             <div className="grid grid-cols-3 gap-4 text-xs">
               <div>
                 <span className="text-muted-foreground">SENDER: </span>
-                <span className="text-primary">{tx.sender_shard || tx.character_id || 'UNKNOWN'}</span>
+                <span className="text-primary">{tx.sender_shard || tx.txn_shard || 'UNKNOWN'}</span>
               </div>
               <div>
                 <span className="text-muted-foreground">RECEIVER: </span>
-                <span className="text-primary">{tx.receiver_shard || 'TREASURY'}</span>
-              </div>
-              <div>
-                <span className="text-muted-foreground">SEQUENCE: </span>
-                <span className="text-primary">{tx.sequence_id || 'N/A'}</span>
+                <span className="text-primary">{'TREASURY'}</span>
               </div>
             </div>
           </div>
@@ -805,7 +852,7 @@ const RustMarket: React.FC = () => {
       {/* Market Stats */}
       <div className="grid grid-cols-4 gap-4 mb-4">
         <div className="bg-muted/50 border border-primary/20 p-3 rounded">
-          <div className="text-muted-foreground text-xs mb-1">SOL/RUST</div>
+          <div className="text-muted-foreground text-xs mb-1">SOL/SHARD</div>
           <div className="text-primary text-lg font-bold">{formatRate(currentRate)}</div>
           <div className={`text-xs flex items-center gap-1 ${change24h >= 0 ? 'text-green-500 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>
             {change24h >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
@@ -858,22 +905,6 @@ const RustMarket: React.FC = () => {
               </button>
 
               <button
-                onClick={() => console.log('Analytics clicked')}
-                className="bg-muted/50 border border-primary/30 text-primary px-3 py-1 rounded text-xs font-bold hover:border-primary/50 transition-colors flex items-center gap-1 whitespace-nowrap"
-              >
-                <BarChart3 className="w-3 h-3" />
-                ANALYTICS
-              </button>
-
-              <button
-                onClick={() => console.log('History clicked')}
-                className="bg-muted/50 border border-primary/30 text-primary px-3 py-1 rounded text-xs font-bold hover:border-primary/50 transition-colors flex items-center gap-1 whitespace-nowrap"
-              >
-                <History className="w-3 h-3" />
-                HISTORY
-              </button>
-
-              <button
                 onClick={() => setShowDocumentation(true)}
                 className="bg-muted/50 border border-primary/30 text-primary px-3 py-1 rounded text-xs font-bold hover:border-primary/50 transition-colors flex items-center gap-1 whitespace-nowrap"
               >
@@ -899,7 +930,7 @@ const RustMarket: React.FC = () => {
       {/* Price Chart */}
       <div className="mb-4">
         <div className="text-muted-foreground text-xs mb-2 flex items-center justify-between">
-          <span>PRICE FLUX (RUST PER SOL)</span>
+          <span>PRICE FLUX (SHARD PER SOL)</span>
           <span>LAST {marketData.length} BLOCKS</span>
         </div>
         <div className="bg-muted/30 border border-primary/20 rounded p-2 h-48">
@@ -942,14 +973,15 @@ const RustMarket: React.FC = () => {
       {/* Recent Transactions */}
       <div>
         <div className="text-muted-foreground text-xs mb-2">RECENT TRANSACTIONS</div>
-        <div className="bg-muted/30 border border-primary/20 rounded p-2 max-h-48 overflow-y-auto">
+        <div className="bg-muted/30 border border-primary/20 rounded p-2 max-h-48 overflow-y-auto transactions-scroll">
           {recentTransactions.length > 0 ? (
             recentTransactions.map((tx, idx) => {
               const isBuy = tx.from_vault === 'SCRAP_SOL';
+              const txKey = String(tx.txn_shard || tx.wasteland_block);
               return (
                 <div
-                  key={idx}
-                  className={`py-2 border-b border-border/30 last:border-b-0 cursor-pointer hover:bg-muted/20 transition-all duration-300 ${newTransactionIds.has(tx.id || tx.txn_shard || tx.wasteland_block)
+                  key={txKey || idx}
+                  className={`py-2 border-b border-border/30 last:border-b-0 cursor-pointer hover:bg-muted/20 transition-all duration-300 ${newTransactionIds.has(txKey)
                     ? 'animate-pulse bg-primary/10 border-primary/30'
                     : ''
                     }`}
@@ -959,7 +991,7 @@ const RustMarket: React.FC = () => {
                     <div className="flex items-center gap-2">
                       <span className={`font-bold flex items-center gap-1 ${isBuy ? 'text-green-500' : 'text-red-500'}`}>
                         {isBuy ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                        {isBuy ? 'BUY_RUST' : 'SELL_RUST'}
+                        {isBuy ? 'BUY_SHARD' : 'SELL_SHARD'}
                       </span>
                       <span className="text-muted-foreground text-xs">BLK{tx.wasteland_block % 10000}</span>
                     </div>
@@ -996,7 +1028,7 @@ const RustMarket: React.FC = () => {
 
       {/* Footer */}
       <div className="mt-4 pt-2 border-t border-primary/20 flex justify-between text-xs text-muted-foreground/60">
-        <span>RUST_CHAIN_v2089 | TREASURY_AMM</span>
+        <span>SHARD_CHAIN_v2089 | TREASURY_AMM</span>
         <span>LAST_UPDATE: {new Date().toLocaleTimeString()}</span>
       </div>
 
