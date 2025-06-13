@@ -1,4 +1,4 @@
-// src/hooks/usePlayerCharacter.ts - Updated for explicit flow
+// src/hooks/usePlayerCharacter.ts - Simplified network awareness
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { createClient } from '@supabase/supabase-js'
@@ -12,7 +12,9 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 const realtimeSupabase = createClient(supabaseUrl, supabaseAnonKey)
 
-export function usePlayerCharacter(): UsePlayerCharacterReturn {
+export function usePlayerCharacter(
+  shouldLoad: boolean = true
+): UsePlayerCharacterReturn {
   const wallet = useWallet()
   const [character, setCharacter] = useState<Character | null>(null)
   const [loading, setLoading] = useState(false)
@@ -29,9 +31,13 @@ export function usePlayerCharacter(): UsePlayerCharacterReturn {
 
   const fetchCharacter = useCallback(
     async (isRefetch = false) => {
+      // Don't fetch if shouldLoad is false (mainnet)
+      if (!shouldLoad) {
+        console.log('⚠️ Character loading disabled (likely mainnet)')
+        return
+      }
+
       if (!wallet.connected || !wallet.publicKey) {
-        // Don't automatically clear state when wallet disconnects
-        // Let the GameProvider handle this
         if (!isRefetch) {
           setCharacter(null)
           setHasCharacter(false)
@@ -75,88 +81,99 @@ export function usePlayerCharacter(): UsePlayerCharacterReturn {
         setLoading(false)
       }
     },
-    [wallet.connected, wallet.publicKey?.toString()]
+    [wallet.connected, wallet.publicKey?.toString(), shouldLoad]
   )
 
   // Real-time character updates subscription
-  const subscribeToCharacterUpdates = useCallback((character_id: string) => {
-    // Clean up existing subscription
-    if (characterSubscriptionRef.current) {
-      characterSubscriptionRef.current.unsubscribe()
-    }
+  const subscribeToCharacterUpdates = useCallback(
+    (character_id: string) => {
+      // Don't subscribe if shouldLoad is false
+      if (!shouldLoad) return
 
-    characterSubscriptionRef.current = realtimeSupabase
-      .channel(`character-updates-${character_id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'characters',
-          filter: `id=eq.${character_id}`,
-        },
-        (payload) => {
-          console.log('📡 Character update received:', payload.new)
+      // Clean up existing subscription
+      if (characterSubscriptionRef.current) {
+        characterSubscriptionRef.current.unsubscribe()
+      }
 
-          // Update character state with new data
-          setCharacter((prev) => {
-            if (!prev) return prev
+      characterSubscriptionRef.current = realtimeSupabase
+        .channel(`character-updates-${character_id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'characters',
+            filter: `id=eq.${character_id}`,
+          },
+          (payload) => {
+            console.log('📡 Character update received:', payload.new)
 
-            const new_ = payload.new as any
+            // Update character state with new data
+            setCharacter((prev) => {
+              if (!prev) return prev
 
-            // Force a new object reference
-            const updated = {
-              ...prev,
-              ...new_,
-              // Preserve nested objects that might not be in the update
-              currentLocation: prev.currentLocation
-                ? { ...prev.currentLocation }
-                : prev.currentLocation,
-              inventory: prev.inventory ? [...prev.inventory] : prev.inventory,
-              // Force re-render with timestamp
-              _lastUpdated: Date.now(),
-            }
+              const new_ = payload.new as any
 
-            // Show toast for significant changes
-            if (new_.energy !== undefined && new_.energy !== prev.energy) {
-              const diff = new_.energy - prev.energy
-              if (diff > 0) {
-                toast.success(`+${diff} Energy`, { duration: 2000 })
+              // Force a new object reference
+              const updated = {
+                ...prev,
+                ...new_,
+                // Preserve nested objects that might not be in the update
+                currentLocation: prev.currentLocation
+                  ? { ...prev.currentLocation }
+                  : prev.currentLocation,
+                inventory: prev.inventory
+                  ? [...prev.inventory]
+                  : prev.inventory,
+                // Force re-render with timestamp
+                _lastUpdated: Date.now(),
               }
-            }
 
-            if (new_.health !== undefined && new_.health !== prev.health) {
-              const diff = new_.health - prev.health
-              if (diff > 0) {
-                toast.success(`+${diff} Health`, { duration: 2000 })
+              // Show toast for significant changes
+              if (new_.energy !== undefined && new_.energy !== prev.energy) {
+                const diff = new_.energy - prev.energy
+                if (diff > 0) {
+                  toast.success(`+${diff} Energy`, { duration: 2000 })
+                }
               }
-            }
 
-            if (new_.coins !== undefined && new_.coins !== prev.coins) {
-              const diff = new_.coins - prev.coins
-              if (diff > 0) {
-                toast.success(`+${diff} Coins`, { duration: 2000 })
+              if (new_.health !== undefined && new_.health !== prev.health) {
+                const diff = new_.health - prev.health
+                if (diff > 0) {
+                  toast.success(`+${diff} Health`, { duration: 2000 })
+                }
               }
-            }
 
-            if (new_.level !== undefined && new_.level > prev.level) {
-              toast.success(`🎉 Level Up! Level ${new_.level}`, {
-                duration: 4000,
-              })
-            }
+              if (new_.coins !== undefined && new_.coins !== prev.coins) {
+                const diff = new_.coins - prev.coins
+                if (diff > 0) {
+                  toast.success(`+${diff} Coins`, { duration: 2000 })
+                }
+              }
 
-            return updated
-          })
-        }
-      )
-      .subscribe((status) => {
-        console.log('📡 Character subscription status:', status)
-      })
-  }, [])
+              if (new_.level !== undefined && new_.level > prev.level) {
+                toast.success(`🎉 Level Up! Level ${new_.level}`, {
+                  duration: 4000,
+                })
+              }
+
+              return updated
+            })
+          }
+        )
+        .subscribe((status) => {
+          console.log('📡 Character subscription status:', status)
+        })
+    },
+    [shouldLoad]
+  )
 
   // Real-time inventory updates subscription
   const subscribeToInventoryUpdates = useCallback(
     (character_id: string) => {
+      // Don't subscribe if shouldLoad is false
+      if (!shouldLoad) return
+
       // Clean up existing subscription
       if (inventorySubscriptionRef.current) {
         inventorySubscriptionRef.current.unsubscribe()
@@ -208,7 +225,7 @@ export function usePlayerCharacter(): UsePlayerCharacterReturn {
           console.log('🎒 Inventory subscription status:', status)
         })
     },
-    [fetchCharacter]
+    [fetchCharacter, shouldLoad]
   )
 
   // Clean up subscriptions
@@ -226,9 +243,21 @@ export function usePlayerCharacter(): UsePlayerCharacterReturn {
     }
   }, [])
 
+  // Add this useEffect to your usePlayerCharacter hook:
+  useEffect(() => {
+    if (!wallet.connected || !wallet.publicKey) {
+      console.log('🔌 Wallet disconnected - clearing character state')
+      setCharacter(null)
+      setHasCharacter(false)
+      setError(null)
+      setLoading(false)
+      cleanupSubscriptions()
+    }
+  }, [wallet.connected, wallet.publicKey, cleanupSubscriptions])
+
   // Set up real-time subscriptions when character is loaded
   useEffect(() => {
-    if (character?.id && hasCharacter) {
+    if (character?.id && hasCharacter && shouldLoad) {
       console.log(
         '🚀 Setting up real-time subscriptions for character:',
         character.id
@@ -245,6 +274,7 @@ export function usePlayerCharacter(): UsePlayerCharacterReturn {
   }, [
     character?.id,
     hasCharacter,
+    shouldLoad,
     subscribeToCharacterUpdates,
     subscribeToInventoryUpdates,
     cleanupSubscriptions,
@@ -257,25 +287,40 @@ export function usePlayerCharacter(): UsePlayerCharacterReturn {
     }
   }, [wallet.connected, cleanupSubscriptions])
 
+  // Fetch character on initial load and wallet change
+  useEffect(() => {
+    fetchCharacter()
+  }, [fetchCharacter])
+
   const refetchCharacter = useCallback(async () => {
     await fetchCharacter(true) // This is a refetch, don't show loading
   }, [fetchCharacter])
 
+  // Return appropriate state based on shouldLoad
   return {
-    character,
-    loading,
-    hasCharacter,
-    error,
+    character: shouldLoad ? character : null,
+    loading: shouldLoad ? loading : false,
+    hasCharacter: shouldLoad ? hasCharacter : false,
+    error: shouldLoad ? error : null,
     refetchCharacter,
   }
 }
 
 // Enhanced error handling and request validation
-export function useCharacterActions() {
+export function useCharacterActions(shouldLoad: boolean = true) {
   const wallet = useWallet()
 
   const performAction = useCallback(
     async (actionType: string, payload: Record<string, unknown> = {}) => {
+      // Block actions if shouldLoad is false (mainnet)
+      if (!shouldLoad) {
+        console.log(`⚠️ ${actionType} blocked (likely mainnet)`)
+        return {
+          success: false,
+          message: `${actionType} not available on this network`,
+        }
+      }
+
       if (!wallet.connected || !wallet.publicKey) {
         toast.error('Please connect your wallet')
         throw new Error('Wallet not connected')
@@ -322,7 +367,7 @@ export function useCharacterActions() {
         throw error
       }
     },
-    [wallet.connected, wallet.publicKey]
+    [wallet.connected, wallet.publicKey, shouldLoad]
   )
 
   return {

@@ -1,6 +1,7 @@
-// src/providers/GameProvider.tsx - Cleaned up travel handling
+// src/providers/GameProvider.tsx - Simplified without network blocking
 import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react'
 import { useWallet } from '@solana/wallet-adapter-react'
+import { useNetwork } from '@/contexts/NetworkContext'
 import { usePlayerCharacter, useCharacterActions } from '@/hooks/usePlayerCharacter'
 import { useGameData } from '@/hooks/useGameData'
 import { toast } from 'sonner'
@@ -46,6 +47,8 @@ type GameAction =
   | { type: 'USER_WANTS_TO_ENTER_GAME' }
   | { type: 'SET_MAP_TRAVELING'; isTraveling: boolean; destination: string | null }
   | { type: 'CLEAR_MAP_TRAVELING' }
+  | { type: 'RESET_ALL_STATE' }
+
 
 function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
@@ -122,6 +125,25 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         mapTravelDestination: null
       }
 
+    case 'RESET_ALL_STATE':
+      return {
+        ...state,
+        appState: 'wallet-required',
+        currentView: 'main',
+        error: undefined,
+        character: undefined,
+        characterLoading: false,
+        hasCharacter: false,
+        gameData: {},
+        loadingItems: new Set<string>(),
+        travelingTo: undefined,
+        selectedLocation: undefined,
+        hasCheckedCharacter: false,
+        hasLoadedGameData: false,
+        isTravelingOnMap: false,
+        mapTravelDestination: null
+      }
+
     default:
       return state
   }
@@ -152,8 +174,17 @@ const GameContext = createContext<GameContextType | undefined>(undefined)
 
 export function GameProvider({ children }: { children: React.ReactNode }) {
   const wallet = useWallet()
-  const { character, loading: characterLoading, hasCharacter, refetchCharacter } = usePlayerCharacter()
-  const characterActions = useCharacterActions()
+  const { isMainnet, isDevnet } = useNetwork()
+
+  // Load character data on devnet only, but don't completely block the hooks
+  const {
+    character,
+    loading: characterLoading,
+    hasCharacter,
+    refetchCharacter
+  } = usePlayerCharacter(!isMainnet) // Only load on devnet
+
+  const characterActions = useCharacterActions(!isMainnet) // Only allow actions on devnet
 
   const [state, dispatch] = useReducer(gameReducer, {
     appState: 'wallet-required',
@@ -169,11 +200,15 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     mapTravelDestination: null
   })
 
-  const gameData = useGameData(character, state.currentView, state.selectedLocation)
+  const gameData = useGameData(
+    !isMainnet ? character : null,
+    !isMainnet ? state.currentView : 'main',
+    !isMainnet ? state.selectedLocation : undefined
+  )
 
-  // Character location updates
+  // Character location updates - ONLY ON DEVNET
   useEffect(() => {
-    if (character) {
+    if (character && !isMainnet) {
       console.log('🔥 CHARACTER LOCATION UPDATED:', character.current_location_id)
       dispatch({
         type: 'SET_CHARACTER_DATA',
@@ -182,82 +217,95 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         loading: characterLoading
       })
     }
-  }, [character, hasCharacter, characterLoading])
+  }, [character, hasCharacter, characterLoading, isMainnet])
 
   // Wallet connection handling
   useEffect(() => {
     if (!wallet.connected) {
-      dispatch({ type: 'SET_APP_STATE', appState: 'wallet-required' })
-      dispatch({ type: 'CLEAR_ERROR' })
-      dispatch({ type: 'SET_VIEW', view: 'main' })
+      console.log('🔌 Wallet disconnected - resetting game state')
+      dispatch({ type: 'RESET_ALL_STATE' })
     } else if (wallet.connected && state.appState === 'wallet-required') {
+      if (isMainnet) {
+        console.log('🟢 MAINNET: Staying at wallet-required for reservations')
+        return
+      }
       dispatch({ type: 'SET_APP_STATE', appState: 'checking-character' })
     }
-  }, [wallet.connected, state.appState])
+  }, [wallet.connected, state.appState, isMainnet])
 
-  // Character detection
+  // Character detection - ONLY ON DEVNET
   useEffect(() => {
-    if (character && character.id && !hasCharacter && !characterLoading) {
+    if (!isMainnet && character && character.id && !hasCharacter && !characterLoading) {
       dispatch({
         type: 'CHARACTER_CHECK_COMPLETE',
         hasCharacter: true
       })
     }
-  }, [character, hasCharacter, characterLoading])
+  }, [character, hasCharacter, characterLoading, isMainnet])
 
-  // App state management
+  // App state management - ONLY ON DEVNET
   useEffect(() => {
-    if (character && character.id && hasCharacter && state.appState === 'character-required') {
+    if (!isMainnet && character && character.id && hasCharacter && state.appState === 'character-required') {
       dispatch({
         type: 'SET_APP_STATE',
         appState: 'entering-game'
       })
     }
-  }, [character, hasCharacter, state.appState])
+  }, [character, hasCharacter, state.appState, isMainnet])
 
   const actions = {
     navigate: useCallback((view: GameView) => {
+      if (isMainnet) {
+        console.log('🟢 MAINNET: Navigation blocked')
+        return
+      }
       dispatch({ type: 'SET_VIEW', view })
-    }, []),
+    }, [isMainnet]),
 
     setSelectedLocation: useCallback((location: DatabaseLocation | undefined) => {
+      if (isMainnet) {
+        console.log('🟢 MAINNET: Location selection blocked')
+        return
+      }
       dispatch({ type: 'SET_SELECTED_LOCATION', location })
-    }, []),
+    }, [isMainnet]),
 
     checkForCharacter: useCallback(async () => {
-      if (!wallet.connected) return
+      if (!wallet.connected || isMainnet) return
       try {
         await refetchCharacter()
         dispatch({ type: 'CHARACTER_CHECK_COMPLETE', hasCharacter })
       } catch (error) {
         dispatch({ type: 'SET_ERROR', error: 'Failed to check character' })
       }
-    }, [wallet.connected, refetchCharacter, hasCharacter]),
+    }, [wallet.connected, refetchCharacter, hasCharacter, isMainnet]),
 
     enterGame: useCallback(async () => {
-      if (!character) return
+      if (!character || isMainnet) return
       try {
         await gameData.actions.loadGameData()
         dispatch({ type: 'GAME_DATA_LOADED' })
       } catch (error) {
         dispatch({ type: 'SET_ERROR', error: 'Failed to load game data' })
       }
-    }, [character, gameData.actions]),
+    }, [character, gameData.actions, isMainnet]),
 
     createCharacterComplete: useCallback(() => {
+      if (isMainnet) return
       dispatch({ type: 'USER_WANTS_TO_ENTER_GAME' })
-    }, []),
+    }, [isMainnet]),
 
     refetchCharacter: useCallback(async () => {
+      if (isMainnet) return
       try {
         await refetchCharacter()
       } catch (error) {
         dispatch({ type: 'SET_ERROR', error: 'Failed to refresh character data' })
       }
-    }, [refetchCharacter]),
+    }, [refetchCharacter, isMainnet]),
 
     handleMining: useCallback(async () => {
-      if (!character) return
+      if (!character || isMainnet) return
       if (character.energy < 10) {
         toast.error('Not enough energy! Need at least 10 energy to mine.')
         return
@@ -285,16 +333,14 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       } finally {
         dispatch({ type: 'SET_LOADING_ITEM', item_id: 'mining', loading: false })
       }
-    }, [character, characterActions, refetchCharacter]),
+    }, [character, characterActions, refetchCharacter, isMainnet]),
 
     handleTravel: useCallback(async (location_id: string) => {
-      if (!character) return
+      if (!character || isMainnet) return
 
       try {
-        // Set map animation state
         dispatch({ type: 'SET_MAP_TRAVELING', isTraveling: true, destination: location_id })
 
-        // Use the correct travel-action endpoint with proper parameters
         const response = await fetch('/.netlify/functions/travel-action', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -327,10 +373,10 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       } finally {
         dispatch({ type: 'CLEAR_MAP_TRAVELING' })
       }
-    }, [character, characterActions, refetchCharacter, gameData.actions]),
+    }, [character, characterActions, refetchCharacter, gameData.actions, isMainnet]),
 
     handlePurchase: useCallback(async (item_id: string, cost: number, itemName: string) => {
-      if (!character) return
+      if (!character || isMainnet) return
 
       try {
         dispatch({ type: 'SET_LOADING_ITEM', item_id, loading: true })
@@ -348,10 +394,10 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       } finally {
         dispatch({ type: 'SET_LOADING_ITEM', item_id, loading: false })
       }
-    }, [character, characterActions, refetchCharacter, gameData.actions]),
+    }, [character, characterActions, refetchCharacter, gameData.actions, isMainnet]),
 
     handleEquipItem: useCallback(async (inventoryId: string, isCurrentlyEquipped: boolean) => {
-      if (!character) return
+      if (!character || isMainnet) return
 
       try {
         dispatch({ type: 'SET_LOADING_ITEM', item_id: inventoryId, loading: true })
@@ -369,10 +415,10 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       } finally {
         dispatch({ type: 'SET_LOADING_ITEM', item_id: inventoryId, loading: false })
       }
-    }, [character, characterActions, refetchCharacter]),
+    }, [character, characterActions, refetchCharacter, isMainnet]),
 
     handleUseItem: useCallback(async (inventoryId: string, itemName: string, energy_effect?: number, health_effect?: number) => {
-      if (!character) return
+      if (!character || isMainnet) return
 
       try {
         dispatch({ type: 'SET_LOADING_ITEM', item_id: inventoryId, loading: true })
@@ -393,10 +439,10 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       } finally {
         dispatch({ type: 'SET_LOADING_ITEM', item_id: inventoryId, loading: false })
       }
-    }, [character, characterActions, refetchCharacter]),
+    }, [character, characterActions, refetchCharacter, isMainnet]),
 
     handleSendMessage: useCallback(async (message: string) => {
-      if (!character || !message.trim()) return
+      if (!character || !message.trim() || isMainnet) return
 
       try {
         const location_id = state.selectedLocation?.id || character.currentLocation.id
@@ -410,14 +456,14 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       } catch (error) {
         toast.error('Failed to send message. Please try again.')
       }
-    }, [character, characterActions, gameData.actions, state.selectedLocation]),
+    }, [character, characterActions, gameData.actions, state.selectedLocation, isMainnet]),
 
     handleRetry: useCallback(() => {
       dispatch({ type: 'CLEAR_ERROR' })
-      if (wallet.connected) {
+      if (wallet.connected && !isMainnet) {
         dispatch({ type: 'SET_APP_STATE', appState: 'checking-character' })
       }
-    }, [wallet.connected]),
+    }, [wallet.connected, isMainnet]),
 
     handleRefresh: useCallback(() => {
       window.location.reload()
@@ -427,7 +473,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const contextValue: GameContextType = {
     state: {
       ...state,
-      gameData
+      gameData: !isMainnet ? gameData : {}
     },
     dispatch,
     actions

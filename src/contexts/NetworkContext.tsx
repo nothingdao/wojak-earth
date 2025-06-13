@@ -1,6 +1,8 @@
-// src/contexts/NetworkContext.tsx
-import React, { createContext, useContext, useState, useEffect } from 'react'
+// src/contexts/NetworkContext.tsx - Manual switching + mismatch detection
+import React, { createContext, useContext, useEffect, useState } from 'react'
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base'
+import { useWallet } from '@solana/wallet-adapter-react'
+import { Connection } from '@solana/web3.js'
 
 interface NetworkContextType {
   network: WalletAdapterNetwork
@@ -9,6 +11,7 @@ interface NetworkContextType {
   isMainnet: boolean
   getExplorerUrl: (address: string) => string
   getRpcUrl: () => string
+  networkMismatch: boolean
 }
 
 const NetworkContext = createContext<NetworkContextType | undefined>(undefined)
@@ -23,34 +26,57 @@ export const useNetwork = () => {
 
 interface NetworkProviderProps {
   children: React.ReactNode
+  network: WalletAdapterNetwork
+  setNetwork: (network: WalletAdapterNetwork) => void
 }
 
-export const NetworkProvider: React.FC<NetworkProviderProps> = ({ children }) => {
-  // Default to devnet for development
-  const [network, setNetwork] = useState<WalletAdapterNetwork>(() => {
-    const saved = localStorage.getItem('solana-network')
-    return saved === 'mainnet-beta' ? WalletAdapterNetwork.Mainnet : WalletAdapterNetwork.Devnet
-  })
-
-  // Save network preference to localStorage
-  useEffect(() => {
-    localStorage.setItem('solana-network', network)
-  }, [network])
-
+export const NetworkProvider: React.FC<NetworkProviderProps> = ({
+  children,
+  network,
+  setNetwork
+}) => {
   const isDevnet = network === WalletAdapterNetwork.Devnet
   const isMainnet = network === WalletAdapterNetwork.Mainnet
 
   const getExplorerUrl = (address: string) => {
     const cluster = isDevnet ? '?cluster=devnet' : ''
-    return `https://amman-explorer.metaplex.com/#/address/${address}${cluster}`
+    return `https://explorer.solana.com/address/${address}${cluster}`
   }
 
   const getRpcUrl = () => {
     if (isMainnet) {
-      return process.env.VITE_MAINNET_RPC_URL || 'https://api.mainnet-beta.solana.com'
+      return import.meta.env.VITE_MAINNET_RPC_URL || 'https://api.mainnet-beta.solana.com'
     }
-    return process.env.VITE_DEVNET_RPC_URL || 'https://api.devnet.solana.com'
+    return import.meta.env.VITE_DEVNET_RPC_URL || 'https://api.devnet.solana.com'
   }
+
+  const { publicKey, connected } = useWallet()
+  const [networkMismatch, setNetworkMismatch] = useState(false)
+
+  useEffect(() => {
+    const checkGenesisHash = async () => {
+      try {
+        const expectedHashes = {
+          [WalletAdapterNetwork.Mainnet]: '5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp',
+          [WalletAdapterNetwork.Devnet]: '4uhcVJyU9pJkvQyS88uRDiswHXSCkY3z',
+        }
+
+        const connection = new Connection(getRpcUrl())
+        const actualHash = await connection.getGenesisHash()
+        const expectedHash = expectedHashes[network]
+        setNetworkMismatch(actualHash !== expectedHash)
+      } catch (err) {
+        console.warn('⚠️ NetworkContext: Failed to detect network mismatch:', err)
+        setNetworkMismatch(true)
+      }
+    }
+
+    if (connected && publicKey) {
+      checkGenesisHash()
+    } else {
+      setNetworkMismatch(false)
+    }
+  }, [network, publicKey?.toBase58(), connected])
 
   const value: NetworkContextType = {
     network,
@@ -58,8 +84,11 @@ export const NetworkProvider: React.FC<NetworkProviderProps> = ({ children }) =>
     isDevnet,
     isMainnet,
     getExplorerUrl,
-    getRpcUrl
+    getRpcUrl,
+    networkMismatch,
   }
+
+  // console.log('🔍 NetworkContext:', value)
 
   return (
     <NetworkContext.Provider value={value}>

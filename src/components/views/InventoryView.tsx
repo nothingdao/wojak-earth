@@ -436,7 +436,7 @@ export function InventoryView({
                     SLOT_{inv.slot_index}
                   </Badge>
                   {inv.is_primary && (
-                    <Badge variant="default" className="text-xs bg-yellow-500 font-mono">
+                    <Badge variant="default" className="text-xs font-mono">
                       PRIMARY
                     </Badge>
                   )}

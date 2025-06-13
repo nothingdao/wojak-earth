@@ -1,8 +1,26 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, ReferenceLine } from 'recharts';
-import { TrendingUp, TrendingDown, Zap, Database, Activity, ArrowUpDown, AlertTriangle, X, Search, BarChart3, History, Settings, Info } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, ReferenceLine } from 'recharts';
+import { TrendingUp, TrendingDown, Zap, Database, Activity, ArrowUpDown, AlertTriangle, X, Search, BarChart3, Settings, Info } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
+
+import {
+  type ChartConfig,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart"
+
+const chartConfig = {
+  rate: {
+    label: "SHARD/SOL Rate",
+    color: "hsl(var(--chart-1))",
+  },
+  volume: {
+    label: "Volume",
+    color: "hsl(var(--chart-2))",
+  },
+} satisfies ChartConfig
 
 // Initialize Supabase client for realtime
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
@@ -411,7 +429,7 @@ const RustMarket: React.FC = () => {
                 </h2>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <div className="bg-muted/50 border border-primary/20 p-4 rounded">
-                    <div className="text-green-500 font-bold mb-2 text-sm">SCRAP_SOL</div>
+                    <div className="text-success font-bold mb-2 text-sm">SCRAP_SOL</div>
                     <div className="text-muted-foreground text-sm leading-relaxed">
                       Real SOL tokens held in our on-chain treasury wallet. Provides actual liquidity backing
                       for all SHARD redemptions. Balance visible on Solana blockchain.
@@ -436,14 +454,14 @@ const RustMarket: React.FC = () => {
                 <div className="space-y-4">
                   <div className="bg-muted/50 border border-primary/20 p-4 rounded">
                     <div className="text-primary font-bold mb-2">USDC_PEG_FORMULA:</div>
-                    <code className="text-green-500 text-sm">SHARD_VALUE = 1 USDC</code>
+                    <code className="text-success text-sm">SHARD_VALUE = 1 USDC</code>
                     <div className="text-muted-foreground text-sm mt-2">
                       SHARD maintains stable purchasing power regardless of SOL price volatility.
                     </div>
                   </div>
                   <div className="bg-muted/50 border border-primary/20 p-4 rounded">
                     <div className="text-primary font-bold mb-2">EXCHANGE_RATE_CALCULATION:</div>
-                    <code className="text-green-500 text-sm">SOL_TO_SHARD_RATE = SOL_USD_PRICE / 1</code>
+                    <code className="text-success text-sm">SOL_TO_SHARD_RATE = SOL_USD_PRICE / 1</code>
                     <div className="text-muted-foreground text-sm mt-2">
                       Dynamic rate based on real-time SOL/USD pricing from Jupiter/Helius APIs.
                     </div>
@@ -526,7 +544,7 @@ const RustMarket: React.FC = () => {
                 </h2>
                 <div className="space-y-3">
                   <div className="bg-green-500/10 border border-green-500/30 p-3 rounded">
-                    <span className="text-green-500 font-bold">PHASE_1:</span>
+                    <span className="text-success font-bold">PHASE_1:</span>
                     <span className="text-muted-foreground ml-2 text-sm">
                       Current hybrid system with USDC reserves backing
                     </span>
@@ -682,7 +700,7 @@ const RustMarket: React.FC = () => {
                     >
                       <div className="flex items-center justify-between mb-1">
                         <div className="flex items-center gap-2">
-                          <span className={`font-bold flex items-center gap-1 ${isBuy ? 'text-green-500' : 'text-red-500'}`}>
+                          <span className={`font-bold flex items-center gap-1 ${isBuy ? 'text-success' : 'text-warning'}`}>
                             {isBuy ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
                             {isBuy ? 'BUY_SHARD' : 'SELL_SHARD'}
                           </span>
@@ -762,7 +780,7 @@ const RustMarket: React.FC = () => {
 
             <div className="bg-muted/50 border border-primary/20 p-3 rounded">
               <div className="text-muted-foreground text-xs mb-1">OPERATION_TYPE</div>
-              <div className={`font-bold flex items-center gap-1 ${isBuy ? 'text-green-500' : 'text-red-500'}`}>
+              <div className={`font-bold flex items-center gap-1 ${isBuy ? 'text-success' : 'text-warning'}`}>
                 {isBuy ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
                 {isBuy ? 'BUY_SHARD' : 'SELL_SHARD'}
               </div>
@@ -787,7 +805,7 @@ const RustMarket: React.FC = () => {
 
               <div className="flex flex-col items-center">
                 <div className={`p-2 border rounded ${isBuy ? 'border-green-500/50 bg-green-500/10' : 'border-red-500/50 bg-red-500/10'}`}>
-                  {isBuy ? <TrendingUp className="w-4 h-4 text-green-500" /> : <TrendingDown className="w-4 h-4 text-red-500" />}
+                  {isBuy ? <TrendingUp className="w-4 h-4 text-success" /> : <TrendingDown className="w-4 h-4 text-warning" />}
                 </div>
                 <div className="text-muted-foreground text-xs mt-1">EXCHANGE</div>
               </div>
@@ -850,7 +868,7 @@ const RustMarket: React.FC = () => {
         <div className="bg-muted/50 border border-primary/20 p-3 rounded">
           <div className="text-muted-foreground text-xs mb-1">SOL/SHARD</div>
           <div className="text-primary text-lg font-bold">{formatRate(currentRate)}</div>
-          <div className={`text-xs flex items-center gap-1 ${change24h >= 0 ? 'text-green-500 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>
+          <div className={`text-xs flex items-center gap-1 ${change24h >= 0 ? 'text-success ' : 'text-warning'}`}>
             {change24h >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
             {formatChange(change24h)}
           </div>
@@ -936,35 +954,66 @@ const RustMarket: React.FC = () => {
               SYNCING BLOCKCHAIN...
             </div>
           ) : (
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={marketData}>
+            <ChartContainer config={chartConfig} className="h-full w-full">
+              <LineChart
+                data={marketData}
+                margin={{
+                  left: 12,
+                  right: 12,
+                  top: 12,
+                  bottom: 12,
+                }}
+              >
                 <XAxis
                   dataKey="block"
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                  tick={{ fontSize: 10 }}
                   tickFormatter={(value) => `${value % 10000}`}
+                  className="fill-muted-foreground"
                 />
                 <YAxis
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                  tick={{ fontSize: 10 }}
                   domain={['dataMin - 5', 'dataMax + 5']}
+                  className="fill-muted-foreground"
                 />
-                <ReferenceLine y={180} stroke="hsl(var(--destructive))" strokeDasharray="2 2" />
+                <ChartTooltip
+                  content={
+                    <ChartTooltipContent
+                      labelFormatter={(value) => `Block ${value}`}
+                      formatter={(value, name) => [
+                        `${parseFloat(value as string).toFixed(2)}`,
+                        "SHARD/SOL"
+                      ]}
+                    />
+                  }
+                />
+                <ReferenceLine
+                  y={180}
+                  stroke="hsl(var(--destructive))"
+                  strokeDasharray="2 2"
+                  strokeOpacity={0.5}
+                />
                 <Line
                   type="monotone"
                   dataKey="rate"
-                  stroke="hsl(var(--primary))"
+                  stroke="var(--color-rate)"
                   strokeWidth={2}
-                  dot={{ fill: 'hsl(var(--primary))', strokeWidth: 0, r: 2 }}
-                  activeDot={{ r: 4, fill: 'hsl(var(--primary))' }}
+                  dot={false}
+                  activeDot={{
+                    r: 4,
+                    className: "fill-primary stroke-primary-foreground"
+                  }}
                 />
               </LineChart>
-            </ResponsiveContainer>
+            </ChartContainer>
           )}
         </div>
       </div>
+
+
 
       {/* Recent Transactions */}
       <div>
@@ -985,7 +1034,7 @@ const RustMarket: React.FC = () => {
                 >
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-2">
-                      <span className={`font-bold flex items-center gap-1 ${isBuy ? 'text-green-500' : 'text-red-500'}`}>
+                      <span className={`font-bold flex items-center gap-1 ${isBuy ? 'text-success' : 'text-warning'}`}>
                         {isBuy ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
                         {isBuy ? 'BUY_SHARD' : 'SELL_SHARD'}
                       </span>

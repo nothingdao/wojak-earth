@@ -274,7 +274,7 @@ export function MarketView({
                   <Activity className="w-12 h-12 mx-auto mb-4 text-muted-foreground animate-pulse" />
                   <div className="text-muted-foreground font-mono">
                     <div className="text-lg mb-2">P2P_PROTOCOL_INITIALIZING</div>
-                    <div className="text-sm mb-4">SURVIVOR_LISTING_SYSTEM_COMING_ONLINE</div>
+                    <div className="text-sm mb-4">LISTING_SYSTEM_COMING_ONLINE</div>
                     <div className="text-xs">
                       PLAYERS_WILL_LIST_INVENTORY_ITEMS<br />
                       DECENTRALIZED_TRADING_NETWORK<br />

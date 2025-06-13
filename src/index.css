@@ -2,7 +2,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-
 .font-mono {
   font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
@@ -45,6 +44,9 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
 }
 
 :root {
@@ -68,11 +70,11 @@
   --border: oklch(0.9 0.008 85);
   --input: oklch(0.9 0.008 85);
   --ring: oklch(0.7 0.012 60);
-  --chart-1: oklch(0.65 0.22 40);
-  --chart-2: oklch(0.6 0.12 180);
-  --chart-3: oklch(0.4 0.07 225);
-  --chart-4: oklch(0.83 0.19 80);
-  --chart-5: oklch(0.77 0.19 70);
+  --chart-1: 65 8% 25%;
+  --chart-2: 85 12% 45%;
+  --chart-3: 60 15% 55%;
+  --chart-4: 200 15% 50%;
+  --chart-5: 15 20% 45%;
   --sidebar: oklch(0.98 0.008 85);
   --sidebar-foreground: oklch(0.15 0.006 60);
   --sidebar-primary: oklch(0.22 0.008 65);
@@ -81,68 +83,105 @@
   --sidebar-accent-foreground: oklch(0.22 0.008 65);
   --sidebar-border: oklch(0.9 0.008 85);
   --sidebar-ring: oklch(0.7 0.012 60);
+  --success: oklch(0.6 0.15 140);
+  /* Green */
+  --warning: oklch(0.65 0.2 65);
+  /* Yellow */
+  --error: oklch(0.6 0.2 15);
+  /* Red */
 
   /* Map-specific colors for light mode */
-    --map-forest: #16a34a;
-    --map-desert: #ea580c;
-    --map-urban: #2563eb;
-    --map-plains: #22c55e;
-    --map-mountain: #7c3aed;
-    --map-water: #0891b2;
-    --map-swamp: #65a30d;
-    --map-tundra: #64748b;
-    --map-default: #6b7280;
-    --map-border: #d1d5db;
-    --map-grid: #16a34a;
+  --map-forest: #16a34a;
+  --map-desert: #ea580c;
+  --map-urban: #2563eb;
+  --map-plains: #22c55e;
+  --map-mountain: #7c3aed;
+  --map-water: #0891b2;
+  --map-swamp: #65a30d;
+  --map-tundra: #64748b;
+  --map-default: #6b7280;
+  --map-border: #d1d5db;
+  --map-grid: #16a34a;
 }
 
 .dark {
-  /* Dark mode with #05080E as darkest color and lower contrast */
-  --background: oklch(0.078 0.008 240);
-  /* #05080E equivalent */
-  --foreground: oklch(0.85 0.005 240);
-  --card: oklch(0.12 0.012 240);
-  --card-foreground: oklch(0.85 0.005 240);
-  --popover: oklch(0.1 0.01 240);
-  --popover-foreground: oklch(0.85 0.005 240);
-  --primary: oklch(0.75 0.008 240);
-  --primary-foreground: oklch(0.1 0.01 240);
-  --secondary: oklch(0.18 0.015 240);
-  --secondary-foreground: oklch(0.8 0.008 240);
-  --muted: oklch(0.16 0.012 240);
-  --muted-foreground: oklch(0.65 0.012 240);
-  --accent: oklch(0.2 0.015 240);
-  --accent-foreground: oklch(0.8 0.008 240);
-  --destructive: oklch(0.65 0.18 20);
-  --border: oklch(0.25 0.015 240);
-  --input: oklch(0.22 0.012 240);
-  --ring: oklch(0.5 0.015 240);
-  --chart-1: oklch(0.5 0.2 260);
-  --chart-2: oklch(0.65 0.15 160);
-  --chart-3: oklch(0.7 0.16 70);
-  --chart-4: oklch(0.6 0.22 300);
-  --chart-5: oklch(0.6 0.2 15);
-  --sidebar: oklch(0.09 0.01 240);
-  --sidebar-foreground: oklch(0.85 0.005 240);
-  --sidebar-primary: oklch(0.5 0.2 260);
-  --sidebar-primary-foreground: oklch(0.85 0.005 240);
-  --sidebar-accent: oklch(0.18 0.015 240);
-  --sidebar-accent-foreground: oklch(0.8 0.008 240);
-  --sidebar-border: oklch(0.25 0.015 240);
-  --sidebar-ring: oklch(0.5 0.015 240);
+  /* Matching #080A14 background with muted, legible colors */
+  --background: oklch(0.053 0.02 258);
+  /* Matches #080A14 - darker blue-gray background */
+  --foreground: oklch(0.78 0.012 258);
+  /* Softer white text, less harsh contrast */
 
-  /* Map-specific colors for dark mode */
-    --map-forest: #22c55e;
-    --map-desert: #f97316;
-    --map-urban: #3b82f6;
-    --map-plains: #4ade80;
-    --map-mountain: #8b5cf6;
-    --map-water: #06b6d4;
-    --map-swamp: #84cc16;
-    --map-tundra: #94a3b8;
-    --map-default: #9ca3af;
-    --map-border: #4b5563;
-    --map-grid: #22c55e;
+  --card: oklch(0.08 0.025 258);
+  /* Subtle card elevation */
+  --card-foreground: var(--foreground);
+
+  --popover: oklch(0.075 0.024 258);
+  --popover-foreground: var(--foreground);
+
+  --primary: oklch(0.75 0.02 200);
+  /* Reduced chroma from 0.12 to 0.02 for grayscale */
+  /* Muted blue accent, less bright */
+  --primary-foreground: oklch(0.85 0.008 258);
+
+  --secondary: oklch(0.12 0.02 258);
+  /* Subtle secondary backgrounds */
+  --secondary-foreground: oklch(0.7 0.01 258);
+
+  --muted: oklch(0.1 0.018 258);
+  /* Muted backgrounds */
+  --muted-foreground: oklch(0.58 0.015 258);
+  /* Softer muted text */
+
+  --accent: oklch(0.15 0.022 258);
+  /* Subtle accent color */
+  --accent-foreground: oklch(0.75 0.01 258);
+
+  --destructive: oklch(0.5 0.15 15);
+  /* Muted red for destructive actions */
+  --border: oklch(0.18 0.015 258);
+  /* Subtle borders */
+  --input: oklch(0.12 0.018 258);
+  /* Input backgrounds */
+  --ring: oklch(0.45 0.1 200);
+  /* Softer focus ring */
+
+  --chart-1: 200 20% 70%;
+  --chart-2: 258 12% 65%;
+  --chart-3: 140 15% 60%;
+  --chart-4: 60 18% 65%;
+  --chart-5: 25 18% 60%;
+
+  /* Sidebar colors */
+  --sidebar: oklch(0.055 0.02 258);
+  /* Slightly darker than main background */
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: oklch(0.11 0.02 258);
+  --sidebar-accent-foreground: var(--foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
+
+  /* Updated colors with better dark mode contrast */
+  --success: oklch(0.7 0.18 140);
+  /* Brighter green for dark mode */
+  --warning: oklch(0.75 0.2 65);
+  /* Brighter yellow for dark mode */
+  --error: oklch(0.65 0.2 15);
+  /* Brighter red for dark mode */
+
+  /* Map-specific colors for dark mode – updated to work with new palette */
+  --map-forest: #10b981;
+  --map-desert: #f59e0b;
+  --map-urban: #3b82f6;
+  --map-plains: #22c55e;
+  --map-mountain: #8b5cf6;
+  --map-water: #06b6d4;
+  --map-swamp: #84cc16;
+  --map-tundra: #94a3b8;
+  --map-default: #9ca3af;
+  --map-border: #6b7280;
+  --map-grid: #10b981;
 }
 
 @layer base {
@@ -155,8 +194,7 @@
   }
 }
 
-
-/* not sure about these. map is tricky... */
+/* Touch handling for maps */
 html,
 body {
   touch-action: pan-x pan-y;
@@ -204,12 +242,13 @@ body {
   }
 }
 
-/* Core animations that should work */
+/* Core animations */
 @keyframes ping {
   0% {
     opacity: 1;
     transform: scale(1);
   }
+
   75%,
   100% {
     opacity: 0;
@@ -232,14 +271,14 @@ body {
 /* Utility classes */
 .animate-ping {
   animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
-      transform-box: fill-box;
-        transform-origin: center;
+  transform-box: fill-box;
+  transform-origin: center;
 }
 
 .animate-pulse {
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-      transform-box: fill-box;
-        transform-origin: center;
+  transform-box: fill-box;
+  transform-origin: center;
 }
 
 /* Travel-specific animations */
@@ -250,5 +289,3 @@ body {
 .travel-progress {
   animation: travel-progress 2s ease-in-out infinite alternate;
 }
-
-

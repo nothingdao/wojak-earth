@@ -162,7 +162,7 @@ export function BottomDrawerNav({
 
   if (!character) {
     return (
-      <div className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur border-b border-primary/30 font-mono">
+      <div className="fixed top-0 left-0 right-0 z-50 bg-background backdrop-blur border-b border-primary/30 font-mono">
         <div className="flex items-center justify-between p-4">
           {/* Terminal Header - No Character */}
           <div className="flex items-center gap-3">
@@ -190,7 +190,7 @@ export function BottomDrawerNav({
   return (
     <>
       {/* Terminal Status Bar */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur border-b border-primary/30 font-mono">
+      <div className="fixed top-0 left-0 right-0 z-50 bg-background backdrop-blur border-b border-primary/30 font-mono">
         {/* Desktop: Stacked Layout */}
         <div className="hidden md:block">
           {/* Top Row: Character Info with Stats and Settings */}
@@ -260,13 +260,15 @@ export function BottomDrawerNav({
                   <Button
                     key={item.id}
                     size="sm"
-                    variant={item.current ? "default" : "ghost"}
+                    variant={item.current ? "outline" : "ghost"}  // Change "default" to "outline"
                     onClick={item.action}
                     className={`h-8 px-3 font-mono text-xs ${isAdmin
                       ? item.current
-                        ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90'
+                        ? 'border-destructive text-destructive hover:bg-destructive/10'  // Remove bg-destructive
                         : 'text-destructive hover:text-destructive hover:bg-destructive/10'
-                      : ''
+                      : item.current
+                        ? 'border-primary text-primary'  // Add styling for selected state
+                        : ''
                       }`}
                     title={item.label}
                   >
@@ -385,11 +387,13 @@ export function BottomDrawerNav({
                                 key={item.id}
                                 className={`w-full justify-start h-12 font-mono text-xs ${isAdmin
                                   ? item.current
-                                    ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90 border-destructive'
+                                    ? 'border-destructive text-destructive hover:bg-destructive/10'  // Remove bg-destructive
                                     : 'text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/20'
-                                  : ''
+                                  : item.current
+                                    ? 'border-primary text-primary'  // Add styling for selected state  
+                                    : ''
                                   }`}
-                                variant={item.current ? "default" : "outline"}
+                                variant={item.current ? "outline" : "outline"}  // Change "default" to "outline"
                                 onClick={() => handleNavigation(item.action)}
                               >
                                 <IconComponent className="w-4 h-4 mr-3" />

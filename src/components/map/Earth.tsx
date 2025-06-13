@@ -551,7 +551,7 @@ export default function Earth({
     <div className="w-full h-full bg-background overflow-hidden font-mono relative">
 
       {/* Terminal Header */}
-      <div className="absolute top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur border-b border-border p-2">
+      <div className="absolute top-0 left-0 right-0 z-50 bg-background backdrop-blur border-b border-border p-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Database className="w-4 h-4 text-primary" />
@@ -571,7 +571,7 @@ export default function Earth({
       {/* PROGRESS BAR */}
       {isTravelingOnMap && (
         <div className="absolute top-12 left-0 right-0 z-40 px-4">
-          <div className="bg-background/95 border border-border rounded px-3 py-2 backdrop-blur">
+          <div className="bg-background border border-border rounded px-3 py-2 backdrop-blur">
             <div className="flex items-center gap-3 text-xs font-mono">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-destructive rounded-full animate-pulse" />
@@ -590,7 +590,7 @@ export default function Earth({
 
       {/* Original traveling status display */}
       {isTravelingOnMap && (
-        <div className="absolute top-16 right-4 bg-background/95 border border-border px-3 py-2 rounded shadow-lg z-40 font-mono">
+        <div className="absolute top-16 right-4 bg-background border border-border px-3 py-2 rounded shadow-lg z-40 font-mono">
           <div className="flex items-center gap-2 text-xs">
             <div className="w-2 h-2 bg-chart-3 rounded-full animate-pulse" />
             <span className="text-chart-3 font-bold">TRAVELING...</span>
@@ -604,7 +604,7 @@ export default function Earth({
 
       {/* Terminal Control Panel */}
       <div className="absolute bottom-4 right-4 z-50 flex flex-col gap-2">
-        <div className="bg-background/95 border border-border rounded p-2">
+        <div className="bg-background border border-border rounded p-2">
           <div className="flex flex-col gap-1">
             <Button
               size="sm"
@@ -813,7 +813,7 @@ export default function Earth({
 
       {/* Terminal Hover Display */}
       {hoveredPath && (
-        <div className="absolute top-24 md:top-40 left-4 bg-background/95 border border-border px-3 py-2 rounded shadow-lg z-40 font-mono">
+        <div className="absolute top-24 md:top-40 left-4 bg-background border border-border px-3 py-2 rounded shadow-lg z-40 font-mono">
           {(() => {
             const location = getLocation(hoveredPath)
             if (!location) {
@@ -852,7 +852,7 @@ export default function Earth({
 
       {/* Terminal Location Analysis Panel */}
       {selectedLocation && (
-        <div className="absolute top-40 left-4 bg-background/95 border border-border rounded shadow-lg max-w-sm z-40 font-mono">
+        <div className="absolute top-40 left-4 bg-background border border-border rounded shadow-lg max-w-sm z-40 font-mono">
           {/* Panel Header */}
           <div className="flex items-center justify-between p-3 border-b border-border">
             <div className="flex items-center gap-2">
@@ -989,7 +989,7 @@ export default function Earth({
 
       {/* Terminal Status Indicators */}
       {transform.scale !== 1 && (
-        <div className="absolute bottom-4 left-4 bg-background/95 border border-border px-2 py-1 rounded text-xs font-mono">
+        <div className="absolute bottom-4 left-4 bg-background border border-border px-2 py-1 rounded text-xs font-mono">
           <div className="flex items-center gap-2">
             <Eye className="w-3 h-3 text-primary" />
             <span className="text-primary">ZOOM: {Math.round(transform.scale * 100)}%</span>
@@ -998,7 +998,7 @@ export default function Earth({
       )}
 
       {/* Terminal Debug Info */}
-      <div className="absolute bottom-12 left-4 bg-background/95 border border-border px-2 py-1 rounded text-xs font-mono space-y-1">
+      <div className="absolute bottom-12 left-4 bg-background border border-border px-2 py-1 rounded text-xs font-mono space-y-1">
         <div className="flex items-center gap-2 text-muted-foreground">
           <Database className="w-3 h-3" />
           <span>MAPPED: {locationLookup.size}/{baseSVGData.paths.length}</span>

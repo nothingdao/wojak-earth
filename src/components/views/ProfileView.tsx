@@ -97,33 +97,14 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ character, onCharacter
               )}
 
               {!imageError ? (
-                // <img
-                //   src={getCharacterimage_url()}
-                //   alt={character.name}
-                //   className="w-full h-full object-cover"
-                //   onLoad={handleImageLoad}
-                //   onError={handleImageError}
-                //   style={{ display: imageLoading ? 'none' : 'block' }}
-                // />
-                // <img
-                //   src="eve.png"
-                //   alt={character.name}
-                //   className="w-full h-full object-cover"
-                //   onLoad={handleImageLoad}
-                //   onError={handleImageError}
-                //   style={{ display: imageLoading ? 'none' : 'block' }}
-                // />
-
-
                 <img
-                  src="eve.png"
+                  src={character.current_image_url || "eve.png"}
                   alt={character.name}
                   className="w-full h-full object-contain relative z-10"
                   onLoad={handleImageLoad}
                   onError={handleImageError}
                   style={{ display: imageLoading ? 'none' : 'block' }}
                 />
-
               ) : (
                 <div className="text-4xl text-muted-foreground">🥺</div>
               )}
@@ -544,7 +525,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ character, onCharacter
           <TabsList className="flex w-max h-10 p-1 bg-muted/50">
             <TabsTrigger value="character" className="text-xs font-mono flex-shrink-0 px-4">
               <User className="w-3 h-3 mr-2" />
-              SURVIVOR_DOSSIER
+              DOSSIER
             </TabsTrigger>
             <TabsTrigger value="wallet" className="text-xs font-mono flex-shrink-0 px-4">
               <Wallet className="w-3 h-3 mr-2" />

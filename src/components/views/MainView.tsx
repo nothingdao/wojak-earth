@@ -5,7 +5,6 @@ import {
   Store,
   MessageCircle,
   Activity,
-  Mountain,
   Users,
   Shield,
   Gem,
@@ -135,16 +134,6 @@ export const MainView: React.FC<MainViewProps> = ({
     return 'text-red-500 dark:text-red-400'
   }
 
-  const getBiomeIcon = (biome?: string) => {
-    switch (biome?.toLowerCase()) {
-      case 'mountain':
-      case 'mountains':
-        return <Mountain className="w-4 h-4" />
-      default:
-        return <Mountain className="w-4 h-4" />
-    }
-  }
-
   const getRarityColor = (rarity: string) => {
     switch (rarity) {
       case 'COMMON': return 'text-muted-foreground'
@@ -258,7 +247,7 @@ export const MainView: React.FC<MainViewProps> = ({
 
       {/* Location Description */}
       {location.lore && (
-        <div className="mt-3 p-2 bg-muted/20 border border-primary/10 rounded text-xs text-muted-foreground">
+        <div className="mt-3 p-2 bg-muted/40 border border-primary/10 rounded text-xs text-muted-foreground">
           <div className="text-primary text-xs font-bold mb-1">[LOCATION_LOG]</div>
           {location.lore}
         </div>

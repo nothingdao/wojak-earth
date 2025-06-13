@@ -1,18 +1,64 @@
-// src/components/AppRouter.tsx - Updated with game styling and proper wallet component
+// src/components/AppRouter.tsx - Simplified with auto network switching
 import React from 'react'
 import { useGame } from '@/providers/GameProvider'
+import { useNetwork } from '@/contexts/NetworkContext'
+import { useWallet } from '@solana/wallet-adapter-react'
 import { Button } from '@/components/ui/button'
-import { Loader2, Database, User, Zap, AlertTriangle, Activity, Terminal } from 'lucide-react'
+import { Loader2, Database, User, Zap, AlertTriangle, Activity, Terminal, TriangleAlert } from 'lucide-react'
+import { WalletAdapterNetwork } from '@solana/wallet-adapter-base'
 
 // Import your existing game components
 import { GameScreen } from '@/components/screens/GameScreen'
 import { CharacterCreationScreen } from '@/components/screens/CharacterCreationScreen'
-import { WalletConnectButton } from '@/components/wallet-connect-button' // Your custom wallet component
+import { ReservationScreen } from '@/components/screens/ReservationScreen'
+import { WalletConnectButton } from '@/components/wallet-connect-button'
+import { ModeToggle } from './mode-toggle'
 
 export function AppRouter() {
   const { state, actions } = useGame()
+  const { connected, publicKey } = useWallet()
+  const { isMainnet, isDevnet, setNetwork } = useNetwork()
 
-  // Render based on app state
+  console.log('Wallet Connected:', connected)
+  console.log('Wallet PublicKey:', publicKey?.toBase58())
+
+  const [showReservation, setShowReservation] = React.useState(false)
+
+  // Auto-switch to devnet by default (for game)
+  React.useEffect(() => {
+    if (connected && !showReservation && !isDevnet) {
+      console.log('🔄 Auto-switching to devnet for game access')
+      setNetwork(WalletAdapterNetwork.Devnet)
+    }
+  }, [connected, showReservation, isDevnet, setNetwork])
+
+  // Auto-switch to mainnet when showing reservations
+  React.useEffect(() => {
+    if (showReservation && !isMainnet) {
+      console.log('🔄 Auto-switching to mainnet for reservations')
+      setNetwork(WalletAdapterNetwork.Mainnet)
+    }
+  }, [showReservation, isMainnet, setNetwork])
+
+  // Show reservation screen (auto-switches to mainnet)
+  if (showReservation) {
+    return (
+      <ReservationScreen
+        onReservationComplete={() => {
+          console.log('✅ Reservation complete, switching back to devnet')
+          setShowReservation(false)
+          setNetwork(WalletAdapterNetwork.Devnet)
+        }}
+        onBackToNetworkSelect={() => {
+          console.log('🔙 Back from reservations, switching to devnet')
+          setShowReservation(false)
+          setNetwork(WalletAdapterNetwork.Devnet)
+        }}
+      />
+    )
+  }
+
+  // Normal game flow (always on devnet)
   switch (state.appState) {
     case 'wallet-required':
       return <WalletConnectScreen />
@@ -21,7 +67,14 @@ export function AppRouter() {
       return <CheckingCharacterScreen />
 
     case 'character-required':
-      return <CharacterRequiredScreen />
+      return (
+        <CharacterRequiredScreen
+          onShowReservation={() => {
+            console.log('🎯 User wants reservations, will auto-switch to mainnet')
+            setShowReservation(true)
+          }}
+        />
+      )
 
     case 'entering-game':
       return <EnteringGameScreen />
@@ -37,16 +90,19 @@ export function AppRouter() {
   }
 }
 
-// Updated screens with game styling
+// Simplified WalletConnectScreen - no network selection
 function WalletConnectScreen() {
+  const { isMainnet, isDevnet } = useNetwork()
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="w-full max-w-md mx-auto bg-background border border-primary/30 rounded-lg p-6 font-mono">
+      <ModeToggle />
+      <div className="w-full max-w-md mx-auto bg-card border rounded-lg p-6 font-mono">
         {/* Terminal Header */}
-        <div className="flex items-center justify-between mb-4 border-b border-primary/20 pb-3">
+        <div className="flex items-center justify-between mb-4 border-b pb-3 border-border">
           <div className="flex items-center gap-2">
             <Database className="w-4 h-4 text-primary" />
-            <span className="text-primary font-bold text-sm">WALLET_SYSTEM v2.089</span>
+            <span className="text-primary font-bold text-sm">EARTH_2029 v2.089</span>
           </div>
           <div className="flex items-center gap-2">
             <Activity className="w-3 h-3 animate-pulse text-primary" />
@@ -55,11 +111,26 @@ function WalletConnectScreen() {
         </div>
 
         {/* Welcome Message */}
-        <div className="bg-muted/30 border border-primary/20 rounded p-4 mb-4">
+        <div className="bg-muted border rounded p-4 mb-4">
           <div className="text-center">
             <div className="text-primary font-bold text-lg mb-2">WELCOME_TO_EARTH</div>
             <div className="text-muted-foreground text-sm">
-              BLOCKCHAIN_AUTHENTICATION_REQUIRED
+              Connect your wallet to begin your survival journey
+            </div>
+          </div>
+        </div>
+
+        {/* What you can do */}
+        <div className="mb-4 space-y-3">
+          <div className="bg-muted/20 border border-primary/10 rounded p-3">
+            <div className="text-xs text-muted-foreground font-mono">
+              <div className="text-primary text-xs font-bold mb-2">[AVAILABLE_FEATURES]</div>
+              <div className="space-y-1">
+                <div>🎮 Play the survival game (free)</div>
+                <div>🎨 Create your survivor character</div>
+                <div>💰 Reserve NFT whitelist spots</div>
+                <div>⚡ Mine resources and explore</div>
+              </div>
             </div>
           </div>
         </div>
@@ -67,27 +138,22 @@ function WalletConnectScreen() {
         {/* Wallet Connection */}
         <div className="space-y-4">
           <div className="text-center">
-            <p className="text-sm text-muted-foreground mb-4">
-              Connect your Solana wallet to access the survival network
-            </p>
-
             <WalletConnectButton className="w-full" />
           </div>
 
-          {/* System Info */}
-          <div className="bg-muted/20 border border-primary/10 rounded p-3">
-            <div className="text-xs text-muted-foreground font-mono">
-              <div className="text-primary text-xs font-bold mb-1">[SYSTEM_STATUS]</div>
-              <div>NETWORK: SOLANA_DEVNET</div>
-              <div>PROTOCOL: WEB3_AUTHENTICATION</div>
-              <div>STATUS: AWAITING_WALLET_CONNECTION</div>
+          {/* Current network indicator (for debugging) */}
+          {(isMainnet || isDevnet) && (
+            <div className="text-center">
+              <div className="text-xs text-muted-foreground">
+                Network: {isMainnet ? '🟢 Payment Network' : '🟡 Game Network'}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Footer */}
-        <div className="text-xs text-muted-foreground/60 font-mono text-center border-t border-primary/20 pt-3 mt-4">
-          EARTH_v2089_AUTH | SECURE_BLOCKCHAIN_LOGIN
+        <div className="text-xs text-muted-foreground font-mono text-center border-t pt-3 mt-4 border-border">
+          EARTH_v2089 | POST_APOCALYPTIC_SURVIVAL
         </div>
       </div>
     </div>
@@ -110,7 +176,7 @@ function CheckingCharacterScreen() {
         await animateProgress(0, 25, 1000)
         markComplete(0)
         addMessage("Wallet connection verified ✓")
-        await pause(600)
+        await pause(200)
 
         // Step 2: NFT Scan (25-50%)
         setCurrentStep(2)
@@ -118,7 +184,7 @@ function CheckingCharacterScreen() {
         await animateProgress(25, 50, 1000)
         markComplete(1)
         addMessage("NFT collection analyzed ✓")
-        await pause(600)
+        await pause(200)
 
         // Step 3: Database Query (50-75%)
         setCurrentStep(3)
@@ -126,7 +192,7 @@ function CheckingCharacterScreen() {
         await animateProgress(50, 75, 1000)
         markComplete(2)
         addMessage("Database query complete ✓")
-        await pause(600)
+        await pause(200)
 
         // Step 4: Character Check (75-100%)
         setCurrentStep(4)
@@ -134,7 +200,7 @@ function CheckingCharacterScreen() {
         await animateProgress(75, 100, 1000)
         markComplete(3)
         addMessage("Character validation complete ✓")
-        await pause(800)
+        await pause(200)
 
         // Final step - show completion
         setCurrentStep(5)
@@ -322,34 +388,39 @@ function CheckingCharacterScreen() {
   )
 }
 
-function CharacterRequiredScreen() {
+function CharacterRequiredScreen({ onShowReservation }: { onShowReservation?: () => void }) {
   const [showCreation, setShowCreation] = React.useState(false)
 
   if (showCreation) {
-    return <CharacterCreationScreen />
+    return <CharacterCreationScreen onBack={() => setShowCreation(false)} />
   }
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
+
+      <ModeToggle />
+      <WalletConnectButton />
+
       <div className="w-full max-w-md mx-auto bg-background border border-primary/30 rounded-lg p-6 font-mono">
+
         {/* Terminal Header */}
         <div className="flex items-center justify-between mb-4 border-b border-primary/20 pb-3">
           <div className="flex items-center gap-2">
             <User className="w-4 h-4 text-primary" />
-            <span className="text-primary font-bold text-sm">SURVIVOR_REGISTRY v2.089</span>
+            <span className="text-primary font-bold text-sm">REGISTRY v2.089</span>
           </div>
           <div className="flex items-center gap-2">
-            <AlertTriangle className="w-3 h-3 text-yellow-500" />
-            <span className="text-yellow-500 text-xs">NO_PROFILE</span>
+            <AlertTriangle className="w-3 h-3 text-warning" />
           </div>
         </div>
 
         {/* No Character Message */}
-        <div className="bg-yellow-950/20 border border-yellow-500/30 rounded p-4 mb-4">
+        <div className="border border-warning rounded p-4 mb-4">
           <div className="text-center">
-            <div className="text-yellow-500 text-xl mb-2">⚠️</div>
-            <div className="text-yellow-500 font-bold mb-1">NO_SURVIVOR_PROFILE_FOUND</div>
-            <div className="text-yellow-400/80 text-xs">
+            <span className="text-warning text-xs">NO_PROFILE</span>
+            <div className="text-warning text-xl mb-2"><TriangleAlert /></div>
+            <div className="text-warning font-bold mb-1">NO_PROFILE_FOUND</div>
+            <div className="text-warning text-xs">
               REGISTRATION_REQUIRED_FOR_ACCESS
             </div>
           </div>
@@ -359,22 +430,22 @@ function CharacterRequiredScreen() {
         <div className="space-y-4">
           <div className="text-center">
             <p className="text-sm text-muted-foreground mb-4">
-              Create a new profile to begin your journey in the archeofuture land called Earth.
+              Create a new profile to begin your journey in the post-apocalyptic world.
             </p>
           </div>
 
           {/* System Requirements */}
           <div className="bg-muted/20 border border-primary/10 rounded p-3 mb-4">
             <div className="text-xs text-muted-foreground font-mono">
-              <div className="text-primary text-xs font-bold mb-2">[REGISTRATION_REQUIREMENTS]</div>
+              <div className="text-primary text-xs font-bold mb-2">[REGISTRATION_OPTIONS]</div>
               <div className="space-y-1">
                 <div className="flex justify-between">
-                  <span>WALLET_CONNECTION:</span>
-                  <span className="text-green-500">✓ VERIFIED</span>
+                  <span>GAME_ACCESS:</span>
+                  <span className="text-green-500">✓ FREE</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>MINTING_COST:</span>
-                  <span className="text-primary">0.01_SOL</span>
+                  <span>CHARACTER_COST:</span>
+                  <span className="text-primary">0.01_TEST_SOL</span>
                 </div>
                 <div className="flex justify-between">
                   <span>NFT_STORAGE:</span>
@@ -384,18 +455,35 @@ function CharacterRequiredScreen() {
             </div>
           </div>
 
-          <Button
-            onClick={() => setShowCreation(true)}
-            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-mono text-sm h-10"
-          >
-            <User className="w-4 h-4 mr-2" />
-            CREATE_SURVIVOR_PROFILE
-          </Button>
+          <div className="space-y-3">
+            <Button
+              onClick={() => setShowCreation(true)}
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-mono text-sm h-10"
+            >
+              <User className="w-4 h-4 mr-2" />
+              CREATE_PROFILE
+            </Button>
+
+            <Button
+              onClick={() => {
+                onShowReservation?.()
+              }}
+              variant="outline"
+              className="w-full border-warning text-warning hover:bg-warning/10 font-mono text-sm h-10"
+            >
+              <Database className="w-4 h-4 mr-2" />
+              RESERVE_NFT_WHITELIST_SPOT
+            </Button>
+          </div>
+
+          <p className="text-xs text-center text-muted-foreground">
+            Reserve your spot for the official NFT launch with real SOL
+          </p>
         </div>
 
         {/* Footer */}
         <div className="text-xs text-muted-foreground/60 font-mono text-center border-t border-primary/20 pt-3 mt-4">
-          SURVIVOR_REGISTRY_v2089 | CHARACTER_CREATION_PROTOCOL
+          REGISTRY_v2089 | CHARACTER_CREATION_PROTOCOL
         </div>
       </div>
     </div>
@@ -462,8 +550,6 @@ function EnteringGameScreen() {
 
         // NOW do the actual work
         await actions.enterGame()
-
-        console.log('🔄 Game loading truly complete, ready to transition')
 
       } catch (error) {
         console.error('Failed to enter game:', error)
@@ -555,7 +641,6 @@ function EnteringGameScreen() {
                 alt={state.character.name || 'Character'}
                 className="w-full h-full object-cover rounded-xs"
                 onError={(e) => {
-                  // Fallback to icon if image fails to load
                   const target = e.target as HTMLImageElement;
                   target.style.display = 'none';
                   const fallback = target.nextElementSibling as HTMLElement;
@@ -570,7 +655,7 @@ function EnteringGameScreen() {
 
           <div>
             <h2 className="text-lg font-bold text-primary mb-2">
-              WELCOME_BACK_{state.character?.name?.toUpperCase().replace(/\s+/g, '_')}
+              WELCOME_{state.character?.name?.toUpperCase().replace(/\s+/g, '_')}
             </h2>
             <p className="text-sm text-muted-foreground mb-4">
               {loadingMessage}
@@ -626,10 +711,9 @@ function EnteringGameScreen() {
           {state.character && (
             <div className="bg-muted/20 border border-primary/10 rounded p-3">
               <div className="text-xs text-muted-foreground font-mono">
-                <div className="text-primary text-xs font-bold mb-2">[SURVIVOR_STATUS]</div>
+                <div className="text-primary text-xs font-bold mb-2">[STATUS]</div>
                 <div className="grid grid-cols-3 gap-2">
                   <div className="text-center">
-                    <div className="text-green-400 font-bold">{state.character.health}/100</div>
                     <div className="text-muted-foreground">HEALTH</div>
                   </div>
                   <div className="text-center">
@@ -654,6 +738,7 @@ function EnteringGameScreen() {
     </div>
   )
 }
+
 function ErrorScreen({ error, onRetry }: { error?: string, onRetry: () => void }) {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">

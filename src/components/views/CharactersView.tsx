@@ -26,6 +26,9 @@ import {
   Copy,
   ExternalLink,
   LayoutGrid,
+  ChevronDown,
+  ChevronUp,
+  X
 } from 'lucide-react'
 import type { Character } from '@/types'
 
@@ -128,6 +131,29 @@ export default function CharactersView() {
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null)
   const [filteredCharacters, setFilteredCharacters] = useState<Character[]>([])
   const [selectedCharacterBalance, setSelectedCharacterBalance] = useState(null)
+
+  const [filtersExpanded, setFiltersExpanded] = useState(false)
+
+  const activeFilterCount = [
+    searchQuery,
+    genderFilter !== 'all' ? genderFilter : '',
+    typeFilter !== 'all' ? typeFilter : '',
+    statusFilter !== 'all' ? statusFilter : '',
+    levelFilter !== 'all' ? levelFilter : '',
+    biomeFilter !== 'all' ? biomeFilter : ''
+  ].filter(Boolean).length
+
+  const clearAllFilters = () => {
+    setSearchQuery('')
+    setGenderFilter('all')
+    setTypeFilter('all')
+    setStatusFilter('all')
+    setLevelFilter('all')
+    setBiomeFilter('all')
+  }
+
+  const [statsExpanded, setStatsExpanded] = useState(false)
+
 
   const fetchCharacterBalance = async (wallet_address) => {
     try {
@@ -281,170 +307,235 @@ export default function CharactersView() {
       </div>
 
       {/* System Status */}
-      <div className="bg-muted/30 border border-primary/20 rounded p-3 mb-4">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
-          <div>
-            <div className="text-muted-foreground mb-1">TOTAL_PEOPLE</div>
-            <div className="text-primary font-bold font-mono">
-              {loading ? 'SCANNING...' : `${filteredCharacters.length}/${characters.length}`}
-            </div>
-          </div>
-          <div>
-            <div className="text-muted-foreground mb-1">ACTIVE_STATUS</div>
-            <div className="flex items-center gap-2 text-xs">
-              <div className="flex items-center gap-1">
-                <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                <span className="text-green-500 font-mono">{statusCounts.active}_LIVE</span>
+      <div className="bg-muted/30 border border-primary/20 rounded mb-4">
+        {/* Always visible header row on mobile */}
+        <div className="flex items-center justify-between p-3 md:hidden border-b border-primary/20">
+          <div className="grid grid-cols-2 gap-4 flex-1 text-xs">
+            <div>
+              <div className="text-muted-foreground mb-1">TOTAL_PEOPLE</div>
+              <div className="text-primary font-bold font-mono">
+                {loading ? 'SCANNING...' : `${filteredCharacters.length}/${characters.length}`}
               </div>
-              <div className="flex items-center gap-1">
-                <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                <span className="text-red-500 font-mono">{statusCounts.dead}_KIA</span>
+            </div>
+            <div>
+              <div className="text-muted-foreground mb-1">GRID_MODE</div>
+              <div className="text-primary font-bold font-mono">
+                {gridSize === '2' ? 'LARGE' : gridSize === '4' ? 'MEDIUM' : 'COMPACT'}_VIEW
               </div>
             </div>
           </div>
-          <div>
-            <div className="text-muted-foreground mb-1">LEVEL_DIST</div>
-            <div className="flex items-center gap-1 text-xs font-mono">
-              <span className="text-gray-500">L1:{levelCounts.level1}</span>
-              <span className="text-green-500">L2-4:{levelCounts.level2to4}</span>
-              <span className="text-blue-500">L5-9:{levelCounts.level5to9}</span>
-              {levelCounts.level10plus > 0 && <span className="text-purple-500">L10+:{levelCounts.level10plus}</span>}
+          <button
+            onClick={() => setStatsExpanded(!statsExpanded)}
+            className="ml-3 p-1 text-muted-foreground hover:text-primary transition-colors"
+          >
+            {statsExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </button>
+        </div>
+
+        {/* Collapsible section on mobile */}
+        <div className={`md:hidden transition-all duration-200 overflow-hidden ${statsExpanded ? 'max-h-32 opacity-100' : 'max-h-0 opacity-0'
+          }`}>
+          <div className="grid grid-cols-2 gap-4 p-3 text-xs">
+            <div>
+              <div className="text-muted-foreground mb-1">ACTIVE_STATUS</div>
+              <div className="flex flex-col gap-1 text-xs">
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                  <span className="text-green-500 font-mono">{statusCounts.active}_LIVE</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                  <span className="text-red-500 font-mono">{statusCounts.dead}_KIA</span>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div className="text-muted-foreground mb-1">LEVEL_DIST</div>
+              <div className="flex flex-col gap-1 text-xs font-mono">
+                <span className="text-gray-500">L1:{levelCounts.level1}</span>
+                <span className="text-green-500">L2-4:{levelCounts.level2to4}</span>
+                <span className="text-blue-500">L5-9:{levelCounts.level5to9}</span>
+                {levelCounts.level10plus > 0 && (
+                  <span className="text-purple-500">L10+:{levelCounts.level10plus}</span>
+                )}
+              </div>
             </div>
           </div>
-          <div>
-            <div className="text-muted-foreground mb-1">GRID_MODE</div>
-            <div className="text-primary font-bold font-mono">
-              {gridSize === '2' ? 'LARGE' : gridSize === '4' ? 'MEDIUM' : 'COMPACT'}_VIEW
+        </div>
+
+        {/* Desktop: Always visible, 4 columns */}
+        <div className="hidden md:block p-3">
+          <div className="grid grid-cols-4 gap-4 text-xs">
+            <div>
+              <div className="text-muted-foreground mb-1">TOTAL_PEOPLE</div>
+              <div className="text-primary font-bold font-mono">
+                {loading ? 'SCANNING...' : `${filteredCharacters.length}/${characters.length}`}
+              </div>
+            </div>
+            <div>
+              <div className="text-muted-foreground mb-1">ACTIVE_STATUS</div>
+              <div className="flex items-center gap-2 text-xs">
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                  <span className="text-green-500 font-mono">{statusCounts.active}_LIVE</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                  <span className="text-red-500 font-mono">{statusCounts.dead}_KIA</span>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div className="text-muted-foreground mb-1">LEVEL_DIST</div>
+              <div className="flex items-center gap-1 text-xs font-mono">
+                <span className="text-gray-500">L1:{levelCounts.level1}</span>
+                <span className="text-green-500">L2-4:{levelCounts.level2to4}</span>
+                <span className="text-blue-500">L5-9:{levelCounts.level5to9}</span>
+                {levelCounts.level10plus > 0 && <span className="text-purple-500">L10+:{levelCounts.level10plus}</span>}
+              </div>
+            </div>
+            <div>
+              <div className="text-muted-foreground mb-1">GRID_MODE</div>
+              <div className="text-primary font-bold font-mono">
+                {gridSize === '2' ? 'LARGE' : gridSize === '4' ? 'MEDIUM' : 'COMPACT'}_VIEW
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       {/* Filter Panel */}
-      <div className="bg-muted/30 border border-primary/20 rounded p-4 mb-4">
-        <div className="flex items-center gap-2 mb-3 border-b border-primary/20 pb-2">
-          <Filter className="w-4 h-4" />
-          <span className="text-primary font-bold text-sm">PLAYER_FILTERS</span>
-          {hasActiveFilters && (
-            <Badge variant="outline" className="text-xs font-mono">
-              {[searchQuery, genderFilter !== 'all' ? genderFilter : '', typeFilter !== 'all' ? typeFilter : '', statusFilter !== 'all' ? statusFilter : '', levelFilter !== 'all' ? levelFilter : '', biomeFilter !== 'all' ? biomeFilter : ''].filter(Boolean).length}_ACTIVE
-            </Badge>
-          )}
-        </div>
+      {/* Compact Filter Panel */}
+      <div className="bg-muted/30 border border-primary/20 rounded mb-4">
+        {/* Always Visible Filter Row */}
+        <div className="p-3 border-b border-primary/20">
+          <div className="flex flex-col sm:flex-row gap-3">
+            {/* Search - Takes more space on larger screens */}
+            <div className="relative flex-1 sm:max-w-xs">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+              <Input
+                placeholder="SEARCH_PEOPLE_ID..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-8 h-8 text-xs font-mono bg-muted/50 border-primary/20"
+              />
+            </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          {/* Search */}
-          <div className="relative lg:col-span-2">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 text-muted-foreground" />
-            <Input
-              placeholder="SEARCH_PEOPLE_ID..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-8 h-8 text-xs font-mono bg-muted/50 border-primary/20"
-            />
+            {/* Quick Status Filters */}
+            <div className="flex gap-2 flex-wrap">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="h-8 w-20 text-xs font-mono bg-muted/50 border-primary/20">
+                  <SelectValue placeholder="STATUS" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all" className="text-xs font-mono">ALL</SelectItem>
+                  <SelectItem value="ACTIVE" className="text-xs font-mono">LIVE</SelectItem>
+                  <SelectItem value="DEAD" className="text-xs font-mono">KIA</SelectItem>
+                  <SelectItem value="INACTIVE" className="text-xs font-mono">IDLE</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={levelFilter} onValueChange={setLevelFilter}>
+                <SelectTrigger className="h-8 w-20 text-xs font-mono bg-muted/50 border-primary/20">
+                  <SelectValue placeholder="LVL" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all" className="text-xs font-mono">ALL</SelectItem>
+                  <SelectItem value="1" className="text-xs font-mono">L1</SelectItem>
+                  <SelectItem value="2-4" className="text-xs font-mono">L2-4</SelectItem>
+                  <SelectItem value="5-9" className="text-xs font-mono">L5-9</SelectItem>
+                  <SelectItem value="10+" className="text-xs font-mono">L10+</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Filter Toggle Button */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setFiltersExpanded(!filtersExpanded)}
+                className="h-8 px-3 text-xs font-mono border-primary/20"
+              >
+                <Filter className="w-3 h-3 mr-1" />
+                MORE
+                {hasActiveFilters && (
+                  <Badge variant="secondary" className="ml-1 h-4 px-1 text-xs">
+                    {activeFilterCount}
+                  </Badge>
+                )}
+                {filtersExpanded ? <ChevronUp className="w-3 h-3 ml-1" /> : <ChevronDown className="w-3 h-3 ml-1" />}
+              </Button>
+
+              {/* Clear All Filters */}
+              {hasActiveFilters && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearAllFilters}
+                  className="h-8 px-2 text-xs font-mono"
+                >
+                  <X className="w-3 h-3" />
+                </Button>
+              )}
+            </div>
           </div>
-
-          {/* Gender Filter */}
-          <Select value={genderFilter} onValueChange={setGenderFilter}>
-            <SelectTrigger className="h-8 text-xs font-mono bg-muted/50 border-primary/20">
-              <SelectValue placeholder="GENDER" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all" className="text-xs font-mono">ALL_GENDER</SelectItem>
-              <SelectItem value="MALE" className="text-xs font-mono">MALE</SelectItem>
-              <SelectItem value="FEMALE" className="text-xs font-mono">FEMALE</SelectItem>
-            </SelectContent>
-          </Select>
-
-          {/* Type Filter */}
-          <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="h-8 text-xs font-mono bg-muted/50 border-primary/20">
-              <SelectValue placeholder="TYPE" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all" className="text-xs font-mono">ALL_TYPES</SelectItem>
-              <SelectItem value="HUMAN" className="text-xs font-mono">HUMAN</SelectItem>
-              <SelectItem value="NPC" className="text-xs font-mono">NPC</SelectItem>
-            </SelectContent>
-          </Select>
-
-          {/* Status Filter */}
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="h-8 text-xs font-mono bg-muted/50 border-primary/20">
-              <SelectValue placeholder="STATUS" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all" className="text-xs font-mono">ALL_STATUS</SelectItem>
-              <SelectItem value="ACTIVE" className="text-xs font-mono">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                  ACTIVE
-                </div>
-              </SelectItem>
-              <SelectItem value="DEAD" className="text-xs font-mono">
-                <div className="flex items-center gap-2">
-                  <Skull className="w-3 h-3 text-red-500" />
-                  KIA
-                </div>
-              </SelectItem>
-              <SelectItem value="INACTIVE" className="text-xs font-mono">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-gray-500"></div>
-                  INACTIVE
-                </div>
-              </SelectItem>
-            </SelectContent>
-          </Select>
-
-          {/* Level Filter */}
-          <Select value={levelFilter} onValueChange={setLevelFilter}>
-            <SelectTrigger className="h-8 text-xs font-mono bg-muted/50 border-primary/20">
-              <SelectValue placeholder="LEVEL" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all" className="text-xs font-mono">ALL_LEVELS</SelectItem>
-              <SelectItem value="1" className="text-xs font-mono">LVL_1</SelectItem>
-              <SelectItem value="2-4" className="text-xs font-mono">LVL_2-4</SelectItem>
-              <SelectItem value="5-9" className="text-xs font-mono">LVL_5-9</SelectItem>
-              <SelectItem value="10+" className="text-xs font-mono">LVL_10+</SelectItem>
-            </SelectContent>
-          </Select>
         </div>
 
-        {/* Biome Filter & Clear */}
-        <div className="flex items-center gap-3 mt-3">
-          <Select value={biomeFilter} onValueChange={setBiomeFilter}>
-            <SelectTrigger className="w-[150px] h-8 text-xs font-mono bg-muted/50 border-primary/20">
-              <SelectValue placeholder="BIOME" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all" className="text-xs font-mono">ALL_BIOMES</SelectItem>
-              {uniqueBiomes.map(biome => (
-                <SelectItem key={biome} value={biome} className="text-xs font-mono">
-                  {biome.toUpperCase()}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        {/* Expandable Additional Filters */}
+        {filtersExpanded && (
+          <div className="p-3">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-muted-foreground text-xs font-mono">ADVANCED_FILTERS</span>
+            </div>
 
-          {hasActiveFilters && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setSearchQuery('')
-                setGenderFilter('all')
-                setTypeFilter('all')
-                setStatusFilter('all')
-                setLevelFilter('all')
-                setBiomeFilter('all')
-              }}
-              className="h-8 px-3 text-xs font-mono"
-            >
-              CLEAR_FILTERS
-            </Button>
-          )}
-        </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <Select value={genderFilter} onValueChange={setGenderFilter}>
+                <SelectTrigger className="h-8 text-xs font-mono bg-muted/50 border-primary/20">
+                  <SelectValue placeholder="GENDER" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all" className="text-xs font-mono">ALL_GENDER</SelectItem>
+                  <SelectItem value="MALE" className="text-xs font-mono">MALE</SelectItem>
+                  <SelectItem value="FEMALE" className="text-xs font-mono">FEMALE</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <SelectTrigger className="h-8 text-xs font-mono bg-muted/50 border-primary/20">
+                  <SelectValue placeholder="TYPE" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all" className="text-xs font-mono">ALL_TYPES</SelectItem>
+                  <SelectItem value="HUMAN" className="text-xs font-mono">HUMAN</SelectItem>
+                  <SelectItem value="NPC" className="text-xs font-mono">NPC</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={biomeFilter} onValueChange={setBiomeFilter}>
+                <SelectTrigger className="h-8 text-xs font-mono bg-muted/50 border-primary/20">
+                  <SelectValue placeholder="BIOME" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all" className="text-xs font-mono">ALL_BIOMES</SelectItem>
+                  {uniqueBiomes.map(biome => (
+                    <SelectItem key={biome} value={biome} className="text-xs font-mono">
+                      {biome.toUpperCase()}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={clearAllFilters}
+                className="h-8 px-3 text-xs font-mono"
+              >
+                CLEAR_ALL
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Character Grid */}

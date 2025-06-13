@@ -1,9 +1,14 @@
-// src/components/screens/CharacterCreationScreen.tsx - Updated for explicit state machine
-import { User, Activity } from 'lucide-react'
+// src/components/screens/CharacterCreationScreen.tsx - Updated with back button
+import { User, Activity, ArrowLeft } from 'lucide-react'
 import { CharacterCreationView } from '../views'
 import { useGame } from '@/providers/GameProvider'
+import { Button } from '@/components/ui/button'
 
-export function CharacterCreationScreen() {
+interface CharacterCreationScreenProps {
+  onBack?: () => void
+}
+
+export function CharacterCreationScreen({ onBack }: CharacterCreationScreenProps) {
   const { actions } = useGame()
 
   const handleCharacterCreated = async () => {
@@ -32,9 +37,20 @@ export function CharacterCreationScreen() {
             <User className="w-4 h-4" />
             <span className="text-primary font-bold text-sm">CHARACTER_CREATION v2.089</span>
           </div>
-          <div className="flex items-center gap-2">
-            <Activity className="w-3 h-3 animate-pulse" />
-            <span className="text-primary text-xs">READY</span>
+          <div className="flex items-center gap-3">
+            {onBack && (
+              <button
+                onClick={onBack}
+                className="text-muted-foreground hover:text-primary transition-colors"
+                title="Back to character selection"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </button>
+            )}
+            <div className="flex items-center gap-2">
+              <Activity className="w-3 h-3 animate-pulse" />
+              <span className="text-primary text-xs">READY</span>
+            </div>
           </div>
         </div>
 
