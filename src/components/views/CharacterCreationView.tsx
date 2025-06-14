@@ -765,11 +765,12 @@ export const CharacterCreationView: React.FC<CharacterCreationViewProps> = ({ ch
             <Button
               onClick={handleStartCreation}
               disabled={!generatedImage || manifestError !== null || imageLoading}
-              className="w-full h-10 sm:h-11"
+              variant="outline"
+              className="w-full border-success text-success hover:bg-success font-mono text-sm h-10"
               size="lg"
             >
               <Coins className="w-4 h-4 mr-2" />
-              <span className="text-sm sm:text-base">MAKE_PAYMENT</span>
+              MAKE_PAYMENT
             </Button>
 
             {/* Status Message - FIXED HEIGHT, smaller on mobile */}

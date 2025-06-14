@@ -3,6 +3,7 @@ import { User, Activity, ArrowLeft } from 'lucide-react'
 import { CharacterCreationView } from '../views'
 import { useGame } from '@/providers/GameProvider'
 import { TopControls } from '../TopControls'
+import { Button } from '../ui/button'
 
 interface CharacterCreationScreenProps {
   onBack?: () => void
@@ -34,21 +35,13 @@ export function CharacterCreationScreen({ onBack }: CharacterCreationScreenProps
 
       <div className="w-full max-w-2xl mx-auto bg-background border border-primary/30 rounded-lg p-4 font-mono">
         {/* Terminal Header */}
+
         <div className="flex items-center justify-between mb-3 border-b border-primary/20 pb-2">
           <div className="flex items-center gap-2">
             <User className="w-4 h-4" />
             <span className="text-primary font-bold text-sm">CHARACTER_CREATION v2.089</span>
           </div>
           <div className="flex items-center gap-3">
-            {onBack && (
-              <button
-                onClick={onBack}
-                className="text-muted-foreground hover:text-primary transition-colors"
-                title="Back to character selection"
-              >
-                <ArrowLeft className="w-4 h-4" />
-              </button>
-            )}
             <div className="flex items-center gap-2">
               <Activity className="w-3 h-3 animate-pulse" />
               <span className="text-primary text-xs">READY</span>
@@ -70,6 +63,19 @@ export function CharacterCreationScreen({ onBack }: CharacterCreationScreenProps
           character={null}
           onCharacterCreated={handleCharacterCreated}
         />
+
+        {onBack && (
+          <Button
+            onClick={onBack}
+            className="w-full font-mono text-sm h-10"
+            variant="outline"
+            size="lg"
+            title="Back to character selection"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            RETURN_TO_REGISTRY
+          </Button>
+        )}
 
         {/* Footer */}
         <div className="text-xs text-muted-foreground/60 font-mono text-center border-t border-primary/20 pt-2 mt-3">
