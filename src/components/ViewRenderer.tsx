@@ -17,7 +17,6 @@ import {
 } from './views'
 import type { Character, GameView } from '@/types'
 import { useGame } from '@/providers/GameProvider'
-import { useGameHandlers } from '@/hooks/useGameHandlers'
 
 interface ViewRendererProps {
   currentView: GameView

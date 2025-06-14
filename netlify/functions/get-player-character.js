@@ -1,4 +1,4 @@
-// netlify/functions/get-player-character.js - FIXED
+// netlify/functions/get-player-character.js - FIXED with inventory
 import supabaseAdmin from '../../src/utils/supabase-admin'
 
 export const handler = async (event, context) => {
@@ -72,12 +72,6 @@ export const handler = async (event, context) => {
       .eq('status', 'ACTIVE')
       .single()
 
-    // console.log('🔍 Character Query Result:', {
-    //   found: !!character,
-    //   error: characterError,
-    //   wallet: wallet_address
-    // })
-
     if (characterError) {
       console.error('Error fetching character:', characterError)
       if (characterError.code === 'PGRST116') {
@@ -100,6 +94,30 @@ export const handler = async (event, context) => {
       }
     }
 
+    // FIXED: Get actual inventory data instead of empty array
+    const { data: inventoryData, error: inventoryError } = await supabaseAdmin
+      .from('character_inventory')
+      .select(`
+        id,
+        quantity,
+        is_equipped,
+        equipped_slot,
+        slot_index,
+        is_primary,
+        created_at,
+        updated_at,
+        item:items(*)
+      `)
+      .eq('character_id', character.id)
+      .order('created_at', { ascending: false })
+
+    if (inventoryError) {
+      console.error('Error fetching inventory:', inventoryError)
+      // Don't fail the whole request for inventory errors, just log it
+    }
+
+    console.log(`🎒 Loaded ${inventoryData?.length || 0} inventory items for character ${character.name}`)
+
     // Transform the data for the frontend
     const transformedCharacter = {
       ...character,
@@ -108,8 +126,8 @@ export const handler = async (event, context) => {
         parent: character.location.parent || null,
         resources: [] // Temporarily set to empty array to avoid errors
       } : null,
-      inventory: [], // Temporarily set to empty array
-      equipped_items: [] // Temporarily set to empty array
+      inventory: inventoryData || [], // FIXED: Use actual inventory data
+      equipped_items: inventoryData?.filter(item => item.is_equipped) || [] // FIXED: Filter equipped items
     }
 
     const response = {
@@ -121,12 +139,13 @@ export const handler = async (event, context) => {
       })
     }
 
-    // console.log('📤 Final Response:', {
-    //   statusCode: response.statusCode,
-    //   characterFound: !!transformedCharacter,
-    //   hasLocation: !!transformedCharacter.currentLocation,
-    //   inventoryCount: transformedCharacter.inventory.length
-    // })
+    console.log('📤 Final Response:', {
+      statusCode: response.statusCode,
+      characterFound: !!transformedCharacter,
+      hasLocation: !!transformedCharacter.currentLocation,
+      inventoryCount: transformedCharacter.inventory.length,
+      equippedCount: transformedCharacter.equipped_items.length
+    })
 
     return response
 
