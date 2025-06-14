@@ -16,7 +16,7 @@ import {
   X,
 } from 'lucide-react'
 import { useWallet } from '@solana/wallet-adapter-react'
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/use-toast'
 import type { Character } from '@/types'
 import { useNetwork } from '@/contexts/NetworkContext'
 

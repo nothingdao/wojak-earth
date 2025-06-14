@@ -16,15 +16,22 @@ import {
 } from 'lucide-react'
 import { useWallet, useConnection } from '@solana/wallet-adapter-react'
 import { Transaction, SystemProgram, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js'
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/use-toast'
+import { useNetwork } from '@/contexts/NetworkContext'
 
 interface SimplePaymentProps {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   characterData: any
   onPaymentSuccess: (signature: string) => void
   onCancel: () => void
 }
 
-const TREASURY_WALLET = import.meta.env.VITE_TREASURY_WALLET_ADDRESS || 'YourTreasuryWalletHere'
+// Network-specific treasury wallets
+const TREASURY_WALLETS = {
+  devnet: '9THaas19LkNrs6ZjVXczyE7iTadPpvxUfvroNGkf3xqs',
+  mainnet: '9THaas19LkNrs6ZjVXczyE7iTadPpvxUfvroNGkf3xqs' // Replace with mainnet treasury
+}
+
 const NFT_PRICE = 0.01 // SOL - FIXED: Match backend expectation
 
 // Validate and create treasury pubkey ONCE
@@ -32,13 +39,13 @@ let treasuryPubkey: PublicKey
 let treasuryValidationError: string | null = null
 
 try {
-  treasuryPubkey = new PublicKey(TREASURY_WALLET)
+  // We'll initialize this in the component based on network
+  treasuryPubkey = new PublicKey(TREASURY_WALLETS.devnet)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
 } catch (error) {
-  console.error('❌ Invalid treasury wallet address:', TREASURY_WALLET)
+  console.error('❌ Invalid treasury wallet address:', TREASURY_WALLETS.devnet)
   treasuryValidationError = 'Invalid treasury wallet configuration'
 }
-
-
 
 export const SimplePayment: React.FC<SimplePaymentProps> = ({
   onPaymentSuccess,
@@ -46,10 +53,23 @@ export const SimplePayment: React.FC<SimplePaymentProps> = ({
 }) => {
   const { publicKey, sendTransaction, wallet } = useWallet()
   const { connection } = useConnection()
+  const { isDevnet } = useNetwork()
   const [paying, setPaying] = useState(false)
   const [verifying, setVerifying] = useState(false)
   const [signature, setSignature] = useState<string | null>(null)
   const [configError, setConfigError] = useState<string | null>(null)
+
+  // Initialize treasury pubkey based on network
+  useEffect(() => {
+    try {
+      const treasuryAddress = isDevnet ? TREASURY_WALLETS.devnet : TREASURY_WALLETS.mainnet
+      treasuryPubkey = new PublicKey(treasuryAddress)
+      setConfigError(null)
+    } catch (error) {
+      console.error('❌ Invalid treasury wallet address:', error)
+      setConfigError('Invalid treasury wallet configuration')
+    }
+  }, [isDevnet])
 
   // Check for configuration issues when wallet connects
   useEffect(() => {
@@ -92,7 +112,8 @@ export const SimplePayment: React.FC<SimplePaymentProps> = ({
       treasuryWallet: treasuryPubkey.toString(),
       nftPrice: NFT_PRICE,
       walletAdapter: wallet?.adapter?.name,
-      connection: connection.rpcEndpoint
+      connection: connection.rpcEndpoint,
+      network: isDevnet ? 'devnet' : 'mainnet'
     })
 
     // Check wallet balance first with detailed logging
@@ -147,22 +168,26 @@ export const SimplePayment: React.FC<SimplePaymentProps> = ({
         treasuryOwner: treasuryInfo?.owner?.toString()
       })
 
-      // Get fresh blockhash with detailed logging
-      console.log('🔗 Getting latest blockhash...')
+      // Get fresh blockhash first
       const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized')
-
-      console.log('🔗 Blockhash Info:', {
-        blockhash: blockhash.slice(0, 8) + '...',
-        lastValidBlockHeight,
-        currentSlot: await connection.getSlot()
-      })
 
       // Create transaction with validation
       console.log('📝 Creating transaction...')
-      const transaction = new Transaction({
-        recentBlockhash: blockhash,
-        feePayer: publicKey
-      })
+      // const transaction = new Transaction()
+
+      // transaction.recentBlockhash = blockhash
+      // transaction.feePayer = publicKey
+
+      // Let Solflare handle it:
+      const transaction = new Transaction().add(
+        SystemProgram.transfer({
+          fromPubkey: publicKey,
+          toPubkey: treasuryPubkey,
+          lamports: Math.floor(NFT_PRICE * LAMPORTS_PER_SOL)
+        })
+      )
+
+      // const txSignature = await sendTransaction(transaction, connection)
 
       const transferInstruction = SystemProgram.transfer({
         fromPubkey: publicKey,
@@ -200,15 +225,11 @@ export const SimplePayment: React.FC<SimplePaymentProps> = ({
 
       // Send transaction with enhanced error handling
       console.log('🚀 Sending transaction...')
-      const txSignature = await sendTransaction(transaction, connection, {
-        skipPreflight: false,
-        preflightCommitment: 'confirmed',
-        maxRetries: 3
-      })
+      const txSignature = await sendTransaction(transaction, connection)
 
       console.log('✅ Transaction sent successfully:', {
         signature: txSignature,
-        explorer: `https://explorer.solana.com/tx/${txSignature}?cluster=devnet`
+        explorer: `https://explorer.solana.com/tx/${txSignature}?cluster=${isDevnet ? 'devnet' : 'mainnet'}`
       })
 
       setSignature(txSignature)
@@ -233,14 +254,13 @@ export const SimplePayment: React.FC<SimplePaymentProps> = ({
         slot: confirmation.context.slot
       })
 
-      // toast.success('Payment confirmed! Creating character...')
-
       // Small delay to ensure backend can verify
       setTimeout(() => {
         setVerifying(false)
         onPaymentSuccess(txSignature)
       }, 1000)
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       console.error('❌ Payment failed with detailed error:', {
         error,
@@ -250,27 +270,19 @@ export const SimplePayment: React.FC<SimplePaymentProps> = ({
         stack: error.stack?.split('\n').slice(0, 3) // First 3 stack lines
       })
 
-      setSignature(null)
+      setPaying(false)
       setVerifying(false)
 
-      let errorMessage = 'Payment failed'
-      if (error.message?.includes('User rejected')) {
-        errorMessage = 'Transaction was cancelled'
-      } else if (error.message?.includes('insufficient')) {
-        errorMessage = 'Insufficient SOL balance'
-      } else if (error.message?.includes('blockhash')) {
-        errorMessage = 'Transaction expired, please try again'
-      } else if (error.message?.includes('0x1')) {
-        errorMessage = 'Insufficient funds for transaction'
-      } else if (error.message?.includes('Invalid account')) {
-        errorMessage = 'Invalid account error - check console for details'
-      } else if (error.message) {
-        errorMessage = error.message
+      // Handle specific error cases
+      if (error.name === 'WalletSendTransactionError') {
+        if (error.message.includes('Invalid account')) {
+          toast.error('Treasury wallet not initialized on this network')
+        } else {
+          toast.error('Transaction failed: ' + error.message)
+        }
+      } else {
+        toast.error('Payment failed: ' + error.message)
       }
-
-      toast.error(errorMessage)
-    } finally {
-      setPaying(false)
     }
   }
 
@@ -386,7 +398,7 @@ export const SimplePayment: React.FC<SimplePaymentProps> = ({
           <div className="text-primary text-xs font-bold mb-1">[TRANSACTION_DETAILS]</div>
           <div>WALLET: {wallet?.adapter?.name?.toUpperCase()}</div>
           <div>DESTINATION: {treasuryPubkey?.toString().slice(0, 8)}...{treasuryPubkey?.toString().slice(-8)}</div>
-          <div>NETWORK: SOLANA_DEVNET</div>
+          <div>NETWORK: {isDevnet ? 'devnet' : 'mainnet'}</div>
         </div>
       </div>
 

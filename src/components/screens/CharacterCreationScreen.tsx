@@ -2,7 +2,7 @@
 import { User, Activity, ArrowLeft } from 'lucide-react'
 import { CharacterCreationView } from '../views'
 import { useGame } from '@/providers/GameProvider'
-import { Button } from '@/components/ui/button'
+import { TopControls } from '../TopControls'
 
 interface CharacterCreationScreenProps {
   onBack?: () => void
@@ -29,7 +29,9 @@ export function CharacterCreationScreen({ onBack }: CharacterCreationScreenProps
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4 mt-12">
+      <TopControls />
+
       <div className="w-full max-w-2xl mx-auto bg-background border border-primary/30 rounded-lg p-4 font-mono">
         {/* Terminal Header */}
         <div className="flex items-center justify-between mb-3 border-b border-primary/20 pb-2">

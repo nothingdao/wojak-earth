@@ -1,9 +1,5 @@
-// netlify/functions/get-rust-markets.js - Real wasteland blockchain market data
-import { createClient } from '@supabase/supabase-js'
-
-const supabaseUrl = process.env.VITE_SUPABASE_URL
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-const supabase = createClient(supabaseUrl, supabaseServiceKey)
+// netlify/functions/get-rust-markets.js - UPDATED
+import supabaseAdmin from '../../src/utils/supabase-admin'
 
 export const handler = async (event, context) => {
   const headers = {
@@ -26,7 +22,7 @@ export const handler = async (event, context) => {
 
   try {
     // Get recent exchange transactions with blockchain fields
-    const { data: transactions, error } = await supabase
+    const { data: transactions, error: transactionsError } = await supabaseAdmin
       .from('transactions')
       .select(`
         created_at,
@@ -45,9 +41,7 @@ export const handler = async (event, context) => {
       .order('wasteland_block', { ascending: false })
       .limit(100)
 
-    if (error) {
-      throw new Error(`Database query failed: ${error.message}`)
-    }
+    if (transactionsError) throw transactionsError
 
     // Process data into market statistics
     const marketStats = processMarketData(transactions || [])
@@ -65,12 +59,12 @@ export const handler = async (event, context) => {
     }
 
   } catch (error) {
-    console.error('Get rust markets error:', error)
+    console.error('Error in get-rust-markets:', error)
     return {
       statusCode: 500,
       headers,
       body: JSON.stringify({
-        error: 'Failed to fetch market data',
+        error: 'Internal server error',
         message: error.message
       })
     }
@@ -117,8 +111,8 @@ function processMarketData(transactions) {
     if (rustPerSol && rustPerSol > 0) {
       blockGroups[block].rates.push(rustPerSol)
 
-      // Calculate volume in SOL
-      const solVolume = tx.from_vault === 'SCRAP_SOL' ? tx.from_units : tx.to_units
+      // Calculate volume in SOL, ensuring units are numbers or default to 0
+      const solVolume = (tx.from_vault === 'SCRAP_SOL' ? (tx.from_units || 0) : (tx.to_units || 0))
       blockGroups[block].volume += solVolume
       totalVolume += solVolume
       blockGroups[block].trades += 1
@@ -150,3 +144,5 @@ function processMarketData(transactions) {
     latestBlock: blocks.length > 0 ? Math.max(...blocks.map(b => b.block)) : 0
   }
 }
+
+const formatVolume = (vol) => (vol ?? 0).toFixed(3);

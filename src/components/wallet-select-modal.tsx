@@ -13,7 +13,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { ExternalLink, Wallet, Database, Activity, Signal, Terminal, Zap } from 'lucide-react';
 import { WalletReadyState } from '@solana/wallet-adapter-base';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/use-toast';
 
 interface WalletSelectModalProps {
   open: boolean;
@@ -31,7 +31,7 @@ export function WalletSelectModal({ open, onOpenChange }: WalletSelectModalProps
       onOpenChange(false);
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
-      toast.error('Failed to connect to wallet');
+      // toast.error('Failed to connect to wallet');
     }
   };
 
@@ -55,10 +55,6 @@ export function WalletSelectModal({ open, onOpenChange }: WalletSelectModalProps
                 WALLET_CONNECTION_PROTOCOL v2.089
               </DialogTitle>
             </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <Activity className="w-3 h-3 animate-pulse text-primary" />
-              <span className="text-primary text-xs hidden sm:inline">SCANNING</span>
-            </div>
           </div>
           <DialogDescription className="font-mono text-xs text-muted-foreground">
             <span className="hidden sm:inline">SELECT_AUTHENTICATION_MODULE_FOR_BLOCKCHAIN_ACCESS</span>
@@ -72,8 +68,8 @@ export function WalletSelectModal({ open, onOpenChange }: WalletSelectModalProps
               <div className="space-y-2">
                 <div className="bg-muted/30 border border-primary/20 rounded p-2">
                   <div className="flex items-center gap-2">
-                    <Signal className="w-3 h-3 text-green-500 flex-shrink-0" />
-                    <h4 className="text-xs font-bold text-green-500 font-mono truncate">
+                    <Signal className="w-3 h-3 text-success flex-shrink-0" />
+                    <h4 className="text-xs font-bold text-success font-mono truncate">
                       <span className="hidden sm:inline">DETECTED_WALLETS</span>
                       <span className="sm:hidden">DETECTED</span>
                     </h4>
@@ -101,7 +97,7 @@ export function WalletSelectModal({ open, onOpenChange }: WalletSelectModalProps
                         <span className="text-primary font-bold text-xs truncate">
                           {wallet.adapter.name.toUpperCase()}
                         </span>
-                        <Badge variant="default" className="text-xs font-mono bg-green-500/20 text-green-400 flex-shrink-0">
+                        <Badge variant="default" className="text-xs font-mono bg-green-500/20 text-success flex-shrink-0">
                           READY
                         </Badge>
                       </div>
@@ -119,12 +115,12 @@ export function WalletSelectModal({ open, onOpenChange }: WalletSelectModalProps
               <div className="space-y-2">
                 <div className="bg-muted/30 border border-yellow-500/30 rounded p-2">
                   <div className="flex items-center gap-2">
-                    <Database className="w-3 h-3 text-yellow-500 flex-shrink-0" />
-                    <h4 className="text-xs font-bold text-yellow-500 font-mono truncate">
+                    <Database className="w-3 h-3 text-warning flex-shrink-0" />
+                    <h4 className="text-xs font-bold text-warning font-mono truncate">
                       <span className="hidden sm:inline">INSTALLATION_REQUIRED</span>
                       <span className="sm:hidden">INSTALL_REQ</span>
                     </h4>
-                    <Badge variant="outline" className="text-xs font-mono text-yellow-500 flex-shrink-0">
+                    <Badge variant="outline" className="text-xs font-mono text-warning flex-shrink-0">
                       {notDetectedWallets.length}_AVAILABLE
                     </Badge>
                   </div>
@@ -139,7 +135,7 @@ export function WalletSelectModal({ open, onOpenChange }: WalletSelectModalProps
                         {wallet.adapter.icon ? (
                           <img src={wallet.adapter.icon} alt={wallet.adapter.name} className="w-4 h-4" />
                         ) : (
-                          <Wallet className="w-3 h-3 text-yellow-500" />
+                          <Wallet className="w-3 h-3 text-warning" />
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
@@ -156,7 +152,7 @@ export function WalletSelectModal({ open, onOpenChange }: WalletSelectModalProps
                       variant="outline"
                       size="sm"
                       onClick={() => window.open(wallet.adapter.url, '_blank')}
-                      className="text-xs font-mono h-6 border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/10 flex-shrink-0"
+                      className="text-xs font-mono h-6 border-yellow-500/30 text-warning hover:bg-yellow-500/10 flex-shrink-0"
                     >
                       <ExternalLink className="w-3 h-3 sm:mr-1" />
                       <span className="hidden sm:inline">INSTALL</span>
@@ -168,12 +164,12 @@ export function WalletSelectModal({ open, onOpenChange }: WalletSelectModalProps
 
             {installedWallets.length === 0 && notDetectedWallets.length === 0 && (
               <div className="bg-red-950/20 border border-red-500/30 rounded p-4 text-center">
-                <div className="text-red-500 text-2xl mb-2">⚠</div>
-                <div className="text-red-500 font-bold text-xs font-mono mb-1">
+                <div className="text-error text-2xl mb-2">⚠</div>
+                <div className="text-error font-bold text-xs font-mono mb-1">
                   <span className="hidden sm:inline">NO_WALLET_MODULES_DETECTED</span>
                   <span className="sm:hidden">NO_WALLETS_FOUND</span>
                 </div>
-                <div className="text-red-400 text-xs font-mono">
+                <div className="text-error text-xs font-mono">
                   <span className="hidden sm:inline">INSTALL_COMPATIBLE_WALLET_SOFTWARE</span>
                   <span className="sm:hidden">INSTALL_WALLET_SOFTWARE</span>
                 </div>

@@ -1,6 +1,6 @@
 // src/hooks/useGameData.ts - Optimized version
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { createClient } from '@supabase/supabase-js'
+import supabase from '../utils/supabase'
 import type {
   Character,
   GameView,
@@ -12,11 +12,6 @@ import type {
 } from '@/types'
 
 const API_BASE = '/.netlify/functions'
-
-// Create a separate client for realtime (using anon key)
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
-const realtimeSupabase = createClient(supabaseUrl, supabaseAnonKey)
 
 interface UseGameDataReturn {
   locations: DatabaseLocation[]
@@ -49,10 +44,10 @@ export function useGameData(
 
   // Keep track of current subscriptions and prevent duplicate calls
   const chatSubscriptionRef = useRef<ReturnType<
-    typeof realtimeSupabase.channel
+    typeof supabase.channel
   > | null>(null)
   const playersSubscriptionRef = useRef<ReturnType<
-    typeof realtimeSupabase.channel
+    typeof supabase.channel
   > | null>(null)
   const currentLocationIdRef = useRef<string | null>(null)
   const loadingPlayersRef = useRef<boolean>(false)
@@ -157,7 +152,7 @@ export function useGameData(
         // Get character details if not a system message
         let character = null
         if (!rawMessage.is_system && rawMessage.character_id) {
-          const { data: charData } = await realtimeSupabase
+          const { data: charData } = await supabase
             .from('characters')
             .select('id, name, character_type, current_image_url')
             .eq('id', rawMessage.character_id)
@@ -174,7 +169,7 @@ export function useGameData(
         }
 
         // Get location details
-        const { data: locationData } = await realtimeSupabase
+        const { data: locationData } = await supabase
           .from('locations')
           .select('id, name, location_type')
           .eq('id', rawMessage.location_id)
@@ -224,7 +219,7 @@ export function useGameData(
         chatSubscriptionRef.current.unsubscribe()
       }
 
-      chatSubscriptionRef.current = realtimeSupabase
+      chatSubscriptionRef.current = supabase
         .channel(`chat_${location_id}`)
         .on(
           'postgres_changes',
@@ -264,7 +259,7 @@ export function useGameData(
 
       let debounceTimer: NodeJS.Timeout | null = null
 
-      playersSubscriptionRef.current = realtimeSupabase
+      playersSubscriptionRef.current = supabase
         .channel(`players_${location_id}`)
         .on(
           'postgres_changes',

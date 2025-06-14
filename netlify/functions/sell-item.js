@@ -1,10 +1,6 @@
 // netlify/functions/sell-item.js - Universal item selling system
-import { createClient } from '@supabase/supabase-js'
+import supabaseAdmin from '../../src/utils/supabase-admin'
 import { randomUUID } from 'crypto'
-
-const supabaseUrl = process.env.VITE_SUPABASE_URL
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 export const handler = async (event, context) => {
   const headers = {
@@ -37,7 +33,7 @@ export const handler = async (event, context) => {
     }
 
     // Get character by wallet address
-    const { data: character, error } = await supabase
+    const { data: character, error } = await supabaseAdmin
       .from('characters')
       .select('*')
       .eq('wallet_address', wallet_address)
@@ -56,7 +52,7 @@ export const handler = async (event, context) => {
     }
 
     // Get inventory item with item details
-    const { data: inventoryItem, error: inventoryError } = await supabase
+    const { data: inventoryItem, error: inventoryError } = await supabaseAdmin
       .from('character_inventory')
       .select(`
         *,
@@ -115,7 +111,7 @@ export const handler = async (event, context) => {
 
     // Add coins to character
     const newCoinBalance = character.coins + sellPrice
-    const { data: updatedCharacter, error: coinUpdateError } = await supabase
+    const { data: updatedCharacter, error: coinUpdateError } = await supabaseAdmin
       .from('characters')
       .update({ coins: newCoinBalance })
       .eq('id', character.id)
@@ -131,7 +127,7 @@ export const handler = async (event, context) => {
     let updatedInventory = null
     if (inventoryItem.quantity === quantity) {
       // Remove item completely
-      const { error: deleteError } = await supabase
+      const { error: deleteError } = await supabaseAdmin
         .from('character_inventory')
         .delete()
         .eq('id', inventoryId)
@@ -139,7 +135,7 @@ export const handler = async (event, context) => {
       if (deleteError) throw deleteError
     } else {
       // Reduce quantity
-      const { data: reducedInventory, error: reduceError } = await supabase
+      const { data: reducedInventory, error: reduceError } = await supabaseAdmin
         .from('character_inventory')
         .update({
           quantity: inventoryItem.quantity - quantity,
@@ -156,104 +152,81 @@ export const handler = async (event, context) => {
 
     // Log the sale transaction
     const transactionId = randomUUID()
-    const { data: transaction, error: transactionError } = await supabase
+    const { error: transactionError } = await supabaseAdmin
       .from('transactions')
       .insert({
         id: transactionId,
         character_id: character.id,
-        type: 'SELL', // Add this to your transaction types if needed
+        type: 'SELL',
         item_id: inventoryItem.item.id,
         quantity: quantity,
-        description: `Sold ${quantity}x ${inventoryItem.item.name} for ${sellPrice} coins`,
-        created_at: new Date().toISOString()
+        amount: sellPrice,
+        description: `Sold ${quantity}x ${inventoryItem.item.name} for ${sellPrice} coins`
       })
-      .select('*')
-      .single()
 
-    if (transactionError) throw transactionError
-
-    const responseData = {
-      success: true,
-      message: `Successfully sold ${quantity}x ${inventoryItem.item.name} for ${sellPrice} coins!`,
-      sale: {
-        itemName: inventoryItem.item.name,
-        itemRarity: inventoryItem.item.rarity,
-        itemCategory: inventoryItem.item.category,
-        quantity: quantity,
-        sellPrice: sellPrice,
-        pricePerItem: Math.floor(sellPrice / quantity),
-        newCoinBalance: newCoinBalance,
-        previousCoinBalance: character.coins
-      },
-      inventory: {
-        remainingQuantity: updatedInventory?.quantity || 0,
-        wasRemoved: !updatedInventory
-      },
-      character: {
-        id: character.id,
-        coins: newCoinBalance,
-        coinsEarned: sellPrice
-      }
+    if (transactionError) {
+      console.error('Failed to log transaction:', transactionError)
+      // Don't throw, just log - transaction logging is not critical
     }
 
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify(responseData)
+      body: JSON.stringify({
+        success: true,
+        character: updatedCharacter,
+        inventory: updatedInventory,
+        transaction: {
+          id: transactionId,
+          type: 'SELL',
+          item: inventoryItem.item,
+          quantity: quantity,
+          amount: sellPrice
+        }
+      })
     }
 
   } catch (error) {
-    console.error('Error selling item:', error)
-
+    console.error('Error in sell-item:', error)
     return {
       statusCode: 500,
       headers,
       body: JSON.stringify({
         error: 'Internal server error',
-        message: 'Sale failed',
-        details: error.message
+        message: error.message
       })
     }
   }
 }
 
-// Calculate how much an item is worth when sold
+// Helper function to calculate sell price based on item properties
 function calculateSellPrice(item, quantity = 1) {
-  let basePrice = 10 // Default base value
+  // Base price multipliers by rarity
+  const rarityMultipliers = {
+    'COMMON': 0.5,
+    'UNCOMMON': 0.6,
+    'RARE': 0.7,
+    'EPIC': 0.8,
+    'LEGENDARY': 0.9
+  }
 
   // Base price by category
-  const categoryPrices = {
-    'MATERIAL': 15,      // Mining materials
-    'CONSUMABLE': 8,     // Food, potions (less valuable used)
-    'TOOL': 30,         // Tools, weapons
-    'HAT': 20,          // Fashion items
-    'CLOTHING': 25,     // Clothing
-    'ACCESSORY': 35,    // Special accessories
-    'OUTERWEAR': 40,    // Rare outerwear
+  const categoryBasePrices = {
+    'WEAPON': 100,
+    'ARMOR': 80,
+    'MATERIAL': 20,
+    'CONSUMABLE': 15,
+    'QUEST': 50,
+    'MISC': 10
   }
 
-  basePrice = categoryPrices[item.category] || basePrice
+  // Get base price for item category
+  const basePrice = categoryBasePrices[item.category] || 10
 
-  // Rarity multipliers (selling for less than retail)
-  const rarityMultipliers = {
-    'COMMON': 0.6,       // 60% of base value
-    'UNCOMMON': 0.65,    // 65% of base value  
-    'RARE': 0.7,         // 70% of base value
-    'EPIC': 0.75,        // 75% of base value
-    'LEGENDARY': 0.8     // 80% of base value
-  }
-
-  const rarityMultiplier = rarityMultipliers[item.rarity] || 0.6
-
-  // Special bonuses for valuable items
-  let specialBonus = 0
-  if (item.energy_effect && item.energy_effect > 0) specialBonus += item.energy_effect * 0.5
-  if (item.health_effect && item.health_effect > 0) specialBonus += item.health_effect * 0.8
+  // Apply rarity multiplier
+  const rarityMultiplier = rarityMultipliers[item.rarity] || 0.5
 
   // Calculate final price
-  const itemValue = Math.floor((basePrice * rarityMultiplier) + specialBonus)
-  const totalValue = itemValue * quantity
-
-  // Minimum sell price (always get at least 3 coins per item)
-  return Math.max(totalValue, quantity * 3)
+  const pricePerItem = Math.floor(basePrice * rarityMultiplier)
+  return pricePerItem * quantity
 }

@@ -61,48 +61,68 @@ export const GAME_MECHANICS = {
 } as const
 
 // ===== NPC SYSTEM CONFIGURATION =====
-export const NPC_CONFIG = {
-  // Activity timing
-  BASE_ACTIVITY_INTERVAL: 45000, // 45 seconds base
-  ACTIVITY_VARIANCE: 0.4, // ±40% randomness
-  SPAWN_DELAY: 2000, // 2 seconds between NPC spawns
+export interface NPC_CONFIG {
+  CHAT_CONFIG: {
+    enabled: boolean
+    showContext: boolean
+    messagePoolSize: number
+  }
+  BASE_ACTIVITY_INTERVAL: number
+  ACTIVITY_VARIANCE: number
+  SPAWN_DELAY: number
+  DEFAULT_NPC_COUNT: number
+  FUNDING_AMOUNT: number
+  LOG_LEVEL: string
+  ENABLE_LOGS: boolean
+  RESPAWN_ENABLED: boolean
+  RESUME_EXISTING: boolean
+  RESPAWN_DELAY_MINUTES: number
+  ANNOUNCE_DEATHS: boolean
+  ANNOUNCE_RESPAWNS: boolean
+  CRITICAL_HEALTH_THRESHOLD: number
+  MAX_HEALING_ATTEMPTS: number
+  GLOBAL_ACTIVITY_RATE: number
+  AVAILABLE_PERSONALITIES: readonly string[]
+}
 
-  // Population and spawning
-  DEFAULT_NPC_COUNT: 8,
-  FUNDING_AMOUNT: 0.02, // SOL to fund each NPC wallet
-  RESUME_EXISTING: true, // Try to resume existing NPCs first
-
-  // Death and respawn system
-  RESPAWN_ENABLED: true,
-  RESPAWN_DELAY_MINUTES: 15,
-  ANNOUNCE_DEATHS: true,
-  ANNOUNCE_RESPAWNS: true,
-  CRITICAL_HEALTH_THRESHOLD: 5,
-  MAX_HEALING_ATTEMPTS: 3,
-
-  // Logging configuration
-  ENABLE_LOGS: true,
-  LOG_LEVEL: 'info' as 'debug' | 'info' | 'warn' | 'error',
-
-  // Chat system
+export const defaultConfig: NPC_CONFIG = {
   CHAT_CONFIG: {
     enabled: true,
-    showContext: true, // Show context in chat logs
-    messagePoolSize: 50, // Max messages per context
+    showContext: true,
+    messagePoolSize: 50,
   },
-
-  // Global activity rate scaling
-  GLOBAL_ACTIVITY_RATE: 45000, // Base rate that scales with population
-
-  // Available personalities for NPCs
+  BASE_ACTIVITY_INTERVAL: 45000,
+  ACTIVITY_VARIANCE: 0.4,
+  SPAWN_DELAY: 2000,
+  DEFAULT_NPC_COUNT: 8,
+  FUNDING_AMOUNT: 0.02,
+  LOG_LEVEL: 'info',
+  ENABLE_LOGS: true,
+  RESPAWN_ENABLED: true,
+  RESUME_EXISTING: true,
+  RESPAWN_DELAY_MINUTES: 5,
+  ANNOUNCE_DEATHS: true,
+  ANNOUNCE_RESPAWNS: true,
+  CRITICAL_HEALTH_THRESHOLD: 20,
+  MAX_HEALING_ATTEMPTS: 3,
+  GLOBAL_ACTIVITY_RATE: 1.0,
   AVAILABLE_PERSONALITIES: [
-    'casual',
-    'hardcore',
-    'social',
-    'merchant',
-    'explorer',
+    'friendly',
+    'aggressive',
+    'neutral',
+    'greedy',
+    'cautious',
   ] as const,
-} as const
+}
+
+export function createNPCEngineConfig(
+  overrides: Partial<NPC_CONFIG> = {}
+): NPC_CONFIG {
+  return {
+    ...defaultConfig,
+    ...overrides,
+  }
+}
 
 // ===== NPC PERSONALITY DEFINITIONS =====
 export const NPC_PERSONALITIES = {
@@ -383,20 +403,6 @@ export type ItemCategory = keyof typeof ITEM_CONFIG.CATEGORY_BASE_PRICES
 export type Rarity = keyof typeof ITEM_CONFIG.RARITY_WEIGHTS
 
 // ===== ENVIRONMENT-SPECIFIC CONFIGURATIONS =====
-export function createNPCEngineConfig(
-  overrides: Partial<typeof NPC_CONFIG> = {}
-) {
-  return {
-    ...NPC_CONFIG,
-    ...overrides,
-    // Merge nested objects properly
-    CHAT_CONFIG: {
-      ...NPC_CONFIG.CHAT_CONFIG,
-      ...(overrides.CHAT_CONFIG || {}),
-    },
-  }
-}
-
 export function createFrontendConfig() {
   return {
     GAME_MECHANICS,
@@ -419,7 +425,7 @@ export function validatePersonalityPreferences(
 export function calculateActivityDelay(
   personality: PersonalityType,
   populationCount: number,
-  baseRate: number = NPC_CONFIG.BASE_ACTIVITY_INTERVAL
+  baseRate: number = defaultConfig.BASE_ACTIVITY_INTERVAL
 ): number {
   const personalityConfig = NPC_PERSONALITIES[personality]
   const populationScaling = baseRate * populationCount
@@ -427,7 +433,7 @@ export function calculateActivityDelay(
     populationScaling * personalityConfig.activityDelayMultiplier
 
   // Add randomness
-  const variance = NPC_CONFIG.ACTIVITY_VARIANCE
+  const variance = defaultConfig.ACTIVITY_VARIANCE
   const randomMultiplier = 1 + (Math.random() - 0.5) * variance
 
   return Math.max(30000, personalityAdjustment * randomMultiplier) // Minimum 30 seconds
@@ -458,7 +464,7 @@ export function calculateEquipmentSlots(characterLevel: number): number {
 // ===== EXPORT DEFAULT CONFIG FOR EASY IMPORTING =====
 export default {
   GAME_MECHANICS,
-  NPC_CONFIG,
+  NPC_CONFIG: defaultConfig,
   NPC_PERSONALITIES,
   EXCHANGE_CONFIG,
   ITEM_CONFIG,

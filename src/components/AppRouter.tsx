@@ -11,8 +11,7 @@ import { WalletAdapterNetwork } from '@solana/wallet-adapter-base'
 import { GameScreen } from '@/components/screens/GameScreen'
 import { CharacterCreationScreen } from '@/components/screens/CharacterCreationScreen'
 import { ReservationScreen } from '@/components/screens/ReservationScreen'
-import { WalletConnectButton } from '@/components/wallet-connect-button'
-import { ModeToggle } from './mode-toggle'
+import { TopControls } from './TopControls'
 
 export function AppRouter() {
   const { state, actions } = useGame()
@@ -23,14 +22,16 @@ export function AppRouter() {
   console.log('Wallet PublicKey:', publicKey?.toBase58())
 
   const [showReservation, setShowReservation] = React.useState(false)
+  const [showReservationSuccess, setShowReservationSuccess] = React.useState(false) // NEW: Track success state
+
 
   // Auto-switch to devnet by default (for game)
   React.useEffect(() => {
-    if (connected && !showReservation && !isDevnet) {
+    if (connected && !showReservation && !showReservationSuccess && !isDevnet) {
       console.log('🔄 Auto-switching to devnet for game access')
       setNetwork(WalletAdapterNetwork.Devnet)
     }
-  }, [connected, showReservation, isDevnet, setNetwork])
+  }, [connected, showReservation, showReservationSuccess, isDevnet, setNetwork])
 
   // Auto-switch to mainnet when showing reservations
   React.useEffect(() => {
@@ -45,17 +46,29 @@ export function AppRouter() {
     return (
       <ReservationScreen
         onReservationComplete={() => {
-          console.log('✅ Reservation complete, switching back to devnet')
+          console.log('✅ Reservation complete, showing success screen')
           setShowReservation(false)
-          setNetwork(WalletAdapterNetwork.Devnet)
+          setShowReservationSuccess(true) // Show success instead of switching immediately
         }}
         onBackToNetworkSelect={() => {
           console.log('🔙 Back from reservations, switching to devnet')
           setShowReservation(false)
+          setShowReservationSuccess(false)
           setNetwork(WalletAdapterNetwork.Devnet)
         }}
       />
     )
+  }
+
+  // NEW: Show reservation success screen
+  if (showReservationSuccess) {
+    return <ReservationSuccessScreen
+      onContinue={() => {
+        console.log('🎮 Continuing to game after reservation')
+        setShowReservationSuccess(false)
+        setNetwork(WalletAdapterNetwork.Devnet)
+      }}
+    />
   }
 
   // Normal game flow (always on devnet)
@@ -90,14 +103,85 @@ export function AppRouter() {
   }
 }
 
-// Simplified WalletConnectScreen - no network selection
-function WalletConnectScreen() {
-  const { isMainnet, isDevnet } = useNetwork()
-
+// NEW: Dedicated success screen component
+function ReservationSuccessScreen({ onContinue }: { onContinue: () => void }) {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <ModeToggle />
-      <div className="w-full max-w-md mx-auto bg-card border rounded-lg p-6 font-mono">
+      <TopControls />
+      <div className="w-full max-w-md mx-auto bg-background border border-success rounded-lg p-6 font-mono">
+        {/* Terminal Header */}
+        <div className="flex items-center justify-between mb-4 border-b border-success pb-3">
+          <div className="flex items-center gap-2">
+            <Database className="w-4 h-4 text-success" />
+            <span className="text-success font-bold text-sm">RESERVATION_CONFIRMED v2.089</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Activity className="w-3 h-3 text-success" />
+            <span className="text-success text-xs">VERIFIED</span>
+          </div>
+        </div>
+
+        {/* Success Message */}
+        <div className="border border-success rounded p-4 mb-4">
+          <div className="text-center">
+            <div className="text-success font-bold mb-1">RESERVATION_SECURED</div>
+            <div className="text-success text-xs">
+              PRIORITY_ACCESS_GRANTED
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div className="text-center">
+            <p className="text-sm text-muted-foreground mb-4">
+              🎉 Welcome to the EARTH 2089 whitelist! Your spot is secured for the NFT launch.
+            </p>
+          </div>
+
+          <div className="bg-muted/20 border border-primary/10 rounded p-3">
+            <div className="text-xs text-muted-foreground font-mono">
+              <div className="text-success text-xs font-bold mb-2">[NEXT_STEPS]</div>
+              <div className="space-y-1">
+                <div>• Your mainnet reservation is confirmed</div>
+                <div>• NFT launch notifications via X (Twitter)</div>
+                <div>• Try the game prototype on devnet below</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Button
+              onClick={onContinue}
+              className="w-full font-mono text-sm h-10"
+            >
+              <Zap className="w-4 h-4 mr-2" />
+              CONTINUE_TO_GAME_TESTING
+            </Button>
+
+            <p className="text-xs text-center text-muted-foreground">
+              Switching to devnet for free game testing...
+            </p>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="text-xs text-muted-foreground/60 font-mono text-center border-t border-success pt-3 mt-4">
+          RESERVATION_SYSTEM_v2089 | WHITELIST_CONFIRMED
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Simplified WalletConnectScreen - no network selection
+function WalletConnectScreen() {
+
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center p-4 relative">
+
+      <TopControls />
+
+      <div className="w-full max-w-md mx-auto bg-background border rounded-lg p-6 font-mono">
         {/* Terminal Header */}
         <div className="flex items-center justify-between mb-4 border-b pb-3 border-border">
           <div className="flex items-center gap-2">
@@ -105,55 +189,24 @@ function WalletConnectScreen() {
             <span className="text-primary font-bold text-sm">EARTH_2029 v2.089</span>
           </div>
           <div className="flex items-center gap-2">
-            <Activity className="w-3 h-3 animate-pulse text-primary" />
-            <span className="text-primary text-xs">READY</span>
+            <Activity className="w-3 h-3 text-success animate-pulse" />
+            <span className="text-success text-xs">READY</span>
           </div>
         </div>
 
         {/* Welcome Message */}
-        <div className="bg-muted border rounded p-4 mb-4">
+        <div className="bg-background border rounded p-4 mb-4">
           <div className="text-center">
             <div className="text-primary font-bold text-lg mb-2">WELCOME_TO_EARTH</div>
-            <div className="text-muted-foreground text-sm">
-              Connect your wallet to begin your survival journey
+            <div className="text-muted-foreground text-xs">
+              Connect your wallet. Use Mainnet for the NFT reservation system and use Devnet for game testing. Thanks!
             </div>
           </div>
-        </div>
-
-        {/* What you can do */}
-        <div className="mb-4 space-y-3">
-          <div className="bg-muted/20 border border-primary/10 rounded p-3">
-            <div className="text-xs text-muted-foreground font-mono">
-              <div className="text-primary text-xs font-bold mb-2">[AVAILABLE_FEATURES]</div>
-              <div className="space-y-1">
-                <div>🎮 Play the survival game (free)</div>
-                <div>🎨 Create your survivor character</div>
-                <div>💰 Reserve NFT whitelist spots</div>
-                <div>⚡ Mine resources and explore</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Wallet Connection */}
-        <div className="space-y-4">
-          <div className="text-center">
-            <WalletConnectButton className="w-full" />
-          </div>
-
-          {/* Current network indicator (for debugging) */}
-          {(isMainnet || isDevnet) && (
-            <div className="text-center">
-              <div className="text-xs text-muted-foreground">
-                Network: {isMainnet ? '🟢 Payment Network' : '🟡 Game Network'}
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Footer */}
         <div className="text-xs text-muted-foreground font-mono text-center border-t pt-3 mt-4 border-border">
-          EARTH_v2089 | POST_APOCALYPTIC_SURVIVAL
+          EARTH_v2089 | POST_APOCALYPTIC_AND_CHILL
         </div>
       </div>
     </div>
@@ -263,7 +316,7 @@ function CheckingCharacterScreen() {
   }
 
   const getStepColor = (stepNum: number) => {
-    if (completedSteps[stepNum - 1]) return 'text-green-400'
+    if (completedSteps[stepNum - 1]) return 'text-success'
     if (stepNum === currentStep) return 'text-primary'
     return 'text-muted-foreground'
   }
@@ -285,11 +338,11 @@ function CheckingCharacterScreen() {
           </div>
           <div className="flex items-center gap-2">
             {currentStep >= 5 ? (
-              <Zap className="w-3 h-3 text-green-400" />
+              <Zap className="w-3 h-3 text-success" />
             ) : (
               <Loader2 className="w-3 h-3 animate-spin text-primary" />
             )}
-            <span className={`text-xs ${currentStep >= 5 ? 'text-green-400' : 'text-primary'}`}>
+            <span className={`text-xs ${currentStep >= 5 ? 'text-success' : 'text-primary'}`}>
               {currentStep >= 5 ? 'COMPLETE' : 'SCANNING'}
             </span>
           </div>
@@ -299,7 +352,7 @@ function CheckingCharacterScreen() {
         <div className="text-center space-y-4">
           <div className="w-16 h-16 mx-auto mb-4 bg-muted/30 rounded-full flex items-center justify-center border border-primary/20">
             {currentStep >= 5 ? (
-              <Zap className="w-8 h-8 text-green-400" />
+              <Zap className="w-8 h-8 text-success" />
             ) : (
               <Loader2 className="w-8 h-8 animate-spin text-primary" />
             )}
@@ -321,7 +374,7 @@ function CheckingCharacterScreen() {
             <div className="w-full bg-muted/30 rounded-full h-3 border border-primary/20 overflow-hidden">
               <div
                 className={`h-3 transition-all duration-200 ease-out relative ${currentStep >= 5
-                  ? 'bg-gradient-to-r from-green-400 to-green-500'
+                  ? 'bg-gradient-to-r from-success to-success'
                   : 'bg-gradient-to-r from-primary via-primary/90 to-primary/80'
                   }`}
                 style={{ width: `${scanProgress}%` }}
@@ -351,7 +404,7 @@ function CheckingCharacterScreen() {
                 <span>{getStepStatus(4)}</span>
               </div>
               {currentStep >= 5 && (
-                <div className="flex justify-between text-green-400 pt-1 border-t border-primary/20">
+                <div className="flex justify-between text-success pt-1 border-t border-primary/20">
                   <span>✓ SCAN_COMPLETE:</span>
                   <span>SUCCESS</span>
                 </div>
@@ -396,10 +449,9 @@ function CharacterRequiredScreen({ onShowReservation }: { onShowReservation?: ()
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-
-      <ModeToggle />
-      <WalletConnectButton />
+    <div className="min-h-screen bg-background flex items-center justify-center p-4 mt-3 relative">
+      {/* Add TopControls here */}
+      <TopControls />
 
       <div className="w-full max-w-md mx-auto bg-background border border-primary/30 rounded-lg p-6 font-mono">
 
@@ -414,6 +466,7 @@ function CharacterRequiredScreen({ onShowReservation }: { onShowReservation?: ()
           </div>
         </div>
 
+        {/* Rest of your existing content remains the same */}
         {/* No Character Message */}
         <div className="border border-warning rounded p-4 mb-4">
           <div className="text-center">
@@ -421,7 +474,7 @@ function CharacterRequiredScreen({ onShowReservation }: { onShowReservation?: ()
             <div className="text-warning text-xl mb-2"><TriangleAlert /></div>
             <div className="text-warning font-bold mb-1">NO_PROFILE_FOUND</div>
             <div className="text-warning text-xs">
-              REGISTRATION_REQUIRED_FOR_ACCESS
+              PLAYER_PROFILE_REQUIRED_FOR_TESTING
             </div>
           </div>
         </div>
@@ -430,18 +483,33 @@ function CharacterRequiredScreen({ onShowReservation }: { onShowReservation?: ()
         <div className="space-y-4">
           <div className="text-center">
             <p className="text-sm text-muted-foreground mb-4">
-              Create a new profile to begin your journey in the post-apocalyptic world.
+              Create a new profile to explore the devlopment preview. Reserve a Whitelist spot below. Thanks!
             </p>
           </div>
+
+          <Button
+            onClick={() => {
+              onShowReservation?.()
+            }}
+            variant="outline"
+            className="w-full border-success text-success hover:bg-success font-mono text-sm h-10"
+          >
+            <Database className="w-4 h-4 mr-2" />
+            RESERVE_NFT_WHITELIST_SPOT
+          </Button>
+
+          <p className="text-xs text-center text-muted-foreground">
+            Reserve your spot for the official NFT launch later this year!.
+          </p>
 
           {/* System Requirements */}
           <div className="bg-muted/20 border border-primary/10 rounded p-3 mb-4">
             <div className="text-xs text-muted-foreground font-mono">
-              <div className="text-primary text-xs font-bold mb-2">[REGISTRATION_OPTIONS]</div>
+              <div className="text-primary text-xs font-bold mb-2">[TEST_GAMING_INFORMATION]</div>
               <div className="space-y-1">
                 <div className="flex justify-between">
-                  <span>GAME_ACCESS:</span>
-                  <span className="text-green-500">✓ FREE</span>
+                  <span>DEVELOPMENT_PREVIEW_GAME_ACCESS:</span>
+                  <span className="text-success">✓ FREE</span>
                 </div>
                 <div className="flex justify-between">
                   <span>CHARACTER_COST:</span>
@@ -449,7 +517,7 @@ function CharacterRequiredScreen({ onShowReservation }: { onShowReservation?: ()
                 </div>
                 <div className="flex justify-between">
                   <span>NFT_STORAGE:</span>
-                  <span className="text-primary">BLOCKCHAIN</span>
+                  <span className="text-primary">BLOCKCHAIN [devnet]</span>
                 </div>
               </div>
             </div>
@@ -458,32 +526,19 @@ function CharacterRequiredScreen({ onShowReservation }: { onShowReservation?: ()
           <div className="space-y-3">
             <Button
               onClick={() => setShowCreation(true)}
-              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-mono text-sm h-10"
+              variant="outline"
+              className="w-full font-mono text-sm h-10 outline-2"
             >
               <User className="w-4 h-4 mr-2" />
-              CREATE_PROFILE
-            </Button>
-
-            <Button
-              onClick={() => {
-                onShowReservation?.()
-              }}
-              variant="outline"
-              className="w-full border-warning text-warning hover:bg-warning/10 font-mono text-sm h-10"
-            >
-              <Database className="w-4 h-4 mr-2" />
-              RESERVE_NFT_WHITELIST_SPOT
+              CREATE_PLAYER_PROFILE
             </Button>
           </div>
 
-          <p className="text-xs text-center text-muted-foreground">
-            Reserve your spot for the official NFT launch with real SOL
-          </p>
         </div>
 
         {/* Footer */}
         <div className="text-xs text-muted-foreground/60 font-mono text-center border-t border-primary/20 pt-3 mt-4">
-          REGISTRY_v2089 | CHARACTER_CREATION_PROTOCOL
+          REGISTRY_v2089 | EARTH_PROFILE_PROTOCOL
         </div>
       </div>
     </div>
@@ -600,7 +655,7 @@ function EnteringGameScreen() {
   }
 
   const getStepColor = (stepNum: number) => {
-    if (completedSteps[stepNum - 1]) return 'text-green-400'
+    if (completedSteps[stepNum - 1]) return 'text-success'
     if (stepNum === currentStep) return 'text-primary'
     return 'text-muted-foreground'
   }
@@ -622,11 +677,11 @@ function EnteringGameScreen() {
           </div>
           <div className="flex items-center gap-2">
             {currentStep > 5 ? (
-              <Zap className="w-3 h-3 text-green-400" />
+              <Zap className="w-3 h-3 text-success" />
             ) : (
               <Loader2 className="w-3 h-3 animate-spin text-primary" />
             )}
-            <span className={`text-xs ${currentStep > 5 ? 'text-green-400' : 'text-primary'}`}>
+            <span className={`text-xs ${currentStep > 5 ? 'text-success' : 'text-primary'}`}>
               {currentStep > 5 ? 'COMPLETE' : 'LOADING'}
             </span>
           </div>

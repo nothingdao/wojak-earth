@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { LineChart, Line, XAxis, YAxis, ReferenceLine } from 'recharts';
 import { TrendingUp, TrendingDown, Zap, Database, Activity, ArrowUpDown, AlertTriangle, X, Search, BarChart3, Settings, Info } from 'lucide-react';
-import { createClient } from '@supabase/supabase-js';
+import supabase from '../../utils/supabase';
 
 import {
   type ChartConfig,
@@ -21,10 +21,6 @@ const chartConfig = {
     color: "hsl(var(--chart-2))",
   },
 } satisfies ChartConfig
-
-// Initialize Supabase client for realtime
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabase = createClient(supabaseUrl, import.meta.env.VITE_SUPABASE_ANON_KEY)
 
 interface Transaction {
   created_at: string;
@@ -223,8 +219,8 @@ const RustMarket: React.FC = () => {
       .sort((a, b) => a.block - b.block);
   };
 
-  const formatRate = (rate: number) => rate.toFixed(2);
-  const formatVolume = (vol: number) => vol.toFixed(3);
+  const formatRate = (rate: number | null) => (rate ?? 0).toFixed(2);
+  const formatVolume = (vol: number | null) => (vol ?? 0).toFixed(3);
   const formatChange = (change: number) => `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`;
 
   // Swap Modal Component
@@ -710,10 +706,10 @@ const RustMarket: React.FC = () => {
                       </div>
                       <div className="flex items-center gap-1 text-xs">
                         <span className="text-primary">{tx.from_units}</span>
-                        <span className="text-muted-foreground">{tx.from_vault.split('_')[1] || tx.from_vault}</span>
+                        <span className="text-muted-foreground">{tx.from_vault?.split('_')[1] || tx.from_vault}</span>
                         <span className="text-muted-foreground">→</span>
                         <span className="text-primary">{formatVolume(tx.to_units)}</span>
-                        <span className="text-muted-foreground">{tx.to_vault.split('_')[1] || tx.to_vault}</span>
+                        <span className="text-muted-foreground">{tx.to_vault?.split('_')[1] || tx.to_vault}</span>
                         <span className="text-muted-foreground ml-2">@{formatRate(tx.exchange_flux)}</span>
                       </div>
                     </div>
@@ -983,7 +979,7 @@ const RustMarket: React.FC = () => {
                   content={
                     <ChartTooltipContent
                       labelFormatter={(value) => `Block ${value}`}
-                      formatter={(value, name) => [
+                      formatter={(value) => [
                         `${parseFloat(value as string).toFixed(2)}`,
                         "SHARD/SOL"
                       ]}
@@ -1022,10 +1018,10 @@ const RustMarket: React.FC = () => {
           {recentTransactions.length > 0 ? (
             recentTransactions.map((tx, idx) => {
               const isBuy = tx.from_vault === 'SCRAP_SOL';
-              const txKey = String(tx.txn_shard || tx.wasteland_block);
+              const txKey = String(tx.txn_shard || tx.wasteland_block || `tx-${idx}`);
               return (
                 <div
-                  key={txKey || idx}
+                  key={txKey}
                   className={`py-2 border-b border-border/30 last:border-b-0 cursor-pointer hover:bg-muted/20 transition-all duration-300 ${newTransactionIds.has(txKey)
                     ? 'animate-pulse bg-primary/10 border-primary/30'
                     : ''
@@ -1044,10 +1040,10 @@ const RustMarket: React.FC = () => {
                   </div>
                   <div className="flex items-center gap-1 text-xs">
                     <span className="text-primary">{tx.from_units}</span>
-                    <span className="text-muted-foreground">{tx.from_vault.split('_')[1] || tx.from_vault}</span>
+                    <span className="text-muted-foreground">{tx.from_vault?.split('_')[1] || tx.from_vault}</span>
                     <span className="text-muted-foreground">→</span>
                     <span className="text-primary">{formatVolume(tx.to_units)}</span>
-                    <span className="text-muted-foreground">{tx.to_vault.split('_')[1] || tx.to_vault}</span>
+                    <span className="text-muted-foreground">{tx.to_vault?.split('_')[1] || tx.to_vault}</span>
                     <span className="text-muted-foreground ml-2">@{formatRate(tx.exchange_flux)}</span>
                     <span className="text-muted-foreground/50 ml-auto text-xs">CLICK_TO_EXPLORE</span>
                   </div>

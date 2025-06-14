@@ -4,7 +4,10 @@ import { Connection, PublicKey, Transaction, TransactionInstruction } from '@sol
 import {
   getAssociatedTokenAddress,
   TOKEN_PROGRAM_ID,
-  getAccount
+  getAccount,
+  createBurnInstruction,           // For burning the token
+  createCloseAccountInstruction    // For closing the account and reclaiming SOL
+
 } from '@solana/spl-token'
 
 import React, { useState } from 'react'
@@ -16,7 +19,7 @@ import {
   X,
 } from 'lucide-react'
 import { useWallet } from '@solana/wallet-adapter-react'
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/use-toast'
 import type { Character } from '@/types'
 import { useNetwork } from '@/contexts/NetworkContext'
 
@@ -31,14 +34,10 @@ export const BurnCharacter: React.FC<BurnCharacterProps> = ({ character, onChara
   const [showConfirm, setShowConfirm] = useState(false)
   const { getRpcUrl } = useNetwork()
 
+  // Debug to find where the token actually exists in your wallet
   const nukeCharacter = async () => {
-    if (!character || !wallet.publicKey || !wallet.sendTransaction) {
+    if (!character || !wallet.publicKey) {
       toast.error('Wallet not connected properly')
-      return
-    }
-
-    if (!character.nft_address) {
-      toast.error('Character has no NFT to burn')
       return
     }
 
@@ -46,117 +45,149 @@ export const BurnCharacter: React.FC<BurnCharacterProps> = ({ character, onChara
     setShowConfirm(false)
 
     try {
-      // 1. Set up Solana connection
-      const connection = new Connection(getRpcUrl(), "confirmed")
+      console.log('🔍 Searching ALL token accounts in your wallet...')
+      console.log('Looking for mint:', character.nft_address)
+      console.log('Your wallet:', wallet.publicKey.toString())
 
+      const connection = new Connection(getRpcUrl(), "confirmed")
       const mintAddress = new PublicKey(character.nft_address)
 
-      // Get the associated token account
-      const tokenAccount = await getAssociatedTokenAddress(
-        mintAddress,
-        wallet.publicKey
-      )
+      // Get ALL token accounts owned by your wallet
+      const allTokenAccounts = await connection.getTokenAccountsByOwner(wallet.publicKey, {
+        programId: new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA')
+      })
 
-      console.log('Burning NFT:', character.nft_address)
-      console.log('Token account:', tokenAccount.toBase58())
+      console.log(`📋 Found ${allTokenAccounts.value.length} total token accounts in your wallet`)
 
-      // Check if token account exists and has the token
-      try {
-        const tokenAccountInfo = await getAccount(connection, tokenAccount)
+      // Look for our specific token
+      let foundTokenAccount = null
+      let tokenBalance = 0n
 
-        if (tokenAccountInfo.amount === 0n) {
-          throw new Error('No tokens in account to burn')
+      for (let i = 0; i < allTokenAccounts.value.length; i++) {
+        const accountInfo = allTokenAccounts.value[i]
+        try {
+          const tokenData = await getAccount(connection, accountInfo.pubkey)
+
+          console.log(`Token Account ${i + 1}:`, {
+            address: accountInfo.pubkey.toBase58(),
+            mint: tokenData.mint.toBase58(),
+            balance: tokenData.amount.toString(),
+            isOurToken: tokenData.mint.toBase58() === character.nft_address
+          })
+
+          // Check if this is our token
+          if (tokenData.mint.toBase58() === character.nft_address) {
+            foundTokenAccount = accountInfo.pubkey
+            tokenBalance = tokenData.amount
+            console.log('✅ FOUND OUR TOKEN!', {
+              account: accountInfo.pubkey.toBase58(),
+              balance: tokenBalance.toString()
+            })
+          }
+        } catch (error) {
+          console.log(`❌ Error reading token account ${i + 1}:`, error)
         }
-
-        console.log('Token account balance:', tokenAccountInfo.amount.toString())
-      } catch (error) {
-        console.error('Token account error:', error)
-        throw new Error('Token account not found or invalid')
       }
 
-      // Create burn instruction manually (due to library version issues)
+      if (!foundTokenAccount) {
+        // Token not found in wallet - maybe check if it was never transferred?
+        console.log('❌ Token not found in your wallet!')
+
+        // Let's check if the mint exists at all
+        const mintInfo = await connection.getAccountInfo(mintAddress)
+        if (!mintInfo) {
+          throw new Error('Token mint does not exist on Solana')
+        }
+
+        // Check ALL token accounts for this mint (regardless of owner)
+        console.log('🔍 Checking ALL token accounts for this mint...')
+        const allAccountsForMint = await connection.getTokenAccountsByOwner(
+          new PublicKey('11111111111111111111111111111111'), // System program (will fail)
+          { mint: mintAddress }
+        ).catch(async () => {
+          // Alternative approach - search programmatically
+          const accounts = await connection.getProgramAccounts(
+            new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'),
+            {
+              filters: [
+                { dataSize: 165 },
+                { memcmp: { offset: 0, bytes: mintAddress.toBase58() } }
+              ]
+            }
+          )
+          return { value: accounts.map(acc => ({ pubkey: acc.pubkey, account: acc.account })) }
+        })
+
+        if (allAccountsForMint.value.length > 0) {
+          console.log(`Found ${allAccountsForMint.value.length} accounts holding this token:`)
+          for (const acc of allAccountsForMint.value) {
+            const tokenData = await getAccount(connection, acc.pubkey)
+            console.log('- Account:', acc.pubkey.toBase58(), 'Owner:', tokenData.owner.toBase58(), 'Balance:', tokenData.amount.toString())
+          }
+          throw new Error('Token exists but not in your wallet. It may still be owned by the minting server.')
+        } else {
+          throw new Error('Token does not exist anywhere on Solana')
+        }
+      }
+
+      if (tokenBalance === 0n) {
+        throw new Error('Found token account but balance is zero')
+      }
+
+      // Found the token! Now burn it
+      console.log('🔥 Burning token from correct account...')
+      console.log('🔍 Token balance debug:', {
+        tokenBalance,
+        tokenBalanceType: typeof tokenBalance,
+        tokenBalanceString: tokenBalance.toString(),
+        isBigInt: typeof tokenBalance === 'bigint'
+      })
+
+      /// Convert the bigint to a regular number for the instruction
+      const tokenAmount = Number(tokenBalance)
+      console.log('🔍 Converting balance:', {
+        originalBalance: tokenBalance.toString(),
+        convertedAmount: tokenAmount,
+        willBurn: tokenAmount
+      })
+
       const burnInstruction = new TransactionInstruction({
         keys: [
-          { pubkey: tokenAccount, isSigner: false, isWritable: true },
+          { pubkey: foundTokenAccount, isSigner: false, isWritable: true },
           { pubkey: mintAddress, isSigner: false, isWritable: true },
           { pubkey: wallet.publicKey, isSigner: true, isWritable: false },
         ],
         programId: TOKEN_PROGRAM_ID,
         data: Buffer.from([
           8, // Burn instruction discriminator
-          1, 0, 0, 0, 0, 0, 0, 0, // Amount as little-endian u64 (1)
-        ]),
+          1, 0, 0, 0, 0, 0, 0, 0  // Amount = 1 as little-endian u64
+        ])
       })
 
-      // Create transaction
+      const closeInstruction = createCloseAccountInstruction(
+        foundTokenAccount,
+        wallet.publicKey,
+        wallet.publicKey
+      )
+
       const transaction = new Transaction()
       transaction.add(burnInstruction)
+      transaction.add(closeInstruction)
 
-      // Get recent blockhash and set fee payer
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed')
-      transaction.recentBlockhash = blockhash
-      transaction.feePayer = wallet.publicKey
+      console.log('🚀 Sending burn transaction...')
+      const signature = await wallet.sendTransaction(transaction, connection)
 
-      console.log('Sending burn transaction...')
-      console.log('Wallet name:', wallet.wallet?.adapter?.name || 'Unknown')
+      await connection.confirmTransaction(signature, 'confirmed')
+      console.log('✅ Token burned successfully!')
 
-      // Send transaction with retry logic for wallet compatibility
-      let signature: string
-      try {
-        signature = await wallet.sendTransaction(transaction, connection, {
-          skipPreflight: false,
-          preflightCommitment: 'confirmed'
-        })
-      } catch (firstError) {
-        console.warn('First attempt failed, retrying with different settings:', firstError)
+      toast.success(`🔥 Token burned: ${signature.slice(0, 8)}...`)
 
-        // For Magic Eden and other strict wallets, try signing first then sending
-        const walletName = wallet.wallet?.adapter?.name?.toLowerCase() || ''
-        if (walletName.includes('magic') || walletName.includes('eden')) {
-          try {
-            console.log('Trying Magic Eden compatible approach...')
-            if (!wallet.signTransaction) {
-              throw new Error('Wallet does not support signing transactions')
-            }
-            const signedTransaction = await wallet.signTransaction(transaction)
-            signature = await connection.sendRawTransaction(signedTransaction.serialize(), {
-              skipPreflight: true,
-              preflightCommitment: 'processed'
-            })
-          } catch (magicEdenError) {
-            console.error('Magic Eden approach also failed:', magicEdenError)
-            throw magicEdenError
-          }
-        } else {
-          // Retry with less strict settings for other wallets
-          signature = await wallet.sendTransaction(transaction, connection, {
-            skipPreflight: true,
-            preflightCommitment: 'processed'
-          })
-        }
-      }
-
-      console.log('Transaction sent:', signature)
-
-      // Wait for confirmation with timeout
-      const confirmation = await connection.confirmTransaction({
-        signature,
-        blockhash,
-        lastValidBlockHeight
-      }, 'confirmed')
-
-      if (confirmation.value.err) {
-        throw new Error(`Transaction failed: ${JSON.stringify(confirmation.value.err)}`)
-      }
-
-      console.log('NFT burned successfully:', signature)
-
-      // 2. Now tell the backend to clean up the database
+      // Database cleanup
+      // Replace your database cleanup section with this debug version:
+      console.log('🗑️ Cleaning up database...')
       const cleanupResponse = await fetch('/.netlify/functions/nuke-character', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           character_id: character.id,
           wallet_address: wallet.publicKey.toString(),
@@ -164,42 +195,40 @@ export const BurnCharacter: React.FC<BurnCharacterProps> = ({ character, onChara
         })
       })
 
-      if (!cleanupResponse.ok) {
-        throw new Error(`HTTP error! status: ${cleanupResponse.status}`)
+      console.log('📡 Backend response status:', cleanupResponse.status)
+      console.log('📡 Backend response headers:', cleanupResponse.headers)
+
+      // Get the raw response text first
+      const responseText = await cleanupResponse.text()
+      console.log('📡 Raw backend response:', responseText)
+
+      // Try to parse as JSON
+      let result
+      try {
+        result = JSON.parse(responseText)
+        console.log('✅ Parsed JSON result:', result)
+      } catch (parseError) {
+        console.error('❌ Failed to parse JSON:', parseError)
+        console.log('📄 Response was not JSON, probably HTML error page')
+        throw new Error(`Backend returned non-JSON response: ${responseText.slice(0, 200)}...`)
       }
 
-      const result = await cleanupResponse.json()
-
       if (result.success) {
-        toast.success(`${character.name} has been permanently destroyed`)
-        // Call the callback to refresh character data
-        if (onCharacterCreated) {
-          onCharacterCreated()
-        } else {
+        toast.success(`🔥 ${character.name} completely destroyed!`)
+
+        // Force app refresh to re-check character state
+        setTimeout(() => {
           window.location.reload()
-        }
+        }, 2000) // Give time for toast to show
+
+        if (onCharacterCreated) onCharacterCreated()
       } else {
-        throw new Error(result.error || 'Backend cleanup failed')
+        throw new Error(result.error || 'Database cleanup failed')
       }
 
     } catch (error: unknown) {
-      console.error('Nuke failed:', error)
-      let errorMessage = 'Unknown error'
-
-      if (error instanceof Error) {
-        errorMessage = error.message
-
-        // Handle specific wallet errors
-        if (error.message.includes('User rejected')) {
-          errorMessage = 'Transaction was cancelled by user'
-        } else if (error.message.includes('insufficient')) {
-          errorMessage = 'Insufficient funds for transaction fee'
-        } else if (error.message.includes('blockhash')) {
-          errorMessage = 'Transaction expired, please try again'
-        }
-      }
-
-      toast.error(`Failed to burn NFT: ${errorMessage}`)
+      console.error('❌ Token search failed:', error)
+      toast.error(`Failed to find/burn token: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setNuking(false)
     }

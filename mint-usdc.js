@@ -52,7 +52,7 @@ try {
 async function createAndMintUSDC() {
   try {
     console.log('Creating your own USDC-like token for testing...');
-    
+
     // Create a new mint (this will be your test USDC)
     const mint = await createMint(
       connection,
@@ -61,9 +61,9 @@ async function createAndMintUSDC() {
       null, // freeze authority
       6 // decimals (USDC has 6 decimals)
     );
-    
+
     console.log(`✅ Created mint: ${mint.toString()}`);
-    
+
     // Create token account for your wallet
     const tokenAccount = await getOrCreateAssociatedTokenAccount(
       connection,
@@ -71,9 +71,9 @@ async function createAndMintUSDC() {
       mint,
       senderKeypair.publicKey
     );
-    
+
     console.log(`✅ Created token account: ${tokenAccount.address.toString()}`);
-    
+
     // Mint 1000 tokens to your account
     const amount = 1000 * Math.pow(10, 6); // 1000 tokens with 6 decimals
     await mintTo(
@@ -84,12 +84,12 @@ async function createAndMintUSDC() {
       senderKeypair.publicKey,
       amount
     );
-    
+
     console.log(`✅ Minted 1000 test USDC tokens to your wallet`);
     console.log(`\n🎉 Success! You now have test USDC tokens.`);
     console.log(`\nUpdate your airdrop.js file with this mint address:`);
     console.log(`const TOKEN_MINT = '${mint.toString()}';`);
-    
+
   } catch (error) {
     console.error('Error:', error.message);
   }

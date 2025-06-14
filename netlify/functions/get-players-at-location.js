@@ -1,106 +1,110 @@
-// netlify/functions/get-players-at-location.js
-import { createClient } from '@supabase/supabase-js'
-
-const supabaseUrl = process.env.VITE_SUPABASE_URL
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY // Use service key for server-side
-
-const supabase = createClient(supabaseUrl, supabaseServiceKey)
+// netlify/functions/get-players-at-location.js - FIXED
+import supabaseAdmin from '../../src/utils/supabase-admin'
 
 export const handler = async (event, context) => {
-  // Set CORS headers
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Content-Type': 'application/json'
+    'Access-Control-Allow-Methods': 'GET, OPTIONS'
   }
 
-  // Handle OPTIONS request for CORS
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers, body: '' }
   }
 
+  if (event.httpMethod !== 'GET') {
+    return {
+      statusCode: 405,
+      headers,
+      body: JSON.stringify({ error: 'Method not allowed' })
+    }
+  }
+
   try {
-    // Get location_id from query parameters
-    const location_id = event.queryStringParameters?.location_id
+    const { location_id } = event.queryStringParameters || {}
 
     if (!location_id) {
       return {
         statusCode: 400,
         headers,
         body: JSON.stringify({
-          error: 'Missing location_id parameter'
+          error: 'Missing required parameter',
+          message: 'Location ID is required'
         })
       }
     }
 
-    console.log('🔍 Fetching players for location_id:', location_id)
-
-    // Query characters at the specified location
-    const { data: characters, error } = await supabase
+    // Get all active characters at the specified location
+    const { data: characters, error: charactersError } = await supabaseAdmin
       .from('characters')
       .select(`
         id,
         name,
-        character_type,
         level,
         experience,
-        current_image_url,
-        current_location_id,
         wallet_address,
-        energy,
-        health
+        location:locations(
+          *,
+          parent:locations(*),
+          resource_nodes:location_resources(
+            id,
+            item:items(*)
+          )
+        ),
+        equipped_items:character_inventory!character_id(
+          id,
+          item:items(*),
+          quantity,
+          is_equipped
+        )
       `)
       .eq('current_location_id', location_id)
+      .eq('status', 'ACTIVE')
+      .order('name')
 
-    if (error) {
-      console.error('❌ Supabase error:', error)
-      return {
-        statusCode: 500,
-        headers,
-        body: JSON.stringify({
-          error: 'Failed to fetch players from database',
-          details: error.message
-        })
-      }
-    }
+    if (charactersError) throw charactersError
 
-    // Transform the data to match your Player type
-    const players = characters?.map(char => ({
-      id: char.id,
-      name: char.name,
-      character_type: char.character_type,
-      level: char.level,
-      experience: char.experience,
-      image_url: char.current_image_url,
-      current_location_id: char.current_location_id,
-      wallet_address: char.wallet_address,
-      energy: char.energy,
-      health: char.health,
-    })) || []
-
-    console.log(`✅ Found ${players.length} players at location ${location_id}`)
+    // Transform the data for the frontend
+    const transformedCharacters = characters.map(character => ({
+      id: character.id,
+      name: character.name,
+      level: character.level,
+      experience: character.experience,
+      wallet_address: character.wallet_address,
+      location: character.location ? {
+        ...character.location,
+        parent: character.location.parent || null,
+        resources: character.location.resource_nodes.map(node => ({
+          id: node.id,
+          resource: node.item,
+          available: true // Assuming resources are always available if respawn_time/last_harvested are not in schema
+        }))
+      } : null,
+      equipped_items: character.equipped_items
+        .filter(item => item.is_equipped)
+        .map(item => ({
+          id: item.id,
+          item: item.item,
+          quantity: item.quantity
+        }))
+    }))
 
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({
         success: true,
-        players,
-        location_id,
-        count: players.length,
-        timestamp: new Date().toISOString()
+        players: transformedCharacters
       })
     }
 
   } catch (error) {
-    console.error('❌ Error fetching players at location:', error)
-
+    console.error('Error in get-players-at-location:', error)
     return {
       statusCode: 500,
       headers,
       body: JSON.stringify({
-        error: 'Failed to fetch players at location',
+        error: 'Internal server error',
         message: error.message
       })
     }

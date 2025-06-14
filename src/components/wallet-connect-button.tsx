@@ -12,7 +12,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Copy, LogOut, Wallet, ChevronDown, Activity, AlertTriangle, Hash, Link } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/use-toast';
 import { WalletSelectModal } from './wallet-select-modal';
 
 interface WalletConnectButtonProps {
@@ -53,8 +53,8 @@ export function WalletConnectButton({ className }: WalletConnectButtonProps) {
           size="sm"
           variant="outline"
         >
-          <Wallet className="w-3 h-3 mr-2" />
-          <span className="hidden sm:inline">{wallet ? 'CONNECT' : 'SELECT_WALLET'}</span>
+          <Wallet className="w-3 h-3 mr-2 text-primary" />
+          <span className="hidden sm:inline text-primary">{wallet ? 'CONNECT' : 'SELECT_WALLET'}</span>
           <span className="sm:hidden">{wallet ? 'LINK' : 'WALLET'}</span>
         </Button>
         <WalletSelectModal

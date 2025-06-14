@@ -42,7 +42,7 @@
   },
   "6-hair": {
     "male": ["male-bald.png", "male-long-black-hair.png"],
-    "female": ["female-black-hair-up.png", ""],
+    "female": ["female-black-hair-up.png", "female-rekt-t-shirt.png"],
     "neutral": []
   },
   "7-face-accessories": {

@@ -1,6 +1,7 @@
 /* src/index.css */
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "./map.css";
 
 .font-mono {
   font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
@@ -31,6 +32,7 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-outline: var(--outline);
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
@@ -52,7 +54,7 @@
 :root {
   --radius: 0.225rem;
   /* Light mode with subtle yellow hue */
-  --background: oklch(0.99 0.008 85);
+  --background: oklch(0.99 0.028 85);
   --foreground: oklch(0.15 0.006 60);
   --card: oklch(0.985 0.01 85);
   --card-foreground: oklch(0.15 0.006 60);
@@ -70,6 +72,8 @@
   --border: oklch(0.9 0.008 85);
   --input: oklch(0.9 0.008 85);
   --ring: oklch(0.7 0.012 60);
+  --outline: oklch(0.22 0.008 65);
+  /* Add outline for light mode */
   --chart-1: 65 8% 25%;
   --chart-2: 85 12% 45%;
   --chart-3: 60 15% 55%;
@@ -84,93 +88,48 @@
   --sidebar-border: oklch(0.9 0.008 85);
   --sidebar-ring: oklch(0.7 0.012 60);
   --success: oklch(0.6 0.15 140);
-  /* Green */
   --warning: oklch(0.65 0.2 65);
-  /* Yellow */
   --error: oklch(0.6 0.2 15);
-  /* Red */
-
-  /* Map-specific colors for light mode */
-  --map-forest: #16a34a;
-  --map-desert: #ea580c;
-  --map-urban: #2563eb;
-  --map-plains: #22c55e;
-  --map-mountain: #7c3aed;
-  --map-water: #0891b2;
-  --map-swamp: #65a30d;
-  --map-tundra: #64748b;
-  --map-default: #6b7280;
-  --map-border: #d1d5db;
-  --map-grid: #16a34a;
 }
 
 .dark {
-  /* Matching #080A14 background with muted, legible colors */
+  /* Matching #080A14 background with better contrast */
   --background: oklch(0.053 0.02 258);
-  /* Matches #080A14 - darker blue-gray background */
-  --foreground: oklch(0.78 0.012 258);
-  /* Softer white text, less harsh contrast */
-
+  --foreground: oklch(0.85 0.008 258);
   --card: oklch(0.08 0.025 258);
-  /* Subtle card elevation */
   --card-foreground: var(--foreground);
-
   --popover: oklch(0.075 0.024 258);
   --popover-foreground: var(--foreground);
+  --primary: oklch(0.70 0.065 220);
+  --primary-foreground: oklch(0.95 0.005 258);
+  --secondary: oklch(0.15 0.02 258);
+  --secondary-foreground: oklch(0.8 0.01 258);
 
-  --primary: oklch(0.75 0.02 200);
-  /* Reduced chroma from 0.12 to 0.02 for grayscale */
-  /* Muted blue accent, less bright */
-  --primary-foreground: oklch(0.85 0.008 258);
-
-  --secondary: oklch(0.12 0.02 258);
-  /* Subtle secondary backgrounds */
-  --secondary-foreground: oklch(0.7 0.01 258);
-
-  --muted: oklch(0.1 0.018 258);
-  /* Muted backgrounds */
-  --muted-foreground: oklch(0.58 0.015 258);
-  /* Softer muted text */
-
-  --accent: oklch(0.15 0.022 258);
-  /* Subtle accent color */
-  --accent-foreground: oklch(0.75 0.01 258);
-
-  --destructive: oklch(0.5 0.15 15);
-  /* Muted red for destructive actions */
-  --border: oklch(0.18 0.015 258);
-  /* Subtle borders */
-  --input: oklch(0.12 0.018 258);
-  /* Input backgrounds */
-  --ring: oklch(0.45 0.1 200);
-  /* Softer focus ring */
-
+  --muted: oklch(0.12 0.018 258);
+  --muted-foreground: oklch(0.65 0.015 258);
+  --accent: oklch(0.18 0.022 258);
+  --accent-foreground: oklch(0.85 0.01 258);
+  --destructive: oklch(0.6 0.2 15);
+  --border: oklch(0.22 0.015 258);
+  --input: oklch(0.15 0.018 258);
+  --ring: oklch(0.65 0.15 200);
+  --outline: oklch(0.9 0.15 200);      
   --chart-1: 200 20% 70%;
   --chart-2: 258 12% 65%;
   --chart-3: 140 15% 60%;
   --chart-4: 60 18% 65%;
   --chart-5: 25 18% 60%;
-
-  /* Sidebar colors */
   --sidebar: oklch(0.055 0.02 258);
-  /* Slightly darker than main background */
   --sidebar-foreground: var(--foreground);
   --sidebar-primary: var(--primary);
   --sidebar-primary-foreground: var(--primary-foreground);
-  --sidebar-accent: oklch(0.11 0.02 258);
+  --sidebar-accent: oklch(0.14 0.02 258);
   --sidebar-accent-foreground: var(--foreground);
   --sidebar-border: var(--border);
   --sidebar-ring: var(--ring);
-
-  /* Updated colors with better dark mode contrast */
-  --success: oklch(0.7 0.18 140);
-  /* Brighter green for dark mode */
-  --warning: oklch(0.75 0.2 65);
-  /* Brighter yellow for dark mode */
-  --error: oklch(0.65 0.2 15);
-  /* Brighter red for dark mode */
-
-  /* Map-specific colors for dark mode – updated to work with new palette */
+  --success: oklch(0.65 0.07 170);
+  --warning: oklch(0.75 0.057 85);
+  --error: oklch(0.65 0.07 15);
   --map-forest: #10b981;
   --map-desert: #f59e0b;
   --map-urban: #3b82f6;
@@ -186,11 +145,34 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border;
+    /* Removed the problematic outline-ring/50 */
   }
 
   body {
     @apply bg-background text-foreground;
+  }
+
+  /* Fix outline visibility - force outline color to use the CSS variable */
+  .outline {
+    outline-color: var(--color-outline) !important;
+  }
+
+  /* Ensure outline variants work properly */
+  .outline-1 {
+    outline-width: 1px;
+  }
+
+  .outline-2 {
+    outline-width: 2px;
+  }
+
+  .outline-4 {
+    outline-width: 4px;
+  }
+
+  .outline-8 {
+    outline-width: 8px;
   }
 }
 
@@ -289,3 +271,5 @@ body {
 .travel-progress {
   animation: travel-progress 2s ease-in-out infinite alternate;
 }
+
+

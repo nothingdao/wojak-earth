@@ -11,7 +11,6 @@ import {
   Zap,
   Heart,
   RefreshCw,
-  Settings,
   Play,
   Pause,
   AlertCircle,
@@ -59,7 +58,7 @@ export function ActivityMonitor({ className = "", maxHeight = "h-96" }: Activity
   const [error, setError] = useState<string | null>(null)
   const [filterMode, setFilterMode] = useState<FilterMode>('ALL')
   const [typeFilter, setTypeFilter] = useState<TransactionType | 'ALL'>('ALL')
-  const [showConfig, setShowConfig] = useState(false)
+  const [showFilters, setShowFilters] = useState(false)
   const [recentActivityHighlight, setRecentActivityHighlight] = useState<string | null>(null)
 
   // Memoized function to fetch initial transactions
@@ -71,9 +70,9 @@ export function ActivityMonitor({ className = "", maxHeight = "h-96" }: Activity
       const { data: transactions, error } = await supabase
         .from('transactions')
         .select(`
-    *,
-    character:characters(name, id, character_type, level, experience, current_image_url)
-  `)
+          *,
+          character:characters(name, id, character_type, level, experience, current_image_url)
+        `)
         .order('created_at', { ascending: false })
         .limit(50)
 
@@ -82,13 +81,6 @@ export function ActivityMonitor({ className = "", maxHeight = "h-96" }: Activity
       }
 
       if (transactions && transactions.length > 0) {
-        // Debug: Check what we're getting from the database
-        // console.log('📊 Sample transaction data:', {
-        //   firstTransaction: transactions[0],
-        //   characterData: transactions[0]?.character,
-        //   hasimage_url: !!transactions[0]?.character?.current_image_url
-        // })
-
         setTransactions(transactions)
       }
     } catch (error) {
@@ -198,33 +190,10 @@ export function ActivityMonitor({ className = "", maxHeight = "h-96" }: Activity
     }
   }
 
-  const getTransactionColor = (type: TransactionType, isNPC: boolean) => {
-    const baseColors = {
-      'TRAVEL': 'text-blue-500',
-      'MINE': 'text-amber-500',
-      'BUY': 'text-green-500',
-      'SELL': 'text-purple-500',
-      'EQUIP': 'text-orange-500',
-      'UNEQUIP': 'text-gray-500',
-      'SPAWN': 'text-pink-500',
-      'CHAT': 'text-cyan-500',
-      'IDLE': 'text-slate-500',
-      'EXCHANGE': 'text-emerald-500'
-    }
-
-    // Dim NPC actions slightly
-    if (isNPC) {
-      return baseColors[type]?.replace('500', '400') || 'text-gray-400'
-    }
-
-    return baseColors[type] || 'text-gray-500'
-  }
-
   const formatTimeAgo = (timestamp: string) => {
     const now = new Date()
     const time = new Date(timestamp)
 
-    // Ensure valid dates
     if (isNaN(time.getTime()) || isNaN(now.getTime())) {
       return 'Unknown'
     }
@@ -232,7 +201,6 @@ export function ActivityMonitor({ className = "", maxHeight = "h-96" }: Activity
     const diffInMs = now.getTime() - time.getTime()
     const diffInSeconds = Math.floor(diffInMs / 1000)
 
-    // Handle future timestamps or negative differences
     if (diffInSeconds < 0) {
       return 'Just now'
     }
@@ -258,12 +226,12 @@ export function ActivityMonitor({ className = "", maxHeight = "h-96" }: Activity
 
   const getFilterStats = () => {
     const npcCount = transactions.filter(t => isNPC(t)).length
-    const player_count = transactions.length - npcCount
+    const playerCount = transactions.length - npcCount
 
     return {
       total: transactions.length,
       npcs: npcCount,
-      players: player_count,
+      players: playerCount,
       filtered: filteredTransactions.length
     }
   }
@@ -273,24 +241,35 @@ export function ActivityMonitor({ className = "", maxHeight = "h-96" }: Activity
   return (
     <div className={`border rounded-lg ${className}`}>
       {/* Header */}
-      <div className="p-4 border-b">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-lg font-semibold flex items-center gap-2">
-            <Activity className="w-5 h-5" />
-            Live Activity Monitor
+      <div className="p-3 sm:p-4 border-b">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2">
+            <Activity className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="hidden sm:inline">Live Activity Monitor</span>
+            <span className="sm:hidden">Activity</span>
             {isLoading && (
-              <RefreshCw className="w-4 h-4 animate-spin" />
+              <RefreshCw className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" />
             )}
           </h3>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             {/* Connection status */}
             <div className="flex items-center gap-1">
-              <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
-              <span className="text-xs text-muted-foreground">
+              <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-success' : 'bg-destructive'}`}></div>
+              <span className="text-xs text-muted-foreground hidden sm:inline">
                 {isConnected ? 'Live' : 'Disconnected'}
               </span>
             </div>
+
+            {/* Filter toggle (mobile) */}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowFilters(!showFilters)}
+              className="sm:hidden"
+            >
+              <Filter className="w-4 h-4" />
+            </Button>
 
             {/* Auto-refresh toggle */}
             <Button
@@ -299,17 +278,7 @@ export function ActivityMonitor({ className = "", maxHeight = "h-96" }: Activity
               onClick={() => setIsAutoRefreshing(!isAutoRefreshing)}
               title={isAutoRefreshing ? 'Disable auto-refresh' : 'Enable auto-refresh'}
             >
-              {isAutoRefreshing ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-            </Button>
-
-            {/* Config toggle */}
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setShowConfig(!showConfig)}
-              title="Filter settings"
-            >
-              <Settings className="w-4 h-4" />
+              {isAutoRefreshing ? <Pause className="w-3 h-3 sm:w-4 sm:h-4" /> : <Play className="w-3 h-3 sm:w-4 sm:h-4" />}
             </Button>
 
             {/* Manual refresh */}
@@ -319,125 +288,79 @@ export function ActivityMonitor({ className = "", maxHeight = "h-96" }: Activity
               disabled={isLoading}
               title="Refresh activity"
             >
-              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-3 h-3 sm:w-4 sm:h-4 ${isLoading ? 'animate-spin' : ''}`} />
             </Button>
           </div>
         </div>
 
-        {/* Filter Controls */}
-        <div className="space-y-2">
+        {/* Filter Controls - Mobile collapsible, Desktop always visible */}
+        <div className={`space-y-2 ${showFilters ? 'block' : 'hidden sm:block'}`}>
           {/* Character Type Filters */}
-          <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-muted-foreground" />
-            <div className="flex gap-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Filter className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+            <div className="flex gap-1 flex-wrap">
               <Button
                 size="sm"
                 variant={filterMode === 'ALL' ? 'default' : 'outline'}
                 onClick={() => setFilterMode('ALL')}
-                className="text-xs"
+                className="text-xs h-7"
               >
-                All ({stats.total})
+                All <span className="hidden sm:inline">({stats.total})</span>
               </Button>
               <Button
                 size="sm"
                 variant={filterMode === 'NPCS_ONLY' ? 'default' : 'outline'}
                 onClick={() => setFilterMode('NPCS_ONLY')}
-                className="text-xs"
+                className="text-xs h-7"
               >
-                <Bot className="w-3 h-3 mr-1" />
-                NPCs ({stats.npcs})
+                <Bot className="w-3 h-3 sm:mr-1" />
+                <span className="hidden sm:inline">NPCs ({stats.npcs})</span>
               </Button>
               <Button
                 size="sm"
                 variant={filterMode === 'PLAYERS_ONLY' ? 'default' : 'outline'}
                 onClick={() => setFilterMode('PLAYERS_ONLY')}
-                className="text-xs"
+                className="text-xs h-7"
               >
-                <User className="w-3 h-3 mr-1" />
-                Players ({stats.players})
+                <User className="w-3 h-3 sm:mr-1" />
+                <span className="hidden sm:inline">Players ({stats.players})</span>
               </Button>
             </div>
           </div>
 
           {/* Transaction Type Filters */}
-          <div className="flex items-center gap-2">
-            <Activity className="w-4 h-4 text-muted-foreground" />
+          <div className="flex items-start gap-2">
+            <Activity className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
             <div className="flex gap-1 flex-wrap">
               <Button
                 size="sm"
                 variant={typeFilter === 'ALL' ? 'default' : 'outline'}
                 onClick={() => setTypeFilter('ALL')}
-                className="text-xs"
+                className="text-xs h-7"
               >
                 All Types
               </Button>
-              <Button
-                size="sm"
-                variant={typeFilter === 'EXCHANGE' ? 'default' : 'outline'}
-                onClick={() => setTypeFilter('EXCHANGE')}
-                className="text-xs"
-              >
-                <RefreshCw className="w-3 h-3 mr-1" />
-                Exchange
-              </Button>
-              <Button
-                size="sm"
-                variant={typeFilter === 'MINE' ? 'default' : 'outline'}
-                onClick={() => setTypeFilter('MINE')}
-                className="text-xs"
-              >
-                <Pickaxe className="w-3 h-3 mr-1" />
-                Mining
-              </Button>
-              <Button
-                size="sm"
-                variant={typeFilter === 'TRAVEL' ? 'default' : 'outline'}
-                onClick={() => setTypeFilter('TRAVEL')}
-                className="text-xs"
-              >
-                <MapPin className="w-3 h-3 mr-1" />
-                Travel
-              </Button>
-              <Button
-                size="sm"
-                variant={typeFilter === 'BUY' ? 'default' : 'outline'}
-                onClick={() => setTypeFilter('BUY')}
-                className="text-xs"
-              >
-                <Store className="w-3 h-3 mr-1" />
-                Buy
-              </Button>
-              <Button
-                size="sm"
-                variant={typeFilter === 'SELL' ? 'default' : 'outline'}
-                onClick={() => setTypeFilter('SELL')}
-                className="text-xs"
-              >
-                <Store className="w-3 h-3 mr-1" />
-                Sell
-              </Button>
+              {['EXCHANGE', 'MINE', 'TRAVEL', 'BUY', 'SELL'].map((type) => (
+                <Button
+                  key={type}
+                  size="sm"
+                  variant={typeFilter === type ? 'default' : 'outline'}
+                  onClick={() => setTypeFilter(type as TransactionType)}
+                  className="text-xs h-7"
+                >
+                  {getTransactionIcon(type as TransactionType)}
+                  <span className="hidden sm:inline sm:ml-1 capitalize">{type.toLowerCase()}</span>
+                </Button>
+              ))}
             </div>
           </div>
         </div>
-
-        {/* Config Panel */}
-        {showConfig && (
-          <div className="mt-3 p-3 bg-muted/50 rounded text-sm space-y-2">
-            <div className="font-medium">Activity Monitor Settings</div>
-            <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-              <div>• Real-time updates via Supabase</div>
-              <div>• Max 50 recent transactions</div>
-              <div>• NPCs detected by naming pattern</div>
-              <div>• Highlights fade after 3 seconds</div>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Error Display */}
       {error && (
-        <div className="p-4 border-b">
-          <div className="flex items-center gap-2 text-red-600 text-sm">
+        <div className="p-3 sm:p-4 border-b">
+          <div className="flex items-center gap-2 text-destructive text-sm">
             <AlertCircle className="w-4 h-4" />
             {error}
           </div>
@@ -445,9 +368,8 @@ export function ActivityMonitor({ className = "", maxHeight = "h-96" }: Activity
       )}
 
       {/* Activity Feed */}
-      {/* Activity Feed */}
       <ScrollArea className={maxHeight}>
-        <div className="p-4 space-y-2">
+        <div className="p-2 sm:p-4 space-y-2">
           {isLoading && filteredTransactions.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <RefreshCw className="w-6 h-6 mx-auto mb-2 animate-spin" />
@@ -461,8 +383,8 @@ export function ActivityMonitor({ className = "", maxHeight = "h-96" }: Activity
               return (
                 <div
                   key={transaction.id}
-                  className={`flex items-start gap-3 p-3 border rounded-lg transition-all duration-500 ${isHighlighted
-                    ? 'ring-2 ring-green-500/50 bg-green-50 dark:bg-green-900/20'
+                  className={`flex items-start gap-2 sm:gap-3 p-2 sm:p-3 border rounded-lg transition-all duration-500 ${isHighlighted
+                    ? 'ring-2 ring-success/50 bg-success/5'
                     : 'hover:bg-accent'
                     }`}
                 >
@@ -473,21 +395,17 @@ export function ActivityMonitor({ className = "", maxHeight = "h-96" }: Activity
                         <img
                           src={transaction.character.current_image_url}
                           alt={transaction.character.name}
-                          className="w-16 h-16 rounded-sm border object-cover"
+                          className="w-12 h-12 sm:w-16 sm:h-16 rounded-sm border object-cover"
                           onError={(e) => {
                             console.log('❌ Image failed to load:', transaction.character.current_image_url)
-                            // Hide the image and show fallback
                             e.currentTarget.style.display = 'none'
                             const fallback = e.currentTarget.nextElementSibling as HTMLElement
                             if (fallback) fallback.style.display = 'flex'
                           }}
-                          onLoad={() => {
-                            // console.log('✅ Image loaded successfully:', transaction.character.current_image_url)
-                          }}
                         />
                         {/* Fallback avatar (hidden by default) */}
                         <div
-                          className="w-16 h-16 rounded-sm bg-muted flex items-center justify-center absolute top-0 left-0"
+                          className="w-12 h-12 sm:w-16 sm:h-16 rounded-sm bg-muted flex items-center justify-center absolute top-0 left-0"
                           style={{ display: 'none' }}
                         >
                           <span className="text-xs font-medium">
@@ -496,52 +414,40 @@ export function ActivityMonitor({ className = "", maxHeight = "h-96" }: Activity
                         </div>
                       </>
                     ) : (
-                      <div className="w-16 h-16 rounded-sm bg-muted flex items-center justify-center">
+                      <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-sm bg-muted flex items-center justify-center">
                         <span className="text-xs font-medium">
                           {transaction.character.name.charAt(0).toUpperCase()}
                         </span>
                       </div>
                     )}
 
-                    {/* Level Badge on Image */}
-                    <div className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white shadow-sm ${transaction.character.level >= 20 ? 'bg-yellow-500' :
-                      transaction.character.level >= 15 ? 'bg-purple-500' :
-                        transaction.character.level >= 10 ? 'bg-blue-500' :
-                          transaction.character.level >= 5 ? 'bg-green-500' :
-                            'bg-gray-500'
-                      }`}>
-                      {transaction.character.level}
+                    {/* Level Badge */}
+                    <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-primary flex items-center justify-center text-[9px] font-bold text-primary-foreground shadow-sm">
+                      {transaction.character.level || 1}
                     </div>
-
-                    {/* Debug info */}
-                    {process.env.NODE_ENV === 'development' && (
-                      <div className="absolute -bottom-1 -left-1 text-xs" title={`Image URL: ${transaction.character.current_image_url || 'None'}`}>
-                        {transaction.character.current_image_url ? '🖼️' : '❌'}
-                      </div>
-                    )}
                   </div>
 
                   {/* Icon */}
-                  <div className={`${getTransactionColor(transaction.type, npcTransaction)} mt-0.5`}>
+                  <div className="text-muted-foreground mt-0.5">
                     {getTransactionIcon(transaction.type)}
                   </div>
 
                   {/* Content */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-1 sm:gap-2 mb-1 flex-wrap">
                       <span className="font-medium truncate">
                         {transaction.character.name}
                       </span>
-                      <span className="text-xs font-medium px-2 py-1 rounded bg-muted">
+                      <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-muted">
                         {transaction.type}
                       </span>
                       {npcTransaction && (
-                        <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100 px-1.5 py-0.5 rounded-full">
+                        <span className="text-xs bg-accent text-accent-foreground px-1.5 py-0.5 rounded-full">
                           NPC
                         </span>
                       )}
                       {isHighlighted && (
-                        <span className="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100 px-1.5 py-0.5 rounded-full">
+                        <span className="text-xs bg-success/20 text-success px-1.5 py-0.5 rounded-full">
                           NEW
                         </span>
                       )}
@@ -552,8 +458,8 @@ export function ActivityMonitor({ className = "", maxHeight = "h-96" }: Activity
                     </p>
 
                     {/* XP and Quantity Display */}
-                    <div className="text-[10px] text-muted-foreground mt-1 flex items-center gap-2">
-                      <span className="font-mono bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded">
+                    <div className="text-[10px] text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
+                      <span className="font-mono bg-warning/10 text-warning px-1.5 py-0.5 rounded">
                         {(transaction.character.experience || 0).toLocaleString()} XP
                       </span>
                       {transaction.quantity && (
@@ -568,14 +474,15 @@ export function ActivityMonitor({ className = "", maxHeight = "h-96" }: Activity
                   {/* Timestamp */}
                   <div className="text-xs text-muted-foreground flex-shrink-0 flex items-center gap-1">
                     <Clock className="w-3 h-3" />
-                    {formatTimeAgo(transaction.created_at)}
+                    <span className="hidden sm:inline">{formatTimeAgo(transaction.created_at)}</span>
+                    <span className="sm:hidden">{formatTimeAgo(transaction.created_at).replace(' ago', '')}</span>
                   </div>
                 </div>
               )
             })
           ) : (
             <div className="text-center py-8 text-muted-foreground">
-              <Activity className="w-12 w-12 mx-auto mb-2" />
+              <Activity className="w-8 h-8 sm:w-12 sm:h-12 mx-auto mb-2" />
               {filterMode === 'NPCS_ONLY' ? 'No NPC activity found' :
                 filterMode === 'PLAYERS_ONLY' ? 'No player activity found' :
                   'No activity yet...'}
@@ -588,16 +495,19 @@ export function ActivityMonitor({ className = "", maxHeight = "h-96" }: Activity
       </ScrollArea>
 
       {/* Footer Stats */}
-      <div className="p-3 border-t bg-muted/50">
+      <div className="p-2 sm:p-3 border-t bg-muted/50">
         <div className="text-xs text-muted-foreground text-center">
-          {isConnected ?
-            `Live updates • Showing ${filteredTransactions.length} of ${stats.total} activities` :
-            `Disconnected • Showing ${filteredTransactions.length} of ${stats.total} activities`
-          }
-          {filterMode !== 'ALL' && (
-            <span className="ml-2">
-              • Filter: {filterMode.replace('_', ' ').toLowerCase()}
+          <span className="flex items-center justify-center gap-1">
+            <div className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-success' : 'bg-destructive'}`}></div>
+            {isConnected ? 'Live updates' : 'Disconnected'}
+            <span className="hidden sm:inline">
+              • Showing {filteredTransactions.length} of {stats.total} activities
             </span>
+          </span>
+          {filterMode !== 'ALL' && (
+            <div className="mt-1 sm:mt-0 sm:inline sm:ml-2">
+              Filter: {filterMode.replace('_', ' ').toLowerCase()}
+            </div>
           )}
         </div>
       </div>

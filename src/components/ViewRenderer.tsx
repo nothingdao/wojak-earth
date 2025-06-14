@@ -1,6 +1,6 @@
 // src/components/ViewRenderer.tsx - Fixed with game handlers
 import { useState } from 'react'
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/use-toast'
 import {
   MainView,
   ProfileView,
@@ -56,7 +56,16 @@ export function ViewRenderer({
       destination: location_id
     })
 
-    toast.success('Traveling...')
+    // Find the destination location
+    const destination = gameData.locations?.find(loc => loc.id === location_id)
+
+    toast.success('TRAVEL_INITIATED', {
+      description: `DESTINATION: ${destination?.name.toUpperCase()}\n${destination?.biome ? `BIOME: ${destination.biome.toUpperCase()}\n` : ''
+        }${destination?.difficulty ? `THREAT_LEVEL: ${destination.difficulty}\n` : ''
+        }${destination?.entry_cost ? `ENTRY_COST: ${destination.entry_cost} RUST` : ''
+        }`,
+      duration: 4000,
+    })
 
     try {
       // Delay the actual travel to allow animation, then use GameProvider's travel action

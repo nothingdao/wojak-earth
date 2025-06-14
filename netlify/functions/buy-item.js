@@ -1,10 +1,6 @@
 // netlify/functions/buy-item.js - FIXED: Actually deduct coins!
-import { createClient } from '@supabase/supabase-js'
+import supabaseAdmin from '../../src/utils/supabase-admin'
 import { randomUUID } from 'crypto'
-
-const supabaseUrl = process.env.VITE_SUPABASE_URL
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 export const handler = async (event, context) => {
   const headers = {
@@ -37,7 +33,7 @@ export const handler = async (event, context) => {
     }
 
     // Get character by wallet address
-    const { data: character, error } = await supabase
+    const { data: character, error } = await supabaseAdmin
       .from('characters')
       .select('*')
       .eq('wallet_address', wallet_address)
@@ -56,7 +52,7 @@ export const handler = async (event, context) => {
     }
 
     // Get market listing with item details
-    const { data: marketListing, error: listingError } = await supabase
+    const { data: marketListing, error: listingError } = await supabaseAdmin
       .from('market_listings')
       .select('*')
       .eq('id', marketListingId)
@@ -73,7 +69,7 @@ export const handler = async (event, context) => {
     }
 
     // Get the item details separately
-    const { data: item, error: itemError } = await supabase
+    const { data: item, error: itemError } = await supabaseAdmin
       .from('items')
       .select('*')
       .eq('id', marketListing.item_id)
@@ -82,7 +78,7 @@ export const handler = async (event, context) => {
     if (itemError) throw itemError
 
     // Get the location details separately
-    const { data: location, error: locationError } = await supabase
+    const { data: location, error: locationError } = await supabaseAdmin
       .from('locations')
       .select('*')
       .eq('id', marketListing.location_id)
@@ -93,7 +89,7 @@ export const handler = async (event, context) => {
     // Get seller if exists
     let seller = null
     if (marketListing.seller_id) {
-      const { data: sellerData, error: sellerError } = await supabase
+      const { data: sellerData, error: sellerError } = await supabaseAdmin
         .from('characters')
         .select('*')
         .eq('id', marketListing.seller_id)
@@ -140,7 +136,7 @@ export const handler = async (event, context) => {
 
     // CRITICAL FIX: Deduct coins from character
     const newCoinBalance = character.coins - totalCost
-    const { data: updatedCharacter, error: coinDeductError } = await supabase
+    const { data: updatedCharacter, error: coinDeductError } = await supabaseAdmin
       .from('characters')
       .update({ coins: newCoinBalance })
       .eq('id', character.id)
@@ -155,7 +151,7 @@ export const handler = async (event, context) => {
     console.log(`💰 Deducted ${totalCost} coins from ${character.name}: ${character.coins} → ${newCoinBalance}`)
 
     // Add item to character inventory
-    const { data: existingInventory } = await supabase
+    const { data: existingInventory } = await supabaseAdmin
       .from('character_inventory')
       .select('*')
       .eq('character_id', character.id)
@@ -165,7 +161,7 @@ export const handler = async (event, context) => {
     let inventoryItem
     if (existingInventory) {
       // Update existing inventory
-      const { data: updatedInventory, error: updateError } = await supabase
+      const { data: updatedInventory, error: updateError } = await supabaseAdmin
         .from('character_inventory')
         .update({ quantity: existingInventory.quantity + quantity })
         .eq('id', existingInventory.id)
@@ -180,7 +176,7 @@ export const handler = async (event, context) => {
       const inventoryId = randomUUID()
 
       // Create new inventory entry
-      const { data: newInventory, error: createError } = await supabase
+      const { data: newInventory, error: createError } = await supabaseAdmin
         .from('character_inventory')
         .insert({
           id: inventoryId,
@@ -199,30 +195,28 @@ export const handler = async (event, context) => {
       inventoryItem.item = item
     }
 
-    // Update or remove market listing
-    let remainingQuantity = marketListing.quantity - quantity
+    // Update market listing quantity
+    const newQuantity = marketListing.quantity - quantity
+    const { error: updateListingError } = await supabaseAdmin
+      .from('market_listings')
+      .update({ quantity: newQuantity })
+      .eq('id', marketListingId)
 
-    if (marketListing.quantity === quantity && !marketListing.is_system_item) {
-      // Only remove player listings when sold out
-      const { error: deleteError } = await supabase
+    if (updateListingError) throw updateListingError
+
+    // If quantity is now 0, delete the listing
+    if (newQuantity <= 0) {
+      const { error: deleteError } = await supabaseAdmin
         .from('market_listings')
         .delete()
         .eq('id', marketListingId)
 
       if (deleteError) throw deleteError
-    } else {
-      // Reduce quantity (system items can go to 0 but stay in DB)
-      const { error: updateError } = await supabase
-        .from('market_listings')
-        .update({ quantity: remainingQuantity })
-        .eq('id', marketListingId)
-
-      if (updateError) throw updateError
     }
 
     // Log the transaction
     const transactionId = randomUUID()
-    const { data: transaction, error: transactionError } = await supabase
+    const { error: transactionError } = await supabaseAdmin
       .from('transactions')
       .insert({
         id: transactionId,
@@ -230,55 +224,73 @@ export const handler = async (event, context) => {
         type: 'BUY',
         item_id: marketListing.item_id,
         quantity: quantity,
-        description: `Bought ${quantity}x ${marketListing.item.name} for ${totalCost} coins from ${marketListing.location.name} market`
+        amount: totalCost,
+        description: `Bought ${quantity}x ${item.name} for ${totalCost} coins`
       })
-      .select('*')
-      .single()
 
-    if (transactionError) throw transactionError
+    if (transactionError) {
+      console.error('Failed to log transaction:', transactionError)
+      // Don't throw, just log - transaction logging is not critical
+    }
 
-    const responseData = {
-      success: true,
-      message: `Successfully purchased ${quantity}x ${marketListing.item.name}!`,
-      purchase: {
-        itemName: marketListing.item.name,
-        itemRarity: marketListing.item.rarity,
-        quantity: quantity,
-        totalCost: totalCost,
-        newInventoryQuantity: inventoryItem.quantity,
-        // ADDED: Return new coin balance
-        newCoinBalance: newCoinBalance,
-        previousCoinBalance: character.coins
-      },
-      marketListing: {
-        id: marketListingId,
-        remainingQuantity: remainingQuantity,
-        wasRemoved: remainingQuantity === 0 && !marketListing.is_system_item
-      },
-      // ADDED: Character status after purchase
-      character: {
-        id: character.id,
-        coins: newCoinBalance,
-        coinsSpent: totalCost
+    // If there's a seller, give them the coins
+    if (seller) {
+      const sellerNewBalance = seller.coins + totalCost
+      const { error: sellerUpdateError } = await supabaseAdmin
+        .from('characters')
+        .update({ coins: sellerNewBalance })
+        .eq('id', seller.id)
+
+      if (sellerUpdateError) {
+        console.error('Failed to update seller balance:', sellerUpdateError)
+        // Don't throw, just log - seller payment is not critical
+      }
+
+      // Log seller's transaction
+      const sellerTransactionId = randomUUID()
+      const { error: sellerTransactionError } = await supabaseAdmin
+        .from('transactions')
+        .insert({
+          id: sellerTransactionId,
+          character_id: seller.id,
+          type: 'SELL',
+          item_id: marketListing.item_id,
+          quantity: quantity,
+          amount: totalCost,
+          description: `Sold ${quantity}x ${item.name} for ${totalCost} coins`
+        })
+
+      if (sellerTransactionError) {
+        console.error('Failed to log seller transaction:', sellerTransactionError)
+        // Don't throw, just log - transaction logging is not critical
       }
     }
 
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify(responseData)
+      body: JSON.stringify({
+        success: true,
+        character: updatedCharacter,
+        inventory: inventoryItem,
+        transaction: {
+          id: transactionId,
+          type: 'BUY',
+          item: item,
+          quantity: quantity,
+          amount: totalCost
+        }
+      })
     }
 
   } catch (error) {
-    console.error('Error purchasing item:', error)
-
+    console.error('Error in buy-item:', error)
     return {
       statusCode: 500,
       headers,
       body: JSON.stringify({
         error: 'Internal server error',
-        message: 'Purchase failed',
-        details: error.message
+        message: error.message
       })
     }
   }

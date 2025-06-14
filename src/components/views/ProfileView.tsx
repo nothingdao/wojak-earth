@@ -24,7 +24,7 @@ import {
   MapPin
 } from 'lucide-react'
 import { useWalletInfo } from '@/hooks/useWalletInfo'
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/use-toast'
 import type { Character } from '@/types'
 import { BurnCharacter } from '../BurnCharacter'
 import { useNetwork } from '@/contexts/NetworkContext'

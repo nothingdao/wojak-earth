@@ -1,9 +1,5 @@
-// netlify/functions/get-all-characters.js - FIXED: Include all characters
-import { createClient } from '@supabase/supabase-js'
-
-const supabaseUrl = process.env.VITE_SUPABASE_URL
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-const supabase = createClient(supabaseUrl, supabaseServiceKey)
+// netlify/functions/get-all-characters.js - UPDATED
+import supabaseAdmin from '../../src/utils/supabase-admin'
 
 export const handler = async (event, context) => {
   const headers = {
@@ -25,105 +21,63 @@ export const handler = async (event, context) => {
   }
 
   try {
-    const limit = parseInt(event.queryStringParameters?.limit || '100')
-    const offset = parseInt(event.queryStringParameters?.offset || '0')
-    const statusFilter = event.queryStringParameters?.status // Optional status filter
-
-    // Build query
-    let query = supabase
+    // Get all active characters with their location and equipped items
+    const { data: characters, error: charactersError } = await supabaseAdmin
       .from('characters')
       .select(`
         id,
         name,
-        gender,
         level,
-        energy,
-        health,
-        coins,
-        character_type,
-        status,
-        current_image_url,
-        created_at,
+        experience,
         wallet_address,
-        nft_address,
-        currentLocation:locations(
+        current_image_url,
+        location:locations(*),
+        equipped_items:character_inventory!character_id(
           id,
-          name,
-          biome
+          item:items(*),
+          quantity,
+          is_equipped
         )
       `)
+      .eq('status', 'ACTIVE')
+      .order('name')
 
-    // FIXED: Only filter by status if specifically requested
-    if (statusFilter && ['ACTIVE', 'DEAD', 'INACTIVE'].includes(statusFilter.toUpperCase())) {
-      query = query.eq('status', statusFilter.toUpperCase())
-    }
-    // Otherwise, return ALL characters regardless of status
+    if (charactersError) throw charactersError
 
-    const { data: characters, error } = await query
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1)
-
-    if (error) {
-      console.error('Supabase error:', error)
-      throw error
-    }
-
-    // Get total count for pagination (also include all statuses unless filtered)
-    let countQuery = supabase
-      .from('characters')
-      .select('*', { count: 'exact', head: true })
-
-    if (statusFilter && ['ACTIVE', 'DEAD', 'INACTIVE'].includes(statusFilter.toUpperCase())) {
-      countQuery = countQuery.eq('status', statusFilter.toUpperCase())
-    }
-
-    const { count, error: countError } = await countQuery
-
-    if (countError) {
-      console.error('Count error:', countError)
-    }
-
-    // Transform the data to ensure currentLocation is properly structured
-    const transformedCharacters = (characters || []).map(character => ({
-      ...character,
-      currentLocation: character.currentLocation || {
-        id: 'unknown',
-        name: 'Unknown Location',
-        biome: 'unknown'
-      }
+    // Transform the data for the frontend
+    const transformedCharacters = characters.map(character => ({
+      id: character.id,
+      name: character.name,
+      level: character.level,
+      experience: character.experience,
+      wallet_address: character.wallet_address,
+      current_image_url: character.current_image_url,
+      location: character.location,
+      equipped_items: character.equipped_items
+        .filter(item => item.is_equipped)
+        .map(item => ({
+          id: item.id,
+          item: item.item,
+          quantity: item.quantity
+        }))
     }))
-
-    // Log status breakdown for debugging
-    const statusBreakdown = transformedCharacters.reduce((acc, char) => {
-      acc[char.status] = (acc[char.status] || 0) + 1
-      return acc
-    }, {})
-
-    console.log(`📊 Fetched ${transformedCharacters.length} characters:`, statusBreakdown)
 
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({
-        characters: transformedCharacters,
-        totalCount: count || transformedCharacters.length,
-        statusBreakdown, // Include status breakdown in response
-        pagination: {
-          limit,
-          offset,
-          hasMore: transformedCharacters.length === limit
-        }
+        success: true,
+        characters: transformedCharacters
       })
     }
 
   } catch (error) {
-    console.error('Error fetching characters:', error)
-
+    console.error('Error in get-all-characters:', error)
     return {
       statusCode: 500,
       headers,
       body: JSON.stringify({
-        error: 'Failed to fetch characters',
+        error: 'Internal server error',
         message: error.message
       })
     }

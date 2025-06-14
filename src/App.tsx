@@ -1,4 +1,4 @@
-// src/App.tsx - Fixed with reactive endpoint
+// src/App.tsx - With styled terminal toast
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base'
 import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react'
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui'
@@ -6,7 +6,7 @@ import { PhantomWalletAdapter, SolflareWalletAdapter } from '@solana/wallet-adap
 import { NetworkProvider, useNetwork } from '@/contexts/NetworkContext'
 import { GameProvider } from '@/providers/GameProvider'
 import { AppRouter } from '@/components/AppRouter'
-import { Toaster } from 'sonner'
+import { Toaster } from '@/components/ui/toaster'
 import { useState, useEffect, useMemo } from 'react'
 
 // Import wallet adapter CSS
@@ -16,7 +16,6 @@ import '@solana/wallet-adapter-react-ui/styles.css'
 function DynamicConnectionProvider({ children }: { children: React.ReactNode }) {
   const { network, getRpcUrl } = useNetwork()
 
-  // Use getRpcUrl() from context for consistency, or fallback to clusterApiUrl
   const endpoint = useMemo(() => {
     const url = getRpcUrl()
     console.log('🔗 ConnectionProvider using endpoint:', url, 'for network:', network)
@@ -43,7 +42,7 @@ export default function App() {
   // Network state - starts with devnet
   const [network, setNetwork] = useState<WalletAdapterNetwork>(WalletAdapterNetwork.Devnet)
 
-  // Prevent zoom (from your existing code)
+  // Prevent zoom
   useEffect(() => {
     const preventZoom = (e: WheelEvent) => {
       if (e.ctrlKey) e.preventDefault()

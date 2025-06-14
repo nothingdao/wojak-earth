@@ -453,20 +453,23 @@ export default function Earth({
   }, [])
 
   // Get biome color from CSS custom properties
-  const getBiomeColor = useCallback((biome?: string) => {
+  // Updated getBiomeColor function with state support
+  const getBiomeColor = useCallback((biome?: string, state?: string) => {
     const style = getComputedStyle(document.documentElement)
 
-    switch (biome) {
-      case 'forest': return style.getPropertyValue('--map-forest').trim()
-      case 'desert': return style.getPropertyValue('--map-desert').trim()
-      case 'urban': return style.getPropertyValue('--map-urban').trim()
-      case 'plains': return style.getPropertyValue('--map-plains').trim()
-      case 'mountain': return style.getPropertyValue('--map-mountain').trim()
-      case 'water': return style.getPropertyValue('--map-water').trim()
-      case 'swamp': return style.getPropertyValue('--map-swamp').trim()
-      case 'tundra': return style.getPropertyValue('--map-tundra').trim()
-      default: return style.getPropertyValue('--map-default').trim()
+    // Build the CSS custom property name
+    const suffix = state ? `-${state}` : ''
+    const propertyName = `--map-${biome || 'default'}${suffix}`
+
+    // Get the color value
+    const colorValue = style.getPropertyValue(propertyName).trim()
+
+    // Fallback to base color if state-specific color doesn't exist
+    if (!colorValue && state) {
+      return style.getPropertyValue(`--map-${biome || 'default'}`).trim()
     }
+
+    return colorValue || style.getPropertyValue('--map-default').trim()
   }, [])
 
   // Path styling function using computed colors that work in SVG
@@ -482,51 +485,62 @@ export default function Earth({
     const isTravelingToHere = location && mapTravelDestination === location.id
     const isTravelingFromHere = location && visualLocationId === location.id && isTravelingOnMap
 
-    const isDark = document.documentElement.classList.contains('dark')
+    // Get CSS custom properties for consistent theming
+    const style = getComputedStyle(document.documentElement)
 
-    let fill = isDark ? '#374151' : '#9ca3af'
-    let stroke = isDark ? '#4b5563' : '#d1d5db'
+    // Default values for unmapped regions
+    let fill = style.getPropertyValue('--map-default').trim()
+    let stroke = style.getPropertyValue('--map-border-base').trim()
     let strokeWidth = '0.5'
     let opacity = '0.8'
     let filter = 'none'
 
+    // Base biome styling
     if (location) {
       fill = getBiomeColor(location.biome)
+      stroke = style.getPropertyValue('--map-border-base').trim()
       opacity = '0.9'
       strokeWidth = '0.5'
-      stroke = isDark ? '#6b7280' : '#9ca3af'
     }
 
+    // Travel state styling (highest priority)
     if (isTravelingOnMap && (isTravelingFromHere || isTravelingToHere)) {
-      filter = 'hue-rotate(90deg) saturate(150%)'
       opacity = '1'
+      strokeWidth = '2'
+      stroke = style.getPropertyValue('--map-text-contrast').trim()
 
       if (isTravelingFromHere) {
-        fill = '#ef4444'
-        stroke = '#ffffff'
-        strokeWidth = '2'
+        fill = style.getPropertyValue('--map-travel-origin').trim()
+        filter = 'drop-shadow(0 0 8px var(--map-travel-origin))'
       }
 
       if (isTravelingToHere) {
-        fill = '#f59e0b'
-        stroke = '#ffffff'
-        strokeWidth = '2'
+        fill = style.getPropertyValue('--map-travel-destination').trim()
+        filter = 'drop-shadow(0 0 8px var(--map-travel-destination))'
       }
     }
-
-    if (isSelected) {
-      fill = isDark ? '#3b82f6' : '#2563eb'
-      stroke = isDark ? '#ffffff' : '#1e40af'
+    // Selection state styling
+    else if (isSelected) {
+      fill = location ? getBiomeColor(location.biome, 'selected') : style.getPropertyValue('--map-selection-primary').trim()
+      stroke = style.getPropertyValue('--map-border-selected').trim()
       strokeWidth = '2'
       opacity = '1'
-    } else if (isPlayerHere && !isTravelingOnMap) {
-      stroke = '#22c55e'
+      filter = 'drop-shadow(0 0 4px var(--map-selection-primary))'
+    }
+    // Player location styling (when not traveling)
+    else if (isPlayerHere && !isTravelingOnMap) {
+      fill = location ? getBiomeColor(location.biome, 'active') : style.getPropertyValue('--map-player-location').trim()
+      stroke = style.getPropertyValue('--map-player-location').trim()
+      strokeWidth = '1.5'
+      opacity = '1'
+      filter = 'drop-shadow(0 0 6px var(--map-player-location))'
+    }
+    // Hover state styling
+    else if (isHovered) {
+      fill = location ? getBiomeColor(location.biome, 'hover') : style.getPropertyValue('--map-default-hover').trim()
+      stroke = style.getPropertyValue('--map-border-hover').trim()
       strokeWidth = '1'
       opacity = '1'
-    } else if (isHovered) {
-      opacity = '1'
-      strokeWidth = '1.5'
-      stroke = isDark ? '#60a5fa' : '#3b82f6'
     }
 
     return {

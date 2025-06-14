@@ -1,11 +1,13 @@
-// netlify/functions/get-player-character.js
-import { createClient } from '@supabase/supabase-js'
-
-const supabaseUrl = process.env.VITE_SUPABASE_URL
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-const supabase = createClient(supabaseUrl, supabaseServiceKey)
+// netlify/functions/get-player-character.js - FIXED
+import supabaseAdmin from '../../src/utils/supabase-admin'
 
 export const handler = async (event, context) => {
+
+  console.log('🚀 GET-PLAYER-CHARACTER FUNCTION CALLED!', {
+    method: event.httpMethod,
+    wallet: event.queryStringParameters?.wallet_address
+  })
+
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type',
@@ -25,75 +27,120 @@ export const handler = async (event, context) => {
   }
 
   try {
-    const wallet_address = event.queryStringParameters?.wallet_address
+    const { wallet_address } = event.queryStringParameters || {}
 
     if (!wallet_address) {
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ error: 'Wallet address is required' })
+        body: JSON.stringify({
+          error: 'Missing required parameter',
+          message: 'Wallet address is required'
+        })
       }
     }
 
-    // Query character by wallet address
-    const { data: character, error } = await supabase
+    // Get character with all related data
+    const { data: character, error: characterError } = await supabaseAdmin
       .from('characters')
       .select(`
-        *,
-        currentLocation:locations(*),
-        inventory:character_inventory(
+        id,
+        nft_address,
+        token_id,
+        wallet_address,
+        name,
+        gender,
+        character_type,
+        current_location_id,
+        current_version,
+        current_image_url,
+        energy,
+        health,
+        created_at,
+        updated_at,
+        coins,
+        level,
+        status,
+        payment_signature,
+        experience,
+        location:locations(
           *,
-          item:items(*)
-        ),
-        imageHistory:character_images(*),
-        transactions(*)
+          parent:locations(*)
+        )
       `)
       .eq('wallet_address', wallet_address)
       .eq('status', 'ACTIVE')
       .single()
 
-    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
-      console.error('Supabase error:', error)
+    // console.log('🔍 Character Query Result:', {
+    //   found: !!character,
+    //   error: characterError,
+    //   wallet: wallet_address
+    // })
+
+    if (characterError) {
+      console.error('Error fetching character:', characterError)
+      if (characterError.code === 'PGRST116') {
+        return {
+          statusCode: 404,
+          headers,
+          body: JSON.stringify({
+            error: 'NO_PROFILE_FOUND',
+            message: 'No active character found for this wallet address'
+          })
+        }
+      }
       return {
         statusCode: 500,
         headers,
         body: JSON.stringify({
           error: 'Database error',
-          message: error.message
+          message: characterError.message
         })
       }
     }
 
-    if (!character) {
-      return {
-        statusCode: 200,
-        headers,
-        body: JSON.stringify({
-          hasCharacter: false,
-          character: null,
-          message: 'No character found for this wallet'
-        })
-      }
+    // Transform the data for the frontend
+    const transformedCharacter = {
+      ...character,
+      currentLocation: character.location ? {
+        ...character.location,
+        parent: character.location.parent || null,
+        resources: [] // Temporarily set to empty array to avoid errors
+      } : null,
+      inventory: [], // Temporarily set to empty array
+      equipped_items: [] // Temporarily set to empty array
     }
 
-    return {
+    const response = {
       statusCode: 200,
       headers,
       body: JSON.stringify({
         hasCharacter: true,
-        character: character
+        character: transformedCharacter
       })
     }
 
+    // console.log('📤 Final Response:', {
+    //   statusCode: response.statusCode,
+    //   characterFound: !!transformedCharacter,
+    //   hasLocation: !!transformedCharacter.currentLocation,
+    //   inventoryCount: transformedCharacter.inventory.length
+    // })
+
+    return response
+
   } catch (error) {
-    console.error('Error fetching character:', error)
-    return {
+    console.error('Error in get-player-character:', error)
+    const errorResponse = {
       statusCode: 500,
       headers,
       body: JSON.stringify({
         error: 'Internal server error',
-        message: error.message
+        message: error.message || 'An unexpected error occurred'
       })
     }
+    console.log('📤 Error Response:', JSON.stringify(errorResponse, null, 2))
+    return errorResponse
   }
 }

@@ -1,10 +1,6 @@
 // netlify/functions/travel-action.js - FIXED VERSION
-import { createClient } from '@supabase/supabase-js'
+import supabaseAdmin from '../../src/utils/supabase-admin'
 import { randomUUID } from 'crypto'
-
-const supabaseUrl = process.env.VITE_SUPABASE_URL
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 export const handler = async (event, context) => {
   const headers = {
@@ -37,7 +33,7 @@ export const handler = async (event, context) => {
     }
 
     // Get character by wallet address
-    const { data: character, error } = await supabase
+    const { data: character, error } = await supabaseAdmin
       .from('characters')
       .select('*')
       .eq('wallet_address', wallet_address)
@@ -56,7 +52,7 @@ export const handler = async (event, context) => {
     }
 
     // Get current location details - SIMPLIFIED QUERY
-    const { data: currentLocation, error: currentError } = await supabase
+    const { data: currentLocation, error: currentError } = await supabaseAdmin
       .from('locations')
       .select('*')
       .eq('id', character.current_location_id)
@@ -68,7 +64,7 @@ export const handler = async (event, context) => {
     }
 
     // Get destination location - SIMPLIFIED QUERY (no self-joins)
-    const { data: destination, error: destError } = await supabase
+    const { data: destination, error: destError } = await supabaseAdmin
       .from('locations')
       .select('*')
       .eq('id', destinationId)
@@ -147,7 +143,7 @@ export const handler = async (event, context) => {
     const newCoins = destination.entry_cost ? character.coins - destination.entry_cost : character.coins
 
     // Update character location, health, and coins in a single query
-    const { data: updatedCharacter, error: updateError } = await supabase
+    const { data: updatedCharacter, error: updateError } = await supabaseAdmin
       .from('characters')
       .update({
         current_location_id: destinationId,
@@ -165,7 +161,7 @@ export const handler = async (event, context) => {
 
     // Log the travel transaction
     const transactionId = randomUUID()
-    const { error: transactionError } = await supabase
+    const { error: transactionError } = await supabaseAdmin
       .from('transactions')
       .insert({
         id: transactionId,
@@ -183,7 +179,7 @@ export const handler = async (event, context) => {
     // Update player counts for both locations
     try {
       // Decrement old location
-      await supabase
+      await supabaseAdmin
         .from('locations')
         .update({
           player_count: Math.max(0, (currentLocation.player_count || 1) - 1)
@@ -191,62 +187,43 @@ export const handler = async (event, context) => {
         .eq('id', character.current_location_id)
 
       // Increment new location
-      await supabase
+      await supabaseAdmin
         .from('locations')
         .update({
           player_count: (destination.player_count || 0) + 1,
           last_active: new Date().toISOString()
         })
         .eq('id', destinationId)
-    } catch (locationUpdateError) {
-      console.error('Error updating location player counts:', locationUpdateError)
-      // Don't throw here, travel was successful
-    }
-
-    const responseData = {
-      success: true,
-      message: `Welcome to ${destination.name}!`,
-      newLocation: {
-        id: destination.id,
-        name: destination.name,
-        description: destination.description,
-        location_type: destination.location_type,
-        biome: destination.biome,
-        welcome_message: destination.welcome_message,
-        lore: destination.lore,
-        has_market: destination.has_market,
-        has_mining: destination.has_mining,
-        has_chat: destination.has_chat
-      },
-      previousLocation: {
-        id: currentLocation.id,
-        name: currentLocation.name
-      },
-      costs: {
-        time: 0,
-        energy: 0,
-        money: destination.entry_cost || 0,
-        health: travelHealthCost,
-        status: travelHealthCost > 0 ? [`Lost ${travelHealthCost} health from travel`] : []
-      }
+    } catch (countError) {
+      console.error('Error updating location counts:', countError)
+      // Don't throw here, just log - count updates are not critical
     }
 
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify(responseData)
+      body: JSON.stringify({
+        success: true,
+        character: updatedCharacter,
+        transaction: {
+          id: transactionId,
+          type: 'TRAVEL',
+          description: `Traveled from ${currentLocation.name} to ${destination.name}`,
+          amount: destination.entry_cost || 0
+        },
+        healthCost: travelHealthCost,
+        entryCost: destination.entry_cost || 0
+      })
     }
 
   } catch (error) {
-    console.error('Error during travel:', error)
-
+    console.error('Error in travel-action:', error)
     return {
       statusCode: 500,
       headers,
       body: JSON.stringify({
         error: 'Internal server error',
-        message: 'Travel failed',
-        details: error.message
+        message: error.message
       })
     }
   }

@@ -4,7 +4,7 @@ import { useWallet } from '@solana/wallet-adapter-react'
 import { useNetwork } from '@/contexts/NetworkContext'
 import { usePlayerCharacter, useCharacterActions } from '@/hooks/usePlayerCharacter'
 import { useGameData } from '@/hooks/useGameData'
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/use-toast'
 import type { GameView, DatabaseLocation, Character } from '@/types'
 
 type AppState =
@@ -363,7 +363,20 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         }
 
         const result = await response.json()
-        toast.success(`Traveled to ${result.destination?.name || 'destination'}!`)
+
+        // Show arrival toast with available services
+        const availableServices = []
+        if (result.destination?.has_market) availableServices.push('MARKET')
+        if (result.destination?.has_mining) availableServices.push('MINING')
+        if (result.destination?.has_chat) availableServices.push('COMMS')
+
+        toast.success('ARRIVAL_SUCCESSFUL', {
+          description: `LOCATION: ${result.destination?.name.toUpperCase()}\n${availableServices.length > 0
+            ? `AVAILABLE_SERVICES: ${availableServices.join(', ')}`
+            : 'NO_SERVICES_AVAILABLE'
+            }`,
+          duration: 4000,
+        })
 
         await refetchCharacter()
         await gameData.actions.loadGameData()
@@ -383,14 +396,23 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         const result = await characterActions.buyItem(item_id)
 
         if (result.success) {
-          toast.success(`Purchased ${itemName}! (-${cost} RUST)`)
+          toast.success('PURCHASE_SUCCESSFUL', {
+            description: `ITEM: ${itemName.toUpperCase()}\nCOST: ${cost} RUST\nBALANCE: ${result.newBalance || 0} RUST`,
+            duration: 4000,
+          })
           await refetchCharacter()
           await gameData.actions.loadGameData()
         } else {
-          toast.error(result.message || 'Purchase failed')
+          toast.error('PURCHASE_FAILED', {
+            description: result.message || 'INSUFFICIENT_FUNDS',
+            duration: 4000,
+          })
         }
       } catch (error) {
-        toast.error('Purchase failed. Please try again.')
+        toast.error('PURCHASE_FAILED', {
+          description: 'NETWORK_ERROR • RETRY_REQUIRED',
+          duration: 4000,
+        })
       } finally {
         dispatch({ type: 'SET_LOADING_ITEM', item_id, loading: false })
       }
@@ -404,14 +426,23 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         const result = await characterActions.equipItem(inventoryId, !isCurrentlyEquipped)
 
         if (result.success) {
-          const action = isCurrentlyEquipped ? 'unequipped' : 'equipped'
-          toast.success(`Item ${action}!`)
+          const action = isCurrentlyEquipped ? 'UNEQUIPPED' : 'EQUIPPED'
+          toast.success('EQUIPMENT_UPDATE', {
+            description: `ITEM: ${result.item.name.toUpperCase()}\nSTATUS: ${action}\nCATEGORY: ${result.item.category}\nRARITY: ${result.item.rarity}`,
+            duration: 4000,
+          })
           await refetchCharacter()
         } else {
-          toast.error(result.message || 'Failed to equip item')
+          toast.error('EQUIPMENT_ERROR', {
+            description: result.message || 'INVALID_SLOT • RETRY_REQUIRED',
+            duration: 4000,
+          })
         }
       } catch (error) {
-        toast.error('Failed to equip item. Please try again.')
+        toast.error('EQUIPMENT_ERROR', {
+          description: 'NETWORK_ERROR • RETRY_REQUIRED',
+          duration: 4000,
+        })
       } finally {
         dispatch({ type: 'SET_LOADING_ITEM', item_id: inventoryId, loading: false })
       }
@@ -425,17 +456,26 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         const result = await characterActions.useItem(inventoryId)
 
         if (result.success) {
-          let message = `Used ${itemName}!`
-          if (energy_effect) message += ` (+${energy_effect} energy)`
-          if (health_effect) message += ` (+${health_effect} health)`
+          const effects = []
+          if (energy_effect) effects.push(`ENERGY: +${energy_effect}`)
+          if (health_effect) effects.push(`HEALTH: +${health_effect}`)
 
-          toast.success(message)
+          toast.success('ITEM_USED', {
+            description: `ITEM: ${itemName.toUpperCase()}\n${effects.join('\n')}\nSTATUS: CONSUMED`,
+            duration: 4000,
+          })
           await refetchCharacter()
         } else {
-          toast.error(result.message || 'Failed to use item')
+          toast.error('ITEM_ERROR', {
+            description: result.message || 'INVALID_ITEM • RETRY_REQUIRED',
+            duration: 4000,
+          })
         }
       } catch (error) {
-        toast.error('Failed to use item. Please try again.')
+        toast.error('ITEM_ERROR', {
+          description: 'NETWORK_ERROR • RETRY_REQUIRED',
+          duration: 4000,
+        })
       } finally {
         dispatch({ type: 'SET_LOADING_ITEM', item_id: inventoryId, loading: false })
       }

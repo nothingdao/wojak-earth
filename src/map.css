@@ -1,0 +1,449 @@
+/* map.css - Comprehensive Map Color System */
+
+:root {
+  /* =========================
+     BASE HUE DEFINITIONS
+     ========================= */
+
+  /* Primary biome hues - carefully chosen for maximum distinction */
+  --map-forest-hue: 140;
+  /* Green family */
+  --map-desert-hue: 45;
+  /* Orange/amber family */
+  --map-urban-hue: 220;
+  /* Blue family */
+  --map-plains-hue: 100;
+  /* Light green family */
+  --map-mountain-hue: 280;
+  /* Purple family */
+  --map-water-hue: 200;
+  /* Cyan family */
+  --map-swamp-hue: 80;
+  /* Yellow-green family */
+  --map-tundra-hue: 240;
+  /* Cool neutral */
+  --map-default-hue: 0;
+  /* Neutral gray */
+
+  /* =========================
+     STATE LIGHTNESS LEVELS
+     ========================= */
+
+  /* Base lightness values for different states */
+  --map-lightness-base: 0.55;
+  --map-lightness-hover: 0.65;
+  --map-lightness-selected: 0.75;
+  --map-lightness-active: 0.8;
+  --map-lightness-disabled: 0.4;
+  --map-lightness-muted: 0.45;
+
+  /* =========================
+     CHROMA (SATURATION) LEVELS
+     ========================= */
+
+  /* Base chroma values for vibrancy control */
+  --map-chroma-base: 0.12;
+  --map-chroma-hover: 0.15;
+  --map-chroma-selected: 0.18;
+  --map-chroma-active: 0.2;
+  --map-chroma-disabled: 0.05;
+  --map-chroma-muted: 0.08;
+
+  /* Special chroma for certain biomes */
+  --map-chroma-water: 0.15;
+  /* Water needs more saturation */
+  --map-chroma-desert: 0.16;
+  /* Desert needs warmth */
+  --map-chroma-tundra: 0.06;
+  /* Tundra should be desaturated */
+
+  /* =========================
+     GENERATED BIOME COLORS
+     ========================= */
+
+  /* Forest Colors */
+  --map-forest: oklch(var(--map-lightness-base) var(--map-chroma-base) var(--map-forest-hue));
+  --map-forest-hover: oklch(var(--map-lightness-hover) var(--map-chroma-hover) var(--map-forest-hue));
+  --map-forest-selected: oklch(var(--map-lightness-selected) var(--map-chroma-selected) var(--map-forest-hue));
+  --map-forest-active: oklch(var(--map-lightness-active) var(--map-chroma-active) var(--map-forest-hue));
+  --map-forest-disabled: oklch(var(--map-lightness-disabled) var(--map-chroma-disabled) var(--map-forest-hue));
+
+  /* Desert Colors */
+  --map-desert: oklch(var(--map-lightness-base) var(--map-chroma-desert) var(--map-desert-hue));
+  --map-desert-hover: oklch(var(--map-lightness-hover) var(--map-chroma-hover) var(--map-desert-hue));
+  --map-desert-selected: oklch(var(--map-lightness-selected) var(--map-chroma-selected) var(--map-desert-hue));
+  --map-desert-active: oklch(var(--map-lightness-active) var(--map-chroma-active) var(--map-desert-hue));
+  --map-desert-disabled: oklch(var(--map-lightness-disabled) var(--map-chroma-disabled) var(--map-desert-hue));
+
+  /* Urban Colors */
+  --map-urban: oklch(var(--map-lightness-base) var(--map-chroma-base) var(--map-urban-hue));
+  --map-urban-hover: oklch(var(--map-lightness-hover) var(--map-chroma-hover) var(--map-urban-hue));
+  --map-urban-selected: oklch(var(--map-lightness-selected) var(--map-chroma-selected) var(--map-urban-hue));
+  --map-urban-active: oklch(var(--map-lightness-active) var(--map-chroma-active) var(--map-urban-hue));
+  --map-urban-disabled: oklch(var(--map-lightness-disabled) var(--map-chroma-disabled) var(--map-urban-hue));
+
+  /* Plains Colors */
+  --map-plains: oklch(var(--map-lightness-base) var(--map-chroma-base) var(--map-plains-hue));
+  --map-plains-hover: oklch(var(--map-lightness-hover) var(--map-chroma-hover) var(--map-plains-hue));
+  --map-plains-selected: oklch(var(--map-lightness-selected) var(--map-chroma-selected) var(--map-plains-hue));
+  --map-plains-active: oklch(var(--map-lightness-active) var(--map-chroma-active) var(--map-plains-hue));
+  --map-plains-disabled: oklch(var(--map-lightness-disabled) var(--map-chroma-disabled) var(--map-plains-hue));
+
+  /* Mountain Colors */
+  --map-mountain: oklch(var(--map-lightness-base) var(--map-chroma-base) var(--map-mountain-hue));
+  --map-mountain-hover: oklch(var(--map-lightness-hover) var(--map-chroma-hover) var(--map-mountain-hue));
+  --map-mountain-selected: oklch(var(--map-lightness-selected) var(--map-chroma-selected) var(--map-mountain-hue));
+  --map-mountain-active: oklch(var(--map-lightness-active) var(--map-chroma-active) var(--map-mountain-hue));
+  --map-mountain-disabled: oklch(var(--map-lightness-disabled) var(--map-chroma-disabled) var(--map-mountain-hue));
+
+  /* Water Colors */
+  --map-water: oklch(var(--map-lightness-base) var(--map-chroma-water) var(--map-water-hue));
+  --map-water-hover: oklch(var(--map-lightness-hover) var(--map-chroma-hover) var(--map-water-hue));
+  --map-water-selected: oklch(var(--map-lightness-selected) var(--map-chroma-selected) var(--map-water-hue));
+  --map-water-active: oklch(var(--map-lightness-active) var(--map-chroma-active) var(--map-water-hue));
+  --map-water-disabled: oklch(var(--map-lightness-disabled) var(--map-chroma-disabled) var(--map-water-hue));
+
+  /* Swamp Colors */
+  --map-swamp: oklch(var(--map-lightness-base) var(--map-chroma-base) var(--map-swamp-hue));
+  --map-swamp-hover: oklch(var(--map-lightness-hover) var(--map-chroma-hover) var(--map-swamp-hue));
+  --map-swamp-selected: oklch(var(--map-lightness-selected) var(--map-chroma-selected) var(--map-swamp-hue));
+  --map-swamp-active: oklch(var(--map-lightness-active) var(--map-chroma-active) var(--map-swamp-hue));
+  --map-swamp-disabled: oklch(var(--map-lightness-disabled) var(--map-chroma-disabled) var(--map-swamp-hue));
+
+  /* Tundra Colors */
+  --map-tundra: oklch(var(--map-lightness-base) var(--map-chroma-tundra) var(--map-tundra-hue));
+  --map-tundra-hover: oklch(var(--map-lightness-hover) var(--map-chroma-hover) var(--map-tundra-hue));
+  --map-tundra-selected: oklch(var(--map-lightness-selected) var(--map-chroma-selected) var(--map-tundra-hue));
+  --map-tundra-active: oklch(var(--map-lightness-active) var(--map-chroma-active) var(--map-tundra-hue));
+  --map-tundra-disabled: oklch(var(--map-lightness-disabled) var(--map-chroma-disabled) var(--map-tundra-hue));
+
+  /* Default/Unknown Colors */
+  --map-default: oklch(var(--map-lightness-muted) var(--map-chroma-muted) var(--map-default-hue));
+  --map-default-hover: oklch(var(--map-lightness-base) var(--map-chroma-base) var(--map-default-hue));
+  --map-default-selected: oklch(var(--map-lightness-hover) var(--map-chroma-hover) var(--map-default-hue));
+  --map-default-active: oklch(var(--map-lightness-selected) var(--map-chroma-selected) var(--map-default-hue));
+  --map-default-disabled: oklch(var(--map-lightness-disabled) var(--map-chroma-disabled) var(--map-default-hue));
+
+  /* =========================
+     SPECIAL STATE COLORS
+     ========================= */
+
+  /* Player Location Indicator */
+  --map-player-location: oklch(0.7 0.18 140);
+  --map-player-location-ring: oklch(0.85 0.15 140);
+  --map-player-location-pulse: oklch(0.6 0.2 140);
+
+  /* Travel States */
+  --map-travel-origin: oklch(0.6 0.2 15);
+  /* Red - where you're leaving */
+  --map-travel-destination: oklch(0.7 0.18 60);
+  /* Amber - where you're going */
+  --map-travel-path: oklch(0.65 0.15 300);
+  /* Purple - travel line */
+
+  /* Selection and Interaction */
+  --map-selection-primary: oklch(0.65 0.15 220);
+  /* Blue for primary selection */
+  --map-selection-secondary: oklch(0.7 0.12 180);
+  /* Cyan for secondary */
+
+  /* =========================
+     INFRASTRUCTURE COLORS
+     ========================= */
+
+  /* Grid and Background */
+  --map-grid: oklch(0.8 0.05 140);
+  --map-grid-major: oklch(0.7 0.08 140);
+  --map-background: oklch(0.98 0.01 140);
+
+  /* Borders and Strokes */
+  --map-border-base: oklch(0.75 0.03 var(--map-default-hue));
+  --map-border-hover: oklch(0.65 0.08 var(--map-default-hue));
+  --map-border-selected: oklch(0.55 0.12 220);
+  --map-border-active: oklch(0.45 0.15 220);
+
+  /* Text and Labels */
+  --map-text-primary: oklch(0.2 0.02 var(--map-default-hue));
+  --map-text-secondary: oklch(0.45 0.03 var(--map-default-hue));
+  --map-text-muted: oklch(0.6 0.02 var(--map-default-hue));
+  --map-text-contrast: oklch(0.95 0.01 var(--map-default-hue));
+}
+
+/* =========================
+   DARK MODE OVERRIDES
+   ========================= */
+
+.dark {
+  /* Adjust base lightness for dark mode */
+  --map-lightness-base: 0.45;
+  --map-lightness-hover: 0.55;
+  --map-lightness-selected: 0.65;
+  --map-lightness-active: 0.75;
+  --map-lightness-disabled: 0.25;
+  --map-lightness-muted: 0.35;
+
+  /* Increase chroma slightly for dark mode visibility */
+  --map-chroma-base: 0.15;
+  --map-chroma-hover: 0.18;
+  --map-chroma-selected: 0.22;
+  --map-chroma-active: 0.25;
+  --map-chroma-disabled: 0.06;
+  --map-chroma-muted: 0.1;
+
+  /* Dark mode infrastructure */
+  --map-grid: oklch(0.3 0.08 140);
+  --map-grid-major: oklch(0.4 0.12 140);
+  --map-background: oklch(0.08 0.02 258);
+
+  /* Dark mode borders */
+  --map-border-base: oklch(0.35 0.05 var(--map-default-hue));
+  --map-border-hover: oklch(0.45 0.1 var(--map-default-hue));
+  --map-border-selected: oklch(0.55 0.15 220);
+  --map-border-active: oklch(0.65 0.18 220);
+
+  /* Dark mode text */
+  --map-text-primary: oklch(0.85 0.02 var(--map-default-hue));
+  --map-text-secondary: oklch(0.65 0.03 var(--map-default-hue));
+  --map-text-muted: oklch(0.45 0.02 var(--map-default-hue));
+  --map-text-contrast: oklch(0.15 0.01 var(--map-default-hue));
+
+  /* Enhanced special states for dark mode */
+  --map-player-location: oklch(0.6 0.2 140);
+  --map-player-location-ring: oklch(0.75 0.18 140);
+  --map-travel-origin: oklch(0.55 0.22 15);
+  --map-travel-destination: oklch(0.65 0.2 60);
+}
+
+/* =========================
+   UTILITY CLASSES
+   ========================= */
+
+/* Biome color utilities */
+.map-forest {
+  color: var(--map-forest);
+}
+
+.map-desert {
+  color: var(--map-desert);
+}
+
+.map-urban {
+  color: var(--map-urban);
+}
+
+.map-plains {
+  color: var(--map-plains);
+}
+
+.map-mountain {
+  color: var(--map-mountain);
+}
+
+.map-water {
+  color: var(--map-water);
+}
+
+.map-swamp {
+  color: var(--map-swamp);
+}
+
+.map-tundra {
+  color: var(--map-tundra);
+}
+
+.map-default {
+  color: var(--map-default);
+}
+
+/* Background color utilities */
+.bg-map-forest {
+  background-color: var(--map-forest);
+}
+
+.bg-map-desert {
+  background-color: var(--map-desert);
+}
+
+.bg-map-urban {
+  background-color: var(--map-urban);
+}
+
+.bg-map-plains {
+  background-color: var(--map-plains);
+}
+
+.bg-map-mountain {
+  background-color: var(--map-mountain);
+}
+
+.bg-map-water {
+  background-color: var(--map-water);
+}
+
+.bg-map-swamp {
+  background-color: var(--map-swamp);
+}
+
+.bg-map-tundra {
+  background-color: var(--map-tundra);
+}
+
+.bg-map-default {
+  background-color: var(--map-default);
+}
+
+/* Border color utilities */
+.border-map-forest {
+  border-color: var(--map-forest);
+}
+
+.border-map-desert {
+  border-color: var(--map-desert);
+}
+
+.border-map-urban {
+  border-color: var(--map-urban);
+}
+
+.border-map-plains {
+  border-color: var(--map-plains);
+}
+
+.border-map-mountain {
+  border-color: var(--map-mountain);
+}
+
+.border-map-water {
+  border-color: var(--map-water);
+}
+
+.border-map-swamp {
+  border-color: var(--map-swamp);
+}
+
+.border-map-tundra {
+  border-color: var(--map-tundra);
+}
+
+.border-map-default {
+  border-color: var(--map-default);
+}
+
+/* State-aware utilities */
+.map-hover {
+  opacity: 0.8;
+}
+
+.map-selected {
+  opacity: 1;
+  filter: brightness(1.1);
+}
+
+.map-active {
+  opacity: 1;
+  filter: brightness(1.2) saturate(1.1);
+}
+
+.map-disabled {
+  opacity: 0.5;
+  filter: grayscale(0.5);
+}
+
+/* =========================
+   MAP-SPECIFIC ANIMATIONS
+   ========================= */
+
+/* Enhanced travel animations using the new colors */
+@keyframes map-travel-pulse {
+
+  0%,
+  100% {
+    background-color: var(--map-travel-origin);
+    transform: scale(1);
+  }
+
+  50% {
+    background-color: var(--map-travel-destination);
+    transform: scale(1.1);
+  }
+}
+
+@keyframes map-selection-glow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 var(--map-selection-primary);
+  }
+
+  50% {
+    box-shadow: 0 0 0 8px transparent;
+  }
+}
+
+/* Animation utility classes */
+.animate-map-travel-pulse {
+  animation: map-travel-pulse 1.5s ease-in-out infinite;
+}
+
+.animate-map-selection-glow {
+  animation: map-selection-glow 2s ease-in-out infinite;
+}
+
+/* =========================
+   ACCESSIBILITY ENHANCEMENTS
+   ========================= */
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --map-chroma-base: 0.2;
+    --map-chroma-hover: 0.25;
+    --map-chroma-selected: 0.3;
+  }
+
+  .dark {
+    --map-lightness-base: 0.6;
+    --map-lightness-hover: 0.7;
+    --map-lightness-selected: 0.8;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+
+  .animate-map-travel-pulse,
+  .animate-map-selection-glow {
+    animation: none;
+  }
+}
+
+/* =========================
+   LEGACY COMPATIBILITY
+   ========================= */
+
+/* Fallback hex values for browsers that don't support OKLCH */
+@supports not (color: oklch(0.5 0.1 180)) {
+  :root {
+    --map-forest: #16a34a;
+    --map-desert: #ea580c;
+    --map-urban: #2563eb;
+    --map-plains: #22c55e;
+    --map-mountain: #7c3aed;
+    --map-water: #0891b2;
+    --map-swamp: #65a30d;
+    --map-tundra: #64748b;
+    --map-default: #6b7280;
+  }
+
+  .dark {
+    --map-forest: #10b981;
+    --map-desert: #f59e0b;
+    --map-urban: #3b82f6;
+    --map-plains: #22c55e;
+    --map-mountain: #8b5cf6;
+    --map-water: #06b6d4;
+    --map-swamp: #84cc16;
+    --map-tundra: #94a3b8;
+    --map-default: #9ca3af;
+  }
+}

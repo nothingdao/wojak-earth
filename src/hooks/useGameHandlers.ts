@@ -3,7 +3,7 @@
 // ========================================
 
 // src/hooks/useGameHandlers.ts - DEBUGGING VERSION
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/use-toast'
 import type { Location, MarketItem, Character, GameView } from '@/types'
 
 type Rarity = 'COMMON' | 'UNCOMMON' | 'RARE' | 'EPIC' | 'LEGENDARY'
@@ -96,7 +96,7 @@ export function useGameHandlers({
 
     try {
       const result = await characterActions.mine(
-        selectedLocation?.id || character.currentLocation.id
+        selectedLocation?.id || character.current_location_id
       )
 
       if (result.foundItem) {
@@ -143,7 +143,7 @@ export function useGameHandlers({
       location_id,
       hasCharacter: !!character,
       character_id: character?.id,
-      current_location_id: character?.currentLocation?.id,
+      current_location_id: character?.current_location_id,
     })
 
     if (!character) {
@@ -159,11 +159,7 @@ export function useGameHandlers({
     }
 
     // Find the destination location
-    const destination =
-      locations.find((loc) => loc.id === location_id) ||
-      locations
-        .find((loc) => loc.subLocations?.some((sub) => sub.id === location_id))
-        ?.subLocations?.find((sub) => sub.id === location_id)
+    const destination = locations.find((loc) => loc.id === location_id)
 
     console.log('🎯 Destination found:', {
       location_id,
@@ -186,7 +182,21 @@ export function useGameHandlers({
     setIsTravelingOnMap?.(true)
     setMapTravelDestination?.(location_id)
 
-    toast.success(`Traveling to ${destination?.name || 'destination'}...`)
+    // Create a rich toast with travel information
+    toast.success('TRAVEL_INITIATED', {
+      description: `DESTINATION: ${destination?.name.toUpperCase()}\n${
+        destination?.biome ? `BIOME: ${destination.biome.toUpperCase()}\n` : ''
+      }${
+        destination?.difficulty
+          ? `THREAT_LEVEL: ${destination.difficulty}\n`
+          : ''
+      }${
+        destination?.entry_cost
+          ? `ENTRY_COST: ${destination.entry_cost} RUST`
+          : ''
+      }`,
+      duration: 4000,
+    })
 
     try {
       // DELAY THE API CALL - Wait for animation to complete FIRST
@@ -201,9 +211,28 @@ export function useGameHandlers({
           await loadGameData()
 
           console.log('✅ Travel UI updates completed')
+
+          // Show arrival toast
+          const availableServices = []
+          if (destination?.has_market) availableServices.push('MARKET')
+          if (destination?.has_mining) availableServices.push('MINING')
+          if (destination?.has_chat) availableServices.push('COMMS')
+
+          toast.success('ARRIVAL_SUCCESSFUL', {
+            description: `LOCATION: ${destination?.name.toUpperCase()}\n${
+              availableServices.length > 0
+                ? `AVAILABLE_SERVICES: ${availableServices.join(', ')}`
+                : 'NO_SERVICES_AVAILABLE'
+            }`,
+            duration: 4000,
+          })
         } catch (error) {
           console.error('❌ Travel API failed:', error)
-          toast.error('Travel failed. Please try again.')
+          toast.error('TRAVEL_FAILED', {
+            description:
+              error instanceof Error ? error.message : 'Please try again.',
+            duration: 4000,
+          })
         } finally {
           // Clear all travel states
           setTravelingTo(null)
@@ -222,7 +251,10 @@ export function useGameHandlers({
       setMapTravelDestination?.(null)
 
       if (error instanceof Error) {
-        toast.error(error.message)
+        toast.error('TRAVEL_SETUP_FAILED', {
+          description: error.message,
+          duration: 4000,
+        })
       }
     }
   }
@@ -274,13 +306,13 @@ export function useGameHandlers({
 
     try {
       await characterActions.sendMessage(
-        selectedLocation?.id || character.currentLocation.id,
+        selectedLocation?.id || character.current_location_id,
         chatInput,
         'CHAT'
       )
 
       await loadChatMessages(
-        selectedLocation?.id || character.currentLocation.id
+        selectedLocation?.id || character.current_location_id
       )
     } catch (error) {
       console.error('Failed to send message:', error)
@@ -309,31 +341,10 @@ export function useGameHandlers({
     setLoadingItems((prev) => new Set(prev).add(inventoryId))
 
     try {
-      const result = await characterActions.equipItem(inventoryId, !is_equipped)
-
-      if (result.replacedItems && result.replacedItems.length > 0) {
-        toast.success(`${result.item.name} equipped!`, {
-          description: `Replaced ${result.replacedItems.join(', ')}`,
-          duration: 4000,
-        })
-      } else {
-        toast.success(
-          is_equipped
-            ? `${result.item.name} unequipped`
-            : `${result.item.name} equipped!`,
-          {
-            description: `${result.item.category.toLowerCase()} • ${result.item.rarity.toLowerCase()}`,
-            duration: 3000,
-          }
-        )
-      }
-
+      await characterActions.equipItem(inventoryId, !is_equipped)
       await refetchCharacter()
     } catch (error) {
       console.error('Failed to equip item:', error)
-      if (error instanceof Error) {
-        toast.error(error.message)
-      }
     } finally {
       setLoadingItems((prev) => {
         const newSet = new Set(prev)
@@ -384,26 +395,10 @@ export function useGameHandlers({
     setLoadingItems((prev) => new Set(prev).add(inventoryId))
 
     try {
-      const result = await characterActions.useItem(inventoryId)
-
-      const effects = []
-      if (result.effects?.energy && result.effects.energy > 0)
-        effects.push(`+${result.effects.energy} energy`)
-      if (result.effects?.health && result.effects.health > 0)
-        effects.push(`+${result.effects.health} health`)
-
-      toast.success(
-        `Used ${itemName}${
-          effects.length > 0 ? ` (${effects.join(', ')})` : ''
-        }`
-      )
-
+      await characterActions.useItem(inventoryId)
       await refetchCharacter()
     } catch (error) {
       console.error('Use item failed:', error)
-      if (error instanceof Error) {
-        toast.error(error.message)
-      }
     } finally {
       setLoadingItems((prev) => {
         const newSet = new Set(prev)

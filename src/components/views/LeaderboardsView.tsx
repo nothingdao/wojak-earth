@@ -22,11 +22,19 @@ import {
 
 const API_BASE = '/.netlify/functions'
 
+interface Category {
+  id: string;
+  label: string;
+  icon: React.ElementType;
+  description: string;
+  color: string;
+}
+
 interface LeaderboardEntry {
   id: string
   character_id: string
-  character_name: string  // Changed from characterName
-  character_image_url?: string  // Changed from characterimage_url
+  name: string  // Changed from character_name
+  character_image_url?: string
   character_type: 'HUMAN' | 'NPC'
   rank: number
   value: number
@@ -116,14 +124,14 @@ const LeaderboardEntry = React.memo(({
           <AvatarImage src={entry.character_image_url}
           />
           <AvatarFallback className="text-xs font-mono bg-muted/50">
-            {entry.character_name.charAt(0).toUpperCase()}
+            {entry.name.charAt(0).toUpperCase()}
           </AvatarFallback>
         </Avatar>
 
         <div className="min-w-0 overflow-hidden">
           <div className="flex items-center gap-2 mb-1">
             <span className="font-bold text-primary text-sm truncate">
-              {entry.character_name.toUpperCase()}
+              {entry.name.toUpperCase()}
             </span>
             {entry.character_type === 'NPC' && (
               <Badge variant="outline" className="text-xs font-mono px-1 py-0">
@@ -218,7 +226,7 @@ const LeaderboardTable = React.memo(({
   const loadingSkeleton = useMemo(() => (
     <div className="space-y-2">
       {Array.from({ length: 10 }).map((_, i) => (
-        <div key={i} className="bg-muted/30 border border-primary/20 rounded p-3 animate-pulse">
+        <div key={`skeleton-${i}-${Math.random()}`} className="bg-muted/30 border border-primary/20 rounded p-3 animate-pulse">
           <div className="grid grid-cols-[40px_40px_1fr_80px] gap-3 items-center">
             <div className="w-6 h-6 bg-muted/50 rounded" />
             <div className="w-8 h-8 bg-muted/50 rounded-full" />
@@ -268,7 +276,7 @@ const ChampionCard = React.memo(({
   category,
   topPlayer
 }: {
-  category: any,
+  category: Category,
   topPlayer: LeaderboardEntry
 }) => (
   <div className="bg-muted/20 border border-primary/10 rounded p-2 flex items-center gap-2">
@@ -276,7 +284,7 @@ const ChampionCard = React.memo(({
     <div className="flex-1 min-w-0">
       <div className="text-xs text-muted-foreground">{category.label}_CHAMP</div>
       <div className="text-xs font-bold text-primary truncate font-mono">
-        {topPlayer.character_name.toUpperCase()}
+        {topPlayer.name.toUpperCase()}
       </div>
       <div className="text-xs text-muted-foreground font-mono">
         {formatValue(topPlayer.value, category.id)}

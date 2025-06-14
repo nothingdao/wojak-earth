@@ -60,15 +60,15 @@ export const handler = async (event, context) => {
 
     // REAL PLAYER PAYMENT VERIFICATION
     const connection = new Connection(
-      process.env.SOLANA_RPC_URL || "https://api.devnet.solana.com",
+      process.env.VITE_DEVNET_RPC_URL || "https://devnet.helius-rpc.com/?api-key=8cc07016-410c-42aa-9220-a8a67cdbb6f7",
       "confirmed"
     )
 
-    // Skip payment verification for NPCs
-    if (paymentSignature.startsWith('npc_mint_')) {
-      console.log('🤖 Skipping payment verification for NPC')
+    // Skip payment verification for NPCs - COMPLETELY BYPASS
+    if (isNPC) {
+      console.log('🤖 NPC mint detected - bypassing ALL payment validation')
 
-      // Check if this NPC signature was already used
+      // Just check for duplicate signatures
       const { data: existingNPC } = await supabase
         .from('characters')
         .select('id, name')
@@ -80,15 +80,18 @@ export const handler = async (event, context) => {
           statusCode: 400,
           headers,
           body: JSON.stringify({
-            error: 'NPC signature already used',
+            error: 'Payment signature already used',
             existingCharacter: existingNPC.name,
             code: 'PAYMENT_ALREADY_USED'
           })
         }
       }
+
+      console.log('✅ NPC signature verified as unique, proceeding to character creation')
+
+      // Skip ALL payment validation and jump directly to character creation
+
     } else {
-
-
       // Get transaction details
       let transaction
       try {

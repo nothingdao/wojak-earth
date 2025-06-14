@@ -1,16 +1,11 @@
 // src/hooks/usePlayerCharacter.ts - Simplified network awareness
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useWallet } from '@solana/wallet-adapter-react'
-import { createClient } from '@supabase/supabase-js'
-import { toast } from 'sonner'
+import supabase from '../utils/supabase'
+import { toast } from '@/components/ui/use-toast'
 import type { Character, UsePlayerCharacterReturn } from '@/types'
 
 const API_BASE = '/.netlify/functions'
-
-// Create Supabase client for real-time subscriptions
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
-const realtimeSupabase = createClient(supabaseUrl, supabaseAnonKey)
 
 export function usePlayerCharacter(
   shouldLoad: boolean = true
@@ -23,10 +18,10 @@ export function usePlayerCharacter(
 
   // Real-time subscription refs
   const characterSubscriptionRef = useRef<ReturnType<
-    typeof realtimeSupabase.channel
+    typeof supabase.channel
   > | null>(null)
   const inventorySubscriptionRef = useRef<ReturnType<
-    typeof realtimeSupabase.channel
+    typeof supabase.channel
   > | null>(null)
 
   const fetchCharacter = useCallback(
@@ -36,6 +31,9 @@ export function usePlayerCharacter(
         console.log('⚠️ Character loading disabled (likely mainnet)')
         return
       }
+
+      console.log('DEBUG: Wallet Connected:', wallet.connected)
+      console.log('DEBUG: Wallet Public Key:', wallet.publicKey?.toString())
 
       if (!wallet.connected || !wallet.publicKey) {
         if (!isRefetch) {
@@ -58,15 +56,18 @@ export function usePlayerCharacter(
         )
 
         const data = await response.json()
+        console.log('📥 Character API Response:', data)
 
         if (!response.ok) {
           throw new Error(data.message || 'Failed to fetch character')
         }
 
-        if (data.hasCharacter) {
+        if (data.hasCharacter && data.character) {
+          console.log('✅ Character found:', data.character.name)
           setCharacter(data.character)
           setHasCharacter(true)
         } else {
+          console.log('❌ No character found in response')
           setCharacter(null)
           setHasCharacter(false)
         }
@@ -95,7 +96,7 @@ export function usePlayerCharacter(
         characterSubscriptionRef.current.unsubscribe()
       }
 
-      characterSubscriptionRef.current = realtimeSupabase
+      characterSubscriptionRef.current = supabase
         .channel(`character-updates-${character_id}`)
         .on(
           'postgres_changes',
@@ -179,7 +180,7 @@ export function usePlayerCharacter(
         inventorySubscriptionRef.current.unsubscribe()
       }
 
-      inventorySubscriptionRef.current = realtimeSupabase
+      inventorySubscriptionRef.current = supabase
         .channel(`inventory-updates-${character_id}`)
         .on(
           'postgres_changes',

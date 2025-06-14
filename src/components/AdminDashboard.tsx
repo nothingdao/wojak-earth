@@ -1,7 +1,7 @@
 // src/components/AdminDashboard.tsx - Refactored with proper separation
 import { useState, useCallback } from 'react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/use-toast'
 import {
   Users,
   MapPin,

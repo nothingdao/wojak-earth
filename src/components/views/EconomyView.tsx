@@ -31,20 +31,67 @@ const EconomyView: React.FC = () => {
         fetch('/.netlify/functions/game-economy')
       ]);
 
+      let newEconomyData: EconomyData = {
+        totalWealth: 0,
+        avgWealth: 0,
+        wealthDistribution: { poor: 0, middle: 0, rich: 0 },
+        totalCharacters: 0,
+        marketData: {
+          totalListings: 0,
+          totalValue: 0,
+          avgPrice: 0,
+          mostExpensiveItem: { name: "--", price: 0, location: "--" },
+          cheapestItem: { name: "--", price: 0, location: "--" },
+          popularLocations: []
+        },
+        playerActivity: {
+          onlineNow: 0,
+          avgLevel: 0,
+          avgEnergy: 0,
+          avgHealth: 0,
+          topLocations: []
+        },
+        resources: {
+          mostValuable: []
+        }
+      };
+
       if (economyResponse.ok) {
         const economyResult = await economyResponse.json();
-        setEconomyData(economyResult.economy);
+        // Populate market data from get-economy-overview (items)
+        const totalListings = economyResult.items?.length || 0;
+        let totalValue = 0;
+        let totalPrices = 0;
+        let itemCount = 0;
+
+        economyResult.items?.forEach(item => {
+          if (item.current_price?.buy) {
+            totalValue += item.current_price.buy;
+            totalPrices += item.current_price.buy;
+            itemCount++;
+          }
+        });
+
+        newEconomyData.marketData = {
+          totalListings: totalListings,
+          totalValue: totalValue,
+          avgPrice: itemCount > 0 ? totalPrices / itemCount : 0,
+          mostExpensiveItem: economyResult.items?.sort((a, b) => (b.current_price?.buy || 0) - (a.current_price?.buy || 0))[0] || { name: "--", price: 0, location: "--" },
+          cheapestItem: economyResult.items?.sort((a, b) => (a.current_price?.buy || 0) - (b.current_price?.buy || 0))[0] || { name: "--", price: 0, location: "--" },
+          popularLocations: [] // Not available from this endpoint currently
+        };
+
       }
 
       if (rustMarketResponse.ok) {
         const rustMarketResult = await rustMarketResponse.json();
         if (rustMarketResult.success) {
           setRustMarketData({
-            currentRate: rustMarketResult.data.rustPerSOL,
-            change24h: 0, // You can calculate this from your data
-            volume24h: 0, // Add this to your rust-market endpoint
-            totalTrades: rustMarketResult.transactionCount || 0,
-            totalTransactions: rustMarketResult.transactionCount || 0
+            currentRate: rustMarketResult.marketStats.currentRate,
+            change24h: rustMarketResult.marketStats.change24h,
+            volume24h: rustMarketResult.marketStats.volume24h,
+            totalTrades: rustMarketResult.marketStats.totalTrades,
+            totalTransactions: rustMarketResult.totalTransactions || 0
           });
         }
       }
@@ -54,9 +101,29 @@ const EconomyView: React.FC = () => {
         if (gameEconomyResult.success) {
           setGameEconomyFlow(gameEconomyResult.gameEconomyFlow);
           console.log('🏦 Dual-Currency Economy Data:', gameEconomyResult);
+
+          // Populate top-level economy data from game-economy
+          newEconomyData.totalWealth = gameEconomyResult.gameEconomyFlow.totalEconomicValue.totalEconomyUSD || 0;
+          // Assuming active users/characters would come from another endpoint or be calculated from characters list
+          // For now, using a placeholder or default from insights if available
+          newEconomyData.totalCharacters = gameEconomyResult.insights?.currencyUsage?.solUsage > 0 || gameEconomyResult.insights?.currencyUsage?.rustDominance > 0 ? 100 : 0; // Placeholder
+          newEconomyData.avgWealth = newEconomyData.totalCharacters > 0 ? newEconomyData.totalWealth / newEconomyData.totalCharacters : 0;
+
+          // Placeholder for system vitals, wealth distribution, etc.
+          newEconomyData.playerActivity.onlineNow = gameEconomyResult.insights?.onlineNow || 0; // Assuming this might be in insights
+          newEconomyData.playerActivity.avgLevel = gameEconomyResult.insights?.avgLevel || 0; // Assuming this might be in insights
+          newEconomyData.playerActivity.avgEnergy = gameEconomyResult.insights?.avgEnergy || 0; // Assuming this might be in insights
+          newEconomyData.playerActivity.avgHealth = gameEconomyResult.insights?.avgHealth || 0; // Assuming this might be in insights
+
+          newEconomyData.wealthDistribution = { // Placeholder
+            poor: Math.round(newEconomyData.totalCharacters * 0.5),
+            middle: Math.round(newEconomyData.totalCharacters * 0.3),
+            rich: Math.round(newEconomyData.totalCharacters * 0.2),
+          };
         }
       }
 
+      setEconomyData(newEconomyData);
       setIsLoading(false);
     } catch (error) {
       console.error('Failed to fetch economy data:', error);

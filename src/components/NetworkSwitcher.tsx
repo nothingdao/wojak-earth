@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { ChevronDown, Globe, TestTube, AlertTriangle } from 'lucide-react'
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/use-toast'
 
 export const NetworkSwitcher: React.FC = () => {
   const { network, setNetwork, isDevnet, isMainnet } = useNetwork()

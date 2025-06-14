@@ -1,9 +1,5 @@
 // netlify/functions/get-global-activity.js
-import { createClient } from '@supabase/supabase-js'
-
-const supabaseUrl = process.env.VITE_SUPABASE_URL
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-const supabase = createClient(supabaseUrl, supabaseServiceKey)
+import supabaseAdmin from '../../src/utils/supabase-admin'
 
 export const handler = async (event, context) => {
   const headers = {
@@ -34,7 +30,7 @@ export const handler = async (event, context) => {
 
     // Get recent transactions
     console.log('Querying transactions...')
-    let query = supabase
+    let query = supabaseAdmin
       .from('transactions')
       .select('*')
       .gte('created_at', timeThreshold)
@@ -44,7 +40,7 @@ export const handler = async (event, context) => {
     // Optionally exclude the main player character
     if (!includePlayer) {
       // Get the player character ID first
-      const { data: playerChar } = await supabase
+      const { data: playerChar } = await supabaseAdmin
         .from('characters')
         .select('id')
         .eq('name', 'Wojak #1337')
@@ -89,7 +85,7 @@ export const handler = async (event, context) => {
 
     // Get character details for all transactions
     const character_ids = [...new Set(transactions.map(t => t.character_id))]
-    const { data: characters, error: charactersError } = await supabase
+    const { data: characters, error: charactersError } = await supabaseAdmin
       .from('characters')
       .select(`
         id,
@@ -120,7 +116,7 @@ export const handler = async (event, context) => {
     // Fetch item details separately
     let items = []
     if (item_ids.length > 0) {
-      const { data: itemsData, error: itemsError } = await supabase
+      const { data: itemsData, error: itemsError } = await supabaseAdmin
         .from('items')
         .select('id, name, description, category, rarity, image_url')
         .in('id', item_ids)

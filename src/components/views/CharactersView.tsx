@@ -30,14 +30,14 @@ import {
   ChevronUp,
   X
 } from 'lucide-react'
-import type { Character } from '@/types'
+import type { EnhancedCharacter } from '@/types'
 
 
 const API_BASE = '/.netlify/functions'
 
 // Hook to fetch all characters from your API
 const useCharacters = () => {
-  const [characters, setCharacters] = useState<Character[]>([])
+  const [characters, setCharacters] = useState<EnhancedCharacter[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -53,26 +53,7 @@ const useCharacters = () => {
       }
 
       const data = await response.json()
-
-      // Fetch SOL balances for each character
-      const charactersWithBalance = await Promise.all(
-        (data.characters || []).map(async (character: Character) => {
-          try {
-            // You'll need to create this endpoint or use existing one
-            const balanceResponse = await fetch(`${API_BASE}/get-sol-balance?wallet_address=${character.wallet_address}`)
-            if (balanceResponse.ok) {
-              const balanceData = await balanceResponse.json()
-              return { ...character, solBalance: balanceData.solBalance }
-            }
-            return { ...character, solBalance: 0 }
-          } catch (err) {
-            console.warn(`Failed to fetch SOL balance for ${character.name}:`, err)
-            return { ...character, solBalance: 0 }
-          }
-        })
-      )
-
-      setCharacters(charactersWithBalance)
+      setCharacters(data.characters || [])
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch characters')
       console.error('Error fetching characters:', err)
@@ -86,6 +67,22 @@ const useCharacters = () => {
   }, [])
 
   return { characters, loading, error, refetch: fetchCharacters }
+}
+
+// Cache for SOL balances
+const balanceCache = new Map<string, { balance: number; timestamp: number }>()
+const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
+
+const getCachedBalance = (wallet_address: string) => {
+  const cached = balanceCache.get(wallet_address)
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    return cached.balance
+  }
+  return null
+}
+
+const setCachedBalance = (wallet_address: string, balance: number) => {
+  balanceCache.set(wallet_address, { balance, timestamp: Date.now() })
 }
 
 const getRarityColor = (level: number) => {
@@ -128,9 +125,9 @@ export default function CharactersView() {
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [levelFilter, setLevelFilter] = useState<string>('all')
   const [biomeFilter, setBiomeFilter] = useState<string>('all')
-  const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null)
-  const [filteredCharacters, setFilteredCharacters] = useState<Character[]>([])
-  const [selectedCharacterBalance, setSelectedCharacterBalance] = useState(null)
+  const [selectedCharacter, setSelectedCharacter] = useState<EnhancedCharacter | null>(null)
+  const [filteredCharacters, setFilteredCharacters] = useState<EnhancedCharacter[]>([])
+  const [selectedCharacterBalance, setSelectedCharacterBalance] = useState<number | null>(null)
 
   const [filtersExpanded, setFiltersExpanded] = useState(false)
 
@@ -155,21 +152,66 @@ export default function CharactersView() {
   const [statsExpanded, setStatsExpanded] = useState(false)
 
 
-  const fetchCharacterBalance = async (wallet_address) => {
+  const fetchCharacterBalance = async (wallet_address: string) => {
     try {
+      // Check cache first
+      const cachedBalance = getCachedBalance(wallet_address)
+      if (cachedBalance !== null) {
+        setSelectedCharacterBalance(cachedBalance)
+        return
+      }
+
       setSelectedCharacterBalance(null) // Show loading
       const response = await fetch(`${API_BASE}/get-sol-balance?wallet_address=${wallet_address}`)
       if (response.ok) {
         const data = await response.json()
         setSelectedCharacterBalance(data.solBalance)
+        setCachedBalance(wallet_address, data.solBalance)
       } else {
         setSelectedCharacterBalance(0)
+        setCachedBalance(wallet_address, 0)
       }
     } catch (err) {
       console.error('Failed to fetch balance:', err)
       setSelectedCharacterBalance(0)
+      setCachedBalance(wallet_address, 0)
     }
   }
+
+  // Get unique biomes for filter dropdown
+  const uniqueBiomes = [...new Set(characters
+    .map(char => char.location?.biome)
+    .filter((biome): biome is string => biome !== undefined && biome !== null)
+  )]
+
+  // Get level distribution for display
+  const levelCounts = {
+    level1: characters.filter(c => c.level === 1).length,
+    level2to4: characters.filter(c => c.level >= 2 && c.level <= 4).length,
+    level5to9: characters.filter(c => c.level >= 5 && c.level <= 9).length,
+    level10plus: characters.filter(c => c.level >= 10).length,
+  }
+
+  // Get status counts for display
+  const statusCounts = {
+    active: characters.filter(c => c.status === 'ACTIVE').length,
+    dead: characters.filter(c => c.status === 'DEAD').length,
+    inactive: characters.filter(c => c.status === 'INACTIVE').length,
+  }
+
+  // Updated grid column classes for 2, 4, 6 columns
+  const getGridCols = (size: '2' | '4' | '6') => {
+    switch (size) {
+      case '2': return 'grid-cols-2 sm:grid-cols-2 md:grid-cols-2'
+      case '4': return 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4'
+      case '6': return 'grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6'
+      default: return 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4'
+    }
+  }
+
+  const gridCols = getGridCols(gridSize)
+
+  const hasActiveFilters = searchQuery || genderFilter !== 'all' || typeFilter !== 'all' || statusFilter !== 'all' || levelFilter !== 'all' || biomeFilter !== 'all'
 
   // Apply filters whenever filters or characters change
   useEffect(() => {
@@ -207,43 +249,11 @@ export default function CharactersView() {
     }
 
     if (biomeFilter !== 'all') {
-      filtered = filtered.filter(char => char.currentLocation.biome === biomeFilter)
+      filtered = filtered.filter(char => char.location?.biome === biomeFilter)
     }
 
     setFilteredCharacters(filtered)
   }, [characters, searchQuery, genderFilter, typeFilter, statusFilter, levelFilter, biomeFilter])
-
-  // Get unique biomes for filter dropdown
-  const uniqueBiomes = [...new Set(characters.map(char => char.currentLocation.biome))].filter(Boolean)
-
-  // Get level distribution for display
-  const levelCounts = {
-    level1: characters.filter(c => c.level === 1).length,
-    level2to4: characters.filter(c => c.level >= 2 && c.level <= 4).length,
-    level5to9: characters.filter(c => c.level >= 5 && c.level <= 9).length,
-    level10plus: characters.filter(c => c.level >= 10).length,
-  }
-
-  // Get status counts for display
-  const statusCounts = {
-    active: characters.filter(c => c.status === 'ACTIVE').length,
-    dead: characters.filter(c => c.status === 'DEAD').length,
-    inactive: characters.filter(c => c.status === 'INACTIVE').length,
-  }
-
-  // Updated grid column classes for 2, 4, 6 columns
-  const getGridCols = (size: '2' | '4' | '6') => {
-    switch (size) {
-      case '2': return 'grid-cols-2 sm:grid-cols-2 md:grid-cols-2'
-      case '4': return 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4'
-      case '6': return 'grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6'
-      default: return 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4'
-    }
-  }
-
-  const gridCols = getGridCols(gridSize)
-
-  const hasActiveFilters = searchQuery || genderFilter !== 'all' || typeFilter !== 'all' || statusFilter !== 'all' || levelFilter !== 'all' || biomeFilter !== 'all'
 
   if (error) {
     return (
@@ -286,7 +296,7 @@ export default function CharactersView() {
           <ToggleGroup
             type="single"
             value={gridSize}
-            onValueChange={(value) => value && setGridSize(value as '2' | '4' | '6')}
+            onValueChange={(value: string) => value && setGridSize(value as '2' | '4' | '6')}
             className="border border-primary/20 p-1"
           >
             <ToggleGroupItem value="2" aria-label="2 columns" className="h-6 w-6 p-0">
@@ -417,7 +427,7 @@ export default function CharactersView() {
               <Input
                 placeholder="SEARCH_PEOPLE_ID..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
                 className="pl-8 h-8 text-xs font-mono bg-muted/50 border-primary/20"
               />
             </div>
@@ -645,7 +655,7 @@ export default function CharactersView() {
       )}
 
       {/* Character Detail Modal */}
-      <Dialog open={!!selectedCharacter} onOpenChange={(open) => {
+      <Dialog open={!!selectedCharacter} onOpenChange={(open: boolean) => {
         if (!open) {
           setSelectedCharacter(null)
           setSelectedCharacterBalance(null)
@@ -711,7 +721,7 @@ export default function CharactersView() {
                   </div>
                   <div>
                     <div className="text-muted-foreground mb-1">RUST</div>
-                    <div className="text-xl font-bold text-primary font-mono">{selectedCharacter.coins.toLocaleString()}</div>
+                    <div className="text-xl font-bold text-primary font-mono">{selectedCharacter.coins?.toLocaleString() || '0'}</div>
                   </div>
                   <div>
                     <div className="text-muted-foreground mb-1">SOL_BALANCE</div>
@@ -768,8 +778,8 @@ export default function CharactersView() {
                 <div className="text-muted-foreground text-xs mb-2 font-mono">LOCATION_DATA</div>
                 <div className="flex items-center gap-2 mb-2">
                   <MapPin className="h-3 w-3 text-primary" />
-                  <span className="text-primary font-bold text-sm font-mono">{selectedCharacter.currentLocation.name.toUpperCase()}</span>
-                  <Badge variant="outline" className="text-xs font-mono">{selectedCharacter.currentLocation.biome.toUpperCase()}</Badge>
+                  <span className="text-primary font-bold text-sm font-mono">{selectedCharacter.location?.name?.toUpperCase()}</span>
+                  <Badge variant="outline" className="text-xs font-mono">{selectedCharacter.location?.biome?.toUpperCase()}</Badge>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono">
                   <Calendar className="h-3 w-3" />

@@ -1,16 +1,12 @@
 // src/hookes/useChatPresence.ts
 
 import { useState, useEffect, useRef } from 'react'
-import { createClient } from '@supabase/supabase-js'
+import supabase from '../utils/supabase'
 import type { Character } from '@/types'
 
 interface PresenceOptions {
   onPresenceChange?: (currentPresence: any[]) => void
 }
-
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
-const realtimeSupabase = createClient(supabaseUrl, supabaseAnonKey)
 
 // Hook for READING participant count (doesn't track presence)
 export function useChatParticipantCount(location_id: string | null) {
@@ -20,7 +16,7 @@ export function useChatParticipantCount(location_id: string | null) {
   useEffect(() => {
     if (!location_id) return
 
-    const channel = realtimeSupabase.channel(`chat_presence_${location_id}`)
+    const channel = supabase.channel(`chat_presence_${location_id}`)
 
     channel
       .on('presence', { event: 'sync' }, () => {
@@ -62,7 +58,7 @@ export function useChatPresence(
   useEffect(() => {
     if (!location_id || !character) return
 
-    const channel = realtimeSupabase.channel(`chat_presence_${location_id}`)
+    const channel = supabase.channel(`chat_presence_${location_id}`)
 
     channel
       .on('presence', { event: 'sync' }, () => {

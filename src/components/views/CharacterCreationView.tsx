@@ -14,7 +14,7 @@ import {
 } from 'lucide-react'
 import { useWalletInfo } from '@/hooks/useWalletInfo'
 import { useWallet } from '@solana/wallet-adapter-react'
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/use-toast'
 import SimplePayment from '@/components/SimplePayment'
 import type { Character, Enums } from '@/types'
 
@@ -424,7 +424,9 @@ export const CharacterCreationView: React.FC<CharacterCreationViewProps> = ({ ch
     } catch (error) {
       console.error('Image generation failed:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      toast.error(`Failed to generate character: ${errorMessage}`)
+      if (!errorMessage.includes('Canvas not available')) {
+        toast.error(`Failed to generate character: ${errorMessage}`)
+      }
       setGeneratedImage(null)
       setSelectedLayers(null)
     } finally {
@@ -478,9 +480,7 @@ export const CharacterCreationView: React.FC<CharacterCreationViewProps> = ({ ch
   }
 
   // Create character with payment - improved error handling
-  // In your CharacterCreationView.tsx, replace the catch block in createCharacterWithPayment function:
-
-  // Find this function (around line 481):
+  // Fixed createCharacterWithPayment function - match backend expectations
   const createCharacterWithPayment = async (paymentSignature: string) => {
     if (!wallet.publicKey || !generatedImage || !selectedLayers) {
       toast.error('Missing required data for character creation')
@@ -501,11 +501,12 @@ export const CharacterCreationView: React.FC<CharacterCreationViewProps> = ({ ch
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          wallet_address: wallet.publicKey.toString(),
-          gender: currentGender,
-          imageBlob: generatedImage,
-          selectedLayers: selectedLayers,
-          paymentSignature: paymentSignature
+          wallet_address: wallet.publicKey.toString(), // ✅ Matches backend
+          gender: currentGender,                       // ✅ Matches backend  
+          imageBlob: generatedImage,                   // ✅ Changed from imageUrl to imageBlob
+          selectedLayers: selectedLayers,              // ✅ Matches backend
+          paymentSignature: paymentSignature,         // ✅ Matches backend
+          isNPC: false                                 // ✅ Optional field for backend
         })
       })
 
@@ -540,11 +541,11 @@ export const CharacterCreationView: React.FC<CharacterCreationViewProps> = ({ ch
         throw new Error(result.error || 'Character creation failed')
       }
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Character creation failed:', error)
 
-      // NEW: Check if this is the "wallet already has character" error
-      if (error.message?.includes('WALLET_HAS_CHARACTER') || error.message?.includes('Wallet already has a character')) {
+      // Check if this is the "wallet already has character" error
+      if (error instanceof Error && (error.message?.includes('WALLET_HAS_CHARACTER') || error.message?.includes('Wallet already has a character'))) {
         console.log('🎉 Wallet already has a character, proceeding to game...')
 
         // Clear the creation state
@@ -721,14 +722,6 @@ export const CharacterCreationView: React.FC<CharacterCreationViewProps> = ({ ch
           {/* Character Display - FIXED HEIGHT, MOBILE OPTIMIZED */}
           <div className="bg-card border rounded-lg p-3 sm:p-6">
             <div className="text-center space-y-2 sm:space-y-4">
-              <h3 className="text-base sm:text-lg font-semibold">
-                Character Preview
-                {currentGender && (
-                  <span className="text-xs sm:text-sm text-muted-foreground ml-2">
-                    ({currentGender.toLowerCase()})
-                  </span>
-                )}
-              </h3>
 
               {/* FIXED HEIGHT CONTAINER - MOBILE OPTIMIZED */}
               <div className="flex justify-center">
@@ -766,7 +759,7 @@ export const CharacterCreationView: React.FC<CharacterCreationViewProps> = ({ ch
           {/* Create Character Section - Tighter mobile spacing */}
           <div className="bg-card border rounded-lg p-4 sm:p-6 space-y-3 sm:space-y-4">
             <div className="text-center">
-              <div className="text-xl sm:text-2xl font-bold mb-0.5 sm:mb-1">2 SOL</div>
+              <div className="text-sm sm:text-lg font-bold mb-0.5 sm:mb-1">2 SOL (devnet)</div>
             </div>
 
             <Button

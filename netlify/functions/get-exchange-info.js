@@ -32,8 +32,8 @@ export const handler = async (event, context) => {
     // Get treasury balance
     const connection = new Connection("https://api.devnet.solana.com", "confirmed")
     const treasuryWallet = Keypair.fromSecretKey(
-      new Uint8Array(JSON.parse(process.env.SERVER_KEYPAIR_SECRET))
-    )
+      new Uint8Array(JSON.parse(process.env.SERVER_KEYPAIR_SECRET
+      )
 
     const treasuryBalance = await connection.getBalance(treasuryWallet.publicKey)
     const treasurySOL = treasuryBalance / 1000000000

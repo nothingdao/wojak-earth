@@ -1,7 +1,7 @@
 // hooks/useAdminData.ts - Custom hook for admin dashboard data
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@supabase/supabase-js'
+import supabase from '../utils/supabase'
 import type {
   AdminStats,
   AdminCharacter,
@@ -10,11 +10,6 @@ import type {
   AdminActivity,
   AdminMarketListing,
 } from '@/types'
-
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL!,
-  import.meta.env.VITE_SUPABASE_ANON_KEY!
-)
 
 export function useAdminStats() {
   const [stats, setStats] = useState<AdminStats | null>(null)

@@ -10,8 +10,11 @@ import {
 } from '@solana/web3.js';
 import { useNetwork } from '@/contexts/NetworkContext';
 import { Button } from '@/components/ui/button';
-import { Loader2, Database, Activity, Zap, AlertCircle, ArrowLeft } from 'lucide-react';
+import { Loader2, Database, Activity, AlertCircle, ArrowLeft } from 'lucide-react';
 import { saveReservationToSupabase, getReservationFromSupabase, updateReservationStatus } from '@/lib/supabase-reservations';
+import { TopControls } from '../TopControls';
+import { Connection, clusterApiUrl } from '@solana/web3.js';
+
 
 interface ReservationScreenProps {
   onReservationComplete?: () => void;
@@ -19,16 +22,29 @@ interface ReservationScreenProps {
 }
 
 export function ReservationScreen({ onReservationComplete, onBackToNetworkSelect }: ReservationScreenProps) {
-  const { connection } = useConnection();
+  const { connection: walletConnection } = useConnection();
   const { publicKey, sendTransaction } = useWallet();
-  const { isMainnet, getExplorerUrl } = useNetwork();
 
+  // Restore original network context after testing
+  // const { isMainnet, getExplorerUrl } = useNetwork();
+
+  // Force Devnet for testing purposes
+  const FORCE_DEVNET = import.meta.env.VITE_FORCE_DEVNET === 'true';
+  const { isMainnet: originalIsMainnet, getExplorerUrl } = useNetwork();
+  const isMainnet = FORCE_DEVNET ? false : originalIsMainnet;
+
+  // Override connection when forcing devnet
+  const connection = FORCE_DEVNET
+    ? new Connection(clusterApiUrl('devnet'), 'confirmed')
+    : walletConnection;
+
+  // Log network info  
   console.log('Network:', isMainnet ? 'Mainnet' : 'Devnet');
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [txSignature, setTxSignature] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [reservationPrice] = useState(0.05); // 0.05 SOL - adjust as needed
+  const [reservationPrice] = useState(1); // 0.05 SOL - adjust as needed
 
   // Get treasury wallet from environment variables
   const TREASURY_WALLET = import.meta.env.VITE_TREASURY_WALLET_ADDRESS;
@@ -190,25 +206,25 @@ export function ReservationScreen({ onReservationComplete, onBackToNetworkSelect
 
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="w-full max-w-md mx-auto bg-background border border-green-500/30 rounded-lg p-6 font-mono">
+        <TopControls />
+        <div className="w-full max-w-md mx-auto bg-background border border-success rounded-lg p-6 font-mono">
           {/* Terminal Header */}
-          <div className="flex items-center justify-between mb-4 border-b border-green-500/20 pb-3">
+          <div className="flex items-center justify-between mb-4 border-b border-success pb-3">
             <div className="flex items-center gap-2">
-              <Database className="w-4 h-4 text-green-500" />
-              <span className="text-green-500 font-bold text-sm">RESERVATION_CONFIRMED v2.089</span>
+              <Database className="w-4 h-4 text-success" />
+              <span className="text-success font-bold text-sm">RESERVATION_CONFIRMED v2.089</span>
             </div>
             <div className="flex items-center gap-2">
-              <Activity className="w-3 h-3 text-green-500" />
-              <span className="text-green-500 text-xs">VERIFIED</span>
+              <Activity className="w-3 h-3 text-success" />
+              <span className="text-success text-xs">VERIFIED</span>
             </div>
           </div>
 
           {/* Success Message */}
-          <div className="bg-green-950/20 border border-green-500/30 rounded p-4 mb-4">
+          <div className="border border-success rounded p-4 mb-4">
             <div className="text-center">
-              <div className="text-green-500 text-2xl mb-2">🎉</div>
-              <div className="text-green-500 font-bold mb-1">RESERVATION_SECURED</div>
-              <div className="text-green-400/80 text-xs">
+              <div className="text-success font-bold mb-1">RESERVATION_SECURED</div>
+              <div className="text-success text-xs">
                 PRIORITY_ACCESS_GRANTED
               </div>
             </div>
@@ -224,15 +240,15 @@ export function ReservationScreen({ onReservationComplete, onBackToNetworkSelect
             {/* Transaction Details */}
             <div className="bg-muted/20 border border-primary/10 rounded p-3">
               <div className="text-xs text-muted-foreground font-mono">
-                <div className="text-green-500 text-xs font-bold mb-2">[TRANSACTION_DETAILS]</div>
+                <div className="text-success text-xs font-bold mb-2">[TRANSACTION_DETAILS]</div>
                 <div className="space-y-1">
                   <div className="flex justify-between">
                     <span>AMOUNT:</span>
-                    <span className="text-green-500">{reservationPrice} SOL</span>
+                    <span className="text-success">{reservationPrice} SOL</span>
                   </div>
                   <div className="flex justify-between">
                     <span>STATUS:</span>
-                    <span className="text-green-500">CONFIRMED</span>
+                    <span className="text-success">CONFIRMED</span>
                   </div>
                   <div className="break-all">
                     <span>TX: </span>
@@ -254,27 +270,23 @@ export function ReservationScreen({ onReservationComplete, onBackToNetworkSelect
                 onClick={() => {
                   onBackToNetworkSelect?.() // ✅ This will close the reservation screen
                 }}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-mono text-sm h-10"
+                className="w-full font-mono text-sm h-10"
+                variant="outline"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                RETURN_TO_NETWORK_SELECTION
+                RETURN_TO_REGISTRY
               </Button>
 
               <p className="text-xs text-center text-muted-foreground">
-                To access the game, switch to Devnet and create your character
+                To help test the game, switch to Devnet and create a burner character
               </p>
 
-              <p className="text-xs text-center text-muted-foreground">
-                {isMainnet
-                  ? 'Whitelist confirmed! Game access available on Devnet'
-                  : 'Reservation confirmed! You can now access the game'
-                }
-              </p>
+
             </div>
           </div>
 
           {/* Footer */}
-          <div className="text-xs text-muted-foreground/60 font-mono text-center border-t border-green-500/20 pt-3 mt-4">
+          <div className="text-xs text-muted-foreground/60 font-mono text-center border-t border-success pt-3 mt-4">
             RESERVATION_SYSTEM_v2089 | WHITELIST_CONFIRMED
           </div>
         </div>
@@ -285,6 +297,8 @@ export function ReservationScreen({ onReservationComplete, onBackToNetworkSelect
   // Main reservation interface
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <TopControls />
+
       <div className="w-full max-w-md mx-auto bg-background border border-primary/30 rounded-lg p-6 font-mono">
         {/* Terminal Header */}
         <div className="flex items-center justify-between mb-4 border-b border-primary/20 pb-3">
@@ -317,7 +331,7 @@ export function ReservationScreen({ onReservationComplete, onBackToNetworkSelect
           <div className="text-center">
             <div className="text-primary font-bold text-lg mb-2">EARTH_2089_RESERVATION</div>
             <div className="text-muted-foreground text-sm mb-4">
-              Secure early access to exclusive survivor NFTs
+              Secure early access to exclusive EARTH NFTs
             </div>
           </div>
 
@@ -325,13 +339,13 @@ export function ReservationScreen({ onReservationComplete, onBackToNetworkSelect
           <div className="border border-primary/20 rounded p-4">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-green-500" />
+                <div className="w-3 h-3 rounded-full bg-success" />
                 <span className="font-bold text-primary">EARLY ACCESS BENEFITS</span>
               </div>
-              <span className="text-xs text-green-500">WHITELIST</span>
+              <span className="text-xs text-success">WHITELIST</span>
             </div>
             <div className="text-xs text-muted-foreground mb-3">
-              • Priority minting access to survivor NFTs<br />
+              • Priority minting access to EARTH NFTs<br />
               • Exclusive character traits and abilities<br />
               • Beta game access on Devnet<br />
               • Future airdrop eligibility
@@ -348,7 +362,7 @@ export function ReservationScreen({ onReservationComplete, onBackToNetworkSelect
               <span className="text-xs text-primary">{isMainnet ? 'MAINNET' : 'DEVNET'}</span>
             </div>
             <div className="text-center mt-3">
-              <div className="text-2xl font-bold text-green-400 font-mono mb-1">
+              <div className="text-2xl font-bold text-success font-mono mb-1">
                 {reservationPrice} SOL
               </div>
               <div className="text-xs text-muted-foreground">
@@ -408,7 +422,7 @@ export function ReservationScreen({ onReservationComplete, onBackToNetworkSelect
               <div className="space-y-1">
                 <div>• Payment processed on Solana {isMainnet ? 'Mainnet' : 'Devnet'}</div>
                 <div>• Whitelist status confirmed on blockchain</div>
-                <div>• NFT launch notifications via Discord</div>
+                <div>• NFT launch notifications via X (Twitter)</div>
               </div>
             </div>
           </div>

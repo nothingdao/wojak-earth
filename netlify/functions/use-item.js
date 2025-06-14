@@ -1,10 +1,6 @@
 // netlify/functions/use-item.js - UPDATED
-import { createClient } from '@supabase/supabase-js'
+import supabaseAdmin from '../../src/utils/supabase-admin'
 import { randomUUID } from 'crypto'
-
-const supabaseUrl = process.env.VITE_SUPABASE_URL
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 export const handler = async (event, context) => {
   const headers = {
@@ -37,7 +33,7 @@ export const handler = async (event, context) => {
     }
 
     // Get character by wallet address
-    const { data: character, error } = await supabase
+    const { data: character, error } = await supabaseAdmin
       .from('characters')
       .select('*')
       .eq('wallet_address', wallet_address)
@@ -56,7 +52,7 @@ export const handler = async (event, context) => {
     }
 
     // Get inventory item
-    const { data: inventoryItem, error: inventoryError } = await supabase
+    const { data: inventoryItem, error: inventoryError } = await supabaseAdmin
       .from('character_inventory')
       .select('*')
       .eq('id', inventoryId)
@@ -73,7 +69,7 @@ export const handler = async (event, context) => {
     }
 
     // Get item details
-    const { data: item, error: itemError } = await supabase
+    const { data: item, error: itemError } = await supabaseAdmin
       .from('items')
       .select('*')
       .eq('id', inventoryItem.item_id)
@@ -139,7 +135,7 @@ export const handler = async (event, context) => {
     }
 
     // Update character stats
-    const { data: updatedCharacter, error: updateError } = await supabase
+    const { data: updatedCharacter, error: updateError } = await supabaseAdmin
       .from('characters')
       .update({
         energy: newEnergy,
@@ -155,7 +151,7 @@ export const handler = async (event, context) => {
     let updatedInventory = null
     if (inventoryItem.quantity === 1) {
       // Remove item completely
-      const { error: deleteError } = await supabase
+      const { error: deleteError } = await supabaseAdmin
         .from('character_inventory')
         .delete()
         .eq('id', inventoryId)
@@ -163,7 +159,7 @@ export const handler = async (event, context) => {
       if (deleteError) throw deleteError
     } else {
       // Reduce quantity
-      const { data: reducedInventory, error: reduceError } = await supabase
+      const { data: reducedInventory, error: reduceError } = await supabaseAdmin
         .from('character_inventory')
         .update({ quantity: inventoryItem.quantity - 1 })
         .eq('id', inventoryId)
@@ -177,12 +173,12 @@ export const handler = async (event, context) => {
 
     // Log the transaction
     const transactionId = randomUUID()
-    const { data: transaction, error: transactionError } = await supabase
+    const { error: transactionError } = await supabaseAdmin
       .from('transactions')
       .insert({
         id: transactionId,
         character_id: character.id,
-        type: 'MINE', // We can add 'USE' to the enum later, using MINE for now
+        type: 'USE',
         item_id: inventoryItem.item_id,
         quantity: 1,
         description: `Used ${inventoryItem.item.name}${actualEnergyGain > 0 || actualHealthGain > 0 ?
@@ -192,43 +188,40 @@ export const handler = async (event, context) => {
           ].filter(Boolean).join(', ')})` : ''
           }`
       })
-      .select('*')
-      .single()
 
-    if (transactionError) throw transactionError
-
-    const responseData = {
-      success: true,
-      message: `Used ${inventoryItem.item.name}!`,
-      effects: {
-        energy: actualEnergyGain,
-        health: actualHealthGain
-      },
-      newStats: {
-        energy: updatedCharacter.energy,
-        health: updatedCharacter.health
-      },
-      inventory: {
-        remainingQuantity: updatedInventory?.quantity || 0,
-        wasRemoved: !updatedInventory
-      }
+    if (transactionError) {
+      console.error('Failed to log transaction:', transactionError)
+      // Don't throw, just log - transaction logging is not critical
     }
 
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify(responseData)
+      body: JSON.stringify({
+        success: true,
+        character: updatedCharacter,
+        inventory: updatedInventory,
+        transaction: {
+          id: transactionId,
+          type: 'USE',
+          item: item,
+          quantity: 1,
+          effects: {
+            energy: actualEnergyGain,
+            health: actualHealthGain
+          }
+        }
+      })
     }
 
   } catch (error) {
-    console.error('Error using item:', error)
-
+    console.error('Error in use-item:', error)
     return {
       statusCode: 500,
       headers,
       body: JSON.stringify({
         error: 'Internal server error',
-        message: 'Failed to use item'
+        message: error.message
       })
     }
   }

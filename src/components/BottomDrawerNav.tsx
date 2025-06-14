@@ -32,7 +32,7 @@ import {
   Star,
   Settings,
 } from 'lucide-react'
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/use-toast'
 import type { Character, GameView } from '@/types'
 
 interface BottomDrawerNavProps {
