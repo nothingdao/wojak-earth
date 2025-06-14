@@ -466,27 +466,11 @@ function CharacterRequiredScreen({ onShowReservation }: { onShowReservation?: ()
           </div>
         </div>
 
-        {/* Rest of your existing content remains the same */}
-        {/* No Character Message */}
-        <div className="border border-warning rounded p-4 mb-4">
-          <div className="text-center">
-            <span className="text-warning text-xs">NO_PROFILE</span>
-            <div className="text-warning text-xl mb-2"><TriangleAlert /></div>
-            <div className="text-warning font-bold mb-1">NO_PROFILE_FOUND</div>
-            <div className="text-warning text-xs">
-              PLAYER_PROFILE_REQUIRED_FOR_TESTING
-            </div>
-          </div>
-        </div>
-
         {/* Registration Info */}
         <div className="space-y-4">
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground mb-4">
-              Create a new profile to explore the devlopment preview. Reserve a Whitelist spot below. Thanks!
-            </p>
-          </div>
-
+          <p className="text-xs text-center text-muted-foreground">
+            Reserve your spot for the official NFT launch later this year!.
+          </p>
           <Button
             onClick={() => {
               onShowReservation?.()
@@ -498,12 +482,25 @@ function CharacterRequiredScreen({ onShowReservation }: { onShowReservation?: ()
             RESERVE_NFT_WHITELIST_SPOT
           </Button>
 
-          <p className="text-xs text-center text-muted-foreground">
-            Reserve your spot for the official NFT launch later this year!.
-          </p>
+
+
+
+
+          <div className="space-y-3">
+            <Button
+              onClick={() => setShowCreation(true)}
+              variant="outline"
+              className="w-full font-mono text-sm h-10"
+            >
+              <User className="w-4 h-4 mr-2" />
+              CREATE_PLAYER_PROFILE
+            </Button>
+          </div>
 
           {/* System Requirements */}
           <div className="bg-muted/20 border border-primary/10 rounded p-3 mb-4">
+
+
             <div className="text-xs text-muted-foreground font-mono">
               <div className="text-primary text-xs font-bold mb-2">[TEST_GAMING_INFORMATION]</div>
               <div className="space-y-1">
@@ -512,8 +509,8 @@ function CharacterRequiredScreen({ onShowReservation }: { onShowReservation?: ()
                   <span className="text-success">✓ FREE</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>CHARACTER_COST:</span>
-                  <span className="text-primary">0.01_TEST_SOL</span>
+                  <span>HARACTER_COST:</span>
+                  <span className="text-primary">0.01_DEVNET_SOL</span>
                 </div>
                 <div className="flex justify-between">
                   <span>NFT_STORAGE:</span>
@@ -523,18 +520,21 @@ function CharacterRequiredScreen({ onShowReservation }: { onShowReservation?: ()
             </div>
           </div>
 
-          <div className="space-y-3">
-            <Button
-              onClick={() => setShowCreation(true)}
-              variant="outline"
-              className="w-full font-mono text-sm h-10 outline-2"
-            >
-              <User className="w-4 h-4 mr-2" />
-              CREATE_PLAYER_PROFILE
-            </Button>
-          </div>
-
         </div>
+
+        {/* No Character Message */}
+        {/* <div className="border border-warning rounded p-4 mb-4">
+          <div className="text-center">
+            <span className="text-warning text-xs">NO_PROFILE</span>
+            <div className="text-warning text-xl mb-2"><TriangleAlert /></div>
+            <div className="text-warning font-bold mb-1">NO_PROFILE_FOUND</div>
+            <div className="text-warning text-xs">
+              PLAYER_PROFILE_REQUIRED_FOR_TESTING
+            </div>
+          </div>
+        </div> */}
+
+
 
         {/* Footer */}
         <div className="text-xs text-muted-foreground/60 font-mono text-center border-t border-primary/20 pt-3 mt-4">
