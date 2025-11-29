@@ -4,7 +4,6 @@ import { useWallet } from '@solana/wallet-adapter-react'
 import { Button } from '@/components/ui/button'
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerTrigger } from '@/components/ui/drawer'
 import { VisuallyHidden } from '@/components/ui/visually-hidden'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { TransitionAvatar } from '@/components/TransitionAvatar'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -17,8 +16,6 @@ import {
   MapPin,
   Shield,
   User,
-  ChevronRight,
-
   Wallet,
   Users,
   Copy,
@@ -169,7 +166,7 @@ export function BottomDrawerNav({
         <div className="flex items-center justify-between p-4">
           {/* Terminal Header - No Character */}
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-muted/50 border border-primary/20 rounded flex items-center justify-center">
+            <div className="w-8 h-8 bg-muted/50 border border-primary/20 rounded-full flex items-center justify-center">
               <Terminal className="w-4 h-4 text-primary" />
             </div>
             <div>
@@ -295,7 +292,7 @@ export function BottomDrawerNav({
               className="w-14 h-14 rounded-sm border border-primary/20"
               onInstantGlitch={setGlitchFunction}
             />
-            
+
             {/* Column 2: Character Info */}
             <div className="min-w-0">
               <div className="gap-1 text-xs bg-success/10 p-1 mr-2 rounded float-left">
@@ -330,7 +327,7 @@ export function BottomDrawerNav({
             {/* Column 3: Terminal Menu */}
             <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
               <DrawerTrigger asChild>
-                <Button size="sm" variant="outline" className="h-12 w-12 px-3 font-mono border-primary/30 dark:border-primary">
+                <Button size="sm" variant="outline" className="h-12 w-12 px-3 font-mono border-primary/30 dark:border-primary rounded-full">
                   <Terminal className="w-4 h-4" />
                 </Button>
               </DrawerTrigger>

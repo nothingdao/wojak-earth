@@ -173,21 +173,10 @@ export const SimplePayment: React.FC<SimplePaymentProps> = ({
 
       // Create transaction with validation
       console.log('📝 Creating transaction...')
-      // const transaction = new Transaction()
+      const transaction = new Transaction()
 
-      // transaction.recentBlockhash = blockhash
-      // transaction.feePayer = publicKey
-
-      // Let Solflare handle it:
-      const transaction = new Transaction().add(
-        SystemProgram.transfer({
-          fromPubkey: publicKey,
-          toPubkey: treasuryPubkey,
-          lamports: Math.floor(NFT_PRICE * LAMPORTS_PER_SOL)
-        })
-      )
-
-      // const txSignature = await sendTransaction(transaction, connection)
+      transaction.recentBlockhash = blockhash
+      transaction.feePayer = publicKey
 
       const transferInstruction = SystemProgram.transfer({
         fromPubkey: publicKey,
@@ -195,7 +184,7 @@ export const SimplePayment: React.FC<SimplePaymentProps> = ({
         lamports: Math.floor(NFT_PRICE * LAMPORTS_PER_SOL)
       })
 
-      // transaction.add(transferInstruction)
+      transaction.add(transferInstruction)
 
       console.log('📝 Transaction Details:', {
         instructions: transaction.instructions.length,

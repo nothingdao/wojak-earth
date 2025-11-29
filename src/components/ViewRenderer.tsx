@@ -324,7 +324,12 @@ export function ViewRenderer({
       )
 
     case 'admin':
-      return <AdminView character={character} />
+      return (
+        <AdminView 
+          character={character} 
+          onClose={() => actions.navigate('main')}
+        />
+      )
 
     default:
       return (

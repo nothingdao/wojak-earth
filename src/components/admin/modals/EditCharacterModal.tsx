@@ -25,7 +25,8 @@ export const EditCharacterModal: React.FC<EditCharacterModalProps> = ({
     level: 1,
     earth: 0,
     health: 100,
-    energy: 100
+    energy: 100,
+    experience: 0
   })
 
   // Update form data whenever character changes or modal opens
@@ -35,7 +36,8 @@ export const EditCharacterModal: React.FC<EditCharacterModalProps> = ({
         level: character.level || 1,
         earth: character.earth || 0,
         health: character.health || 100,
-        energy: character.energy || 100
+        energy: character.energy || 100,
+        experience: character.experience || 0
       })
     }
   }, [character, open]) // Include 'open' to reset form when modal opens
@@ -91,6 +93,16 @@ export const EditCharacterModal: React.FC<EditCharacterModalProps> = ({
                 min="0"
               />
             </div>
+          </div>
+          <div>
+            <Label className="text-xs font-mono">EXPERIENCE_POINTS</Label>
+            <Input
+              type="number"
+              value={formData.experience}
+              onChange={(e) => handleInputChange('experience', e.target.value)}
+              className="font-mono text-xs"
+              min="0"
+            />
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>

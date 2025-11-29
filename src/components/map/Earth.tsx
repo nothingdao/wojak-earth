@@ -110,12 +110,12 @@ export default function Earth({
   }
 
   // Create lookup map for quick location finding
+  // Now using location.id as the key (SVG elements should have matching IDs)
   const locationMap = useCallback(() => {
     const map = new Map<string, Location>()
     locations.forEach(loc => {
-      if (loc.svg_path_id) {
-        map.set(loc.svg_path_id, loc)
-      }
+      // Use the location's ID as the key for SVG path matching
+      map.set(loc.id, loc)
     })
     return map
   }, [locations])
@@ -721,9 +721,9 @@ export default function Earth({
           {/* LOCATION INDICATORS */}
           {visualLocationId && !isTravelingOnMap && (() => {
             const currentLocation = locations.find(loc => loc.id === visualLocationId)
-            if (!currentLocation?.svg_path_id) return null
+            if (!currentLocation?.id) return null
 
-            const coords = getLocationCoords(currentLocation.svg_path_id)
+            const coords = getLocationCoords(currentLocation.id)
             if (!coords) return null
 
             return (
@@ -758,9 +758,9 @@ export default function Earth({
           {/* TRAVEL DESTINATION INDICATOR */}
           {isTravelingOnMap && mapTravelDestination && (() => {
             const destLocation = locations.find(loc => loc.id === mapTravelDestination)
-            if (!destLocation?.svg_path_id) return null
+            if (!destLocation?.id) return null
 
-            const coords = getLocationCoords(destLocation.svg_path_id)
+            const coords = getLocationCoords(destLocation.id)
             if (!coords) return null
 
             return (
@@ -803,10 +803,10 @@ export default function Earth({
             const originLocation = locations.find(loc => loc.id === visualLocationId)
             const destLocation = locations.find(loc => loc.id === mapTravelDestination)
 
-            if (!originLocation?.svg_path_id || !destLocation?.svg_path_id) return null
+            if (!originLocation?.id || !destLocation?.id) return null
 
-            const originCoords = getLocationCoords(originLocation.svg_path_id)
-            const destCoords = getLocationCoords(destLocation.svg_path_id)
+            const originCoords = getLocationCoords(originLocation.id)
+            const destCoords = getLocationCoords(destLocation.id)
 
             if (!originCoords || !destCoords) return null
 

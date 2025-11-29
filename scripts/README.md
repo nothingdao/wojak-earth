@@ -2,15 +2,14 @@
 
 This directory contains standalone utility scripts for development, testing, and setup purposes.
 
-## Scripts
+## Active Scripts
 
 ### `mint-earth-token.js`
 **Purpose:** Creates the EARTH token mint on Solana devnet and mints initial supply.
 
 **Usage:**
 ```bash
-cd scripts
-node mint-earth-token.js
+node scripts/mint-earth-token.js
 ```
 
 **What it does:**
@@ -30,8 +29,7 @@ node mint-earth-token.js
 
 **Usage:**
 ```bash
-cd scripts
-node mint-usdc.js
+node scripts/mint-usdc.js
 ```
 
 **What it does:**
@@ -50,8 +48,7 @@ node mint-usdc.js
 
 **Usage:**
 ```bash
-cd scripts
-node airdrop.js
+node scripts/airdrop.js
 ```
 
 **What it does:**
@@ -65,36 +62,74 @@ node airdrop.js
 
 ---
 
+### `extract-locations.js`
+**Purpose:** Extracts location data from the database for analysis or export.
+
+**Usage:**
+```bash
+npm run extract-locations
+```
+
+**What it does:**
+- Queries all locations from the database
+- Exports location data in a structured format
+- Useful for data analysis and documentation
+
+**Requirements:**
+- `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` environment variables
+
+---
+
+## Archive Directory
+
+The `scripts/archive/` directory contains one-time migration scripts and test utilities that were used during development:
+
+- **Story system scripts:** Database population and testing for the story/narrative system
+- **Database migrations:** Schema updates and data transformations
+- **Supabase migration scripts:** Used during the migration from old to new Supabase project
+
+These scripts are kept for historical reference but are not intended for regular use.
+
+---
+
 ## Environment Setup
 
-All scripts require the following environment variable:
+All scripts require environment variables from the `.env` file:
 
 ```bash
+# Supabase configuration
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your_anon_key
+
 # Server wallet private key as JSON array
 SERVER_KEYPAIR_SECRET=[1,2,3,...,64]
+
+# Solana RPC endpoint
+VITE_DEVNET_RPC_URL=https://api.devnet.solana.com
 ```
 
 ## Notes
 
-- These are **one-time setup/utility scripts**, not part of the main application
+- These are **utility scripts**, not part of the main application
 - Scripts are designed for **devnet** testing
-- Ensure adequate SOL balance before running scripts
+- Ensure adequate SOL balance before running Solana-related scripts
 - Scripts output important addresses that may need to be added to environment variables
+- Scripts use ES modules (`.js` files with `import` statements)
 
 ## Running Scripts
 
-1. **Navigate to scripts directory:**
+1. **Ensure environment variables are set:**
    ```bash
-   cd scripts
-   ```
-
-2. **Ensure environment variables are set:**
-   ```bash
-   cp ../.env.example ../.env
+   cp .env.example .env
    # Edit .env with your actual values
    ```
 
-3. **Run the desired script:**
+2. **Run the desired script:**
    ```bash
-   node <script-name>.js
+   node scripts/<script-name>.js
+   ```
+
+   Or use npm scripts where available:
+   ```bash
+   npm run extract-locations
    ```

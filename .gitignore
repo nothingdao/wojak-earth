@@ -39,3 +39,11 @@ android/app/build/
 android/build/
 android/.gradle/
 android/local.properties
+
+
+locations.json 
+locations.txt
+
+
+earth_supabase_backup
+lore-and-story

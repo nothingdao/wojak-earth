@@ -1,9 +1,6 @@
 // src/components/admin/tabs/OverviewTab.tsx
 import React from 'react'
-import { Users, MapPin, Package, Activity } from 'lucide-react'
-import { StatCard } from '../StatCard'
-import { ActivityFeed } from '../ActivityFeed'
-import { QuickActions } from '../QuickActions'
+import { ActivityMonitor } from '@/components/admin'
 import { ErrorAlert } from '../ErrorAlert'
 import type { AdminStats, AdminActivity } from '../types'
 
@@ -23,16 +20,7 @@ interface OverviewTabProps {
 
 export const OverviewTab: React.FC<OverviewTabProps> = ({
   stats,
-  activities,
-  statsLoading,
-  activityLoading,
-  statsError,
-  isProcessing,
-  onCreateLocation,
-  onCreateItem,
-  onRefreshData,
-  onValidateWorld,
-  onResetWorldDay
+  statsError
 }) => {
   return (
     <div className="space-y-3">
@@ -53,18 +41,11 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
         </div>
       </div>
 
-      {/* Recent Activity */}
-      <ActivityFeed activities={activities} loading={activityLoading} />
-
-      {/* Quick Actions */}
-      <QuickActions
-        onCreateLocation={onCreateLocation}
-        onCreateItem={onCreateItem}
-        onRefreshData={onRefreshData}
-        onValidateWorld={onValidateWorld}
-        onResetWorldDay={onResetWorldDay}
-        isProcessing={isProcessing}
-      />
+      {/* Activity Monitor */}
+      <div className="bg-muted/30 border border-primary/20 rounded p-2">
+        <div className="text-muted-foreground text-xs mb-2 font-mono">LIVE TRANSACTION FEED</div>
+        <ActivityMonitor className="w-full" maxHeight="h-64" />
+      </div>
     </div>
   )
 }

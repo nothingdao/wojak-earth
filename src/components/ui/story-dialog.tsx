@@ -1,5 +1,5 @@
 // src/components/ui/story-dialog.tsx - Standalone story dialog system
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { X, ChevronRight, ChevronLeft } from 'lucide-react'
@@ -30,31 +30,66 @@ export interface StoryDialogProps {
 export function StoryDialog({ isOpen, screens, onComplete, onDismiss, storyId }: StoryDialogProps) {
   const [currentScreenIndex, setCurrentScreenIndex] = useState(0)
   
+  // Reset screen index if it's out of bounds
+  useEffect(() => {
+    if (screens.length > 0 && currentScreenIndex >= screens.length) {
+      console.warn(`Story dialog: currentScreenIndex (${currentScreenIndex}) out of bounds, resetting to ${screens.length - 1}`)
+      setCurrentScreenIndex(screens.length - 1)
+    }
+  }, [screens.length, currentScreenIndex])
+  
+  // Reset to 0 when dialog closes/opens
+  useEffect(() => {
+    if (isOpen && screens.length > 0) {
+      setCurrentScreenIndex(0)
+    }
+  }, [isOpen])
+  
   if (!isOpen || screens.length === 0) return null
 
-  const currentScreen = screens[currentScreenIndex]
-  const isLastScreen = currentScreenIndex === screens.length - 1
-  const isFirstScreen = currentScreenIndex === 0
+  // Ensure currentScreenIndex is within bounds
+  const safeCurrentScreenIndex = Math.min(currentScreenIndex, screens.length - 1)
+  const currentScreen = screens[safeCurrentScreenIndex]
+  
+  // Additional safety check
+  if (!currentScreen) {
+    console.error('Story dialog: currentScreen is undefined', { currentScreenIndex, safeCurrentScreenIndex, screensLength: screens.length })
+    return null
+  }
+  
+  const isLastScreen = safeCurrentScreenIndex === screens.length - 1
+  const isFirstScreen = safeCurrentScreenIndex === 0
 
   const handleNext = () => {
     if (isLastScreen) {
       onComplete?.()
     } else {
-      setCurrentScreenIndex(prev => prev + 1)
+      setCurrentScreenIndex(prev => Math.min(prev + 1, screens.length - 1))
     }
   }
 
   const handlePrevious = () => {
     if (!isFirstScreen) {
-      setCurrentScreenIndex(prev => prev - 1)
+      setCurrentScreenIndex(prev => Math.max(prev - 1, 0))
     }
   }
 
   const handleChoice = (choice: StoryChoice) => {
+    const initialScreenCount = screens.length
     choice.action()
-    // Reset screen index and close dialog
-    setCurrentScreenIndex(0)
-    onComplete?.()
+    
+    // Check if new screens were added during the action
+    setTimeout(() => {
+      if (storyDialogState.screens.length > initialScreenCount) {
+        // New screens were added, continue to next screen instead of closing
+        console.log(`Screens added during choice, continuing dialog (${initialScreenCount} -> ${storyDialogState.screens.length})`)
+        setCurrentScreenIndex(prev => Math.min(prev + 1, storyDialogState.screens.length - 1))
+      } else {
+        // No new screens, close dialog as normal
+        setCurrentScreenIndex(0)
+        onComplete?.()
+      }
+    }, 10) // Small delay to allow screen injection to complete
   }
 
   const handleDismiss = () => {
@@ -87,7 +122,7 @@ export function StoryDialog({ isOpen, screens, onComplete, onDismiss, storyId }:
               {/* Screen Progress */}
               {screens.length > 1 && (
                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <span>{currentScreenIndex + 1}</span>
+                  <span>{safeCurrentScreenIndex + 1}</span>
                   <span>/</span>
                   <span>{screens.length}</span>
                 </div>
@@ -213,6 +248,33 @@ export function showStoryDialog(props: {
   }
   
   storyDialogUpdateFn?.(storyDialogState)
+}
+
+// Add screens to existing dialog - for dynamic story progression
+export function addStoryScreens(newScreens: StoryScreen[]) {
+  if (!storyDialogState.isOpen) {
+    console.warn('Cannot add screens to closed dialog')
+    return
+  }
+  
+  console.log(`Adding ${newScreens.length} screens to existing dialog`)
+  
+  storyDialogState = {
+    ...storyDialogState,
+    screens: [...storyDialogState.screens, ...newScreens]
+  }
+  
+  storyDialogUpdateFn?.(storyDialogState)
+}
+
+// Check if dialog is currently open and active
+export function isStoryDialogOpen(): boolean {
+  return storyDialogState.isOpen
+}
+
+// Get current screen count
+export function getStoryScreenCount(): number {
+  return storyDialogState.screens.length
 }
 
 // Export types

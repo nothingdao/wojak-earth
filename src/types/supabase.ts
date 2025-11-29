@@ -7,8 +7,48 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "13.0.5"
+  }
   public: {
     Tables: {
+      chapters: {
+        Row: {
+          chapter_number: number
+          created_at: string | null
+          description: string | null
+          id: string
+          story_id: string | null
+          title: string
+        }
+        Insert: {
+          chapter_number: number
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          story_id?: string | null
+          title: string
+        }
+        Update: {
+          chapter_number?: number
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          story_id?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chapters_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       character_images: {
         Row: {
           character_id: string
@@ -233,6 +273,70 @@ export type Database = {
           },
         ]
       }
+      choices: {
+        Row: {
+          choice_key: string
+          created_at: string | null
+          event_id: string | null
+          id: string
+          order_index: number
+          text: string
+        }
+        Insert: {
+          choice_key: string
+          created_at?: string | null
+          event_id?: string | null
+          id?: string
+          order_index: number
+          text: string
+        }
+        Update: {
+          choice_key?: string
+          created_at?: string | null
+          event_id?: string | null
+          id?: string
+          order_index?: number
+          text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "choices_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      consequences: {
+        Row: {
+          choice_id: string | null
+          consequence_data: Json
+          created_at: string | null
+          id: string
+        }
+        Insert: {
+          choice_id?: string | null
+          consequence_data: Json
+          created_at?: string | null
+          id?: string
+        }
+        Update: {
+          choice_id?: string | null
+          consequence_data?: Json
+          created_at?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consequences_choice_id_fkey"
+            columns: ["choice_id"]
+            isOneToOne: false
+            referencedRelation: "choices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       equipment_slots: {
         Row: {
           category: string | null
@@ -274,6 +378,47 @@ export type Database = {
           unlock_level?: number | null
         }
         Relationships: []
+      }
+      events: {
+        Row: {
+          chapter_id: string | null
+          created_at: string | null
+          description: string
+          event_key: string | null
+          event_type: string
+          id: string
+          order_index: number
+          title: string
+        }
+        Insert: {
+          chapter_id?: string | null
+          created_at?: string | null
+          description: string
+          event_key?: string | null
+          event_type?: string
+          id?: string
+          order_index: number
+          title: string
+        }
+        Update: {
+          chapter_id?: string | null
+          created_at?: string | null
+          description?: string
+          event_key?: string | null
+          event_type?: string
+          id?: string
+          order_index?: number
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       experience_logs: {
         Row: {
@@ -446,6 +591,7 @@ export type Database = {
           difficulty: number
           entry_cost: number | null
           has_chat: boolean
+          has_exchange: boolean
           has_market: boolean
           has_mining: boolean
           has_travel: boolean
@@ -477,6 +623,7 @@ export type Database = {
           difficulty?: number
           entry_cost?: number | null
           has_chat?: boolean
+          has_exchange?: boolean
           has_market?: boolean
           has_mining?: boolean
           has_travel?: boolean
@@ -508,6 +655,7 @@ export type Database = {
           difficulty?: number
           entry_cost?: number | null
           has_chat?: boolean
+          has_exchange?: boolean
           has_market?: boolean
           has_mining?: boolean
           has_travel?: boolean
@@ -730,6 +878,86 @@ export type Database = {
         }
         Relationships: []
       }
+      stories: {
+        Row: {
+          character_path: string
+          created_at: string | null
+          description: string | null
+          id: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          character_path: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          character_path?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      story_flags: {
+        Row: {
+          acquired_at: string | null
+          chapter_acquired: number | null
+          character_id: string
+          created_at: string | null
+          expires_at: string | null
+          flag_name: string
+          flag_value: Json | null
+          id: string
+          is_active: boolean | null
+          metadata: Json | null
+          story_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          acquired_at?: string | null
+          chapter_acquired?: number | null
+          character_id: string
+          created_at?: string | null
+          expires_at?: string | null
+          flag_name: string
+          flag_value?: Json | null
+          id?: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          story_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          acquired_at?: string | null
+          chapter_acquired?: number | null
+          character_id?: string
+          created_at?: string | null
+          expires_at?: string | null
+          flag_name?: string
+          flag_value?: Json | null
+          id?: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          story_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_flags_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           character_id: string
@@ -850,9 +1078,17 @@ export type Database = {
       }
     }
     Functions: {
-      expire_old_payments: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
+      expire_old_payments: { Args: never; Returns: undefined }
+      get_character_flags: {
+        Args: { p_character_id: string }
+        Returns: {
+          acquired_at: string
+          chapter_acquired: number
+          flag_name: string
+          flag_value: Json
+          metadata: Json
+          story_id: string
+        }[]
       }
       get_character_visual_data: {
         Args: { character_id_param: string }
@@ -862,11 +1098,26 @@ export type Database = {
         Args: { wallet_addr: string }
         Returns: {
           has_reservation: boolean
+          latest_status: string
+          latest_transaction: string
           reservation_count: number
           total_amount: number
-          latest_transaction: string
-          latest_status: string
         }[]
+      }
+      has_story_flag: {
+        Args: { p_character_id: string; p_flag_name: string }
+        Returns: boolean
+      }
+      set_story_flag: {
+        Args: {
+          p_chapter?: number
+          p_character_id: string
+          p_flag_name: string
+          p_flag_value?: Json
+          p_metadata?: Json
+          p_story_id?: string
+        }
+        Returns: string
       }
     }
     Enums: {
@@ -955,21 +1206,25 @@ export type Database = {
   }
 }
 
-type DefaultSchema = Database[Extract<keyof Database, "public">]
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
@@ -987,14 +1242,16 @@ export type Tables<
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
     ? I
@@ -1010,14 +1267,16 @@ export type TablesInsert<
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
     ? U
@@ -1033,14 +1292,16 @@ export type TablesUpdate<
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
-> = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
@@ -1048,14 +1309,16 @@ export type Enums<
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never = never,
-> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never

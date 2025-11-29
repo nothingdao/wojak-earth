@@ -40,6 +40,7 @@ export const EditLocationModal: React.FC<EditLocationModalProps> = ({
     has_mining: true,
     has_travel: true,
     has_chat: true,
+    has_exchange: false,
     chat_scope: 'LOCAL' as ChatScope,
     welcome_message: '',
     lore: '',
@@ -69,6 +70,7 @@ export const EditLocationModal: React.FC<EditLocationModalProps> = ({
         has_mining: location.has_mining ?? true,
         has_travel: location.has_travel ?? true,
         has_chat: location.has_chat ?? true,
+        has_exchange: location.has_exchange ?? false,
         chat_scope: location.chat_scope || 'LOCAL',
         welcome_message: location.welcome_message || '',
         lore: location.lore || '',
@@ -347,6 +349,14 @@ export const EditLocationModal: React.FC<EditLocationModalProps> = ({
                     onCheckedChange={(checked) => handleInputChange('has_chat', checked)}
                   />
                   <Label htmlFor="has_chat" className="text-xs font-mono">HAS_CHAT</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="has_exchange"
+                    checked={formData.has_exchange}
+                    onCheckedChange={(checked) => handleInputChange('has_exchange', checked)}
+                  />
+                  <Label htmlFor="has_exchange" className="text-xs font-mono">HAS_EXCHANGE</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Checkbox

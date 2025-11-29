@@ -1,5 +1,5 @@
 // src/components/views/ProfileView.tsx
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
@@ -23,15 +23,25 @@ import {
   Activity,
   Signal,
   MapPin,
-  MessageSquare
+  MessageSquare,
+  Brain,
+  Award,
+  Target,
+  TrendingUp,
+  Lock,
+  Unlock,
+  ChevronRight,
+  BarChart3,
+  BookOpen,
+  Flag,
+  CheckCircle
 } from 'lucide-react'
 import { useWalletInfo } from '@/hooks/useWalletInfo'
 import { toast } from '@/components/ui/use-toast'
 import type { Character } from '@/types'
 import { BurnCharacter } from '../BurnCharacter'
-import { StoryDemo } from '../StoryDemo'
-import { StoryManagerDemo } from '../StoryManagerDemo'
 import { useNetwork } from '@/contexts/NetworkContext'
+import { getStoryFlagStatistics, getStoryFlags, type StoryFlag } from '@/utils/story-flags'
 
 interface ProfileViewProps {
   character: Character
@@ -44,7 +54,33 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ character, onCharacter
   const walletInfo = useWalletInfo()
   const [imageError, setImageError] = useState(false)
   const [imageLoading, setImageLoading] = useState(true)
+  const [storyFlagStats, setStoryFlagStats] = useState<{
+    totalFlags: number
+    flagsByStory: Record<string, number>
+    flagsByChapter: Record<string, number>
+    recentFlags: StoryFlag[]
+  } | null>(null)
+  const [allStoryFlags, setAllStoryFlags] = useState<StoryFlag[]>([])
   const { getExplorerUrl, isDevnet } = useNetwork()
+
+  // Load story flag stats and all flags when character changes
+  useEffect(() => {
+    if (character?.id) {
+      // Load stats from new story_flags table
+      getStoryFlagStatistics(character.id).then(({ data, error }) => {
+        if (!error && data) {
+          setStoryFlagStats(data)
+        }
+      })
+      
+      // Load all flags from new story_flags table
+      getStoryFlags(character.id).then(({ data, error }) => {
+        if (!error && data) {
+          setAllStoryFlags(data)
+        }
+      })
+    }
+  }, [character?.id])
 
   const handleImageLoad = () => {
     setImageLoading(false)
@@ -393,6 +429,323 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ character, onCharacter
     </div>
   )
 
+  // Character assessment algorithms based on observed behaviors and choices
+  const calculateCharacterMetrics = () => {
+    // Base calculations from observable data
+    const healthStability = character.health / 100
+    const energyBalance = character.energy / 100
+    const resourceWisdom = Math.min(1, character.earth / 5000)
+    const experientialDepth = Math.min(1, (character.experience || 0) / 1000)
+    const levelProgression = Math.min(1, character.level / 20)
+    const storyEngagement = storyFlagStats ? Math.min(1, storyFlagStats.totalFlags / 50) : 0
+
+    const metrics = {
+      // Spiritual direction and moral compass
+      trajectory: (levelProgression + experientialDepth + storyEngagement) / 3,
+      
+      // Alignment with higher principles and truth
+      resonance: (healthStability + energyBalance + (character.level > 5 ? 0.3 : 0)) / 2.3,
+      
+      // Balance between competing desires and impulses
+      equilibrium: (healthStability + energyBalance + resourceWisdom) / 3,
+      
+      // Spiritual discernment and seeing truth clearly
+      clarity: (experientialDepth + storyEngagement + (character.level / 20)) / 3,
+      
+      // Fervor, devotion, and commitment to chosen path
+      intensity: (energyBalance + levelProgression + (storyFlagStats?.totalFlags > 10 ? 0.4 : 0)) / 2.4,
+      
+      // Integrity and consistency between beliefs and actions
+      coherence: (resourceWisdom + experientialDepth + (character.earth > 100 && character.health > 50 ? 0.3 : 0)) / 2.3
+    }
+
+    // Overall character assessment
+    const overallBearing = Object.values(metrics).reduce((sum, metric) => sum + metric, 0) / Object.keys(metrics).length
+
+    return { ...metrics, overallBearing }
+  }
+
+  const getCharacterObservation = (value: number) => {
+    if (value >= 0.8) return { label: 'PRONOUNCED', color: 'text-success', tendency: 'strong inclination toward' }
+    if (value >= 0.6) return { label: 'EVIDENT', color: 'text-primary', tendency: 'clear tendency toward' }
+    if (value >= 0.4) return { label: 'DEVELOPING', color: 'text-muted-foreground', tendency: 'shows signs of' }
+    if (value >= 0.2) return { label: 'EMERGING', color: 'text-yellow-500', tendency: 'early indications of' }
+    return { label: 'UNCERTAIN', color: 'text-error', tendency: 'struggles with' }
+  }
+
+  const renderCharacterAssessment = () => {
+    const metrics = calculateCharacterMetrics()
+    
+    return (
+      <div className="bg-background border border-primary/30 rounded-lg p-4 font-mono">
+        {/* Terminal Header */}
+        <div className="flex items-center justify-between mb-4 border-b border-primary/20 pb-2">
+          <div className="flex items-center gap-2">
+            <Brain className="w-4 h-4" />
+            <span className="text-primary font-bold">CHARACTER MATRIX v2.089</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Activity className="w-3 h-3 animate-pulse" />
+            <span className="text-primary text-xs">BEHAVIORAL_ANALYSIS_ACTIVE</span>
+          </div>
+        </div>
+
+        {/* Subject Classification */}
+        <div className="bg-muted/30 border border-primary/20 rounded p-4 mb-4">
+          <div className="text-muted-foreground text-xs mb-3 flex items-center gap-2">
+            <Target className="w-4 h-4" />
+            OBSERVATIONAL_SUMMARY
+          </div>
+          <div className="grid grid-cols-2 gap-4 text-xs">
+            <div>
+              <div className="text-muted-foreground mb-1">BEHAVIORAL_ARCHETYPE</div>
+              <div className="text-primary font-bold">
+                {character.character_type === 'survivor' ? 'ENDURANCE_ORIENTED' : 
+                 character.character_type === 'scavenger' ? 'ACQUISITION_FOCUSED' :
+                 character.character_type === 'nomad' ? 'EXPLORATION_DRIVEN' :
+                 'PATTERN_INDETERMINATE'}
+              </div>
+            </div>
+            <div>
+              <div className="text-muted-foreground mb-1">OVERALL_BEARING</div>
+              <div className={`font-bold ${getCharacterObservation(metrics.overallBearing).color}`}>
+                {getCharacterObservation(metrics.overallBearing).label}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Character Metrics Analysis */}
+        <div className="bg-muted/30 border border-primary/20 rounded p-4 mb-4">
+          <div className="text-muted-foreground text-xs mb-3 flex items-center gap-2">
+            <Brain className="w-4 h-4" />
+            CHARACTER_ASSESSMENT_MATRIX
+          </div>
+          
+          <div className="space-y-4">
+            {[
+              { key: 'trajectory', label: 'TRAJECTORY', icon: TrendingUp, description: 'Overall direction and purposefulness of choices' },
+              { key: 'resonance', label: 'RESONANCE', icon: Activity, description: 'Alignment with deeper principles and values' },
+              { key: 'equilibrium', label: 'EQUILIBRIUM', icon: Target, description: 'Balance between competing impulses and desires' },
+              { key: 'clarity', label: 'CLARITY', icon: Award, description: 'Discernment and understanding of situations' },
+              { key: 'intensity', label: 'INTENSITY', icon: Zap, description: 'Commitment and fervor in chosen directions' },
+              { key: 'coherence', label: 'COHERENCE', icon: Shield, description: 'Consistency between beliefs and actions' },
+            ].map(({ key, label, icon: Icon, description }) => {
+              const value = metrics[key as keyof typeof metrics]
+              const observation = getCharacterObservation(value)
+              
+              return (
+                <div key={key} className="bg-muted/20 border border-primary/10 rounded p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <Icon className="w-4 h-4 text-primary" />
+                      <span className="text-xs font-bold text-primary">{label}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className={`text-xs font-mono ${observation.color}`}>
+                        {observation.label}
+                      </Badge>
+                    </div>
+                  </div>
+                  
+                  {/* Subtle indication bar instead of percentage */}
+                  <div className="w-full bg-muted/50 rounded-full h-1 mb-2">
+                    <div
+                      className="bg-primary/60 h-1 rounded-full transition-all"
+                      style={{ width: `${value * 100}%` }}
+                    />
+                  </div>
+                  
+                  <div className="text-xs text-muted-foreground mb-1">{description}</div>
+                  <div className="text-xs text-primary/80 italic">
+                    Subject {observation.tendency} {label.toLowerCase()}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Observational Notes */}
+        <div className="bg-muted/30 border border-primary/20 rounded p-4 mb-4">
+          <div className="text-muted-foreground text-xs mb-3 flex items-center gap-2">
+            <Hash className="w-4 h-4" />
+            OBSERVATIONAL_PATTERNS
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+            <div className="bg-muted/20 border border-primary/10 rounded p-3">
+              <div className="text-muted-foreground mb-1">APPROACH_TO_UNCERTAINTY</div>
+              <div className="text-primary font-bold">
+                {character.health > 80 ? 'BOLD_ENGAGEMENT' :
+                 character.health > 60 ? 'MEASURED_APPROACH' :
+                 character.health > 40 ? 'CAUTIOUS_DELIBERATION' : 'HESITANT_WITHDRAWAL'}
+              </div>
+            </div>
+            
+            <div className="bg-muted/20 border border-primary/10 rounded p-3">
+              <div className="text-muted-foreground mb-1">RELATIONAL_ORIENTATION</div>
+              <div className="text-primary font-bold">
+                {character.level > 10 ? 'COMMUNITY_FOCUSED' :
+                 character.level > 5 ? 'SELECTIVE_COOPERATION' :
+                 'INDIVIDUAL_CENTERED'}
+              </div>
+            </div>
+            
+            <div className="bg-muted/20 border border-primary/10 rounded p-3">
+              <div className="text-muted-foreground mb-1">MATERIAL_RELATIONSHIP</div>
+              <div className="text-primary font-bold">
+                {character.earth > 5000 ? 'ABUNDANCE_ORIENTED' :
+                 character.earth > 1000 ? 'STEWARDSHIP_MINDED' :
+                 character.earth > 100 ? 'SUBSISTENCE_FOCUSED' : 'SCARCITY_DRIVEN'}
+              </div>
+            </div>
+            
+            <div className="bg-muted/20 border border-primary/10 rounded p-3">
+              <div className="text-muted-foreground mb-1">RESPONSE_TO_CHANGE</div>
+              <div className="text-primary font-bold">
+                {character.energy > 80 ? 'EMBRACES_TRANSFORMATION' :
+                 character.energy > 60 ? 'ADAPTS_DELIBERATELY' :
+                 character.energy > 40 ? 'RESISTS_INITIALLY' : 'AVOIDS_DISRUPTION'}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Story Progression Analysis */}
+        {storyFlagStats && (
+          <div className="bg-muted/30 border border-primary/20 rounded p-4 mb-4">
+            <div className="text-muted-foreground text-xs mb-3 flex items-center gap-2">
+              <BarChart3 className="w-4 h-4" />
+              NARRATIVE_PROGRESSION_ANALYSIS
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div className="bg-muted/20 border border-primary/10 rounded p-3 text-center">
+                <div className="text-muted-foreground text-xs mb-1">TOTAL_STORY_FLAGS</div>
+                <div className="text-primary font-bold text-lg">{storyFlagStats.totalFlags}</div>
+                <div className="text-xs text-muted-foreground">DECISIONS_MADE</div>
+              </div>
+              
+              <div className="bg-muted/20 border border-primary/10 rounded p-3 text-center">
+                <div className="text-muted-foreground text-xs mb-1">ACTIVE_STORYLINES</div>
+                <div className="text-primary font-bold text-lg">{Object.keys(storyFlagStats.flagsByStory).length}</div>
+                <div className="text-xs text-muted-foreground">CONCURRENT_ARCS</div>
+              </div>
+              
+              <div className="bg-muted/20 border border-primary/10 rounded p-3 text-center">
+                <div className="text-muted-foreground text-xs mb-1">CHAPTERS_TOUCHED</div>
+                <div className="text-primary font-bold text-lg">{Object.keys(storyFlagStats.flagsByChapter).length}</div>
+                <div className="text-xs text-muted-foreground">PROGRESSION_DEPTH</div>
+              </div>
+            </div>
+
+            {/* Recent Story Decisions */}
+            {storyFlagStats.recentFlags.length > 0 && (
+              <div>
+                <div className="text-muted-foreground text-xs mb-2">RECENT_NARRATIVE_DECISIONS</div>
+                <div className="space-y-1 max-h-32 overflow-y-auto">
+                  {storyFlagStats.recentFlags.slice(0, 5).map((flag, index) => (
+                    <div key={index} className="bg-muted/10 border border-primary/5 rounded p-2 flex items-center justify-between">
+                      <div className="text-xs">
+                        <span className="text-primary font-mono">{flag.flag_name.toUpperCase()}</span>
+                        {flag.story_id && (
+                          <span className="text-muted-foreground ml-2">({flag.story_id})</span>
+                        )}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {flag.chapter_acquired && `Ch.${flag.chapter_acquired}`}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Assessment Observations */}
+        <div className="bg-muted/30 border border-primary/20 rounded p-4">
+          <div className="text-muted-foreground text-xs mb-3 flex items-center gap-2">
+            <MessageSquare className="w-4 h-4" />
+            BEHAVIORAL_OBSERVATIONS
+          </div>
+          
+          <div className="space-y-2 text-xs">
+            {metrics.overallBearing < 0.4 && (
+              <div className="bg-yellow-500/10 border border-yellow-500/20 rounded p-2">
+                <div className="text-yellow-600 font-bold">⚠ PATTERN_UNCERTAINTY</div>
+                <div className="text-muted-foreground">
+                  Subject shows fluctuating behavioral patterns. Consider focus on fundamental stability
+                </div>
+              </div>
+            )}
+            
+            {metrics.trajectory > 0.7 && (
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded p-2">
+                <div className="text-blue-600 font-bold">⬆ ASCENDING_TRAJECTORY</div>
+                <div className="text-muted-foreground">
+                  Clear upward progression observed. Subject demonstrates purposeful development
+                </div>
+              </div>
+            )}
+            
+            {metrics.coherence > 0.7 && (
+              <div className="bg-green-500/10 border border-green-500/20 rounded p-2">
+                <div className="text-green-600 font-bold">🔗 ALIGNED_COHERENCE</div>
+                <div className="text-muted-foreground">
+                  Strong consistency between expressed values and observed actions
+                </div>
+              </div>
+            )}
+            
+            {metrics.resonance > 0.6 && metrics.clarity > 0.6 && (
+              <div className="bg-purple-500/10 border border-purple-500/20 rounded p-2">
+                <div className="text-purple-600 font-bold">✨ HEIGHTENED_AWARENESS</div>
+                <div className="text-muted-foreground">
+                  Subject demonstrates both discernment and alignment with deeper principles
+                </div>
+              </div>
+            )}
+            
+            {storyFlagStats && storyFlagStats.totalFlags > 20 && (
+              <div className="bg-cyan-500/10 border border-cyan-500/20 rounded p-2">
+                <div className="text-cyan-600 font-bold">📖 EXTENSIVE_TESTING</div>
+                <div className="text-muted-foreground">
+                  Subject has undergone numerous trials. Behavioral patterns show depth and complexity
+                </div>
+              </div>
+            )}
+            
+            {storyFlagStats && Object.keys(storyFlagStats.flagsByStory).length > 3 && (
+              <div className="bg-indigo-500/10 border border-indigo-500/20 rounded p-2">
+                <div className="text-indigo-600 font-bold">🌐 MULTI_DIMENSIONAL_ENGAGEMENT</div>
+                <div className="text-muted-foreground">
+                  Active participation across multiple narrative threads indicates complex integration
+                </div>
+              </div>
+            )}
+            
+            {storyFlagStats && storyFlagStats.totalFlags === 0 && (
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded p-2">
+                <div className="text-amber-600 font-bold">🌟 UNTESTED_POTENTIAL</div>
+                <div className="text-muted-foreground">
+                  Character matrix incomplete. Recommend exposure to meaningful choice scenarios
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="border-t border-primary/20 pt-2 mt-4 flex justify-between text-xs text-muted-foreground/60">
+          <span>CHARACTER_MATRIX_v2089</span>
+          <span>ASSESSMENT_TIME: {new Date().toLocaleTimeString()}</span>
+        </div>
+      </div>
+    )
+  }
+
   const renderWalletInfo = () => (
     <div className="bg-background border border-primary/30 rounded-lg p-4 font-mono">
       {/* Terminal Header */}
@@ -509,6 +862,135 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ character, onCharacter
     </div>
   )
 
+  const renderStoryFlags = () => (
+    <div className="bg-background border border-primary/30 rounded-lg p-4 font-mono">
+      {/* Terminal Header */}
+      <div className="flex items-center justify-between mb-4 border-b border-primary/20 pb-2">
+        <div className="flex items-center gap-2">
+          <BookOpen className="w-4 h-4" />
+          <span className="text-primary font-bold">STORY FLAGS DATABASE v2.089</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Flag className="w-3 h-3 animate-pulse" />
+          <span className="text-primary text-xs">ACQUIRED: {allStoryFlags.length}</span>
+        </div>
+      </div>
+
+      {/* Summary Stats */}
+      {storyFlagStats && (
+        <div className="bg-muted/30 border border-primary/20 rounded p-4 mb-4">
+          <div className="text-muted-foreground text-xs mb-3">ACQUISITION_SUMMARY</div>
+          <div className="grid grid-cols-3 gap-4 text-xs">
+            <div className="text-center">
+              <div className="text-primary font-bold text-lg">{storyFlagStats.totalFlags}</div>
+              <div className="text-muted-foreground">TOTAL_FLAGS</div>
+            </div>
+            <div className="text-center">
+              <div className="text-primary font-bold text-lg">{Object.keys(storyFlagStats.flagsByStory).length}</div>
+              <div className="text-muted-foreground">ACTIVE_STORIES</div>
+            </div>
+            <div className="text-center">
+              <div className="text-primary font-bold text-lg">{Object.keys(storyFlagStats.flagsByChapter).length}</div>
+              <div className="text-muted-foreground">CHAPTERS_TOUCHED</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Story Flags List */}
+      <div className="bg-muted/30 border border-primary/20 rounded p-4 mb-4">
+        <div className="text-muted-foreground text-xs mb-3 flex items-center gap-2">
+          <Flag className="w-4 h-4" />
+          ALL_ACQUIRED_FLAGS ({allStoryFlags.length})
+        </div>
+
+        {allStoryFlags.length === 0 ? (
+          <div className="text-center py-8">
+            <Flag className="w-12 h-12 mx-auto text-muted-foreground mb-4 opacity-50" />
+            <div className="text-muted-foreground font-mono mb-2">
+              <div className="text-lg mb-2">NO_STORY_FLAGS_ACQUIRED</div>
+              <div className="text-sm">BEGIN_PLAYING_TO_UNLOCK_STORY_PROGRESSION</div>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-2 max-h-96 overflow-y-auto">
+            {allStoryFlags.map((flag, index) => (
+              <div key={index} className="bg-muted/20 border border-primary/10 rounded p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-success" />
+                    <span className="text-primary font-bold text-sm font-mono">
+                      {flag.flag_name.toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {flag.story_id && (
+                      <Badge variant="outline" className="text-xs font-mono">
+                        {flag.story_id.toUpperCase()}
+                      </Badge>
+                    )}
+                    {flag.chapter_acquired && (
+                      <Badge variant="secondary" className="text-xs font-mono">
+                        CH.{flag.chapter_acquired}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+
+                {/* Flag Value */}
+                <div className="mb-2">
+                  <div className="text-muted-foreground text-xs mb-1">FLAG_VALUE</div>
+                  <div className="text-xs font-mono bg-muted/50 border border-primary/10 px-2 py-1 rounded">
+                    {typeof flag.flag_value === 'boolean' 
+                      ? flag.flag_value ? 'TRUE' : 'FALSE'
+                      : typeof flag.flag_value === 'object'
+                      ? JSON.stringify(flag.flag_value)
+                      : String(flag.flag_value)
+                    }
+                  </div>
+                </div>
+
+                {/* Metadata */}
+                {flag.metadata && (
+                  <div className="mb-2">
+                    <div className="text-muted-foreground text-xs mb-1">METADATA</div>
+                    <div className="text-xs font-mono bg-muted/50 border border-primary/10 px-2 py-1 rounded">
+                      {JSON.stringify(flag.metadata, null, 2)}
+                    </div>
+                  </div>
+                )}
+
+                {/* Timestamps */}
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <div className="text-muted-foreground mb-1">ACQUIRED</div>
+                    <div className="text-primary font-mono">
+                      {new Date(flag.acquired_at).toLocaleDateString()}
+                    </div>
+                  </div>
+                  {flag.expires_at && (
+                    <div>
+                      <div className="text-muted-foreground mb-1">EXPIRES</div>
+                      <div className="text-primary font-mono">
+                        {new Date(flag.expires_at).toLocaleDateString()}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div className="border-t border-primary/20 pt-2 flex justify-between text-xs text-muted-foreground/60">
+        <span>STORY_FLAGS_DATABASE_v2089</span>
+        <span>LAST_SCAN: {new Date().toLocaleTimeString()}</span>
+      </div>
+    </div>
+  )
+
   return (
     <div className="w-full max-w-4xl mx-auto bg-background border border-primary/30 rounded-lg p-4 font-mono text-primary">
       {/* Terminal Header */}
@@ -531,17 +1013,17 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ character, onCharacter
               <User className="w-3 h-3 mr-2" />
               DOSSIER
             </TabsTrigger>
+            <TabsTrigger value="psych" className="text-xs font-mono flex-shrink-0 px-4">
+              <Brain className="w-3 h-3 mr-2" />
+              PSYCH_PROFILE
+            </TabsTrigger>
+            <TabsTrigger value="story-flags" className="text-xs font-mono flex-shrink-0 px-4">
+              <BookOpen className="w-3 h-3 mr-2" />
+              STORY_FLAGS
+            </TabsTrigger>
             <TabsTrigger value="wallet" className="text-xs font-mono flex-shrink-0 px-4">
               <Wallet className="w-3 h-3 mr-2" />
               WALLET_INTERFACE
-            </TabsTrigger>
-            <TabsTrigger value="story" className="text-xs font-mono flex-shrink-0 px-4">
-              <MessageSquare className="w-3 h-3 mr-2" />
-              STORY_DEMO
-            </TabsTrigger>
-            <TabsTrigger value="manager" className="text-xs font-mono flex-shrink-0 px-4">
-              <Database className="w-3 h-3 mr-2" />
-              STORY_MANAGER
             </TabsTrigger>
           </TabsList>
         </div>
@@ -550,17 +1032,18 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ character, onCharacter
           {renderCharacterProfile()}
         </TabsContent>
 
+        <TabsContent value="psych" className="mt-4">
+          {renderCharacterAssessment()}
+        </TabsContent>
+
+        <TabsContent value="story-flags" className="mt-4">
+          {renderStoryFlags()}
+        </TabsContent>
+
         <TabsContent value="wallet" className="mt-4">
           {renderWalletInfo()}
         </TabsContent>
 
-        <TabsContent value="story" className="mt-4">
-          <StoryDemo />
-        </TabsContent>
-
-        <TabsContent value="manager" className="mt-4">
-          <StoryManagerDemo />
-        </TabsContent>
       </Tabs>
 
       {/* Footer */}

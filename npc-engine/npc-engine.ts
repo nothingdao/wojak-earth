@@ -546,7 +546,7 @@ export class NPCEngine {
     } catch (error) {
       console.error('Failed to upload image:', error)
       // Return a fallback URL or throw depending on your needs
-      return `https://sudufmmkfuawomvlrkha.supabase.co/storage/v1/object/public/players/player-${characterId}.png`
+      return `https://jnqmbveckrymyyoddsuw.supabase.co/storage/v1/object/public/players/player-${characterId}.png`
     }
   }
 

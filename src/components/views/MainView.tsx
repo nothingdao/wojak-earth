@@ -17,7 +17,6 @@ import {
   BarChart3
 } from 'lucide-react'
 import { useChatParticipantCount } from '@/hooks/useChatPresence'
-import { ActivityMonitor } from '@/components/ActivityMonitor'
 import type { Character, Player, Location } from '@/types'
 import { LocalRadio } from '../LocalRadio'
 
@@ -44,8 +43,6 @@ interface MainViewProps {
   onMineClick: () => void
   onMarketClick: () => void
   onChatClick: () => void
-  onEconomyClick?: () => void
-  onLeaderboardsClick?: () => void
   onEarthMarketClick?: () => void
 }
 
@@ -55,15 +52,11 @@ export const MainView: React.FC<MainViewProps> = ({
   onMineClick,
   onMarketClick,
   onChatClick,
-  onEconomyClick,
-  onLeaderboardsClick,
   onEarthMarketClick
 }) => {
   const location_id = character.currentLocation.id
   const chatParticipants = useChatParticipantCount(location_id)
 
-  // State for showing activity monitor
-  const [showActivityMonitor, setShowActivityMonitor] = useState(false)
 
   // State for additional location data
   const [locationResources, setLocationResources] = useState<LocationResource[]>([])
@@ -262,7 +255,7 @@ export const MainView: React.FC<MainViewProps> = ({
         AVAILABLE OPERATIONS
       </div>
 
-      <div className="grid grid-cols-2 gap-3 mb-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         {/* Mining */}
         <div
           className={`bg-muted/30 border border-primary/20 rounded p-3 cursor-pointer transition-colors hover:bg-muted/50 ${!location.has_mining ? 'opacity-50' : ''}`}
@@ -375,45 +368,26 @@ export const MainView: React.FC<MainViewProps> = ({
             )}
           </div>
         </div>
-      </div>
 
-      {/* System Access Buttons */}
-      <div className="border-t border-primary/20 pt-3">
-        <div className="text-muted-foreground text-xs mb-2">SYSTEM ACCESS</div>
-        <div className="grid grid-cols-3 gap-2">
-          {onEconomyClick && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onEconomyClick}
-              className="text-xs font-mono h-8"
-            >
-              <TrendingUp className="w-3 h-3 mr-1" />
-              ECONOMY
-            </Button>
-          )}
-          {onEarthMarketClick && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onEarthMarketClick}
-              className="text-xs font-mono h-8"
-            >
-              <BarChart3 className="w-3 h-3 mr-1" />
-              EXCHANGE
-            </Button>
-          )}
-          {onLeaderboardsClick && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onLeaderboardsClick}
-              className="text-xs font-mono h-8"
-            >
-              <BarChart3 className="w-3 h-3 mr-1" />
-              RANKINGS
-            </Button>
-          )}
+        {/* Exchange */}
+        <div
+          className={`bg-muted/30 border border-primary/20 rounded p-3 cursor-pointer transition-colors hover:bg-muted/50 ${!location.has_exchange ? 'opacity-50' : ''}`}
+          onClick={location.has_exchange ? onEarthMarketClick : undefined}
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <BarChart3 className="w-4 h-4" />
+            <span className="text-primary font-bold text-sm">EXCHANGE</span>
+            <div className={`text-xs px-1 rounded ${getStatusColor(location.has_exchange)}`}>
+              {location.has_exchange ? 'ONLINE' : 'OFFLINE'}
+            </div>
+          </div>
+          <div className="text-xs text-muted-foreground">
+            {location.has_exchange ? (
+              <div>EARTH TOKEN TRADING HUB</div>
+            ) : (
+              <div>NO EXCHANGE TERMINAL</div>
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -463,33 +437,6 @@ export const MainView: React.FC<MainViewProps> = ({
   return (
     <div className="space-y-4">
       <LocalRadio location_id={'mining-plains'} />
-
-      {/* Activity Monitor Section */}
-      <div className="bg-background border border-primary/30 rounded-lg p-2 font-mono">
-        <div className="flex items-center justify-between mb-0">
-          <div className="text-muted-foreground text-xs flex items-center gap-2">
-            <Activity className="w-4 h-4" />
-            NETWORK ACTIVITY MONITOR
-          </div>
-          <Button
-            onClick={() => setShowActivityMonitor(!showActivityMonitor)}
-            variant="outline"
-            size="sm"
-            className="text-xs font-mono h-6"
-          >
-            {showActivityMonitor ? 'HIDE' : 'SHOW'}
-          </Button>
-        </div>
-
-        {showActivityMonitor && (
-          <div className="bg-muted/20 border border-primary/10 rounded p-2">
-            <ActivityMonitor
-              className="w-full"
-              maxHeight="h-98"
-            />
-          </div>
-        )}
-      </div>
 
       <AtmosphericHeader />
       <ActionPreviewButtons />

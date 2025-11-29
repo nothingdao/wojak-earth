@@ -170,7 +170,7 @@ export function RegistryDashboard({ onEnterGame }: RegistryDashboardProps) {
                   </div>
                   <Button
                     onClick={() => setShowCharacterCreation(true)}
-                    className="w-full font-mono text-sm h-8 mt-2 bg-action hover:bg-action/50 text-action-foreground"
+                    variant="outline"
                   >
                     <User className="w-3 h-3 mr-2" />
                     CREATE_PLAYER
