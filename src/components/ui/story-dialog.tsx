@@ -8,6 +8,16 @@ export interface StoryChoice {
   text: string
   action: () => void
   variant?: 'default' | 'destructive' | 'secondary'
+  effects?: StoryEffects
+}
+
+export interface StoryEffects {
+  health?: number
+  energy?: number
+  experience?: number
+  credits?: number
+  items?: string[]
+  flags?: string[]
 }
 
 export interface StoryScreen {
@@ -17,6 +27,7 @@ export interface StoryScreen {
   continueText?: string
   onContinue?: () => void
   canDismiss?: boolean
+  effects?: StoryEffects
 }
 
 export interface StoryDialogProps {
@@ -76,32 +87,38 @@ export function StoryDialog({ isOpen, screens, onComplete, onDismiss, storyId }:
 
   const handleChoice = (choice: StoryChoice) => {
     const initialScreenCount = screens.length
-    choice.action()
-    
-    // Check if new screens were added during the action
-    setTimeout(() => {
-      if (storyDialogState.screens.length > initialScreenCount) {
-        // New screens were added, continue to next screen instead of closing
-        console.log(`Screens added during choice, continuing dialog (${initialScreenCount} -> ${storyDialogState.screens.length})`)
-        setCurrentScreenIndex(prev => Math.min(prev + 1, storyDialogState.screens.length - 1))
-      } else {
-        // No new screens, close dialog as normal
-        setCurrentScreenIndex(0)
-        onComplete?.()
-      }
-    }, 10) // Small delay to allow screen injection to complete
+
+    // Execute the action (which may be async)
+    Promise.resolve(choice.action()).then(() => {
+      // Wait a bit for screen additions to complete
+      setTimeout(() => {
+        if (storyDialogState.screens.length > initialScreenCount) {
+          // New screens were added, continue to next screen instead of closing
+          console.log(`Screens added during choice, continuing dialog (${initialScreenCount} -> ${storyDialogState.screens.length})`)
+          setCurrentScreenIndex(prev => Math.min(prev + 1, storyDialogState.screens.length - 1))
+        } else {
+          // No new screens, close dialog as normal
+          console.log('No new screens added, closing dialog')
+          setCurrentScreenIndex(0)
+          onComplete?.()
+        }
+      }, 50) // Increased delay to allow screen injection to complete
+    })
   }
 
   const handleDismiss = () => {
-    if (currentScreen.canDismiss !== false) {
-      setCurrentScreenIndex(0) // Reset for next time
-      onDismiss?.()
+    // Always allow dismissing
+    setCurrentScreenIndex(0) // Reset for next time
+    onDismiss?.()
+    // Also trigger onComplete to close the dialog properly
+    if (!onDismiss) {
+      onComplete?.()
     }
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm story-toast-container">
-      <div className="relative w-full max-w-2xl mx-4 max-h-[80vh] overflow-hidden">
+    <div className="fixed top-16 bottom-0 left-0 right-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm story-toast-container">
+      <div className="relative w-full max-w-2xl mx-4 max-h-[70vh] overflow-hidden">
         {/* Story Dialog Container */}
         <div className="bg-background border-2 border-primary/30 rounded-lg shadow-2xl font-mono">
           {/* Header */}
@@ -119,26 +136,15 @@ export function StoryDialog({ isOpen, screens, onComplete, onDismiss, storyId }:
             </div>
             
             <div className="flex items-center gap-2">
-              {/* Screen Progress */}
-              {screens.length > 1 && (
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <span>{safeCurrentScreenIndex + 1}</span>
-                  <span>/</span>
-                  <span>{screens.length}</span>
-                </div>
-              )}
-              
-              {/* Dismiss Button */}
-              {currentScreen.canDismiss !== false && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleDismiss}
-                  className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
-                >
-                  <X className="w-3 h-3" />
-                </Button>
-              )}
+              {/* Dismiss Button - always available */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleDismiss}
+                className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+              >
+                <X className="w-3 h-3" />
+              </Button>
             </div>
           </div>
 
@@ -147,6 +153,9 @@ export function StoryDialog({ isOpen, screens, onComplete, onDismiss, storyId }:
             <div className="text-foreground leading-relaxed text-sm whitespace-pre-wrap story-toast-content">
               {currentScreen.content}
             </div>
+
+            {/* Effects Display */}
+            {currentScreen.effects && <EffectsDisplay effects={currentScreen.effects} />}
           </div>
 
           {/* Actions Footer */}
@@ -154,20 +163,18 @@ export function StoryDialog({ isOpen, screens, onComplete, onDismiss, storyId }:
             {/* Choices */}
             {currentScreen.choices && currentScreen.choices.length > 0 && (
               <div className="space-y-2">
-                <div className="text-xs text-muted-foreground mb-3 font-mono">
-                  CHOOSE_YOUR_ACTION:
-                </div>
                 <div className="grid gap-2">
                   {currentScreen.choices.map((choice, index) => (
-                    <Button
-                      key={index}
-                      variant={choice.variant || 'outline'}
-                      onClick={() => handleChoice(choice)}
-                      className="justify-start text-left font-mono text-xs h-auto py-2 px-3 story-choice-button"
-                    >
-                      <ChevronRight className="w-3 h-3 mr-2 flex-shrink-0" />
-                      {choice.text}
-                    </Button>
+                    <div key={index} className="space-y-1">
+                      <Button
+                        variant={choice.variant || 'outline'}
+                        onClick={() => handleChoice(choice)}
+                        className="justify-start text-left font-mono text-xs h-auto py-2 px-3 story-choice-button w-full"
+                      >
+                        <ChevronRight className="w-3 h-3 mr-2 flex-shrink-0" />
+                        {choice.text}
+                      </Button>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -207,6 +214,43 @@ export function StoryDialog({ isOpen, screens, onComplete, onDismiss, storyId }:
   )
 }
 
+// Effects Display Component - Shows results AFTER choice is made
+function EffectsDisplay({ effects }: { effects: StoryEffects }) {
+  const parts: string[] = []
+
+  if (effects.health !== undefined && effects.health !== 0) {
+    parts.push(`${effects.health > 0 ? '+' : ''}${effects.health} health`)
+  }
+  if (effects.energy !== undefined && effects.energy !== 0) {
+    parts.push(`${effects.energy > 0 ? '+' : ''}${effects.energy} energy`)
+  }
+  if (effects.experience !== undefined && effects.experience !== 0) {
+    parts.push(`${effects.experience > 0 ? '+' : ''}${effects.experience} XP`)
+  }
+  if (effects.credits !== undefined && effects.credits !== 0) {
+    parts.push(`${effects.credits > 0 ? '+' : ''}${effects.credits} EARTH`)
+  }
+  if (effects.items && effects.items.length > 0) {
+    parts.push(...effects.items.map(item => `${item}`))
+  }
+
+  if (parts.length === 0) return null
+
+  let text = 'You gained '
+  if (parts.some(p => p.startsWith('-'))) {
+    text = 'You ' + (parts.some(p => !p.startsWith('-')) ? 'gained/lost ' : 'lost ')
+  }
+
+  text += parts.join(', ') + '.'
+
+  return (
+    <div className="mt-2 text-xs text-muted-foreground italic">
+      {text}
+    </div>
+  )
+}
+
+
 // Story dialog manager
 let storyDialogState = {
   isOpen: false,
@@ -220,10 +264,10 @@ let storyDialogUpdateFn: ((state: typeof storyDialogState) => void) | null = nul
 
 export function useStoryDialog() {
   const [dialogState, setDialogState] = useState(storyDialogState)
-  
-  // Register the update function
+
+  // Register the update function immediately (not in useEffect)
   storyDialogUpdateFn = setDialogState
-  
+
   return dialogState
 }
 
@@ -246,7 +290,7 @@ export function showStoryDialog(props: {
     },
     storyId: props.storyId
   }
-  
+
   storyDialogUpdateFn?.(storyDialogState)
 }
 

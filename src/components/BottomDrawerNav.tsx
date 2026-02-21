@@ -30,6 +30,7 @@ import {
   Terminal,
   Star,
   Settings,
+  BookOpen,
 } from 'lucide-react'
 import { toast } from '@/components/ui/use-toast'
 import type { Character, GameView } from '@/types'
@@ -41,6 +42,7 @@ interface BottomDrawerNavProps {
   onHomeClick: () => void
   onMapClick: () => void
   onInventoryClick: () => void
+  onStoriesClick?: () => void
   onAdminClick?: () => void
   isAdmin?: boolean
   onCharactersClick?: () => void
@@ -56,6 +58,7 @@ export function BottomDrawerNav({
   onHomeClick,
   onMapClick,
   onInventoryClick,
+  onStoriesClick,
   onCharactersClick,
   onEconomyClick,
   onLeaderboardsClick,
@@ -112,6 +115,13 @@ export function BottomDrawerNav({
       current: currentView === 'map',
     },
     {
+      id: 'stories',
+      icon: BookOpen,
+      label: 'STORIES',
+      action: onStoriesClick,
+      current: currentView === 'stories',
+    },
+    {
       id: 'inventory',
       icon: Backpack,
       label: 'INVENTORY',
@@ -162,7 +172,7 @@ export function BottomDrawerNav({
 
   if (!character) {
     return (
-      <div className="fixed top-0 left-0 right-0 z-50 bg-background backdrop-blur border-b border-primary/30 font-mono">
+      <div className="fixed top-0 left-0 right-0 z-[150] bg-background backdrop-blur border-b border-primary/30 font-mono">
         <div className="flex items-center justify-between p-4">
           {/* Terminal Header - No Character */}
           <div className="flex items-center gap-3">
@@ -190,7 +200,7 @@ export function BottomDrawerNav({
   return (
     <>
       {/* Terminal Status Bar */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-background backdrop-blur border-b border-primary/30 font-mono">
+      <div className="fixed top-0 left-0 right-0 z-[150] bg-background backdrop-blur border-b border-primary/30 font-mono">
         {/* Desktop: Stacked Layout */}
         <div className="hidden md:block">
           {/* Top Row: Character Info with Stats and Settings */}

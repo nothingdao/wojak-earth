@@ -64,6 +64,7 @@ export type GameView =
   | 'economy'
   | 'leaderboards'
   | 'earth-market'
+  | 'stories'
 
 // Equipment/UI specific types (not in database)
 export type EquipmentSlot = 'head' | 'body' | 'accessory' | 'tool'

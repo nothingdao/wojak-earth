@@ -27,6 +27,7 @@ export function Layout({ children }: LayoutProps) {
         onHomeClick={() => actions.navigate('main')}
         onMapClick={() => actions.navigate('map')}
         onInventoryClick={() => actions.navigate('inventory')}
+        onStoriesClick={() => actions.navigate('stories')}
         onAdminClick={userIsAdmin ? () => actions.navigate('admin') : undefined}
         isAdmin={!!userIsAdmin}
         onCharactersClick={() => actions.navigate('characters')}

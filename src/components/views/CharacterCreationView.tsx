@@ -22,8 +22,6 @@ import {
   assetLoader,
   getLayerAssets,
   getRandomAsset,
-  getCompatibleAssets,
-  areAssetsCompatible
 } from '@/utils/asset-loader'
 
 // ✅ MOVED: Layer config belongs in the UI, not the API
@@ -583,7 +581,7 @@ export const CharacterCreationView: React.FC<CharacterCreationViewProps> = ({ ch
           {/* Create Character Section */}
           <div className="bg-muted/20 border border-primary/20 rounded p-4 space-y-3">
             <div className="text-center">
-              <div className="text-warning font-mono text-lg font-bold mb-1">2_SOL</div>
+              <div className="text-warning font-mono text-lg font-bold mb-1">0.5_SOL</div>
               <div className="text-xs text-muted-foreground font-mono">(DEVNET_TESTING)</div>
             </div>
 

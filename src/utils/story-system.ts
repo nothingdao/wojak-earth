@@ -73,10 +73,11 @@ export const storySystem = new StorySystemManager()
 // Convenient story creation helpers
 export const createStoryScreens = {
   // Simple text screen
-  text: (content: string, title?: string): StoryScreen => ({
+  text: (content: string, title?: string, onContinue?: () => void): StoryScreen => ({
     title,
     content,
-    continueText: 'CONTINUE'
+    continueText: 'CONTINUE',
+    onContinue
   }),
 
   // Choice screen

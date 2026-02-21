@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { toast } from '@/components/ui/use-toast'
 import { useAdminLocations } from '@/hooks/useAdminData'
+import { playChapter } from '@/utils/story-playback'
 import {
   MainView,
   ProfileView,
@@ -14,7 +15,8 @@ import {
   CharactersView,
   LeaderboardsView,
   EarthMarket,
-  EconomyView
+  EconomyView,
+  StoriesView
 } from './views'
 import type { Character, GameView } from '@/types'
 import { useGame } from '@/providers/GameProvider'
@@ -323,10 +325,27 @@ export function ViewRenderer({
         />
       )
 
+    case 'stories':
+      return (
+        <StoriesView
+          character={character}
+          onPlayChapter={async (chapter) => {
+            await playChapter({
+              chapter,
+              character,
+              onComplete: () => {
+                console.log('Story completed, refreshing character')
+              },
+              onCharacterUpdate: actions.refetchCharacter
+            })
+          }}
+        />
+      )
+
     case 'admin':
       return (
-        <AdminView 
-          character={character} 
+        <AdminView
+          character={character}
           onClose={() => actions.navigate('main')}
         />
       )

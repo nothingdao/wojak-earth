@@ -8,6 +8,7 @@ import { NetworkProvider, useNetwork } from '@/contexts/NetworkContext';
 import { GameProvider } from '@/providers/GameProvider';
 import { AppRouter } from '@/components/AppRouter';
 import { Toaster } from '@/components/ui/toaster';
+import { StoryDialog, useStoryDialog } from '@/components/ui/story-dialog';
 import { useState, useEffect, useMemo } from 'react';
 import DocsViewer from '@/components/docs/DocsViewer';
 
@@ -43,6 +44,7 @@ export default function App() {
   // Network state - starts with devnet
   const [network, setNetwork] = useState<WalletAdapterNetwork>(WalletAdapterNetwork.Devnet);
   const [showDocsScreen, setShowDocsScreen] = useState(false);
+  const storyDialog = useStoryDialog();
 
   // Prevent zoom
   useEffect(() => {
@@ -68,6 +70,13 @@ export default function App() {
         <GameProvider>
           <AppRouter showDocsScreen={showDocsScreen} setShowDocsScreen={setShowDocsScreen} />
           <Toaster />
+          <StoryDialog
+            isOpen={storyDialog.isOpen}
+            screens={storyDialog.screens}
+            onComplete={storyDialog.onComplete}
+            onDismiss={storyDialog.onDismiss}
+            storyId={storyDialog.storyId}
+          />
         </GameProvider>
       </DynamicConnectionProvider>
     </NetworkProvider>

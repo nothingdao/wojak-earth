@@ -32,7 +32,7 @@ const TREASURY_WALLETS = {
   mainnet: '6cfjMdM6yNJQfZRDx25hLUsR8PFFhh4Xb5bdxHPBtoa4' // Replace with mainnet treasury
 }
 
-const NFT_PRICE = 2 // SOL - FIXED: Match backend expectation
+const NFT_PRICE = 0.05 // SOL - Match backend expectation
 
 // Validate and create treasury pubkey ONCE
 let treasuryPubkey: PublicKey

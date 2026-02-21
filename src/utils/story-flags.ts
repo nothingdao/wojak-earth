@@ -244,7 +244,7 @@ export async function recordStoryChoice(
     flag_value?: any
     choice_id: string
     choice_key: string
-    event_key: string
+    event_id: string
     chapter_number: number
     story_id: string
     experience_gained: number
@@ -290,7 +290,7 @@ export async function recordStoryChoice(
           flag_value: choiceData.flag_value || true,
           choice_id: choiceData.choice_id,
           choice_key: choiceData.choice_key,
-          event_key: choiceData.event_key,
+          event_id: choiceData.event_id,
           chapter_number: choiceData.chapter_number,
           story_id: choiceData.story_id,
           response_text: choiceData.response_text,

@@ -10,7 +10,7 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 const TREASURY_WALLET = process.env.TREASURY_WALLET_ADDRESS
-const NFT_PRICE_SOL = 1
+const NFT_PRICE_SOL = 0.05
 
 export const handler = async (event, context) => {
   const headers = {
@@ -488,7 +488,7 @@ async function generateRandomCharacter(name, gender, wallet_address, isNPC = fal
     current_location_id: startingLocation.id, // FIXED: changed from current_location_id
     energy: 100,
     health: 100,
-    level: 9000,
+    level: 1,
     earth: 1200,
     current_version: 1
   }

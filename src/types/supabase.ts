@@ -384,8 +384,6 @@ export type Database = {
           chapter_id: string | null
           created_at: string | null
           description: string
-          event_key: string | null
-          event_type: string
           id: string
           order_index: number
           title: string
@@ -394,8 +392,6 @@ export type Database = {
           chapter_id?: string | null
           created_at?: string | null
           description: string
-          event_key?: string | null
-          event_type?: string
           id?: string
           order_index: number
           title: string
@@ -404,8 +400,6 @@ export type Database = {
           chapter_id?: string | null
           created_at?: string | null
           description?: string
-          event_key?: string | null
-          event_type?: string
           id?: string
           order_index?: number
           title?: string
