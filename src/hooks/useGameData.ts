@@ -1,6 +1,7 @@
 // src/hooks/useGameData.ts - Optimized version
 import { useState, useEffect, useCallback, useRef } from 'react'
 import supabase from '../utils/supabase'
+import { FUNCTIONS_API_BASE } from '@/config/functionsBase'
 import type {
   Character,
   GameView,
@@ -11,7 +12,7 @@ import type {
   Enums,
 } from '@/types'
 
-const API_BASE = '/.netlify/functions'
+const API_BASE = FUNCTIONS_API_BASE
 
 interface UseGameDataReturn {
   locations: Location[]

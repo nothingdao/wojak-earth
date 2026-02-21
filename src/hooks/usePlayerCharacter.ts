@@ -3,9 +3,10 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useWallet } from '@solana/wallet-adapter-react'
 import supabase from '../utils/supabase'
 import { toast } from '@/components/ui/use-toast'
+import { FUNCTIONS_API_BASE } from '@/config/functionsBase'
 import type { Character, UsePlayerCharacterReturn } from '@/types'
 
-const API_BASE = '/.netlify/functions'
+const API_BASE = FUNCTIONS_API_BASE
 
 export function usePlayerCharacter(
   shouldLoad: boolean = true

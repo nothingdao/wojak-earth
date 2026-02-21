@@ -31,9 +31,10 @@ import {
   X
 } from 'lucide-react'
 import type { EnhancedCharacter } from '@/types'
+import { FUNCTIONS_API_BASE } from '@/config/functionsBase'
 
 
-const API_BASE = '/.netlify/functions'
+const API_BASE = FUNCTIONS_API_BASE
 
 // Hook to fetch all characters from your API
 const useCharacters = () => {

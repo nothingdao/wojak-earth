@@ -308,7 +308,7 @@ export const MARKET_CONFIG = {
 // ===== API AND NETWORKING =====
 export const API_CONFIG = {
   // Base URLs
-  API_BASE: '/.netlify/functions',
+  API_BASE: 'https://earth.ndao.computer/.netlify/functions',
   SOLANA_RPC_URL: 'https://api.devnet.solana.com',
 
   // Request timeouts

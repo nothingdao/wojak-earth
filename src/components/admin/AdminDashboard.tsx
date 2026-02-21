@@ -608,7 +608,7 @@ export default function AdminDashboard({ className, character, onClose }: AdminD
               <SelectTrigger className="font-mono text-xs">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-[220]">
                 {tabs.map((tab) => (
                   <SelectItem key={tab.id} value={tab.id}>
                     <div className="flex items-center gap-2 font-mono">

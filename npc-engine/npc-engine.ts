@@ -35,7 +35,8 @@ dotenv.config()
 // 2) npc-engine/npc-config.json (optional local overrides)
 // 3) environment variable overrides
 const API_BASE =
-  process.env.NPC_API_BASE_URL || 'http://localhost:8888/.netlify/functions'
+  process.env.NPC_API_BASE_URL ||
+  'https://earth.ndao.computer/.netlify/functions'
 const SOLANA_RPC_URL =
   process.env.VITE_SOLANA_RPC_URL ||
   process.env.SOLANA_RPC_URL ||
@@ -62,9 +63,15 @@ interface NPC {
   health: number
   energy: number
   earth: number
+  experience: number
   location: string
   personality: string
   wallet: Keypair
+  storyId?: string | null
+  currentEventId?: string | null
+  storyFlag?: string | null
+  storyFlags: string[]
+  inventory: string[]
   activityTimeout: NodeJS.Timeout | null
 }
 
@@ -93,7 +100,11 @@ interface CharacterData {
   health: number
   energy: number
   earth: number
+  experience?: number
   current_location_id: string
+  story_id?: string | null
+  story_flag?: string | null
+  current_event_id?: string | null
 }
 
 interface CharacterResponse {
@@ -104,6 +115,94 @@ interface CharacterResponse {
 interface LocationsResponse {
   locations: Location[]
 }
+
+interface StoryRecord {
+  id: string
+  title?: string
+  first_event_id?: string | null
+  is_active?: boolean
+}
+
+interface ChapterRecord {
+  id: string
+  story_id: string
+}
+
+interface EventRecord {
+  id: string
+  chapter_id: string
+  title?: string
+  description?: string
+  required_location_id?: string | null
+}
+
+interface ChoiceRecord {
+  id: string
+  event_id: string
+  choice_key?: string
+  text?: string
+  order_index?: number
+}
+
+interface ConsequenceRecord {
+  id: string
+  choice_id: string
+  consequence_data: ActionConsequence
+}
+
+interface StoryBundle {
+  story: StoryRecord
+  eventsById: Map<string, EventRecord>
+  choicesByEventId: Map<string, ChoiceRecord[]>
+  consequenceByChoiceId: Map<string, ConsequenceRecord>
+  fallbackFirstEventId: string | null
+}
+
+type EngineMode = 'api' | 'direct' | 'headless'
+
+interface CLIOptions {
+  storyId?: string
+  count?: number
+  durationMinutes?: number
+  mode: EngineMode
+}
+
+function parseCLIOptions(argv: string[]): CLIOptions {
+  const options: CLIOptions = { mode: 'api' }
+
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i]
+    const next = argv[i + 1]
+
+    if (arg === '--storyId' && next) {
+      options.storyId = next
+      i++
+      continue
+    }
+    if (arg === '--count' && next) {
+      const parsed = Number(next)
+      if (Number.isFinite(parsed) && parsed > 0) options.count = Math.floor(parsed)
+      i++
+      continue
+    }
+    if (arg === '--duration' && next) {
+      const parsed = Number(next)
+      if (Number.isFinite(parsed) && parsed > 0) options.durationMinutes = parsed
+      i++
+      continue
+    }
+    if (arg === '--mode' && next) {
+      if (next === 'api' || next === 'direct' || next === 'headless') {
+        options.mode = next
+      }
+      i++
+    }
+  }
+
+  return options
+}
+
+const CLI_OPTIONS = parseCLIOptions(process.argv.slice(2))
 
 // ===== CONFIGURATION =====
 function parseNumber(value: string | undefined): number | undefined {
@@ -185,6 +284,13 @@ console.log(`   NPCs: ${config.DEFAULT_NPC_COUNT}`)
 console.log(`   Base Interval: ${config.BASE_ACTIVITY_INTERVAL}ms`)
 console.log(`   Log Level: ${config.LOG_LEVEL}`)
 console.log(`   Respawn: ${config.RESPAWN_ENABLED ? 'Enabled' : 'Disabled'}`)
+console.log(`   API Base: ${API_BASE}`)
+console.log(`   Mode: ${CLI_OPTIONS.mode}`)
+if (CLI_OPTIONS.storyId) console.log(`   Forced Story: ${CLI_OPTIONS.storyId}`)
+if (CLI_OPTIONS.count) console.log(`   NPC Override Count: ${CLI_OPTIONS.count}`)
+if (CLI_OPTIONS.durationMinutes) {
+  console.log(`   Duration Limit: ${CLI_OPTIONS.durationMinutes} minutes`)
+}
 console.log('')
 
 // ===== ACTIVITY MODE SELECTION =====
@@ -234,10 +340,12 @@ async function selectActivityMode(): Promise<string | null> {
 export class NPCEngine {
   private npcs: Map<string, NPC>
   private locations: Location[]
+  private stories: Map<string, StoryBundle>
   private connection: Connection
   private treasuryWallet: Keypair
   private config: ReturnType<typeof createNPCEngineConfig>
   private gameConfig: typeof gameConfig
+  private cliOptions: CLIOptions
   private isRunning: boolean
   private walletManager: NPCWalletManager
   private chatChannels: Map<string, ChatChannel>
@@ -247,21 +355,25 @@ export class NPCEngine {
     lastReportTime: number
   }
   private currentActivityMode: string | null
+  private warnedStoryColumnMissing: boolean
   private swarmTargetLocation: string | null = null
 
   constructor() {
     this.npcs = new Map()
     this.locations = []
+    this.stories = new Map()
     this.connection = new Connection(SOLANA_RPC_URL, 'confirmed')
     this.treasuryWallet = Keypair.fromSecretKey(
       new Uint8Array(JSON.parse(process.env.TREASURY_KEYPAIR_SECRET || '[]'))
     )
     this.config = config
+    this.cliOptions = CLI_OPTIONS
     this.gameConfig = gameConfig
     this.isRunning = false
     this.walletManager = new NPCWalletManager(supabase)
     this.chatChannels = new Map()
     this.currentActivityMode = null
+    this.warnedStoryColumnMissing = false
 
     // Performance tracking
     this.metrics = {
@@ -301,8 +413,10 @@ export class NPCEngine {
 
       // Load game data
       await this.loadLocations()
+      await this.loadStories()
 
       let resumedCount = 0
+      const targetNpcCount = this.cliOptions.count || this.config.DEFAULT_NPC_COUNT
 
       // Resume existing NPCs if enabled
       if (this.config.RESUME_EXISTING) {
@@ -311,7 +425,7 @@ export class NPCEngine {
       }
 
       // Spawn new NPCs if needed
-      const needed = this.config.DEFAULT_NPC_COUNT - resumedCount
+      const needed = targetNpcCount - resumedCount
       if (needed > 0) {
         console.log(`[SPAWN] Spawning ${needed} new NPCs`)
         await this.spawnNPCs(needed)
@@ -321,6 +435,17 @@ export class NPCEngine {
 
       // Start the main loop
       this.runLoop()
+
+      if (this.cliOptions.durationMinutes) {
+        const durationMs = this.cliOptions.durationMinutes * 60 * 1000
+        setTimeout(() => {
+          console.log(
+            `[STOP] Duration reached (${this.cliOptions.durationMinutes}m). Stopping engine.`
+          )
+          this.stop()
+          process.exit(0)
+        }, durationMs)
+      }
 
       console.log('✅ NPC Engine started successfully!')
     } catch (error) {

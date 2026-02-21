@@ -17,6 +17,7 @@ import {
   type ActionConsequence,
   type StoryEntity,
 } from '@/lib/game-logic/types'
+import { FUNCTIONS_API_BASE } from '@/config/functionsBase'
 
 // Type aliases for cleaner code
 type Story = Tables<'stories'>
@@ -33,7 +34,8 @@ const supabase = createClient(
   import.meta.env.VITE_SUPABASE_ANON_KEY!
 )
 
-const STORY_API_BASE = '/.netlify/functions'
+// Using deployed Netlify functions for reliable Supabase access
+const STORY_API_BASE = FUNCTIONS_API_BASE
 let storyApiAdminWallet: string | null = null
 
 function setStoryApiAdminWallet(walletAddress?: string | null) {

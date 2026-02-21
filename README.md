@@ -89,7 +89,7 @@ Earth 2089 is a blockchain-based survival RPG set in a post-apocalyptic world wh
    # Frontend development
    npm run dev
 
-   # Backend functions
+   # Backend functions (optional local)
    npm run functions:dev
 
    # NPC engine
@@ -101,7 +101,12 @@ Earth 2089 is a blockchain-based survival RPG set in a post-apocalyptic world wh
 
 4. **Access the game:**
    - Frontend: `http://localhost:5173`
-   - Backend: `http://localhost:8888`
+   - Backend (deployed for dev testing): `https://earth.ndao.computer/.netlify/functions`
+
+### Dev Workflow
+- Run frontend locally with `npm run dev`.
+- Use deployed Netlify functions for backend testing.
+- Netlify deploys functions automatically on push.
 
 5. **Android development:**
    ```bash

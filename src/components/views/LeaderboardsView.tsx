@@ -19,8 +19,9 @@ import {
   Activity,
   AlertTriangle
 } from 'lucide-react'
+import { FUNCTIONS_API_BASE } from '@/config/functionsBase'
 
-const API_BASE = '/.netlify/functions'
+const API_BASE = FUNCTIONS_API_BASE
 
 interface Category {
   id: string;

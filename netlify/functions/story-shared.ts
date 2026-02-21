@@ -10,8 +10,19 @@ import {
 export const STORY_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'Content-Type, x-admin-wallet, x-admin-token',
-  'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS,PATCH',
+  'Access-Control-Max-Age': '86400',
   'Content-Type': 'application/json',
+}
+
+export function addCorsHeaders(headers: Record<string, string> = {}): Record<string, string> {
+  return {
+    ...headers,
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS,PATCH',
+    'Access-Control-Allow-Headers': 'Content-Type, x-admin-wallet, x-admin-token',
+    'Access-Control-Max-Age': '86400',
+  }
 }
 
 const TABLE_MAP: Record<StoryEntity, string> = {

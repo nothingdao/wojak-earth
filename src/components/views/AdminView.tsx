@@ -31,7 +31,7 @@ export function AdminView({ character, onClose }: AdminViewProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-background overflow-auto"> {/* Full screen overlay with scroll */}
+    <div className="fixed inset-0 z-[200] bg-background overflow-auto"> {/* Full screen overlay with scroll */}
       <Profiler id="AdminDashboard" onRender={onRender}>
         <AdminDashboard character={character} onClose={onClose} />
       </Profiler>

@@ -9,12 +9,13 @@ import {
 export const handler = async (event, context) => {
   const headers = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS'
+    'Access-Control-Allow-Headers': 'Content-Type, x-admin-wallet',
+    'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS,PATCH',
+    'Access-Control-Max-Age': '86400'
   }
 
   if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers, body: '' }
+    return { statusCode: 204, headers, body: '' }
   }
 
   if (event.httpMethod !== 'POST') {
