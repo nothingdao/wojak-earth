@@ -29,10 +29,10 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "start": "netlify dev",
-    "functions:dev": "netlify dev",
+    "functions:dev": "netlify dev --functions-port 8888",
     "functions:build": "netlify build",
-    "npc:start": "npx tsx npc-engine.js",
-    "npc:dev": "NODE_ENV=development npx tsx ./npc-engine/npc-engine.js",
+    "npc:start": "npx tsx ./npc-engine/npc-engine.ts",
+    "npc:dev": "NODE_ENV=development npx tsx ./npc-engine/npc-engine.ts",
     "types": "supabase gen types typescript --project-id jnqmbveckrymyyoddsuw > ./src/types/supabase.ts",
     "extract-locations": "node scripts/extract-locations.js"
   },

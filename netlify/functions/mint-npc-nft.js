@@ -1,13 +1,11 @@
-// netlify/functions/mint-npc-nft.js - SIMPLIFIED VERSION (FUCK SOLANA PAY)
+// netlify/functions/mint-npc-nft.js - Simplified NPC mint flow
 // This is for the npc-engine use only. It should not be used to mint real player NFTs
 import { Metaplex, keypairIdentity } from "@metaplex-foundation/js"
 import { Connection, Keypair, PublicKey } from "@solana/web3.js"
-import { createClient } from '@supabase/supabase-js'
+import supabaseAdmin from '../../src/utils/supabase-admin'
 import { randomUUID } from 'crypto'
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-const supabase = createClient(supabaseUrl, supabaseServiceKey)
+const supabase = supabaseAdmin
 
 const TREASURY_WALLET = process.env.TREASURY_WALLET_ADDRESS
 const NFT_PRICE_SOL = 0.01

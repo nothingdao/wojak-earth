@@ -2,12 +2,10 @@
 // Not to be used for minting npc nfts (see: `mint-npc-nft.js`). These are the real deal player NFTs!
 import { Metaplex, keypairIdentity } from "@metaplex-foundation/js"
 import { Connection, Keypair, PublicKey } from "@solana/web3.js"
-import { createClient } from '@supabase/supabase-js'
+import supabaseAdmin from '../../src/utils/supabase-admin'
 import { randomUUID } from 'crypto'
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-const supabase = createClient(supabaseUrl, supabaseServiceKey)
+const supabase = supabaseAdmin
 
 const TREASURY_WALLET = process.env.TREASURY_WALLET_ADDRESS
 const NFT_PRICE_SOL = 0.05

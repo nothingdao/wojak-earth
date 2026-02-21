@@ -1,35 +1,10 @@
 // netlify/functions/mine-action.js - UPDATED with Dynamic Energy Cost
 import supabaseAdmin from '../../src/utils/supabase-admin'
 import { randomUUID } from 'crypto'
-
-// Power calculation functions (same as in the React component)
-function getMiningEnergyCost(character) {
-  const baseCost = 10
-
-  // Higher level characters are more efficient (lower cost)
-  const efficiencyReduction = Math.floor(character.level / 5)
-
-  // Health affects how much energy actions consume
-  const healthMultiplier = character.health < 50 ? 1.5 : 1.0
-
-  return Math.max(Math.floor((baseCost - efficiencyReduction) * healthMultiplier), 5)
-}
-
-function getPowerCoreCapacity(character) {
-  // Base power core capacity
-  const basePowerCore = 100
-
-  // Level upgrades (tech improvements)
-  const techUpgrades = character.level * 15
-
-  // Health affects power efficiency (damaged systems = less capacity)
-  const healthEfficiency = (character.health / 100) * 50
-
-  // Experience represents optimization knowledge
-  const optimizationBonus = Math.min(character.experience / 100, 50)
-
-  return Math.floor(basePowerCore + techUpgrades + healthEfficiency + optimizationBonus)
-}
+import {
+  getMiningEnergyCost,
+  getPowerCoreCapacity
+} from '../../src/lib/game-logic/mining'
 
 export const handler = async (event, context) => {
   const headers = {
@@ -99,13 +74,13 @@ export const handler = async (event, context) => {
     }
 
     // Use current location if none specified
-    const mininglocation_id = location_id || character.current_location_id
+    const miningLocationId = location_id || character.current_location_id
 
     // Get location to verify mining is available
     const { data: location, error: locationError } = await supabaseAdmin
       .from('locations')
       .select('*')
-      .eq('id', mininglocation_id)
+      .eq('id', miningLocationId)
       .single()
 
     if (locationError) throw locationError

@@ -1,13 +1,9 @@
 // netlify/functions/get-character-visual.js
 // Simple JS API endpoint to get character visual data
 
-import { createClient } from '@supabase/supabase-js'
+import supabaseAdmin from '../../src/utils/supabase-admin'
 
-// Initialize Supabase client
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_ANON_KEY
-)
+const supabase = supabaseAdmin
 
 export const handler = async (event) => {
   // Enable CORS

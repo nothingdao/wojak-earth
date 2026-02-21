@@ -2,9 +2,18 @@
 // Matches exact database structure for any query needed
 
 import { createClient } from '@supabase/supabase-js'
+import dotenv from 'dotenv'
 
-const supabaseUrl = 'https://jnqmbveckrymyyoddsuw.supabase.co'
-const supabaseServiceKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN1ZHVmbW1rZnVhd29tdmxya2hhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0ODY3Nzk1OCwiZXhwIjoyMDY0MjUzOTU4fQ.nHcuupwtQEpnpgkrf1PqAiGaq0uyFQ9fly5uPRY1644'
+dotenv.config()
+
+const supabaseUrl = process.env.SUPABASE_URL
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+if (!supabaseUrl || !supabaseServiceKey) {
+  throw new Error(
+    'Missing required environment variables: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY'
+  )
+}
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
 

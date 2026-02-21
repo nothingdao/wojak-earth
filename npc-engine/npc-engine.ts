@@ -9,15 +9,39 @@ import {
   SystemProgram,
   sendAndConfirmTransaction,
 } from '@solana/web3.js'
-import gameConfig, { createNPCEngineConfig } from './gameConfig.js'
+import gameConfig, {
+  createNPCEngineConfig,
+  type NPC_CONFIG,
+} from './gameConfig.js'
+import {
+  applyConsequence,
+  applyDamage,
+  checkDeath,
+  generateChatMessage,
+  type ActionConsequence,
+} from '@/lib/game-logic/actions'
 import { NPCWalletManager } from './wallet-manager.js'
 import readline from 'readline'
 import crypto from 'crypto'
 import dotenv from 'dotenv'
 import supabase from './supabase.js'
+import { readFileSync } from 'fs'
 
 // Load environment variables
 dotenv.config()
+
+// Config source order:
+// 1) npc-engine/gameConfig.ts defaults
+// 2) npc-engine/npc-config.json (optional local overrides)
+// 3) environment variable overrides
+const API_BASE =
+  process.env.NPC_API_BASE_URL || 'http://localhost:8888/.netlify/functions'
+const SOLANA_RPC_URL =
+  process.env.VITE_SOLANA_RPC_URL ||
+  process.env.SOLANA_RPC_URL ||
+  'https://api.devnet.solana.com'
+const SUPABASE_PUBLIC_URL =
+  process.env.VITE_SUPABASE_URL || 'https://your-project.supabase.co'
 
 // Transaction types from your schema
 type TransactionType =
@@ -82,16 +106,77 @@ interface LocationsResponse {
 }
 
 // ===== CONFIGURATION =====
+function parseNumber(value: string | undefined): number | undefined {
+  if (!value) return undefined
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : undefined
+}
+
+function loadNpcConfigFromFile(): Partial<NPC_CONFIG> {
+  try {
+    const configUrl = new URL('./npc-config.json', import.meta.url)
+    const raw = readFileSync(configUrl, 'utf-8')
+    const parsed = JSON.parse(raw) as {
+      npcCount?: number
+      resumeExisting?: boolean
+      spawnReplacements?: boolean
+      personalities?: string[]
+      spawnDelay?: number
+      activityInterval?: number
+      globalActivityRate?: number
+      activityVariance?: number
+      fundingAmount?: number
+      enableLogs?: boolean
+      logLevel?: string
+      chat?: { enabled?: boolean; showContext?: boolean; messagePoolSize?: number }
+    }
+
+    return {
+      DEFAULT_NPC_COUNT: parsed.npcCount,
+      RESUME_EXISTING: parsed.resumeExisting,
+      RESPAWN_ENABLED: parsed.spawnReplacements,
+      AVAILABLE_PERSONALITIES: parsed.personalities,
+      SPAWN_DELAY: parsed.spawnDelay,
+      BASE_ACTIVITY_INTERVAL: parsed.activityInterval,
+      GLOBAL_ACTIVITY_RATE: parsed.globalActivityRate,
+      ACTIVITY_VARIANCE: parsed.activityVariance,
+      FUNDING_AMOUNT: parsed.fundingAmount,
+      ENABLE_LOGS: parsed.enableLogs,
+      LOG_LEVEL: parsed.logLevel,
+      CHAT_CONFIG: {
+        enabled: parsed.chat?.enabled ?? true,
+        showContext: parsed.chat?.showContext ?? true,
+        messagePoolSize: parsed.chat?.messagePoolSize ?? 50,
+      },
+    }
+  } catch {
+    return {}
+  }
+}
+
+const envConfig: Partial<NPC_CONFIG> = {}
+const envNpcCount = parseNumber(process.env.NPC_DEFAULT_COUNT)
+const envInterval = parseNumber(process.env.NPC_BASE_ACTIVITY_INTERVAL)
+const envVariance = parseNumber(process.env.NPC_ACTIVITY_VARIANCE)
+const envSpawnDelay = parseNumber(process.env.NPC_SPAWN_DELAY)
+const envFunding = parseNumber(process.env.NPC_FUNDING_AMOUNT)
+const envRate = parseNumber(process.env.NPC_GLOBAL_ACTIVITY_RATE)
+
+if (envNpcCount !== undefined) envConfig.DEFAULT_NPC_COUNT = envNpcCount
+if (envInterval !== undefined) envConfig.BASE_ACTIVITY_INTERVAL = envInterval
+if (envVariance !== undefined) envConfig.ACTIVITY_VARIANCE = envVariance
+if (envSpawnDelay !== undefined) envConfig.SPAWN_DELAY = envSpawnDelay
+if (envFunding !== undefined) envConfig.FUNDING_AMOUNT = envFunding
+if (envRate !== undefined) envConfig.GLOBAL_ACTIVITY_RATE = envRate
+if (process.env.LOG_LEVEL) envConfig.LOG_LEVEL = process.env.LOG_LEVEL
+if (process.env.ENABLE_LOGS !== undefined) {
+  envConfig.ENABLE_LOGS = process.env.ENABLE_LOGS === 'true'
+}
+
+const fileConfig = loadNpcConfigFromFile()
 const config = createNPCEngineConfig({
-  // CHAT SWARM MODE - FAST CONVERGENCE
-  DEFAULT_NPC_COUNT: 18, // Default NPC count
-  BASE_ACTIVITY_INTERVAL: 5000, // 5 seconds for quick swarm testing
-  ACTIVITY_VARIANCE: 0.1, // Low variance for predictable timing
-  FUNDING_AMOUNT: 0.02, // SOL per NPC
-  LOG_LEVEL: 'info',
-  ENABLE_LOGS: true,
-  RESPAWN_ENABLED: true,
-  SPAWN_DELAY: 2000, // 2 seconds between spawns
+  ...fileConfig,
+  ...envConfig,
 })
 
 console.log('🎮 NPC Engine Configuration:')
@@ -167,10 +252,7 @@ export class NPCEngine {
   constructor() {
     this.npcs = new Map()
     this.locations = []
-    this.connection = new Connection(
-      'https://api.devnet.solana.com',
-      'confirmed'
-    )
+    this.connection = new Connection(SOLANA_RPC_URL, 'confirmed')
     this.treasuryWallet = Keypair.fromSecretKey(
       new Uint8Array(JSON.parse(process.env.TREASURY_KEYPAIR_SECRET || '[]'))
     )
@@ -252,7 +334,6 @@ export class NPCEngine {
 
   private async loadLocations(): Promise<void> {
     try {
-      const API_BASE = 'http://localhost:8888/.netlify/functions'
       const response = await fetch(`${API_BASE}/get-locations`)
       const data = (await response.json()) as LocationsResponse
       this.locations = data.locations || []
@@ -276,7 +357,6 @@ export class NPCEngine {
       )) {
         const wallet = await this.walletManager.load(npcData.id)
         if (wallet) {
-          const API_BASE = 'http://localhost:8888/.netlify/functions'
           const response = await fetch(
             `${API_BASE}/get-player-character?wallet_address=${wallet.publicKey.toString()}`
           )
@@ -424,7 +504,6 @@ export class NPCEngine {
 
   // ===== MISSING METHOD 1: API CALLER =====
   private async callAPI<T>(endpoint: string, payload: unknown): Promise<T> {
-    const API_BASE = 'http://localhost:8888/.netlify/functions'
     const response = await fetch(`${API_BASE}/${endpoint}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -484,7 +563,6 @@ export class NPCEngine {
       hasPaymentSignature: !!npcData.paymentSignature,
     })
 
-    const API_BASE = 'http://localhost:8888/.netlify/functions'
     const response = await fetch(`${API_BASE}/mint-npc-nft`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -546,7 +624,7 @@ export class NPCEngine {
     } catch (error) {
       console.error('Failed to upload image:', error)
       // Return a fallback URL or throw depending on your needs
-      return `https://jnqmbveckrymyyoddsuw.supabase.co/storage/v1/object/public/players/player-${characterId}.png`
+      return `${SUPABASE_PUBLIC_URL}/storage/v1/object/public/players/player-${characterId}.png`
     }
   }
 
@@ -809,7 +887,10 @@ export class NPCEngine {
 
   private async performChat(npc: NPC): Promise<void> {
     try {
-      const message = this.generateChatMessage(npc)
+      const message = generateChatMessage({
+        personality: npc.personality,
+        location: npc.location,
+      })
       console.log(`💬 [CHAT] ${npc.name}: "${message}"`)
       
       await this.callAPI('send-message', {
@@ -956,7 +1037,10 @@ export class NPCEngine {
 
   private async performSwarmChat(npc: NPC): Promise<void> {
     try {
-      const message = this.generateChatMessage(npc)
+      const message = generateChatMessage({
+        personality: npc.personality,
+        location: npc.location,
+      })
       
       console.log(`💬 [CHAT] ${npc.name}: "${message}"`)
       
@@ -982,76 +1066,32 @@ export class NPCEngine {
     }
   }
 
-  // ===== CHAT LIBRARY =====
-  private generateChatMessage(npc: NPC): string {
-    const messagesByPersonality = {
-      aggressive: [
-        "Anyone want to trade? I've got rare items!",
-        "This place needs more action...",
-        "Who's up for some mining? I know the best spots!",
-        "I've been grinding all day, time to cash out!",
-        "Looking for teammates for the next expedition!",
-        "Market prices are terrible today... anyone selling cheap?",
-        "This location is getting crowded...",
-        "I heard there's good loot in the deeper zones!"
-      ],
-      friendly: [
-        "Hello everyone! How's everyone doing today?",
-        "Beautiful day to be exploring Earth-2089!",
-        "Anyone new here? I can show you around!",
-        "The community here is amazing, love meeting new people!",
-        "Hope everyone's having good luck with their adventures!",
-        "This is such a peaceful spot, great for chatting!",
-        "Anyone need help with anything? Happy to assist!",
-        "The sunset looks incredible from this location!"
-      ],
-      greedy: [
-        "What's the current market rate for rare crystals?",
-        "I'm buying quantum dust at premium prices!",
-        "Anyone selling tools? I pay well for good equipment!",
-        "Investment opportunities in the new zones look promising...",
-        "Supply chain for energy potions is really tight lately...",
-        "Made some good profits mining yesterday!",
-        "Looking to corner the market on temporal fragments...",
-        "The exchange rates today are absolutely terrible!"
-      ],
-      cautious: [
-        "Is this area safe? Haven't seen any threats lately...",
-        "Always check your equipment before heading into new zones.",
-        "Health potions are essential, never travel without them.",
-        "The radiation levels here seem acceptable...",
-        "Anyone know the difficulty rating of the eastern territories?",
-        "Better to travel in groups when exploring unknown areas.",
-        "I always keep my energy above 50% just in case...",
-        "Weather patterns look stable for the next few hours."
-      ],
-      neutral: [
-        "Just passing through, checking out the local scene.",
-        "Mining yields have been pretty consistent lately.",
-        "Standard trade routes seem to be running smoothly.",
-        "Regular maintenance on equipment is paying off.",
-        "Population density here is about what I expected.",
-        "Resource distribution seems fairly balanced in this zone.",
-        "Transport costs are reasonable for this distance.",
-        "Everything seems to be operating within normal parameters."
-      ]
-    }
+  // ===== SHARED ACTION HELPERS (Phase 2 stubs for story playback integration) =====
+  private applyDamageToNPC(npc: NPC, damageAmount: number): void {
+    const result = applyDamage(npc.health, damageAmount)
+    npc.health = result.newHealth
+  }
 
-    const generalMessages = [
-      "Another day in the wasteland...",
-      "Technology here is fascinating!",
-      "The atmosphere has a unique quality to it.",
-      "Interesting geological formations around here.",
-      "Communication networks are working well today.",
-      "The local economy seems to be thriving.",
-      "Environmental conditions are quite stable.",
-      "Infrastructure development is impressive!"
-    ]
+  private checkNPCDeathState(npc: NPC): { dead: boolean; reason: string } {
+    return checkDeath(npc.health, npc.energy)
+  }
 
-    const personalityMessages = messagesByPersonality[npc.personality] || messagesByPersonality.neutral
-    const allMessages = [...personalityMessages, ...generalMessages]
-    
-    return allMessages[Math.floor(Math.random() * allMessages.length)]
+  private applyConsequenceToNPC(
+    npc: NPC,
+    consequence: ActionConsequence
+  ): { nextEventId: string | null } {
+    const result = applyConsequence(consequence, {
+      health: npc.health,
+      energy: npc.energy,
+      experience: 0,
+      earth: npc.earth,
+    })
+
+    npc.health = result.nextState.health
+    npc.energy = result.nextState.energy
+    npc.earth = result.nextState.earth
+
+    return { nextEventId: result.deltas.nextEventId }
   }
 }
 

@@ -12,6 +12,11 @@ import { showStoryDialog, useStoryDialog, StoryDialog, addStoryScreens, type Sto
 import { createStoryScreens } from '@/utils/story-system'
 import { recordStoryChoice, setStoryFlag } from '@/utils/story-flags'
 import type { Character } from '@/types'
+import {
+  ActionConsequenceSchema,
+  type ActionConsequence,
+  type StoryEntity,
+} from '@/lib/game-logic/types'
 
 // Type aliases for cleaner code
 type Story = Tables<'stories'>
@@ -21,23 +26,82 @@ type Choice = Tables<'choices'>
 type Consequence = Tables<'consequences'>
 
 // Type for consequence data structure
-interface ConsequenceData {
-  health?: number
-  energy?: number
-  experience?: number
-  credits?: number // Legacy - use earth instead
-  earth?: number
-  item?: string
-  story_flag?: string
-  response_text?: string
-  next_event_id?: string
-  [key: string]: any // Allow custom fields
-}
+type ConsequenceData = ActionConsequence
 
 const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL!,
   import.meta.env.VITE_SUPABASE_ANON_KEY!
 )
+
+const STORY_API_BASE = '/.netlify/functions'
+let storyApiAdminWallet: string | null = null
+
+function setStoryApiAdminWallet(walletAddress?: string | null) {
+  storyApiAdminWallet = walletAddress || null
+}
+
+async function callStoryApi<T>(
+  endpoint: string,
+  init?: RequestInit
+): Promise<T> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(init?.headers as Record<string, string>),
+  }
+
+  if (storyApiAdminWallet) {
+    headers['x-admin-wallet'] = storyApiAdminWallet
+  }
+
+  const response = await fetch(`${STORY_API_BASE}/${endpoint}`, {
+    ...init,
+    headers,
+  })
+  const result = await response.json()
+  if (!response.ok) {
+    throw new Error(result?.error?.message || result?.error || 'Story API request failed')
+  }
+  return result as T
+}
+
+async function storyList<T>(
+  entity: StoryEntity,
+  params: Record<string, string> = {}
+): Promise<T[]> {
+  const query = new URLSearchParams({ entity, ...params }).toString()
+  const result = await callStoryApi<{ data: T[] }>(`story-list?${query}`)
+  return result.data || []
+}
+
+async function storyCreate<T>(
+  entity: StoryEntity,
+  data: Record<string, unknown>
+): Promise<T> {
+  const result = await callStoryApi<{ data: T }>('story-create', {
+    method: 'POST',
+    body: JSON.stringify({ entity, data }),
+  })
+  return result.data
+}
+
+async function storyUpdate<T>(
+  entity: StoryEntity,
+  id: string,
+  updates: Record<string, unknown>
+): Promise<T> {
+  const result = await callStoryApi<{ data: T }>('story-update', {
+    method: 'PATCH',
+    body: JSON.stringify({ entity, id, updates }),
+  })
+  return result.data
+}
+
+async function storyDelete(entity: StoryEntity, id: string): Promise<void> {
+  await callStoryApi('story-delete', {
+    method: 'DELETE',
+    body: JSON.stringify({ entity, id }),
+  })
+}
 
 interface StoryEditorProps {
   character?: Character
@@ -61,6 +125,10 @@ export function StoryEditor({ character }: StoryEditorProps) {
 
   // Story dialog testing state
   const dialogState = useStoryDialog()
+
+  useEffect(() => {
+    setStoryApiAdminWallet(character?.wallet_address || null)
+  }, [character?.wallet_address])
 
   // Load stories on mount
   useEffect(() => {
@@ -118,99 +186,92 @@ export function StoryEditor({ character }: StoryEditorProps) {
   }, [selectedEvent])
 
   const loadStories = async () => {
-    const { data, error } = await supabase
-      .from('stories')
-      .select('*')
-      .order('created_at', { ascending: false })
-
-    if (error) {
-      console.error('Error loading stories:', error)
-    } else {
+    try {
+      const data = await storyList<Story>('story', {
+        orderBy: 'created_at',
+        ascending: 'false',
+      })
       setStories(data || [])
+    } catch (error) {
+      console.error('Error loading stories:', error)
     }
   }
 
   const loadChapters = async (storyId: string) => {
-    const { data, error } = await supabase
-      .from('chapters')
-      .select('*')
-      .eq('story_id', storyId)
-      .order('chapter_number', { ascending: true })
-
-    if (error) {
-      console.error('Error loading chapters:', error)
-    } else {
+    try {
+      const data = await storyList<Chapter>('chapter', {
+        story_id: storyId,
+        orderBy: 'chapter_number',
+        ascending: 'true',
+      })
       setChapters(data || [])
+    } catch (error) {
+      console.error('Error loading chapters:', error)
     }
   }
 
   const loadEvents = async (chapterId: string) => {
-    const { data, error } = await supabase
-      .from('events')
-      .select('*')
-      .eq('chapter_id', chapterId)
-      .order('order_index', { ascending: true })
-
-    if (error) {
-      console.error('Error loading events:', error)
-    } else {
+    try {
+      const data = await storyList<Event>('event', {
+        chapter_id: chapterId,
+        orderBy: 'order_index',
+        ascending: 'true',
+      })
       setEvents(data || [])
 
       // Load all choices for all events in this chapter
       if (data && data.length > 0) {
         loadAllChoicesForChapter(data.map(e => e.id))
       }
+    } catch (error) {
+      console.error('Error loading events:', error)
     }
   }
 
   const loadAllChoicesForChapter = async (eventIds: string[]) => {
-    const { data, error } = await supabase
-      .from('choices')
-      .select('*')
-      .in('event_id', eventIds)
-      .order('order_index', { ascending: true })
-
-    if (error) {
-      console.error('Error loading chapter choices:', error)
-    } else {
+    try {
+      const data = await storyList<Choice>('choice', {
+        event_ids: eventIds.join(','),
+        orderBy: 'order_index',
+        ascending: 'true',
+      })
       setChoices(data || [])
       // Load all consequences for all choices
       if (data && data.length > 0) {
         loadConsequences(data.map(c => c.id))
       }
+    } catch (error) {
+      console.error('Error loading chapter choices:', error)
     }
   }
 
   const loadChoices = async (eventId: string) => {
-    const { data, error } = await supabase
-      .from('choices')
-      .select('*')
-      .eq('event_id', eventId)
-      .order('order_index', { ascending: true })
-
-    if (error) {
-      console.error('Error loading choices:', error)
-    } else {
+    try {
+      const data = await storyList<Choice>('choice', {
+        event_id: eventId,
+        orderBy: 'order_index',
+        ascending: 'true',
+      })
       setChoices(data || [])
       // Load consequences for all choices
       if (data && data.length > 0) {
         loadConsequences(data.map(c => c.id))
       }
+    } catch (error) {
+      console.error('Error loading choices:', error)
     }
   }
 
   const loadConsequences = async (choiceIds: string[]) => {
     if (choiceIds.length === 0) return
 
-    const { data, error } = await supabase
-      .from('consequences')
-      .select('*')
-      .in('choice_id', choiceIds)
-
-    if (error) {
-      console.error('Error loading consequences:', error)
-    } else {
+    try {
+      const data = await storyList<Consequence>('consequence', {
+        choice_ids: choiceIds.join(','),
+      })
       setConsequences(data || [])
+    } catch (error) {
+      console.error('Error loading consequences:', error)
     }
   }
 
@@ -222,21 +283,17 @@ export function StoryEditor({ character }: StoryEditorProps) {
     if (!title || !characterPath) return
 
     setLoading(true)
-    const { data, error } = await supabase
-      .from('stories')
-      .insert({
+    try {
+      const data = await storyCreate<Story>('story', {
         title,
         character_path: characterPath,
         description: 'New story description'
       })
-      .select()
-      .single()
 
-    if (error) {
-      console.error('Error creating story:', error)
-    } else {
       setStories([data, ...stories])
       setSelectedStory(data)
+    } catch (error) {
+      console.error('Error creating story:', error)
     }
     setLoading(false)
   }
@@ -250,36 +307,26 @@ export function StoryEditor({ character }: StoryEditorProps) {
     if (!title) return
 
     setLoading(true)
-    const { data, error } = await supabase
-      .from('chapters')
-      .insert({
+    try {
+      const data = await storyCreate<Chapter>('chapter', {
         story_id: selectedStory.id,
         chapter_number: chapterNumber,
         title,
         description: 'New chapter description'
       })
-      .select()
-      .single()
 
-    if (error) {
-      console.error('Error creating chapter:', error)
-    } else {
       setChapters([...chapters, data])
       setSelectedChapter(data)
+    } catch (error) {
+      console.error('Error creating chapter:', error)
     }
     setLoading(false)
   }
 
   const updateChapter = async (chapterId: string, updates: Partial<Chapter>) => {
     setLoading(true)
-    const { error } = await supabase
-      .from('chapters')
-      .update(updates)
-      .eq('id', chapterId)
-
-    if (error) {
-      console.error('Error updating chapter:', error)
-    } else {
+    try {
+      await storyUpdate('chapter', chapterId, updates as Record<string, unknown>)
       // Update local state
       setChapters(chapters.map(ch =>
         ch.id === chapterId ? { ...ch, ...updates } : ch
@@ -287,20 +334,16 @@ export function StoryEditor({ character }: StoryEditorProps) {
       if (selectedChapter?.id === chapterId) {
         setSelectedChapter({ ...selectedChapter, ...updates })
       }
+    } catch (error) {
+      console.error('Error updating chapter:', error)
     }
     setLoading(false)
   }
 
   const updateEvent = async (eventId: string, updates: Partial<Event>) => {
     setLoading(true)
-    const { error } = await supabase
-      .from('events')
-      .update(updates)
-      .eq('id', eventId)
-
-    if (error) {
-      console.error('Error updating event:', error)
-    } else {
+    try {
+      await storyUpdate('event', eventId, updates as Record<string, unknown>)
       // Update local state
       setEvents(events.map(ev =>
         ev.id === eventId ? { ...ev, ...updates } : ev
@@ -308,6 +351,8 @@ export function StoryEditor({ character }: StoryEditorProps) {
       if (selectedEvent?.id === eventId) {
         setSelectedEvent({ ...selectedEvent, ...updates })
       }
+    } catch (error) {
+      console.error('Error updating event:', error)
     }
     setLoading(false)
   }
@@ -345,27 +390,17 @@ export function StoryEditor({ character }: StoryEditorProps) {
 
     setLoading(true)
     try {
-      const { data, error } = await supabase
-        .from('events')
-        .insert({
-          chapter_id: selectedChapter.id,
-          title,
-          description: 'New event description',
-          order_index: events.length + 1
-        })
-        .select()
-        .single()
-
-      if (error) {
-        console.error('Error creating event:', error)
-        alert(`Failed to create event: ${error.message}`)
-      } else {
-        console.log('Event created successfully:', data)
-        // Reload events to ensure we have the latest data
-        await loadEvents(selectedChapter.id)
-        // Set the newly created event as selected
-        setSelectedEvent(data)
-      }
+      const data = await storyCreate<Event>('event', {
+        chapter_id: selectedChapter.id,
+        title,
+        description: 'New event description',
+        order_index: events.length + 1
+      })
+      console.log('Event created successfully:', data)
+      // Reload events to ensure we have the latest data
+      await loadEvents(selectedChapter.id)
+      // Set the newly created event as selected
+      setSelectedEvent(data)
     } catch (err) {
       console.error('Unexpected error:', err)
       alert('Unexpected error creating event')
@@ -390,24 +425,14 @@ export function StoryEditor({ character }: StoryEditorProps) {
     setLoading(true)
 
     try {
-      const { data, error } = await supabase
-        .from('choices')
-        .insert({
-          event_id: selectedEvent.id,
-          choice_key: choiceKey,
-          text,
-          order_index: choices.filter(c => c.event_id === selectedEvent.id).length + 1
-        })
-        .select()
-        .single()
-
-      if (error) {
-        console.error('Error creating choice:', error)
-        alert(`Failed to create choice: ${error.message}`)
-      } else {
-        console.log('Choice created successfully:', data)
-        setChoices([...choices, data])
-      }
+      const data = await storyCreate<Choice>('choice', {
+        event_id: selectedEvent.id,
+        choice_key: choiceKey,
+        text,
+        order_index: choices.filter(c => c.event_id === selectedEvent.id).length + 1
+      })
+      console.log('Choice created successfully:', data)
+      setChoices([...choices, data])
     } catch (err) {
       console.error('Unexpected error:', err)
       alert('Unexpected error creating choice')
@@ -425,23 +450,18 @@ export function StoryEditor({ character }: StoryEditorProps) {
 
     try {
       const parsedData = JSON.parse(consequenceData)
-
-      const { data, error } = await supabase
-        .from('consequences')
-        .insert({
-          choice_id: choiceId,
-          consequence_data: parsedData
-        })
-        .select()
-        .single()
-
-      if (error) {
-        console.error('Error creating consequence:', error)
-        alert(`Failed to create consequence: ${error.message}`)
-      } else {
-        console.log('Consequence created successfully:', data)
-        setConsequences([...consequences, data])
+      const validated = ActionConsequenceSchema.safeParse(parsedData)
+      if (!validated.success) {
+        alert('Invalid consequence JSON keys or values')
+        setLoading(false)
+        return
       }
+      const data = await storyCreate<Consequence>('consequence', {
+        choice_id: choiceId,
+        consequence_data: validated.data
+      })
+      console.log('Consequence created successfully:', data)
+      setConsequences([...consequences, data])
     } catch (err) {
       console.error('JSON parse error or unexpected error:', err)
       alert('Invalid JSON format or unexpected error')
@@ -452,18 +472,14 @@ export function StoryEditor({ character }: StoryEditorProps) {
 
   const updateChoice = async (choiceId: string, updates: Partial<Choice>) => {
     setLoading(true)
-    const { error } = await supabase
-      .from('choices')
-      .update(updates)
-      .eq('id', choiceId)
-
-    if (error) {
-      console.error('Error updating choice:', error)
-      alert(`Failed to update choice: ${error.message}`)
-    } else {
+    try {
+      await storyUpdate('choice', choiceId, updates as Record<string, unknown>)
       setChoices(choices.map(ch =>
         ch.id === choiceId ? { ...ch, ...updates } : ch
       ))
+    } catch (error: any) {
+      console.error('Error updating choice:', error)
+      alert(`Failed to update choice: ${error.message || 'Unknown error'}`)
     }
     setLoading(false)
   }
@@ -483,24 +499,20 @@ export function StoryEditor({ character }: StoryEditorProps) {
     setLoading(true)
 
     try {
-      const { data, error } = await supabase
-        .from('consequences')
-        .insert({
-          choice_id: selectedChoice.id,
-          consequence_data: consequenceData
-        })
-        .select()
-        .single()
-
-      if (error) {
-        console.error('Error creating consequence:', error)
-        alert(`Failed to create consequence: ${error.message}`)
-      } else {
-        console.log('Consequence created successfully:', data)
-        setConsequences([...consequences, data])
-        setShowConsequenceBuilder(false)
-        setSelectedChoice(null)
+      const validated = ActionConsequenceSchema.safeParse(consequenceData)
+      if (!validated.success) {
+        alert('Invalid consequence data')
+        setLoading(false)
+        return
       }
+      const data = await storyCreate<Consequence>('consequence', {
+        choice_id: selectedChoice.id,
+        consequence_data: validated.data,
+      })
+      console.log('Consequence created successfully:', data)
+      setConsequences([...consequences, data])
+      setShowConsequenceBuilder(false)
+      setSelectedChoice(null)
     } catch (err) {
       console.error('Unexpected error:', err)
       alert('Unexpected error creating consequence')
@@ -523,25 +535,22 @@ export function StoryEditor({ character }: StoryEditorProps) {
     setLoading(true)
 
     try {
-      const { data, error } = await supabase
-        .from('consequences')
-        .update({ consequence_data: consequenceData })
-        .eq('id', consequenceId)
-        .select()
-        .single()
-
-      if (error) {
-        console.error('Error updating consequence:', error)
-        alert(`Failed to update consequence: ${error.message}`)
-      } else {
-        console.log('Consequence updated successfully:', data)
-        setConsequences(consequences.map(c =>
-          c.id === consequenceId ? { ...c, consequence_data: consequenceData } : c
-        ))
-        setShowConsequenceBuilder(false)
-        setSelectedChoice(null)
-        setSelectedConsequence(null)
+      const validated = ActionConsequenceSchema.safeParse(consequenceData)
+      if (!validated.success) {
+        alert('Invalid consequence data')
+        setLoading(false)
+        return
       }
+      const data = await storyUpdate<Consequence>('consequence', consequenceId, {
+        consequence_data: validated.data,
+      })
+      console.log('Consequence updated successfully:', data)
+      setConsequences(consequences.map(c =>
+        c.id === consequenceId ? { ...c, consequence_data: validated.data } : c
+      ))
+      setShowConsequenceBuilder(false)
+      setSelectedChoice(null)
+      setSelectedConsequence(null)
     } catch (err) {
       console.error('Unexpected error:', err)
       alert('Unexpected error updating consequence')
@@ -557,18 +566,9 @@ export function StoryEditor({ character }: StoryEditorProps) {
     setLoading(true)
 
     try {
-      const { error } = await supabase
-        .from('consequences')
-        .delete()
-        .eq('id', consequenceId)
-
-      if (error) {
-        console.error('Error deleting consequence:', error)
-        alert(`Failed to delete consequence: ${error.message}`)
-      } else {
-        console.log('Consequence deleted successfully')
-        setConsequences(consequences.filter(c => c.id !== consequenceId))
-      }
+      await storyDelete('consequence', consequenceId)
+      console.log('Consequence deleted successfully')
+      setConsequences(consequences.filter(c => c.id !== consequenceId))
     } catch (err) {
       console.error('Unexpected error:', err)
       alert('Unexpected error deleting consequence')
@@ -585,20 +585,11 @@ export function StoryEditor({ character }: StoryEditorProps) {
 
     try {
       // Consequences will be deleted automatically due to CASCADE
-      const { error } = await supabase
-        .from('choices')
-        .delete()
-        .eq('id', choiceId)
-
-      if (error) {
-        console.error('Error deleting choice:', error)
-        alert(`Failed to delete choice: ${error.message}`)
-      } else {
-        console.log('Choice deleted successfully')
-        setChoices(choices.filter(c => c.id !== choiceId))
-        // Remove associated consequences from local state
-        setConsequences(consequences.filter(c => c.choice_id !== choiceId))
-      }
+      await storyDelete('choice', choiceId)
+      console.log('Choice deleted successfully')
+      setChoices(choices.filter(c => c.id !== choiceId))
+      // Remove associated consequences from local state
+      setConsequences(consequences.filter(c => c.choice_id !== choiceId))
     } catch (err) {
       console.error('Unexpected error:', err)
       alert('Unexpected error deleting choice')
@@ -669,25 +660,16 @@ export function StoryEditor({ character }: StoryEditorProps) {
 
     try {
       // Delete chapter (CASCADE will handle events, choices, consequences)
-      const { error } = await supabase
-        .from('chapters')
-        .delete()
-        .eq('id', chapter.id)
-
-      if (error) {
-        console.error('Error deleting chapter:', error)
-        alert(`Failed to delete chapter: ${error.message}`)
-      } else {
-        alert(`Chapter "${chapter.title}" deleted successfully`)
-        // Clear selections if deleted
-        if (selectedChapter?.id === chapter.id) {
-          setSelectedChapter(null)
-          setSelectedEvent(null)
-        }
-        // Reload chapters list
-        if (selectedStory) {
-          loadChapters(selectedStory.id)
-        }
+      await storyDelete('chapter', chapter.id)
+      alert(`Chapter "${chapter.title}" deleted successfully`)
+      // Clear selections if deleted
+      if (selectedChapter?.id === chapter.id) {
+        setSelectedChapter(null)
+        setSelectedEvent(null)
+      }
+      // Reload chapters list
+      if (selectedStory) {
+        loadChapters(selectedStory.id)
       }
     } catch (err) {
       console.error('Unexpected error:', err)
@@ -740,24 +722,15 @@ export function StoryEditor({ character }: StoryEditorProps) {
 
     try {
       // Delete event (CASCADE will handle choices and consequences)
-      const { error } = await supabase
-        .from('events')
-        .delete()
-        .eq('id', event.id)
-
-      if (error) {
-        console.error('Error deleting event:', error)
-        alert(`Failed to delete event: ${error.message}`)
-      } else {
-        alert(`Event "${event.title}" deleted successfully`)
-        // Clear selections if deleted
-        if (selectedEvent?.id === event.id) {
-          setSelectedEvent(null)
-        }
-        // Reload events list
-        if (selectedChapter) {
-          loadEvents(selectedChapter.id)
-        }
+      await storyDelete('event', event.id)
+      alert(`Event "${event.title}" deleted successfully`)
+      // Clear selections if deleted
+      if (selectedEvent?.id === event.id) {
+        setSelectedEvent(null)
+      }
+      // Reload events list
+      if (selectedChapter) {
+        loadEvents(selectedChapter.id)
       }
     } catch (err) {
       console.error('Unexpected error:', err)
@@ -795,10 +768,7 @@ export function StoryEditor({ character }: StoryEditorProps) {
 
     // Batch update all events
     for (const update of updates) {
-      await supabase
-        .from('events')
-        .update({ order_index: update.order_index })
-        .eq('id', update.id)
+      await storyUpdate('event', update.id, { order_index: update.order_index })
     }
 
     // Refresh events list
@@ -1894,34 +1864,17 @@ function ConsequenceBuilder({
   const loadChapterEvents = async () => {
     setEventsLoading(true)
     try {
-      // Get only events from the current chapter
-      const { data, error } = await supabase
-        .from('events')
-        .select(`
-          *,
-          chapters (
-            title,
-            chapter_number,
-            stories (
-              title
-            )
-          )
-        `)
-        .eq('chapter_id', currentChapter.id)
-        .order('order_index', { ascending: true })
-
-      if (error) {
-        console.error('Error loading chapter events for consequence builder:', error)
-      } else {
-        // Transform the data to include chapter and story titles
-        const eventsWithContext = (data || []).map(event => ({
-          ...event,
-          chapter_title: event.chapters?.title,
-          story_title: event.chapters?.stories?.title
-        }))
-        setAllEvents(eventsWithContext)
-        console.log(`Loaded ${eventsWithContext.length} events from chapter "${currentChapter.title}"`)
-      }
+      // Get only events from the current chapter via story API
+      const eventsWithContext = await storyList<Event & { chapter_title?: string; story_title?: string }>(
+        'event',
+        {
+          chapter_id: currentChapter.id,
+          orderBy: 'order_index',
+          ascending: 'true',
+        }
+      )
+      setAllEvents(eventsWithContext)
+      console.log(`Loaded ${eventsWithContext.length} events from chapter "${currentChapter.title}"`)
     } catch (err) {
       console.error('Error in loadChapterEvents:', err)
     } finally {
@@ -2478,9 +2431,8 @@ function StoryDetailsEditor({ story, events }: { story: Story; events: Event[] }
       .map(f => f.trim())
       .filter(f => f.length > 0)
 
-    const { error } = await supabase
-      .from('stories')
-      .update({
+    try {
+      await storyUpdate('story', story.id, {
         title,
         description,
         character_path: characterPath,
@@ -2492,13 +2444,10 @@ function StoryDetailsEditor({ story, events }: { story: Story; events: Event[] }
         display_order: displayOrder,
         required_flags: flagsArray
       })
-      .eq('id', story.id)
-
-    if (error) {
-      console.error('Error saving story:', error)
-      alert(`Failed to save story: ${error.message}`)
-    } else {
       alert('Story saved successfully!')
+    } catch (error: any) {
+      console.error('Error saving story:', error)
+      alert(`Failed to save story: ${error.message || 'Unknown error'}`)
     }
     setSaving(false)
   }
@@ -2509,85 +2458,75 @@ function StoryDetailsEditor({ story, events }: { story: Story; events: Event[] }
     }
 
     setSaving(true)
-    const { error } = await supabase
-      .from('stories')
-      .update({
+    try {
+      await storyUpdate('story', story.id, {
         is_deleted: true,
         is_active: false,
         deleted_at: new Date().toISOString()
       })
-      .eq('id', story.id)
-
-    if (error) {
-      console.error('Error archiving story:', error)
-      alert(`Failed to archive story: ${error.message}`)
-      setSaving(false)
-    } else {
       alert('Story archived successfully!')
       // Reload stories list to update the UI
       loadStories()
+      setSaving(false)
+    } catch (error: any) {
+      console.error('Error archiving story:', error)
+      alert(`Failed to archive story: ${error.message || 'Unknown error'}`)
       setSaving(false)
     }
   }
 
   const restoreStory = async () => {
     setSaving(true)
-    const { error } = await supabase
-      .from('stories')
-      .update({
+    try {
+      await storyUpdate('story', story.id, {
         is_deleted: false,
         is_active: true,
         deleted_at: null
       })
-      .eq('id', story.id)
-
-    if (error) {
-      console.error('Error restoring story:', error)
-      alert(`Failed to restore story: ${error.message}`)
-      setSaving(false)
-    } else {
       alert('Story restored successfully!')
       // Reload stories list to update the UI
       loadStories()
+      setSaving(false)
+    } catch (error: any) {
+      console.error('Error restoring story:', error)
+      alert(`Failed to restore story: ${error.message || 'Unknown error'}`)
       setSaving(false)
     }
   }
 
   const permanentlyDeleteStory = async () => {
     // Count what will be deleted
-    const { data: chapterData } = await supabase
-      .from('chapters')
-      .select('id')
-      .eq('story_id', story.id)
-
+    const chapterData = await storyList<{ id: string }>('chapter', {
+      story_id: story.id,
+    })
     const chapterIds = (chapterData || []).map(c => c.id)
     let eventCount = 0, choiceCount = 0, consequenceCount = 0, progressCount = 0
 
     if (chapterIds.length > 0) {
-      const { data: eventData } = await supabase
-        .from('events')
-        .select('id')
-        .in('chapter_id', chapterIds)
-
-      const eventIds = (eventData || []).map(e => e.id)
+      const eventData = await Promise.all(
+        chapterIds.map((chapterId) =>
+          storyList<{ id: string }>('event', { chapter_id: chapterId })
+        )
+      )
+      const eventIds = eventData.flat().map(e => e.id)
       eventCount = eventIds.length
 
       if (eventIds.length > 0) {
-        const { data: choiceData } = await supabase
-          .from('choices')
-          .select('id')
-          .in('event_id', eventIds)
-
-        const choiceIds = (choiceData || []).map(c => c.id)
+        const choiceData = await Promise.all(
+          eventIds.map((eventId) =>
+            storyList<{ id: string }>('choice', { event_id: eventId })
+          )
+        )
+        const choiceIds = choiceData.flat().map(c => c.id)
         choiceCount = choiceIds.length
 
         if (choiceIds.length > 0) {
-          const { data: consData } = await supabase
-            .from('consequences')
-            .select('id')
-            .in('choice_id', choiceIds)
-
-          consequenceCount = (consData || []).length
+          const consData = await Promise.all(
+            choiceIds.map((choiceId) =>
+              storyList<{ id: string }>('consequence', { choice_id: choiceId })
+            )
+          )
+          consequenceCount = consData.flat().length
         }
       }
     }
@@ -2638,22 +2577,18 @@ function StoryDetailsEditor({ story, events }: { story: Story; events: Event[] }
     await new Promise(resolve => setTimeout(resolve, 1000))
 
     // Delete the story (CASCADE will handle related data)
-    const { error } = await supabase
-      .from('stories')
-      .delete()
-      .eq('id', story.id)
-
-    if (error) {
-      console.error('Error deleting story:', error)
-      alert(`Failed to delete story: ${error.message}`)
-      setSaving(false)
-    } else {
+    try {
+      await storyDelete('story', story.id)
       alert('Story permanently deleted. Backup downloaded.')
       // Clear selection and reload stories list
       setSelectedStory(null)
       setSelectedChapter(null)
       setSelectedEvent(null)
       loadStories()
+      setSaving(false)
+    } catch (error: any) {
+      console.error('Error deleting story:', error)
+      alert(`Failed to delete story: ${error.message || 'Unknown error'}`)
       setSaving(false)
     }
   }

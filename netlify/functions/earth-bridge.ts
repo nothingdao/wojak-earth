@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // netlify/functions/earth-bridge.ts - Fixed with user token account creation
-import { createClient } from '@supabase/supabase-js'
+import supabaseAdmin from '../../src/utils/supabase-admin'
 import { Connection, PublicKey, Keypair, Transaction } from '@solana/web3.js'
 import {
   getAssociatedTokenAddress,
@@ -10,9 +10,7 @@ import {
 } from '@solana/spl-token'
 import { randomUUID } from 'crypto'
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
-const supabase = createClient(supabaseUrl, supabaseServiceKey)
+const supabase = supabaseAdmin
 
 const connection = new Connection(
   process.env.VITE_SOLANA_RPC_URL || 'https://api.devnet.solana.com'

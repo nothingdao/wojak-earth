@@ -1,10 +1,8 @@
 // netlify/functions/equip-item.js - UPDATED FOR MULTI-SLOT SYSTEM
-import { createClient } from '@supabase/supabase-js'
+import supabaseAdmin from '../../src/utils/supabase-admin'
 import { randomUUID } from 'crypto'
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-const supabase = createClient(supabaseUrl, supabaseServiceKey)
+const supabase = supabaseAdmin
 
 // Define slot mapping for each item type
 const getSlotForItem = (item) => {

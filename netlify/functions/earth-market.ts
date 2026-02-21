@@ -1,10 +1,8 @@
 // netlify/functions/earth-market.ts - COMPLETE FILE
 
-import { createClient } from '@supabase/supabase-js'
+import supabaseAdmin from '../../src/utils/supabase-admin'
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-const supabase = createClient(supabaseUrl, supabaseServiceKey)
+const supabase = supabaseAdmin
 
 export const handler = async (event: any, context: any) => {
   const headers = {

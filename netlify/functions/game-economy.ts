@@ -1,10 +1,8 @@
 // netlify/functions/game-economy.ts - Enhanced with Real Data
 
-import { createClient } from '@supabase/supabase-js'
+import supabaseAdmin from '../../src/utils/supabase-admin'
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-const supabase = createClient(supabaseUrl, supabaseServiceKey)
+const supabase = supabaseAdmin
 
 /**
  * WASTELAND DUAL-CURRENCY ECONOMIC SYSTEM
