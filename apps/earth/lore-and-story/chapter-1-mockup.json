@@ -1,0 +1,244 @@
+{
+  "chapter_1": {
+    "male_path": {
+      "title": "The Scavenger's Choice",
+      "description": "The wasteland stretches endlessly before you. Your last job went sideways, and now you're running low on everything that keeps you alive.",
+      "events": [
+        {
+          "id": "m1_e1",
+          "type": "choice_event",
+          "title": "The Abandoned Settlement",
+          "description": "You spot smoke rising from what looks like an abandoned settlement. Your scanner picks up movement - could be survivors, could be hostiles. Your water supply is running dangerously low.",
+          "choices": [
+            {
+              "id": "m1_e1_c1",
+              "text": "Approach cautiously, try to trade for supplies",
+              "consequences": {
+                "health": 0,
+                "reputation": 10,
+                "items": ["basic_medkit"],
+                "story_flags": ["peaceful_contact"]
+              }
+            },
+            {
+              "id": "m1_e1_c2", 
+              "text": "Scout from a distance, look for an opportunity to scavenge",
+              "consequences": {
+                "health": -5,
+                "reputation": -5,
+                "items": ["scrap_metal", "clean_water"],
+                "story_flags": ["lone_wolf"]
+              }
+            },
+            {
+              "id": "m1_e1_c3",
+              "text": "Avoid entirely, can't risk contact with anyone",
+              "consequences": {
+                "health": -10,
+                "reputation": 0,
+                "items": [],
+                "story_flags": ["paranoid_survivor"]
+              }
+            }
+          ]
+        },
+        {
+          "id": "m1_e2",
+          "type": "choice_event",
+          "title": "The Consor Patrol",
+          "description": "A Consor patrol drone hovers overhead. They haven't spotted you yet, but your augmented scanner is pinging - they're looking for someone. Could be you, could be someone else.",
+          "choices": [
+            {
+              "id": "m1_e2_c1",
+              "text": "Power down all tech and hide until they pass",
+              "consequences": {
+                "health": 0,
+                "reputation": 0,
+                "items": [],
+                "story_flags": ["consor_avoided"]
+              }
+            },
+            {
+              "id": "m1_e2_c2",
+              "text": "Signal the patrol - maybe they have work",
+              "consequences": {
+                "health": 0,
+                "reputation": 5,
+                "items": ["consor_credits"],
+                "story_flags": ["consor_contact"]
+              }
+            },
+            {
+              "id": "m1_e2_c3",
+              "text": "Hack their comm channel to see what they're hunting",
+              "consequences": {
+                "health": 0,
+                "reputation": -10,
+                "items": ["encrypted_data"],
+                "story_flags": ["consor_hacked"]
+              }
+            }
+          ]
+        },
+        {
+          "id": "m1_e3",
+          "type": "choice_event",
+          "title": "The Radio Signal",
+          "description": "Your radio crackles to life - a distress signal from someone claiming to be trapped in the old subway tunnels. They're offering payment for rescue, but the tunnels are Consor territory now.",
+          "choices": [
+            {
+              "id": "m1_e3_c1",
+              "text": "Respond immediately - someone needs help",
+              "consequences": {
+                "health": -15,
+                "reputation": 20,
+                "items": ["rescue_payment", "tunnel_map"],
+                "story_flags": ["hero_instinct"]
+              }
+            },
+            {
+              "id": "m1_e3_c2",
+              "text": "Negotiate payment upfront before risking your neck",
+              "consequences": {
+                "health": -5,
+                "reputation": 5,
+                "items": ["advance_payment"],
+                "story_flags": ["business_first"]
+              }
+            },
+            {
+              "id": "m1_e3_c3",
+              "text": "Ignore the signal - too risky for unknown reward",
+              "consequences": {
+                "health": 0,
+                "reputation": -15,
+                "items": [],
+                "story_flags": ["self_preservation"]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "female_path": {
+      "title": "The Garden's Shadow",
+      "description": "The dome's gardens have always been your sanctuary, but today something feels different. The air recyclers sound strained, and the Council seems on edge.",
+      "events": [
+        {
+          "id": "f1_e1",
+          "type": "choice_event",
+          "title": "The Wilting Section",
+          "description": "You discover a section of the food gardens showing signs of blight. The automated systems haven't detected it yet, but if it spreads, it could threaten the dome's food security.",
+          "choices": [
+            {
+              "id": "f1_e1_c1",
+              "text": "Report it immediately to the Council",
+              "consequences": {
+                "health": 0,
+                "reputation": 15,
+                "items": ["council_favor"],
+                "story_flags": ["dutiful_citizen"]
+              }
+            },
+            {
+              "id": "f1_e1_c2",
+              "text": "Try to treat it yourself with garden supplies",
+              "consequences": {
+                "health": -5,
+                "reputation": 5,
+                "items": ["botanical_knowledge"],
+                "story_flags": ["self_reliant"]
+              }
+            },
+            {
+              "id": "f1_e1_c3",
+              "text": "Keep quiet and observe - learn what's really happening",
+              "consequences": {
+                "health": 0,
+                "reputation": -5,
+                "items": ["hidden_knowledge"],
+                "story_flags": ["questioning_mind"]
+              }
+            }
+          ]
+        },
+        {
+          "id": "f1_e2",
+          "type": "choice_event",
+          "title": "The Stranger's Message",
+          "description": "A maintenance worker you've never seen before slips you a note while you're tending the orchards. It contains coordinates to a location outside the dome and a warning about 'what they're not telling you.'",
+          "choices": [
+            {
+              "id": "f1_e2_c1",
+              "text": "Turn the note over to dome security immediately",
+              "consequences": {
+                "health": 0,
+                "reputation": 10,
+                "items": [],
+                "story_flags": ["security_loyal"]
+              }
+            },
+            {
+              "id": "f1_e2_c2",
+              "text": "Confront the worker directly about the message",
+              "consequences": {
+                "health": 0,
+                "reputation": 0,
+                "items": ["stranger_intel"],
+                "story_flags": ["direct_approach"]
+              }
+            },
+            {
+              "id": "f1_e2_c3",
+              "text": "Keep the note hidden and investigate the coordinates",
+              "consequences": {
+                "health": -10,
+                "reputation": -10,
+                "items": ["outside_coordinates"],
+                "story_flags": ["curious_rebel"]
+              }
+            }
+          ]
+        },
+        {
+          "id": "f1_e3",
+          "type": "choice_event",
+          "title": "The Council's Secret",
+          "description": "While delivering garden reports, you overhear a heated Council discussion about 'resource allocation' and 'acceptable losses.' They mention sending someone outside the dome - something that hasn't happened in years.",
+          "choices": [
+            {
+              "id": "f1_e3_c1",
+              "text": "Volunteer to go outside - you want to help",
+              "consequences": {
+                "health": 0,
+                "reputation": 25,
+                "items": ["council_mission"],
+                "story_flags": ["volunteer_spirit"]
+              }
+            },
+            {
+              "id": "f1_e3_c2",
+              "text": "Ask questions about what's really happening",
+              "consequences": {
+                "health": 0,
+                "reputation": 5,
+                "items": ["partial_truth"],
+                "story_flags": ["truth_seeker"]
+              }
+            },
+            {
+              "id": "f1_e3_c3",
+              "text": "Pretend you heard nothing and leave quietly",
+              "consequences": {
+                "health": 0,
+                "reputation": 0,
+                "items": [],
+                "story_flags": ["careful_observer"]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

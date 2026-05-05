@@ -1,0 +1,724 @@
+{
+  "meta": {
+    "version": "phase4-test-pack-v1",
+    "notes": [
+      "Consequence keys are strict. unlocked_zones is represented via story_flag tokens like unlock:zone:01.",
+      "Gender routing is represented via required_flags and story_flag tokens gender:brother / gender:sister."
+    ]
+  },
+  "stories": [
+    {
+      "story": {
+        "id": "d9f11111-2b11-4a7e-8a11-111111111111",
+        "title": "S1 Character Setup: Mint + Brother/Sister Fork",
+        "description": "Setup arc: mint identity, brother/sister branch, initial lockdown, first unlock.",
+        "character_path": "setup_arc",
+        "location_ids": ["zone-01-shelter"],
+        "min_level": 1,
+        "max_level": 5,
+        "first_event_id": "d9f11111-2b11-4a7e-8a11-111111111201",
+        "is_active": true,
+        "is_deleted": false,
+        "display_order": 1,
+        "required_flags": []
+      },
+      "chapters": [
+        {
+          "id": "d9f11111-2b11-4a7e-8a11-111111111101",
+          "story_id": "d9f11111-2b11-4a7e-8a11-111111111111",
+          "chapter_number": 1,
+          "title": "Genesis Protocol",
+          "description": "Mint onboarding and branch choice.",
+          "min_level": 1
+        }
+      ],
+      "events": [
+        {
+          "id": "d9f11111-2b11-4a7e-8a11-111111111201",
+          "chapter_id": "d9f11111-2b11-4a7e-8a11-111111111101",
+          "title": "Mint Identity",
+          "description": "mint avatar and choose brother or sister origin",
+          "order_index": 1,
+          "required_location_id": "zone-01-shelter",
+          "required_items": [],
+          "required_flags": []
+        },
+        {
+          "id": "d9f11111-2b11-4a7e-8a11-111111111202",
+          "chapter_id": "d9f11111-2b11-4a7e-8a11-111111111101",
+          "title": "Brother Combat Primer",
+          "description": "mine then travel under lockdown protocol",
+          "order_index": 2,
+          "required_location_id": "zone-01-shelter",
+          "required_items": [],
+          "required_flags": ["gender:brother"]
+        },
+        {
+          "id": "d9f11111-2b11-4a7e-8a11-111111111203",
+          "chapter_id": "d9f11111-2b11-4a7e-8a11-111111111101",
+          "title": "Sister Diplomacy Primer",
+          "description": "chat then trade under lockdown protocol",
+          "order_index": 3,
+          "required_location_id": "zone-01-shelter",
+          "required_items": [],
+          "required_flags": ["gender:sister"]
+        },
+        {
+          "id": "d9f11111-2b11-4a7e-8a11-111111111204",
+          "chapter_id": "d9f11111-2b11-4a7e-8a11-111111111101",
+          "title": "Lockdown Release",
+          "description": "travel unlock zone 02 and start progression",
+          "order_index": 4,
+          "required_location_id": "zone-01-shelter",
+          "required_items": [],
+          "required_flags": ["mint:complete"]
+        }
+      ],
+      "choices": [
+        {
+          "id": "d9f11111-2b11-4a7e-8a11-111111111301",
+          "event_id": "d9f11111-2b11-4a7e-8a11-111111111201",
+          "choice_key": "choose_brother",
+          "text": "mint brother profile and prepare combat",
+          "order_index": 1
+        },
+        {
+          "id": "d9f11111-2b11-4a7e-8a11-111111111302",
+          "event_id": "d9f11111-2b11-4a7e-8a11-111111111201",
+          "choice_key": "choose_sister",
+          "text": "mint sister profile and prepare diplomacy",
+          "order_index": 2
+        },
+        {
+          "id": "d9f11111-2b11-4a7e-8a11-111111111303",
+          "event_id": "d9f11111-2b11-4a7e-8a11-111111111202",
+          "choice_key": "brother_mine_travel",
+          "text": "mine and travel to breach lockdown",
+          "order_index": 1
+        },
+        {
+          "id": "d9f11111-2b11-4a7e-8a11-111111111304",
+          "event_id": "d9f11111-2b11-4a7e-8a11-111111111203",
+          "choice_key": "sister_chat_trade",
+          "text": "chat then trade to negotiate release",
+          "order_index": 1
+        },
+        {
+          "id": "d9f11111-2b11-4a7e-8a11-111111111305",
+          "event_id": "d9f11111-2b11-4a7e-8a11-111111111204",
+          "choice_key": "release_protocol",
+          "text": "travel to zone 02 and continue",
+          "order_index": 1
+        }
+      ],
+      "consequences": [
+        {
+          "id": "d9f11111-2b11-4a7e-8a11-111111111401",
+          "choice_id": "d9f11111-2b11-4a7e-8a11-111111111301",
+          "consequence_data": {
+            "energy": -5,
+            "experience": 20,
+            "credits": 25,
+            "story_flag": "gender:brother",
+            "next_event_id": "d9f11111-2b11-4a7e-8a11-111111111202"
+          }
+        },
+        {
+          "id": "d9f11111-2b11-4a7e-8a11-111111111402",
+          "choice_id": "d9f11111-2b11-4a7e-8a11-111111111302",
+          "consequence_data": {
+            "energy": -5,
+            "experience": 20,
+            "credits": 25,
+            "story_flag": "gender:sister",
+            "next_event_id": "d9f11111-2b11-4a7e-8a11-111111111203"
+          }
+        },
+        {
+          "id": "d9f11111-2b11-4a7e-8a11-111111111403",
+          "choice_id": "d9f11111-2b11-4a7e-8a11-111111111303",
+          "consequence_data": {
+            "health": -8,
+            "energy": -12,
+            "experience": 35,
+            "item": "starter_ore",
+            "story_flag": "mint:complete",
+            "next_event_id": "d9f11111-2b11-4a7e-8a11-111111111204"
+          }
+        },
+        {
+          "id": "d9f11111-2b11-4a7e-8a11-111111111404",
+          "choice_id": "d9f11111-2b11-4a7e-8a11-111111111304",
+          "consequence_data": {
+            "health": -2,
+            "energy": -10,
+            "experience": 40,
+            "credits": 40,
+            "story_flag": "mint:complete",
+            "next_event_id": "d9f11111-2b11-4a7e-8a11-111111111204"
+          }
+        },
+        {
+          "id": "d9f11111-2b11-4a7e-8a11-111111111405",
+          "choice_id": "d9f11111-2b11-4a7e-8a11-111111111305",
+          "consequence_data": {
+            "energy": -8,
+            "experience": 30,
+            "story_flag": "unlock:zone:02",
+            "response_text": "Zone 02 unlocked; lockdown lifted."
+          }
+        }
+      ]
+    },
+    {
+      "story": {
+        "id": "d9f22222-2b22-4a7e-8a22-222222222222",
+        "title": "S2 Map Progression: Lockdown to Frontier",
+        "description": "Progressive travel unlocks and role bonuses by branch.",
+        "character_path": "map_progression_arc",
+        "location_ids": ["zone-02-transit", "zone-03-mines", "zone-04-bazaar"],
+        "min_level": 2,
+        "max_level": 12,
+        "first_event_id": "d9f22222-2b22-4a7e-8a22-222222222201",
+        "is_active": true,
+        "is_deleted": false,
+        "display_order": 2,
+        "required_flags": ["unlock:zone:02"]
+      },
+      "chapters": [
+        {
+          "id": "d9f22222-2b22-4a7e-8a22-222222222101",
+          "story_id": "d9f22222-2b22-4a7e-8a22-222222222222",
+          "chapter_number": 1,
+          "title": "Transit Grid",
+          "description": "Move through controlled corridors and unlock sectors.",
+          "min_level": 2
+        }
+      ],
+      "events": [
+        {
+          "id": "d9f22222-2b22-4a7e-8a22-222222222201",
+          "chapter_id": "d9f22222-2b22-4a7e-8a22-222222222101",
+          "title": "Transit Clearance",
+          "description": "travel checkpoint with branch bonus",
+          "order_index": 1,
+          "required_location_id": "zone-02-transit",
+          "required_items": [],
+          "required_flags": ["unlock:zone:02"]
+        },
+        {
+          "id": "d9f22222-2b22-4a7e-8a22-222222222202",
+          "chapter_id": "d9f22222-2b22-4a7e-8a22-222222222101",
+          "title": "Combat Route",
+          "description": "brother route mine and fight pressure nodes",
+          "order_index": 2,
+          "required_location_id": "zone-03-mines",
+          "required_items": [],
+          "required_flags": ["gender:brother"]
+        },
+        {
+          "id": "d9f22222-2b22-4a7e-8a22-222222222203",
+          "chapter_id": "d9f22222-2b22-4a7e-8a22-222222222101",
+          "title": "Diplomacy Route",
+          "description": "sister route chat and trade safe passage",
+          "order_index": 3,
+          "required_location_id": "zone-04-bazaar",
+          "required_items": [],
+          "required_flags": ["gender:sister"]
+        },
+        {
+          "id": "d9f22222-2b22-4a7e-8a22-222222222204",
+          "chapter_id": "d9f22222-2b22-4a7e-8a22-222222222101",
+          "title": "Frontier Unlock",
+          "description": "travel unlock zone 03 and zone 04 and sync status",
+          "order_index": 4,
+          "required_location_id": "zone-02-transit",
+          "required_items": [],
+          "required_flags": []
+        }
+      ],
+      "choices": [
+        {
+          "id": "d9f22222-2b22-4a7e-8a22-222222222301",
+          "event_id": "d9f22222-2b22-4a7e-8a22-222222222201",
+          "choice_key": "checkpoint_brother",
+          "text": "travel with combat escort",
+          "order_index": 1
+        },
+        {
+          "id": "d9f22222-2b22-4a7e-8a22-222222222302",
+          "event_id": "d9f22222-2b22-4a7e-8a22-222222222201",
+          "choice_key": "checkpoint_sister",
+          "text": "travel with diplomacy escort",
+          "order_index": 2
+        },
+        {
+          "id": "d9f22222-2b22-4a7e-8a22-222222222303",
+          "event_id": "d9f22222-2b22-4a7e-8a22-222222222202",
+          "choice_key": "mine_push",
+          "text": "mine pressure node and secure route",
+          "order_index": 1
+        },
+        {
+          "id": "d9f22222-2b22-4a7e-8a22-222222222304",
+          "event_id": "d9f22222-2b22-4a7e-8a22-222222222203",
+          "choice_key": "trade_pact",
+          "text": "trade pact and chat for zone permit",
+          "order_index": 1
+        },
+        {
+          "id": "d9f22222-2b22-4a7e-8a22-222222222305",
+          "event_id": "d9f22222-2b22-4a7e-8a22-222222222204",
+          "choice_key": "unlock_frontier",
+          "text": "travel frontier and synchronize map unlock",
+          "order_index": 1
+        }
+      ],
+      "consequences": [
+        {
+          "id": "d9f22222-2b22-4a7e-8a22-222222222401",
+          "choice_id": "d9f22222-2b22-4a7e-8a22-222222222301",
+          "consequence_data": {
+            "health": -6,
+            "energy": -10,
+            "experience": 30,
+            "story_flag": "route:combat",
+            "next_event_id": "d9f22222-2b22-4a7e-8a22-222222222202"
+          }
+        },
+        {
+          "id": "d9f22222-2b22-4a7e-8a22-222222222402",
+          "choice_id": "d9f22222-2b22-4a7e-8a22-222222222302",
+          "consequence_data": {
+            "health": -2,
+            "energy": -8,
+            "experience": 35,
+            "story_flag": "route:diplomacy",
+            "next_event_id": "d9f22222-2b22-4a7e-8a22-222222222203"
+          }
+        },
+        {
+          "id": "d9f22222-2b22-4a7e-8a22-222222222403",
+          "choice_id": "d9f22222-2b22-4a7e-8a22-222222222303",
+          "consequence_data": {
+            "health": -12,
+            "energy": -15,
+            "experience": 50,
+            "item": "frontier_core",
+            "next_event_id": "d9f22222-2b22-4a7e-8a22-222222222204"
+          }
+        },
+        {
+          "id": "d9f22222-2b22-4a7e-8a22-222222222404",
+          "choice_id": "d9f22222-2b22-4a7e-8a22-222222222304",
+          "consequence_data": {
+            "energy": -12,
+            "experience": 55,
+            "credits": 80,
+            "story_flag": "permit:frontier",
+            "next_event_id": "d9f22222-2b22-4a7e-8a22-222222222204"
+          }
+        },
+        {
+          "id": "d9f22222-2b22-4a7e-8a22-222222222405",
+          "choice_id": "d9f22222-2b22-4a7e-8a22-222222222305",
+          "consequence_data": {
+            "experience": 40,
+            "story_flag": "unlock:zone:03",
+            "response_text": "Zone 03 unlocked. Continue to bazaar for Zone 04 permit."
+          }
+        }
+      ]
+    },
+    {
+      "story": {
+        "id": "d9f33333-2b33-4a7e-8a33-333333333333",
+        "title": "S3 Parallel Contract Grid",
+        "description": "Runs in parallel to primary arcs; tests independent progress and conflict-free updates.",
+        "character_path": "parallel_contract_arc",
+        "location_ids": ["zone-03-mines", "zone-04-bazaar"],
+        "min_level": 3,
+        "max_level": 20,
+        "first_event_id": "d9f33333-2b33-4a7e-8a33-333333333201",
+        "is_active": true,
+        "is_deleted": false,
+        "display_order": 3,
+        "required_flags": []
+      },
+      "chapters": [
+        {
+          "id": "d9f33333-2b33-4a7e-8a33-333333333101",
+          "story_id": "d9f33333-2b33-4a7e-8a33-333333333333",
+          "chapter_number": 1,
+          "title": "Concurrent Objectives",
+          "description": "Mine-trade-chat cycle with independent flags.",
+          "min_level": 3
+        }
+      ],
+      "events": [
+        {
+          "id": "d9f33333-2b33-4a7e-8a33-333333333201",
+          "chapter_id": "d9f33333-2b33-4a7e-8a33-333333333101",
+          "title": "Parallel Contract Accepted",
+          "description": "chat handshake and start side contract",
+          "order_index": 1,
+          "required_location_id": "zone-03-mines",
+          "required_items": [],
+          "required_flags": []
+        },
+        {
+          "id": "d9f33333-2b33-4a7e-8a33-333333333202",
+          "chapter_id": "d9f33333-2b33-4a7e-8a33-333333333101",
+          "title": "Parallel Mine Batch",
+          "description": "mine batch while main story continues",
+          "order_index": 2,
+          "required_location_id": "zone-03-mines",
+          "required_items": [],
+          "required_flags": ["parallel:start"]
+        },
+        {
+          "id": "d9f33333-2b33-4a7e-8a33-333333333203",
+          "chapter_id": "d9f33333-2b33-4a7e-8a33-333333333101",
+          "title": "Parallel Trade Settlement",
+          "description": "trade and arbitrage settlement",
+          "order_index": 3,
+          "required_location_id": "zone-04-bazaar",
+          "required_items": [],
+          "required_flags": ["parallel:mined"]
+        }
+      ],
+      "choices": [
+        {
+          "id": "d9f33333-2b33-4a7e-8a33-333333333301",
+          "event_id": "d9f33333-2b33-4a7e-8a33-333333333201",
+          "choice_key": "parallel_chat",
+          "text": "chat and accept side contract",
+          "order_index": 1
+        },
+        {
+          "id": "d9f33333-2b33-4a7e-8a33-333333333302",
+          "event_id": "d9f33333-2b33-4a7e-8a33-333333333202",
+          "choice_key": "parallel_mine",
+          "text": "mine side contract resources",
+          "order_index": 1
+        },
+        {
+          "id": "d9f33333-2b33-4a7e-8a33-333333333303",
+          "event_id": "d9f33333-2b33-4a7e-8a33-333333333203",
+          "choice_key": "parallel_trade",
+          "text": "trade contract cargo and finalize",
+          "order_index": 1
+        }
+      ],
+      "consequences": [
+        {
+          "id": "d9f33333-2b33-4a7e-8a33-333333333401",
+          "choice_id": "d9f33333-2b33-4a7e-8a33-333333333301",
+          "consequence_data": {
+            "energy": -4,
+            "experience": 15,
+            "story_flag": "parallel:start",
+            "next_event_id": "d9f33333-2b33-4a7e-8a33-333333333202"
+          }
+        },
+        {
+          "id": "d9f33333-2b33-4a7e-8a33-333333333402",
+          "choice_id": "d9f33333-2b33-4a7e-8a33-333333333302",
+          "consequence_data": {
+            "health": -6,
+            "energy": -10,
+            "experience": 35,
+            "item": "parallel_ore",
+            "story_flag": "parallel:mined",
+            "next_event_id": "d9f33333-2b33-4a7e-8a33-333333333203"
+          }
+        },
+        {
+          "id": "d9f33333-2b33-4a7e-8a33-333333333403",
+          "choice_id": "d9f33333-2b33-4a7e-8a33-333333333303",
+          "consequence_data": {
+            "experience": 45,
+            "credits": 120,
+            "story_flag": "parallel:complete",
+            "response_text": "Parallel arc completed without overriding primary story flags."
+          }
+        }
+      ]
+    },
+    {
+      "story": {
+        "id": "d9f44444-2b44-4a7e-8a44-444444444444",
+        "title": "S4 Edge Cases: Death, Recovery, Loop Guard",
+        "description": "Edge coverage for damage, death threshold, controlled recovery, and loop prevention.",
+        "character_path": "edge_case_arc",
+        "location_ids": ["zone-05-hazard"],
+        "min_level": 4,
+        "max_level": 30,
+        "first_event_id": "d9f44444-2b44-4a7e-8a44-444444444201",
+        "is_active": true,
+        "is_deleted": false,
+        "display_order": 4,
+        "required_flags": []
+      },
+      "chapters": [
+        {
+          "id": "d9f44444-2b44-4a7e-8a44-444444444101",
+          "story_id": "d9f44444-2b44-4a7e-8a44-444444444444",
+          "chapter_number": 1,
+          "title": "Hazard Protocol",
+          "description": "Controlled lethal risk then revival path.",
+          "min_level": 4
+        }
+      ],
+      "events": [
+        {
+          "id": "d9f44444-2b44-4a7e-8a44-444444444201",
+          "chapter_id": "d9f44444-2b44-4a7e-8a44-444444444101",
+          "title": "Hazard Entry",
+          "description": "travel into hazard and choose fight or fallback",
+          "order_index": 1,
+          "required_location_id": "zone-05-hazard",
+          "required_items": [],
+          "required_flags": []
+        },
+        {
+          "id": "d9f44444-2b44-4a7e-8a44-444444444202",
+          "chapter_id": "d9f44444-2b44-4a7e-8a44-444444444101",
+          "title": "Recovery Bay",
+          "description": "heal recover and avoid death loop",
+          "order_index": 2,
+          "required_location_id": "zone-05-hazard",
+          "required_items": [],
+          "required_flags": ["death:flagged"]
+        },
+        {
+          "id": "d9f44444-2b44-4a7e-8a44-444444444203",
+          "chapter_id": "d9f44444-2b44-4a7e-8a44-444444444101",
+          "title": "Race Condition Check",
+          "description": "chat and trade in rapid sequence to test sync race",
+          "order_index": 3,
+          "required_location_id": "zone-05-hazard",
+          "required_items": [],
+          "required_flags": ["recovery:complete"]
+        }
+      ],
+      "choices": [
+        {
+          "id": "d9f44444-2b44-4a7e-8a44-444444444301",
+          "event_id": "d9f44444-2b44-4a7e-8a44-444444444201",
+          "choice_key": "pvp_risk",
+          "text": "fight pvp hazard and accept heavy damage",
+          "order_index": 1
+        },
+        {
+          "id": "d9f44444-2b44-4a7e-8a44-444444444302",
+          "event_id": "d9f44444-2b44-4a7e-8a44-444444444201",
+          "choice_key": "fallback_rest",
+          "text": "rest and recover to avoid immediate death",
+          "order_index": 2
+        },
+        {
+          "id": "d9f44444-2b44-4a7e-8a44-444444444303",
+          "event_id": "d9f44444-2b44-4a7e-8a44-444444444202",
+          "choice_key": "healer_recovery",
+          "text": "heal fully and stabilize system",
+          "order_index": 1
+        },
+        {
+          "id": "d9f44444-2b44-4a7e-8a44-444444444304",
+          "event_id": "d9f44444-2b44-4a7e-8a44-444444444203",
+          "choice_key": "sync_validation",
+          "text": "chat trade and verify race safe sync",
+          "order_index": 1
+        }
+      ],
+      "consequences": [
+        {
+          "id": "d9f44444-2b44-4a7e-8a44-444444444401",
+          "choice_id": "d9f44444-2b44-4a7e-8a44-444444444301",
+          "consequence_data": {
+            "health": -95,
+            "energy": -40,
+            "experience": 30,
+            "story_flag": "death:flagged",
+            "next_event_id": "d9f44444-2b44-4a7e-8a44-444444444202"
+          }
+        },
+        {
+          "id": "d9f44444-2b44-4a7e-8a44-444444444402",
+          "choice_id": "d9f44444-2b44-4a7e-8a44-444444444302",
+          "consequence_data": {
+            "health": 15,
+            "energy": 20,
+            "story_flag": "death:avoided",
+            "next_event_id": "d9f44444-2b44-4a7e-8a44-444444444203"
+          }
+        },
+        {
+          "id": "d9f44444-2b44-4a7e-8a44-444444444403",
+          "choice_id": "d9f44444-2b44-4a7e-8a44-444444444303",
+          "consequence_data": {
+            "health": 100,
+            "energy": 60,
+            "experience": 25,
+            "story_flag": "recovery:complete",
+            "next_event_id": "d9f44444-2b44-4a7e-8a44-444444444203"
+          }
+        },
+        {
+          "id": "d9f44444-2b44-4a7e-8a44-444444444404",
+          "choice_id": "d9f44444-2b44-4a7e-8a44-444444444304",
+          "consequence_data": {
+            "experience": 35,
+            "credits": 40,
+            "story_flag": "edge:complete",
+            "response_text": "Edge path passed. No infinite loop detected."
+          }
+        }
+      ]
+    },
+    {
+      "story": {
+        "id": "d9f55555-2b55-4a7e-8a55-555555555555",
+        "title": "S5 Full Functionality: Healer, PvP, Arbitrage, Sync",
+        "description": "Covers mint/progression/economy/social/PvP/death-recovery/sync end-to-end.",
+        "character_path": "full_functionality_arc",
+        "location_ids": ["zone-02-transit", "zone-04-bazaar", "zone-06-arena"],
+        "min_level": 5,
+        "max_level": 50,
+        "first_event_id": "d9f55555-2b55-4a7e-8a55-555555555201",
+        "is_active": true,
+        "is_deleted": false,
+        "display_order": 5,
+        "required_flags": ["unlock:zone:02"]
+      },
+      "chapters": [
+        {
+          "id": "d9f55555-2b55-4a7e-8a55-555555555101",
+          "story_id": "d9f55555-2b55-4a7e-8a55-555555555555",
+          "chapter_number": 1,
+          "title": "Integrated Systems",
+          "description": "Economy, combat, healing, and sync validation.",
+          "min_level": 5
+        }
+      ],
+      "events": [
+        {
+          "id": "d9f55555-2b55-4a7e-8a55-555555555201",
+          "chapter_id": "d9f55555-2b55-4a7e-8a55-555555555101",
+          "title": "Healer Class Declaration",
+          "description": "chat healer registration and role assignment",
+          "order_index": 1,
+          "required_location_id": "zone-02-transit",
+          "required_items": [],
+          "required_flags": []
+        },
+        {
+          "id": "d9f55555-2b55-4a7e-8a55-555555555202",
+          "chapter_id": "d9f55555-2b55-4a7e-8a55-555555555101",
+          "title": "Arbitrage Loop",
+          "description": "trade route and exchange spread test",
+          "order_index": 2,
+          "required_location_id": "zone-04-bazaar",
+          "required_items": [],
+          "required_flags": ["class:healer"]
+        },
+        {
+          "id": "d9f55555-2b55-4a7e-8a55-555555555203",
+          "chapter_id": "d9f55555-2b55-4a7e-8a55-555555555101",
+          "title": "Arena PvP Trial",
+          "description": "travel and pvp resolution with death recovery support",
+          "order_index": 3,
+          "required_location_id": "zone-06-arena",
+          "required_items": [],
+          "required_flags": ["economy:arbitrage_ok"]
+        },
+        {
+          "id": "d9f55555-2b55-4a7e-8a55-555555555204",
+          "chapter_id": "d9f55555-2b55-4a7e-8a55-555555555101",
+          "title": "Realtime Sync Confirmation",
+          "description": "chat broadcast and global sync checkpoint",
+          "order_index": 4,
+          "required_location_id": "zone-04-bazaar",
+          "required_items": [],
+          "required_flags": ["pvp:resolved"]
+        }
+      ],
+      "choices": [
+        {
+          "id": "d9f55555-2b55-4a7e-8a55-555555555301",
+          "event_id": "d9f55555-2b55-4a7e-8a55-555555555201",
+          "choice_key": "register_healer",
+          "text": "chat and register healer class",
+          "order_index": 1
+        },
+        {
+          "id": "d9f55555-2b55-4a7e-8a55-555555555302",
+          "event_id": "d9f55555-2b55-4a7e-8a55-555555555202",
+          "choice_key": "arbitrage_trade",
+          "text": "trade arbitrage cycle across market nodes",
+          "order_index": 1
+        },
+        {
+          "id": "d9f55555-2b55-4a7e-8a55-555555555303",
+          "event_id": "d9f55555-2b55-4a7e-8a55-555555555203",
+          "choice_key": "arena_pvp",
+          "text": "travel to arena and resolve pvp",
+          "order_index": 1
+        },
+        {
+          "id": "d9f55555-2b55-4a7e-8a55-555555555304",
+          "event_id": "d9f55555-2b55-4a7e-8a55-555555555204",
+          "choice_key": "sync_broadcast",
+          "text": "chat broadcast and verify realtime sync",
+          "order_index": 1
+        }
+      ],
+      "consequences": [
+        {
+          "id": "d9f55555-2b55-4a7e-8a55-555555555401",
+          "choice_id": "d9f55555-2b55-4a7e-8a55-555555555301",
+          "consequence_data": {
+            "energy": -6,
+            "experience": 30,
+            "story_flag": "class:healer",
+            "next_event_id": "d9f55555-2b55-4a7e-8a55-555555555202"
+          }
+        },
+        {
+          "id": "d9f55555-2b55-4a7e-8a55-555555555402",
+          "choice_id": "d9f55555-2b55-4a7e-8a55-555555555302",
+          "consequence_data": {
+            "energy": -12,
+            "experience": 60,
+            "credits": 180,
+            "story_flag": "economy:arbitrage_ok",
+            "next_event_id": "d9f55555-2b55-4a7e-8a55-555555555203"
+          }
+        },
+        {
+          "id": "d9f55555-2b55-4a7e-8a55-555555555403",
+          "choice_id": "d9f55555-2b55-4a7e-8a55-555555555303",
+          "consequence_data": {
+            "health": -45,
+            "energy": -20,
+            "experience": 70,
+            "story_flag": "pvp:resolved",
+            "next_event_id": "d9f55555-2b55-4a7e-8a55-555555555204"
+          }
+        },
+        {
+          "id": "d9f55555-2b55-4a7e-8a55-555555555404",
+          "choice_id": "d9f55555-2b55-4a7e-8a55-555555555304",
+          "consequence_data": {
+            "health": 20,
+            "energy": 25,
+            "experience": 40,
+            "story_flag": "sync:verified",
+            "response_text": "chat_messages realtime sync and tokenomics validations passed"
+          }
+        }
+      ]
+    }
+  ]
+}
