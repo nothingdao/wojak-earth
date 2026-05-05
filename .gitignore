@@ -1,3 +1,20 @@
+# Anchor / Rust
+target/
+.anchor/
+**/*.so
+
+# Node
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+dist-ssr/
+build/
+stats.html
+apps/*/dist/
+server/*/dist/
+
 # Logs
 logs
 *.log
@@ -7,12 +24,7 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
-
-# Editor directories and files
+# Editor
 .vscode/*
 !.vscode/extensions.json
 .idea
@@ -23,27 +35,31 @@ dist-ssr
 *.sln
 *.sw?
 
+# Environment
 .env
+.env.*
+!.env.example
+*.local
 
-# Local Netlify folder
-.netlify
+# Netlify
+.netlify/
 
+# Vite
+.vite/
+.vite-hooks/
+
+# Convex generated
+convex/_generated/
 
 # cntx-ui
 .cntx
 
+# Misc
 server-keypair.json
-
-# Android build artifacts
 android/app/build/
 android/build/
 android/.gradle/
 android/local.properties
-
-
-locations.json 
+locations.json
 locations.txt
-
-
 earth_supabase_backup
-lore-and-story
