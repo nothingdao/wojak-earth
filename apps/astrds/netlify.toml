@@ -1,6 +1,6 @@
 [build]
-command = "pnpm build"
-publish = "dist"
+command = "pnpm build:astrds"
+publish = "apps/astrds/dist"
 
 [build.environment]
 NODE_VERSION = "22"
