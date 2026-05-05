@@ -1,0 +1,181 @@
+// src/screens/gameover/SpaceTokenClaim.tsx
+// Shows all pending space token collections and lets the player claim them.
+// Collections are written server-side at collection time and persist across
+// sessions — closing the browser mid-game loses nothing.
+import React, { useState } from 'react'
+import { useWallet } from '@solana/wallet-adapter-react'
+import { useAction, useMutation, useQuery } from 'convex/react'
+import { api } from '../../../../../convex/_generated/api'
+import { Connection } from '@solana/web3.js'
+import { CheckCircle2, AlertCircle, Rocket } from 'lucide-react'
+import { RPC_ENDPOINT } from '@/lib/solana'
+import { buildClaimTransaction, sendSignedTransaction } from '@/lib/spaceVault'
+import { isNativeSolMint } from '@/lib/nativeSol'
+
+type ClaimState = 'idle' | 'claiming' | 'done' | 'error'
+
+const SpaceTokenClaim: React.FC = () => {
+  const wallet = useWallet()
+  const walletAddress = wallet.publicKey?.toString()
+
+  const pending = useQuery(
+    api.spaceDeposits.getPendingCollectionsByWallet,
+    walletAddress ? { playerWalletAddress: walletAddress } : 'skip'
+  )
+  const prepareClaims = useAction(api.spaceDepositsActions.prepareClaims)
+  const finalizeClaim = useMutation(api.spaceDeposits.finalizeClaim)
+  const revertClaimingCollections = useMutation(api.spaceDeposits.revertClaimingCollections)
+
+  const [claimState, setClaimState] = useState<ClaimState>('idle')
+  const [errorMsg, setErrorMsg] = useState('')
+  const [results, setResults] = useState<{ symbol: string; totalClaimed: number; decimals: number }[]>([])
+
+  // Not connected or still loading
+  if (!walletAddress || pending === undefined) return null
+  // Nothing pending
+  if (pending.length === 0 && claimState === 'idle') return null
+
+  // Group pending by mint for display
+  const byMint = new Map<string, typeof pending[number] & { totalAmount: number }>()
+  for (const col of pending) {
+    const key = col.mintAddress
+    if (!byMint.has(key)) {
+      byMint.set(key, { ...col, totalAmount: 0 })
+    }
+    byMint.get(key)!.totalAmount += col.amount
+  }
+  const grouped = [...byMint.values()]
+
+  const handleClaim = async () => {
+    if (!walletAddress || !wallet.publicKey || !wallet.signTransaction) return
+    setClaimState('claiming')
+    setErrorMsg('')
+    let reservedCollectionIds: string[] = []
+    try {
+      const prepared = await prepareClaims({ playerWalletAddress: walletAddress })
+      reservedCollectionIds = prepared.claims.flatMap((claim: any) => claim.collectionIds ?? [])
+      const connection = new Connection(RPC_ENDPOINT, 'confirmed')
+      const claimed: { symbol: string; totalClaimed: number; decimals: number }[] = []
+
+      for (const claim of prepared.claims) {
+        const built = await buildClaimTransaction({
+          connection,
+          player: wallet.publicKey,
+          claim,
+        })
+        const signed = await wallet.signTransaction(built.transaction)
+        const txSignature = await sendSignedTransaction({
+          connection,
+          signedTransaction: signed,
+          blockhash: built.blockhash,
+          lastValidBlockHeight: built.lastValidBlockHeight,
+        })
+
+        await finalizeClaim({
+          depositId: claim.depositId as any,
+          collectionIds: claim.collectionIds as any,
+          playerWalletAddress: walletAddress,
+          mintAddress: claim.mintAddress,
+          txSignature,
+          amount: claim.totalAmount,
+        })
+
+        claimed.push({
+          symbol: claim.symbol,
+          totalClaimed: claim.totalAmount,
+          decimals: claim.decimals,
+        })
+      }
+
+      setResults(claimed)
+      setClaimState('done')
+    } catch (err: unknown) {
+      if (reservedCollectionIds.length > 0) {
+        try {
+          await revertClaimingCollections({ collectionIds: reservedCollectionIds as any, playerWalletAddress: walletAddress })
+        } catch (revertErr) {
+          console.error('Failed to revert claiming collections', revertErr)
+        }
+      }
+      setErrorMsg(err instanceof Error ? err.message : 'Claim failed')
+      setClaimState('error')
+    }
+  }
+
+  return (
+    <div className='bg-[var(--entity-shield)]/10 border border-[var(--entity-shield)]/30 rounded-lg p-4 space-y-3'>
+      <div className='flex items-center gap-2'>
+        <Rocket size={14} className='text-[var(--entity-shield)]' />
+        <span className='font-mono text-xs text-[var(--entity-shield)] uppercase tracking-wider'>
+          Space Tokens Collected
+        </span>
+      </div>
+
+      {claimState === 'idle' && (
+        <>
+          <div className='space-y-1'>
+            {grouped.map((g) => {
+              const uiAmount = g.totalAmount / 10 ** g.decimals
+              const pillCount = Math.round(g.totalAmount / g.tokensPerPill)
+              const perPillUi = g.tokensPerPill / 10 ** g.decimals
+              const maxDecimals = isNativeSolMint(g.mintAddress) ? 9 : Math.min(g.decimals, 6)
+              return (
+                <div key={g.mintAddress} className='flex justify-between font-mono text-xs'>
+                  <span className='text-tx-secondary'>{g.symbol}</span>
+                  <span className='text-[var(--entity-shield)]'>
+                    {pillCount} collected × {perPillUi.toLocaleString(undefined, { maximumFractionDigits: maxDecimals })} = {uiAmount.toLocaleString(undefined, { maximumFractionDigits: maxDecimals })}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+          <button
+            onClick={handleClaim}
+            disabled={!wallet.connected || grouped.length === 0}
+            className='btn-grain w-full h-9 font-mono text-xs bg-[var(--entity-shield)] text-foreground hover:bg-[var(--entity-shield)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed'
+          >
+            Claim all space tokens
+          </button>
+        </>
+      )}
+
+      {claimState === 'claiming' && (
+        <p className='font-mono text-xs text-muted-foreground text-center py-2'>
+          Claiming tokens from the vault...
+        </p>
+      )}
+
+      {claimState === 'done' && (
+        <div className='flex items-start gap-2'>
+          <CheckCircle2 size={14} className='text-tx-success mt-0.5 shrink-0' />
+          <div className='space-y-0.5'>
+            {results.length > 0 ? results.map((r) => (
+              <p key={r.symbol} className='font-mono text-xs text-tx-secondary'>
+                {(r.totalClaimed / 10 ** r.decimals).toLocaleString(undefined, { maximumFractionDigits: r.symbol === 'SOL' ? 9 : Math.min(r.decimals, 6) })} {r.symbol} sent to your wallet
+              </p>
+            )) : (
+              <p className='font-mono text-xs text-tx-secondary'>Nothing to claim right now.</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {claimState === 'error' && (
+        <div className='flex items-start gap-2'>
+          <AlertCircle size={14} className='text-destructive mt-0.5 shrink-0' />
+          <div>
+            <p className='font-mono text-xs text-tx-secondary'>{errorMsg}</p>
+            <button
+              onClick={() => setClaimState('idle')}
+              className='font-mono text-xs text-primary hover:text-foreground transition-colors mt-1'
+            >
+              Try again
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default SpaceTokenClaim

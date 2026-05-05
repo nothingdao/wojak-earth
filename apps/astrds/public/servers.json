@@ -1,0 +1,7 @@
+[
+  {
+    "id": "railway-prod",
+    "label": "Production",
+    "url": "wss://earth-server-production.up.railway.app"
+  }
+]

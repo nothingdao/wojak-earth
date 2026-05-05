@@ -1,0 +1,12 @@
+[build]
+command = "pnpm build"
+publish = "dist"
+
+[build.environment]
+NODE_VERSION = "22"
+PNPM_VERSION = "9.0.0"
+
+[dev]
+command = "pnpm dev"
+targetPort = 3000
+autoLaunch = false
