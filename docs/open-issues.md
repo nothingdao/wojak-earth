@@ -75,16 +75,16 @@ Confirm the real Railway domain and update this file and/or env-driven WS config
 
 Builds pass, but these actions throw runtime errors until implemented.
 
-### 5. Reservation confirmation by transaction signature is incomplete
+### 5. Remove deprecated reservation flow
 
-`apps/earth/src/lib/reservations.ts` has `updateReservationStatus()` as a stub because Convex lacks direct lookup/mutation by transaction signature.
+The reservation spot concept is deprecated. It has been removed from onboarding, but the underlying unused code still exists and should be deleted after confirming no admin/history dependency remains:
 
-Likely needed:
-
-- add `earth_reservations.by_tx` index in `convex/schema.ts`
-- add `getByTransactionSignature` query
-- add confirm/fail mutation by transaction signature
-- update `ReservationScreen` flow
+- `apps/earth/src/components/screens/ReservationScreen.tsx`
+- `apps/earth/src/hooks/useReservationStatus.ts`
+- `apps/earth/src/lib/reservations.ts`
+- `convex/earth/reservations.ts`
+- `earth_reservations` schema/table references
+- reservation-related env vars/docs
 
 ### 6. Missing `/earth/local-radio` server route
 
