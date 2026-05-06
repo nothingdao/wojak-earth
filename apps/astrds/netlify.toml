@@ -1,6 +1,6 @@
 [build]
-command = "pnpm build:astrds"
-publish = "apps/astrds/dist"
+command = "pnpm --filter solana-asteroids build"
+publish = "dist"
 
 [build.environment]
 NODE_VERSION = "22"

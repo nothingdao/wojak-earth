@@ -2,6 +2,6 @@
   {
     "id": "railway-prod",
     "label": "Production",
-    "url": "wss://earth-server-production.up.railway.app"
+    "url": "wss://astrds-game-server-production.up.railway.app"
   }
 ]

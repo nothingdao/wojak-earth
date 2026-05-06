@@ -24,7 +24,7 @@ async function probeServer(wsUrl: string): Promise<{ online: boolean; ping: numb
     : wsUrl.replace('ws://', 'http://')
   const start = performance.now()
   try {
-    const res = await fetch(httpUrl, { signal: AbortSignal.timeout(3000) })
+    const res = await fetch(`${httpUrl}/health`, { signal: AbortSignal.timeout(3000) })
     const ping = Math.round(performance.now() - start)
     return { online: res.ok, ping }
   } catch {
