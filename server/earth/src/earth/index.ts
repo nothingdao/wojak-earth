@@ -6,6 +6,7 @@ import solBalanceRouter from './routes/sol-balance.js'
 import exchangeRouter from './routes/exchange.js'
 import bridgeRouter from './routes/bridge.js'
 import economyRouter from './routes/economy.js'
+import debugRouter from './routes/debug.js'
 
 const router = Router()
 
@@ -16,5 +17,6 @@ router.use(solBalanceRouter)
 router.use(exchangeRouter)
 router.use(bridgeRouter)
 router.use(economyRouter)
+router.use(debugRouter)
 
 export default router

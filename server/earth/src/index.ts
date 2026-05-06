@@ -14,7 +14,7 @@ app.use((_req, res, next) => {
   res.set('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS,PATCH')
   next()
 })
-app.options('*', (_req, res) => res.sendStatus(204))
+app.options('*path', (_req, res) => res.sendStatus(204))
 
 app.get('/health', (_req, res) => res.json({ ok: true, service: 'nothingdao-server' }))
 app.use('/earth', earthRouter)

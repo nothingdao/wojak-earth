@@ -50,7 +50,11 @@ router.post('/mint-player', async (req, res) => {
         return res.status(400).json({ error: 'Payment transaction failed', code: 'PAYMENT_FAILED' })
       }
 
-      const TREASURY_WALLET = process.env.TREASURY_WALLET_ADDRESS!
+      const TREASURY_WALLET = process.env.TREASURY_WALLET_ADDRESS || process.env.VITE_TREASURY_WALLET_ADDRESS
+      if (!TREASURY_WALLET) {
+        return res.status(500).json({ error: 'Treasury wallet is not configured on the server', code: 'TREASURY_NOT_CONFIGURED' })
+      }
+
       const message: any = transaction.transaction.message
       const messageKeys = typeof message.getAccountKeys === 'function'
         ? message.getAccountKeys({ accountKeysFromLookups: meta.loadedAddresses })
@@ -73,8 +77,23 @@ router.post('/mint-player', async (req, res) => {
         return res.status(400).json({ error: 'Payment sender mismatch', code: 'WALLET_MISMATCH' })
       }
 
-      const existingBySignature = await convexHttp.query(api.earth.characters.getByPaymentSignature, { paymentSignature })
+      const existingBySignature = await convexHttp.query(api.earth.characters.getByPaymentSignature, { paymentSignature }) as any
       if (existingBySignature) {
+        if (existingBySignature.walletAddress === wallet_address) {
+          return res.json({
+            success: true,
+            character: {
+              id: existingBySignature._id,
+              name: existingBySignature.name,
+              wallet_address,
+            },
+            nft_address: existingBySignature.nftAddress ?? null,
+            image_url: existingBySignature.currentImageUrl ?? existingBySignature.birthImageUrl ?? null,
+            metadataUri: null,
+            paymentVerified: true,
+            alreadyCreated: true,
+          })
+        }
         return res.status(400).json({ error: 'Payment signature already used', code: 'PAYMENT_ALREADY_USED' })
       }
     }
@@ -85,11 +104,22 @@ router.post('/mint-player', async (req, res) => {
       return res.status(400).json({ error: 'Wallet already has a character', code: 'WALLET_HAS_PLAYER' })
     }
 
-    // Get a random starting location
+    // Get a random starting location. This should come from the remote Convex
+    // Earth dataset; do not silently create placeholder world data here.
     const locations = await convexHttp.query(api.earth.locations.getAll, {}) as any[]
+    if (locations.length === 0) {
+      return res.status(500).json({
+        error: 'No Earth locations found in Convex. Migrate/seed Earth world data before creating players.',
+        code: 'NO_STARTING_LOCATION',
+      })
+    }
+
     const startingNames = ['Frostpine Reaches', 'Crystal Caverns', 'Tech District', 'Mining Plains']
     const startingLocs = locations.filter((l: any) => startingNames.includes(l.name))
     const startingLocation = startingLocs[Math.floor(Math.random() * startingLocs.length)] ?? locations[0]
+    if (!startingLocation?._id) {
+      return res.status(500).json({ error: 'No valid starting location available', code: 'NO_STARTING_LOCATION' })
+    }
 
     // Get next player number
     const allChars = await convexHttp.query(api.earth.characters.getAll, {}) as any[]
@@ -98,6 +128,11 @@ router.post('/mint-player', async (req, res) => {
       .filter(Boolean) as number[]
     const nextNumber = playerNumbers.length > 0 ? Math.max(...playerNumbers) + 1 : 1337
     const characterName = `Player #${nextNumber}`
+
+    // Upload image before creating the Convex character so storage failures do
+    // not leave a paid wallet with a partial character record.
+    const imageKey = `player-${characterId}.png`
+    const imageUrl = await uploadImage(EARTH_CHARACTERS_BUCKET, imageKey, imageBlob)
 
     // Create character in Convex
     const convexCharId = await convexHttp.mutation(api.earth.characters.create, {
@@ -110,10 +145,6 @@ router.post('/mint-player', async (req, res) => {
       baseLayerFile: selectedLayers?.['1-base'] ?? undefined,
       baseGender: gender.toLowerCase(),
     })
-
-    // Upload image to R2
-    const imageKey = `player-${characterId}.png`
-    const imageUrl = await uploadImage(EARTH_CHARACTERS_BUCKET, imageKey, imageBlob)
 
     // Update character with image URL
     await convexHttp.mutation(api.earth.characters.updateAppearance, {
