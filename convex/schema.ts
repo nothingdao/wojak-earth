@@ -212,6 +212,7 @@ export default defineSchema({
   }).index("by_character", ["characterId"]),
 
   earth_items: defineTable({
+    legacyId: v.optional(v.string()),
     name: v.string(),
     description: v.string(),
     category: v.union(
@@ -258,6 +259,7 @@ export default defineSchema({
   }).index("by_category", ["category"]),
 
   earth_equipmentSlots: defineTable({
+    legacyId: v.optional(v.string()),
     name: v.string(),
     category: v.optional(v.string()),
     layerType: v.optional(v.string()),
@@ -286,6 +288,7 @@ export default defineSchema({
     .index("by_character_equipped", ["characterId", "isEquipped"]),
 
   earth_locations: defineTable({
+    legacyId: v.optional(v.string()),
     name: v.string(),
     description: v.string(),
     locationType: v.string(),
@@ -324,6 +327,7 @@ export default defineSchema({
     .index("by_parent", ["parentLocationId"]),
 
   earth_locationResources: defineTable({
+    legacyId: v.optional(v.string()),
     locationId: v.string(),
     itemId: v.string(),
     spawnRate: v.number(),
@@ -334,6 +338,7 @@ export default defineSchema({
     .index("by_item", ["itemId"]),
 
   earth_marketListings: defineTable({
+    legacyId: v.optional(v.string()),
     locationId: v.string(),
     itemId: v.string(),
     price: v.number(),
