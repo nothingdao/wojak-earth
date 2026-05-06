@@ -77,6 +77,8 @@ export const CharacterCreationView: React.FC<CharacterCreationViewProps> = ({ ch
   // Payment state
   const [showPayment, setShowPayment] = useState(false)
   const [creatingCharacter, setCreatingCharacter] = useState(false)
+  const [paidSignature, setPaidSignature] = useState<string | null>(null)
+  const [creationError, setCreationError] = useState<string | null>(null)
 
   // ✅ SIMPLIFIED: Generate character image with asset loader
   const generateCharacterImage = useCallback(async () => {
@@ -245,6 +247,8 @@ export const CharacterCreationView: React.FC<CharacterCreationViewProps> = ({ ch
 
   // Handle payment success
   const handlePaymentSuccess = (paymentSignature: string) => {
+    setPaidSignature(paymentSignature)
+    setCreationError(null)
     setShowPayment(false)
     setCreatingCharacter(true)
     createCharacterWithPayment(paymentSignature)
@@ -326,6 +330,8 @@ export const CharacterCreationView: React.FC<CharacterCreationViewProps> = ({ ch
         setSelectedLayers(null)
         setShowPayment(false)
         setCreatingCharacter(false)
+        setPaidSignature(null)
+        setCreationError(null)
 
         // Navigate to main app
         if (onCharacterCreated) {
@@ -362,6 +368,7 @@ export const CharacterCreationView: React.FC<CharacterCreationViewProps> = ({ ch
 
       // Handle other errors
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      setCreationError(errorMessage)
       toast.error(`Creation failed: ${errorMessage}`)
       setCreatingCharacter(false)
     }
@@ -396,6 +403,30 @@ export const CharacterCreationView: React.FC<CharacterCreationViewProps> = ({ ch
             onPaymentSuccess={handlePaymentSuccess}
             onCancel={handlePaymentCancelled}
           />
+        </div>
+      )}
+
+      {creationError && paidSignature && !creatingCharacter && (
+        <div className="bg-muted/20 border border-error/30 rounded p-3">
+          <div className="flex items-center gap-2 text-error">
+            <AlertCircle className="w-4 h-4" />
+            <span className="font-mono text-sm">CREATION_FAILED_AFTER_PAYMENT</span>
+          </div>
+          <p className="text-xs text-muted-foreground mt-1 font-mono break-words">
+            {creationError}
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setCreationError(null)
+              setCreatingCharacter(true)
+              createCharacterWithPayment(paidSignature)
+            }}
+            className="mt-2 h-7 text-xs font-mono"
+          >
+            RETRY_WITH_SAME_PAYMENT
+          </Button>
         </div>
       )}
 

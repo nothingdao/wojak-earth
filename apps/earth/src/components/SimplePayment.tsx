@@ -28,8 +28,8 @@ interface SimplePaymentProps {
 
 // Network-specific treasury wallets
 const TREASURY_WALLETS = {
-  devnet: '6cfjMdM6yNJQfZRDx25hLUsR8PFFhh4Xb5bdxHPBtoa4',
-  mainnet: '6cfjMdM6yNJQfZRDx25hLUsR8PFFhh4Xb5bdxHPBtoa4' // Replace with mainnet treasury
+  devnet: import.meta.env.VITE_TREASURY_WALLET_ADDRESS || '6cfjMdM6yNJQfZRDx25hLUsR8PFFhh4Xb5bdxHPBtoa4',
+  mainnet: import.meta.env.VITE_TREASURY_WALLET_ADDRESS || '6cfjMdM6yNJQfZRDx25hLUsR8PFFhh4Xb5bdxHPBtoa4'
 }
 
 const NFT_PRICE = 0.05 // SOL - Match backend expectation

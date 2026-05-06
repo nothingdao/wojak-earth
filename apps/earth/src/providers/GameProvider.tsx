@@ -366,19 +366,42 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     return Math.floor(amount).toString();
   }, []);
 
-  // Character updates - sync hook state to provider state
+  // Character updates - sync hook state to provider state. `usePlayerCharacter`
+  // adapts Convex data into a new object each render, so key this effect on
+  // stable scalar fields instead of the whole object to avoid update loops.
   useEffect(() => {
-    if (character && !isMainnet) {
-      console.log('🔄 Character updated from hook, syncing to provider state');
-      console.log('📊 Character EARTH balance:', character.earth);
-      dispatch({
-        type: 'SET_PLAYER_DATA',
-        character: character,
-        hasCharacter,
-        loading: characterLoading
-      });
-    }
-  }, [character, hasCharacter, characterLoading, isMainnet]);
+    if (!character || isMainnet) return;
+
+    const current = state.character;
+    const changed =
+      !current ||
+      current.id !== character.id ||
+      current.updatedAt !== character.updatedAt ||
+      current.currentImageUrl !== character.currentImageUrl ||
+      state.hasCharacter !== hasCharacter ||
+      state.characterLoading !== characterLoading;
+
+    if (!changed) return;
+
+    dispatch({
+      type: 'SET_PLAYER_DATA',
+      character,
+      hasCharacter,
+      loading: characterLoading
+    });
+  }, [
+    character?.id,
+    character?.updatedAt,
+    character?.currentImageUrl,
+    hasCharacter,
+    characterLoading,
+    isMainnet,
+    state.character?.id,
+    state.character?.updatedAt,
+    state.character?.currentImageUrl,
+    state.hasCharacter,
+    state.characterLoading,
+  ]);
 
   // ✅ FETCH BALANCES WHEN WALLET CONNECTS
   useEffect(() => {
@@ -396,22 +419,22 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: 'RESET_ALL_STATE' });
     } else if (wallet.connected && state.appState === 'wallet-required') {
       if (isMainnet) {
-        console.log('🟢 MAINNET: Staying at wallet-required for reservations');
+        console.log('🟢 MAINNET: Earth gameplay currently runs on devnet');
         return;
       }
-      dispatch({ type: 'SET_APP_STATE', appState: 'checking-character' });
+      dispatch({ type: 'SET_APP_STATE', appState: 'character-required' });
     }
   }, [wallet.connected, state.appState, isMainnet]);
 
   // Character detection - ONLY ON DEVNET
   useEffect(() => {
-    if (!isMainnet && character && character.id && !hasCharacter && !characterLoading) {
+    if (!isMainnet && character?.id && !state.hasCheckedCharacter && !characterLoading) {
       dispatch({
         type: 'PLAYER_CHECK_COMPLETE',
         hasCharacter: true
       });
     }
-  }, [character, hasCharacter, characterLoading, isMainnet]);
+  }, [character?.id, state.hasCheckedCharacter, characterLoading, isMainnet]);
 
   const actions = {
     navigate: useCallback((view: GameView) => {
@@ -736,7 +759,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     handleRetry: useCallback(() => {
       dispatch({ type: 'CLEAR_ERROR' });
       if (wallet.connected && !isMainnet) {
-        dispatch({ type: 'SET_APP_STATE', appState: 'checking-character' });
+        dispatch({ type: 'SET_APP_STATE', appState: 'character-required' });
       }
     }, [wallet.connected, isMainnet]),
 

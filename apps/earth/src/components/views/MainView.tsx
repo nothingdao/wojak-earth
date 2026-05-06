@@ -81,7 +81,18 @@ export const MainView: React.FC<MainViewProps> = ({
       try {
         setLoadingResources(true)
         const data = await convexHttp.query(api.earth.locations.getResources, { locationId: location_id })
-        setLocationResources((data || []) as any[])
+        const resources = (data || [])
+          .filter((resource: any) => resource?.item)
+          .map((resource: any) => ({
+            id: resource._id ?? resource.id,
+            item_id: resource.itemId,
+            itemName: resource.item.name ?? 'Unknown Resource',
+            itemRarity: resource.item.rarity ?? 'COMMON',
+            spawn_rate: resource.spawnRate ?? resource.spawn_rate ?? 0,
+            max_per_day: resource.maxPerDay ?? resource.max_per_day,
+            difficulty: resource.difficulty ?? 1,
+          }))
+        setLocationResources(resources)
       } catch (error) {
         console.error('Failed to load location resources:', error)
         setLocationResources([])
@@ -105,7 +116,7 @@ export const MainView: React.FC<MainViewProps> = ({
       try {
         setLoadingMarket(true)
         const count = await convexHttp.query(api.earth.market.getPreview, {})
-        setMarketPreview({ count } as any)
+        setMarketPreview({ totalListings: count })
       } catch (error) {
         console.error('Failed to load market preview:', error)
         setMarketPreview(null)
@@ -408,11 +419,11 @@ export const MainView: React.FC<MainViewProps> = ({
             {locationResources.map((resource) => (
               <div key={resource.id} className="flex items-center justify-between py-1 border-b border-border/30 last:border-b-0">
                 <span className={`text-xs font-bold ${getRarityColor(resource.itemRarity)}`}>
-                  {resource.itemName.toUpperCase()}
+                  {(resource.itemName ?? 'UNKNOWN RESOURCE').toUpperCase()}
                 </span>
                 <div className="flex items-center gap-2">
-                  <span className={`text-xs px-1 rounded ${getRarityColor(resource.itemRarity)}`}>
-                    {resource.itemRarity}
+                  <span className={`text-xs px-1 rounded ${getRarityColor(resource.itemRarity ?? 'COMMON')}`}>
+                    {resource.itemRarity ?? 'COMMON'}
                   </span>
                   <span className="text-xs text-muted-foreground">
                     {Math.round(resource.spawn_rate * 100)}%
@@ -432,7 +443,9 @@ export const MainView: React.FC<MainViewProps> = ({
 
   return (
     <div className="space-y-4">
-      <LocalRadio location_id={'mining-plains'} />
+      {import.meta.env.VITE_ENABLE_LOCAL_RADIO === 'true' && (
+        <LocalRadio location_id={location_id} />
+      )}
 
       <AtmosphericHeader />
       <ActionPreviewButtons />

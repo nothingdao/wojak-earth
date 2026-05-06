@@ -3,21 +3,16 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   User,
-  Database,
   Activity,
   CheckCircle,
   AlertCircle,
   Loader2,
   Zap,
-  Coins,
-  ExternalLink
 } from 'lucide-react'
 import { useNetwork } from '@/contexts/NetworkContext'
 import { usePlayerCharacter } from '@/hooks/usePlayerCharacter'
-import { useReservationStatus } from '@/hooks/useReservationStatus'
 import { TopControls } from '../TopControls'
 import { CharacterCreationScreen } from './CharacterCreationScreen'
-import { ReservationScreen } from './ReservationScreen'
 
 interface RegistryDashboardProps {
   onEnterGame?: () => void
@@ -33,18 +28,8 @@ export function RegistryDashboard({ onEnterGame }: RegistryDashboardProps) {
     hasCharacter
   } = usePlayerCharacter(isDevnet)
 
-  // Check reservation status (always check, but mainly for mainnet)
-  const {
-    reservation,
-    loading: reservationLoading,
-    hasReservation,
-    refetchReservation // ✅ Correct - matches the hook's return
-
-  } = useReservationStatus(true)
-
   // Local navigation state
   const [showCharacterCreation, setShowCharacterCreation] = useState(false)
-  const [showReservation, setShowReservation] = useState(false)
 
   // Show sub-screens
   if (showCharacterCreation) {
@@ -55,20 +40,8 @@ export function RegistryDashboard({ onEnterGame }: RegistryDashboardProps) {
     )
   }
 
-  if (showReservation) {
-    return (
-      <ReservationScreen
-        onReservationComplete={() => {
-          setShowReservation(false)
-          refetchReservation()
-        }}
-        onBackToNetworkSelect={() => setShowReservation(false)}
-      />
-    )
-  }
-
   // Main dashboard
-  const isLoading = characterLoading || reservationLoading
+  const isLoading = characterLoading
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4 mt-3 relative">
@@ -179,67 +152,13 @@ export function RegistryDashboard({ onEnterGame }: RegistryDashboardProps) {
               )}
             </div>
 
-            {/* Reservation Status */}
-            <div className="bg-muted/20 border border-primary/10 rounded p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <Database className="w-4 h-4 text-primary" />
-                  <span className="text-primary font-bold text-sm">NFT_RESERVATION</span>
-                </div>
-                <span className="text-xs text-muted-foreground">MAINNET</span>
-              </div>
-
-              {hasReservation && reservation ? (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-success">
-                    <CheckCircle className="w-4 h-4" />
-                    <span className="text-sm font-medium">Reservation Confirmed</span>
-                  </div>
-                  <div className="text-xs text-muted-foreground space-y-1">
-                    <div>AMOUNT: {reservation.amount_sol} SOL</div>
-                    <div>STATUS: {reservation.status?.toUpperCase()}</div>
-                    <div>TX: <a target="_blank" href={`https://orb.helius.dev/tx/${reservation.transaction_signature}?cluster=devnet&tab=summary`} className="inline-flex items-center gap-1 hover:underline transition-colors">
-                      {reservation.transaction_signature?.slice(0, 12)}...{reservation.transaction_signature?.slice(-12)}
-                      <ExternalLink className="w-3 h-3 text-muted-foreground" />
-                    </a></div>
-                  </div>
-                  <Button
-                    onClick={() => setShowReservation(true)}
-                    variant="outline"
-                    className="w-full font-mono text-sm h-8 mt-2"
-                    size="sm"
-                  >
-                    <Database className="w-3 h-3 mr-2" />
-                    VIEW_RESERVATION
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <AlertCircle className="w-4 h-4" />
-                    <span className="text-sm">No Reservation Found</span>
-                  </div>
-                  <Button
-                    onClick={() => setShowReservation(true)}
-                    variant="outline"
-                    className="w-full font-mono text-sm h-8 border-success text-success hover:bg-success/10"
-                    size="sm"
-                  >
-                    <Coins className="w-3 h-3 mr-2" />
-                    RESERVE_NFT_SPOT
-                  </Button>
-                </div>
-              )}
-            </div>
-
-            {/* Quick Actions */}
+            {/* Quick Help */}
             <div className="bg-muted/20 border border-primary/10 rounded p-3">
               <div className="text-xs text-muted-foreground font-mono">
-                <div className="text-primary text-xs font-bold mb-2">[QUICK_HELP]</div>
+                <div className="text-primary text-xs font-bold mb-2">[NEXT_STEP]</div>
                 <div className="space-y-1">
-                  <div>• Game testing requires Devnet character</div>
-                  <div>• NFT reservations require Mainnet payment</div>
-                  <div>• Both systems operate independently</div>
+                  <div>• Create a player if this wallet is new.</div>
+                  <div>• Enter Earth if this wallet already has a player.</div>
                 </div>
               </div>
             </div>
