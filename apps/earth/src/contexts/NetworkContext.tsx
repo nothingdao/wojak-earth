@@ -1,7 +1,6 @@
 // src/contexts/NetworkContext.tsx - Fixed version
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base'
-import { useWallet } from '@solana/wallet-adapter-react'
 import { Connection } from '@solana/web3.js'
 
 interface NetworkContextType {
@@ -26,13 +25,19 @@ export const useNetwork = () => {
 
 interface NetworkProviderProps {
   children: React.ReactNode
+  network?: WalletAdapterNetwork
+  setNetwork?: (network: WalletAdapterNetwork) => void
 }
 
 export const NetworkProvider: React.FC<NetworkProviderProps> = ({
-  children
+  children,
+  network: controlledNetwork,
+  setNetwork: setControlledNetwork,
 }) => {
-  // Internal state management for network
-  const [network, setNetwork] = useState<WalletAdapterNetwork>(WalletAdapterNetwork.Devnet)
+  // Internal state management for network; callers can also control it.
+  const [internalNetwork, setInternalNetwork] = useState<WalletAdapterNetwork>(WalletAdapterNetwork.Devnet)
+  const network = controlledNetwork ?? internalNetwork
+  const setNetwork = setControlledNetwork ?? setInternalNetwork
 
   const isDevnet = network === WalletAdapterNetwork.Devnet
   const isMainnet = network === WalletAdapterNetwork.Mainnet
@@ -49,7 +54,6 @@ export const NetworkProvider: React.FC<NetworkProviderProps> = ({
     return import.meta.env.VITE_DEVNET_RPC_URL || 'https://api.devnet.solana.com'
   }, [isMainnet])
 
-  const { publicKey, connected } = useWallet()
   const [networkMismatch, setNetworkMismatch] = useState(false)
 
   useEffect(() => {
@@ -77,12 +81,8 @@ export const NetworkProvider: React.FC<NetworkProviderProps> = ({
       }
     }
 
-    if (connected && publicKey) {
-      checkGenesisHash()
-    } else {
-      setNetworkMismatch(false)
-    }
-  }, [network, publicKey, connected, getRpcUrl]) // Fixed: Added missing dependencies
+    checkGenesisHash()
+  }, [network, getRpcUrl])
 
   const value: NetworkContextType = {
     network,

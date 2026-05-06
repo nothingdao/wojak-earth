@@ -2,14 +2,13 @@
 // src/App.tsx - With styled terminal toast
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
 import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react';
-import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
-import { PhantomWalletAdapter, SolflareWalletAdapter } from '@solana/wallet-adapter-wallets';
+import GameWalletModalProvider from '@/components/wallet/GameWalletModal';
 import { NetworkProvider, useNetwork } from '@/contexts/NetworkContext';
 import { GameProvider } from '@/providers/GameProvider';
 import { AppRouter } from '@/components/AppRouter';
 import { Toaster } from '@/components/ui/toaster';
 import { StoryDialog, useStoryDialog } from '@/components/ui/story-dialog';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 // Import wallet adapter CSS
 import '@solana/wallet-adapter-react-ui/styles.css';
@@ -23,17 +22,16 @@ function DynamicConnectionProvider({ children }: { children: React.ReactNode }) 
     return url;
   }, [network, getRpcUrl]);
 
-  const wallets = useMemo(() => [
-    new PhantomWalletAdapter(),
-    new SolflareWalletAdapter(),
-  ], []);
+  // Modern wallets register through the Solana Wallet Standard. Keep this
+  // empty to avoid duplicate Phantom/Solflare adapters and Ledger/Trezor deps.
+  const wallets = useMemo(() => [], []);
 
   return (
     <ConnectionProvider endpoint={endpoint}>
       <WalletProvider wallets={wallets} autoConnect>
-        <WalletModalProvider>
+        <GameWalletModalProvider>
           {children}
-        </WalletModalProvider>
+        </GameWalletModalProvider>
       </WalletProvider>
     </ConnectionProvider>
   );

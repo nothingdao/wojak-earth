@@ -1,6 +1,6 @@
 // src/components/WalletConnectButton.tsx
-import { useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
+import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -13,7 +13,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Copy, LogOut, Wallet, ChevronDown, Activity, AlertTriangle, Hash, Link } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
-import { WalletSelectModal } from './WalletSelectModal';
 
 interface WalletConnectButtonProps {
   className?: string;
@@ -21,7 +20,7 @@ interface WalletConnectButtonProps {
 
 export function WalletConnectButton({ className }: WalletConnectButtonProps) {
   const { publicKey, disconnect, wallet, connect, connecting, connected } = useWallet();
-  const [showWalletSelect, setShowWalletSelect] = useState(false);
+  const { setVisible } = useWalletModal();
 
   const copyAddress = async () => {
     if (publicKey) {
@@ -39,29 +38,23 @@ export function WalletConnectButton({ className }: WalletConnectButtonProps) {
         toast.error('CONNECTION_FAILED');
       }
     } else {
-      setShowWalletSelect(true);
+      setVisible(true);
     }
   };
 
   if (!connected && !connecting) {
     return (
-      <>
-        <Button
-          onClick={handleConnect}
-          disabled={connecting}
-          className={className}
-          size="sm"
-          variant="outline"
-        >
-          <Wallet className="w-3 h-3 mr-2" />
-          <span className="hidden sm:inline">{wallet ? 'CONNECT' : 'SELECT_WALLET'}</span>
-          <span className="sm:hidden">{wallet ? 'LINK' : 'WALLET'}</span>
-        </Button>
-        <WalletSelectModal
-          open={showWalletSelect}
-          onOpenChange={setShowWalletSelect}
-        />
-      </>
+      <Button
+        onClick={handleConnect}
+        disabled={connecting}
+        className={className}
+        size="sm"
+        variant="outline"
+      >
+        <Wallet className="w-3 h-3 mr-2" />
+        <span className="hidden sm:inline">{wallet ? 'CONNECT' : 'SELECT_WALLET'}</span>
+        <span className="sm:hidden">{wallet ? 'LINK' : 'WALLET'}</span>
+      </Button>
     );
   }
 
