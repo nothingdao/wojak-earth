@@ -3,6 +3,7 @@ import express from 'express'
 import { WebSocketServer } from 'ws'
 import { SessionHandler } from './ws/SessionHandler.js'
 import earthRouter from './earth/index.js'
+import { getHealthStatus, getReadinessStatus } from './health.js'
 
 const PORT = Number(process.env.PORT ?? 3001)
 
@@ -16,7 +17,11 @@ app.use((_req, res, next) => {
 })
 app.options('*path', (_req, res) => res.sendStatus(204))
 
-app.get('/health', (_req, res) => res.json({ ok: true, service: 'nothingdao-server' }))
+app.get('/health', (_req, res) => res.json(getHealthStatus()))
+app.get('/ready', (_req, res) => {
+  const readiness = getReadinessStatus()
+  res.status(readiness.ok ? 200 : 503).json(readiness)
+})
 app.use('/earth', earthRouter)
 
 const httpServer = createServer(app)
