@@ -193,6 +193,75 @@ export const setNftAddress = mutation({
   },
 });
 
+export const adminUpdateStats = mutation({
+  args: {
+    characterId: v.id("earth_characters"),
+    updates: v.object({
+      level: v.optional(v.number()),
+      earth: v.optional(v.number()),
+      health: v.optional(v.number()),
+      energy: v.optional(v.number()),
+      experience: v.optional(v.number()),
+    }),
+  },
+  handler: async (ctx, { characterId, updates }) => {
+    const character = await ctx.db.get(characterId);
+    if (!character || character.status !== "ACTIVE") {
+      throw new Error("Character not found");
+    }
+
+    const patch: Partial<typeof character> & { updatedAt: number } = { updatedAt: Date.now() };
+    if (updates.level !== undefined) patch.level = Math.max(1, Math.floor(updates.level));
+    if (updates.earth !== undefined) patch.earth = Math.max(0, updates.earth);
+    if (updates.health !== undefined) patch.health = Math.max(0, Math.min(100, updates.health));
+    if (updates.energy !== undefined) patch.energy = Math.max(0, Math.min(100, updates.energy));
+    if (updates.experience !== undefined) patch.experience = Math.max(0, updates.experience);
+
+    await ctx.db.patch(characterId, patch);
+    return { success: true };
+  },
+});
+
+export const adminSetStatus = mutation({
+  args: {
+    characterId: v.id("earth_characters"),
+    status: v.union(v.literal("ACTIVE"), v.literal("BANNED"), v.literal("DELETED")),
+    reason: v.optional(v.string()),
+  },
+  handler: async (ctx, { characterId, status, reason }) => {
+    const character = await ctx.db.get(characterId);
+    if (!character) throw new Error("Character not found");
+    await ctx.db.patch(characterId, {
+      status,
+      updatedAt: Date.now(),
+    });
+    if (reason) {
+      await ctx.db.insert("earth_transactions", {
+        characterId: characterId.toString(),
+        type: "BRIDGE",
+        description: `Admin status set to ${status}: ${reason}`,
+        createdAt: Date.now(),
+      });
+    }
+    return { success: true };
+  },
+});
+
+export const adminResetWorldDay = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const characters = await ctx.db
+      .query("earth_characters")
+      .filter((q) => q.eq(q.field("status"), "ACTIVE"))
+      .collect();
+    const now = Date.now();
+    for (const character of characters) {
+      await ctx.db.patch(character._id, { energy: 100, updatedAt: now });
+    }
+    return { success: true, updated: characters.length };
+  },
+});
+
 export const applyConsequenceEffects = mutation({
   args: {
     characterId: v.string(),

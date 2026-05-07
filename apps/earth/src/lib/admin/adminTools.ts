@@ -11,8 +11,8 @@ function groupBy<T>(arr: T[], key: keyof T): Record<string, T[]> {
   }, {} as Record<string, T[]>)
 }
 
-function notMigrated(name: string): never {
-  throw new Error(`${name} is pending Convex admin mutation migration`)
+function deferred(name: string): never {
+  throw new Error(`${name} is disabled: Convex admin mutation is not implemented yet`)
 }
 
 export async function getWorldOverview() {
@@ -58,40 +58,44 @@ export async function createItem(itemData: any) {
   return convexHttp.mutation(api.earth.items.upsert, itemData)
 }
 
-export async function updateCharacterStats(_characterId: string, _updates: any) {
-  return notMigrated('updateCharacterStats')
+export async function updateCharacterStats(characterId: string, updates: any) {
+  return convexHttp.mutation(api.earth.characters.adminUpdateStats, { characterId: characterId as any, updates })
 }
 
-export async function banCharacter(_characterId: string, _reason?: string) {
-  return notMigrated('banCharacter')
+export async function banCharacter(characterId: string, reason?: string) {
+  return convexHttp.mutation(api.earth.characters.adminSetStatus, {
+    characterId: characterId as any,
+    status: 'BANNED',
+    reason,
+  })
 }
 
-export async function updateLocation(_locationId: string, _updates: any) {
-  return notMigrated('updateLocation')
+export async function updateLocation(locationId: string, updates: any) {
+  return convexHttp.mutation(api.earth.locations.adminUpdate, { locationId: locationId as any, updates })
 }
 
-export async function updateItem(_itemId: string, _updates: any) {
-  return notMigrated('updateItem')
+export async function updateItem(itemId: string, updates: any) {
+  return convexHttp.mutation(api.earth.items.adminUpdate, { itemId: itemId as any, updates })
 }
 
-export async function updateMarketListing(_listingId: string, _updates: any) {
-  return notMigrated('updateMarketListing')
+export async function updateMarketListing(listingId: string, updates: any) {
+  return convexHttp.mutation(api.earth.market.adminUpdateListing, { listingId: listingId as any, updates })
 }
 
-export async function createMarketListing(_listingData: any) {
-  return notMigrated('createMarketListing')
+export async function createMarketListing(listingData: any) {
+  return convexHttp.mutation(api.earth.market.adminCreateListing, listingData)
 }
 
 export async function deleteItem(_itemId: string) {
-  return notMigrated('deleteItem')
+  return deferred('deleteItem')
 }
 
 export async function deleteLocation(_locationId: string) {
-  return notMigrated('deleteLocation')
+  return deferred('deleteLocation')
 }
 
-export async function deleteMarketListing(_listingId: string) {
-  return notMigrated('deleteMarketListing')
+export async function deleteMarketListing(listingId: string) {
+  return convexHttp.mutation(api.earth.market.adminDeleteListing, { listingId: listingId as any })
 }
 
 export async function validateWorldData(): Promise<string[]> {
@@ -99,5 +103,5 @@ export async function validateWorldData(): Promise<string[]> {
 }
 
 export async function resetWorldDay() {
-  return notMigrated('resetWorldDay')
+  return convexHttp.mutation(api.earth.characters.adminResetWorldDay, {})
 }

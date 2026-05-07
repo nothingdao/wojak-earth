@@ -21,7 +21,6 @@ import type * as earth_locations from "../earth/locations.js";
 import type * as earth_market from "../earth/market.js";
 import type * as earth_migrateFromSupabase from "../earth/migrateFromSupabase.js";
 import type * as earth_pendingPayments from "../earth/pendingPayments.js";
-import type * as earth_reservations from "../earth/reservations.js";
 import type * as earth_stories from "../earth/stories.js";
 import type * as earth_storyFlags from "../earth/storyFlags.js";
 import type * as earth_transactions from "../earth/transactions.js";
@@ -62,7 +61,6 @@ declare const fullApi: ApiFromModules<{
   "earth/market": typeof earth_market;
   "earth/migrateFromSupabase": typeof earth_migrateFromSupabase;
   "earth/pendingPayments": typeof earth_pendingPayments;
-  "earth/reservations": typeof earth_reservations;
   "earth/stories": typeof earth_stories;
   "earth/storyFlags": typeof earth_storyFlags;
   "earth/transactions": typeof earth_transactions;

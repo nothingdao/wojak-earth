@@ -34,6 +34,38 @@ export const getByCategory = query({
   },
 });
 
+const itemPatchValidator = v.object({
+  name: v.optional(v.string()),
+  description: v.optional(v.string()),
+  category: v.optional(v.union(
+    v.literal("CLOTHING"),
+    v.literal("HAT"),
+    v.literal("ACCESSORY"),
+    v.literal("TOOL"),
+    v.literal("CONSUMABLE"),
+    v.literal("MATERIAL")
+  )),
+  rarity: v.optional(v.union(
+    v.literal("COMMON"),
+    v.literal("UNCOMMON"),
+    v.literal("RARE"),
+    v.literal("EPIC"),
+    v.literal("LEGENDARY")
+  )),
+  layerFile: v.optional(v.string()),
+  layerType: v.optional(v.string()),
+  layerGender: v.optional(v.string()),
+  layerOrder: v.optional(v.number()),
+  baseLayerFile: v.optional(v.string()),
+  imageUrl: v.optional(v.string()),
+  isVisual: v.optional(v.boolean()),
+  hasGenderVariants: v.optional(v.boolean()),
+  healthEffect: v.optional(v.number()),
+  energyEffect: v.optional(v.number()),
+  durability: v.optional(v.number()),
+  compatibilityRules: v.optional(v.any()),
+});
+
 export const upsert = mutation({
   args: {
     name: v.string(),
@@ -63,5 +95,18 @@ export const upsert = mutation({
   handler: async (ctx, args) => {
     const now = Date.now();
     return ctx.db.insert("earth_items", { ...args, createdAt: now, updatedAt: now });
+  },
+});
+
+export const adminUpdate = mutation({
+  args: {
+    itemId: v.id("earth_items"),
+    updates: itemPatchValidator,
+  },
+  handler: async (ctx, { itemId, updates }) => {
+    const item = await ctx.db.get(itemId);
+    if (!item) throw new Error("Item not found");
+    await ctx.db.patch(itemId, { ...updates, updatedAt: Date.now() });
+    return { success: true };
   },
 });

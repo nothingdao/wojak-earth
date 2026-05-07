@@ -33,6 +33,56 @@ export const getPreview = query({
   },
 });
 
+export const adminCreateListing = mutation({
+  args: {
+    locationId: v.string(),
+    itemId: v.string(),
+    price: v.number(),
+    quantity: v.number(),
+    isSystemItem: v.optional(v.boolean()),
+    sellerId: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    return ctx.db.insert("earth_marketListings", {
+      ...args,
+      isSystemItem: args.isSystemItem ?? !args.sellerId,
+      createdAt: now,
+      updatedAt: now,
+    });
+  },
+});
+
+export const adminUpdateListing = mutation({
+  args: {
+    listingId: v.id("earth_marketListings"),
+    updates: v.object({
+      locationId: v.optional(v.string()),
+      itemId: v.optional(v.string()),
+      price: v.optional(v.number()),
+      quantity: v.optional(v.number()),
+      isSystemItem: v.optional(v.boolean()),
+      sellerId: v.optional(v.string()),
+    }),
+  },
+  handler: async (ctx, { listingId, updates }) => {
+    const listing = await ctx.db.get(listingId);
+    if (!listing) throw new Error("Market listing not found");
+    await ctx.db.patch(listingId, { ...updates, updatedAt: Date.now() });
+    return { success: true };
+  },
+});
+
+export const adminDeleteListing = mutation({
+  args: { listingId: v.id("earth_marketListings") },
+  handler: async (ctx, { listingId }) => {
+    const listing = await ctx.db.get(listingId);
+    if (!listing) throw new Error("Market listing not found");
+    await ctx.db.delete(listingId);
+    return { success: true };
+  },
+});
+
 export const buy = mutation({
   args: {
     walletAddress: v.string(),

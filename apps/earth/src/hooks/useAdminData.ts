@@ -77,7 +77,7 @@ export function useAdminStats() {
 export function useAdminCharacters() {
   const raw = useQuery(api.earth.characters.getAll, {})
   const rawLocations = useQuery(api.earth.locations.getAll, {})
-  const patchCharacter = useMutation(api.earth.characters.nuke) // placeholder
+  const adminUpdateStats = useMutation(api.earth.characters.adminUpdateStats)
 
   const loading = raw === undefined
   const error: string | null = null
@@ -89,16 +89,13 @@ export function useAdminCharacters() {
     locationName: locationMap.get(c.currentLocationId) ?? 'Unknown',
   }))
 
-  const updateCharacter = useCallback(async (_characterId: string, _updates: any) => {
-    // TODO: add admin patch character mutation
-    console.warn('updateCharacter not yet fully implemented')
+  const updateCharacter = useCallback(async (characterId: string, updates: any) => {
+    await adminUpdateStats({ characterId: characterId as Id<'earth_characters'>, updates })
     return true
-  }, [])
+  }, [adminUpdateStats])
 
-  const moveCharacter = useCallback(async (_characterId: string, _locationId: string) => {
-    // TODO: add admin move character mutation
-    console.warn('moveCharacter not yet fully implemented')
-    return true
+  const moveCharacter = useCallback(async () => {
+    throw new Error('moveCharacter is disabled: Convex admin mutation is not implemented yet')
   }, [])
 
   return { characters, loading, error, refetch: () => {}, updateCharacter, moveCharacter }
@@ -106,16 +103,16 @@ export function useAdminCharacters() {
 
 export function useAdminLocations() {
   const raw = useQuery(api.earth.locations.getAll, {})
+  const adminUpdateLocation = useMutation(api.earth.locations.adminUpdate)
   const loading = raw === undefined
   const error: string | null = null
 
   const locations: Location[] = (raw ?? []).map(adaptLocation)
 
-  const updateLocation = useCallback(async (_locationId: string, _updates: any) => {
-    // TODO: add admin update location mutation
-    console.warn('updateLocation not yet fully implemented')
+  const updateLocation = useCallback(async (locationId: string, updates: any) => {
+    await adminUpdateLocation({ locationId: locationId as Id<'earth_locations'>, updates })
     return true
-  }, [])
+  }, [adminUpdateLocation])
 
   return { locations, loading, error, refetch: () => {}, updateLocation }
 }
@@ -123,6 +120,7 @@ export function useAdminLocations() {
 export function useAdminItems() {
   const raw = useQuery(api.earth.items.getAll, {})
   const upsertItem = useMutation(api.earth.items.upsert)
+  const adminUpdateItem = useMutation(api.earth.items.adminUpdate)
   const loading = raw === undefined
   const error: string | null = null
 
@@ -138,16 +136,13 @@ export function useAdminItems() {
     }
   }, [upsertItem])
 
-  const updateItem = useCallback(async (_itemId: string, _updates: any) => {
-    // TODO: add admin update item mutation
-    console.warn('updateItem not yet fully implemented')
+  const updateItem = useCallback(async (itemId: string, updates: any) => {
+    await adminUpdateItem({ itemId: itemId as Id<'earth_items'>, updates })
     return true
-  }, [])
+  }, [adminUpdateItem])
 
-  const deleteItem = useCallback(async (_itemId: string) => {
-    // TODO: add admin delete item mutation
-    console.warn('deleteItem not yet fully implemented')
-    return true
+  const deleteItem = useCallback(async () => {
+    throw new Error('deleteItem is disabled: Convex admin mutation is not implemented yet')
   }, [])
 
   return { items, loading, error, refetch: () => {}, createItem, updateItem, deleteItem }
@@ -177,20 +172,22 @@ export function useAdminActivity() {
 
 export function useAdminMarket() {
   const raw = useQuery(api.earth.market.getByLocation, 'skip' as any)
+  const adminUpdateListing = useMutation(api.earth.market.adminUpdateListing)
+  const adminDeleteListing = useMutation(api.earth.market.adminDeleteListing)
   const loading = false
   const error: string | null = null
 
   const marketListings: EnhancedMarketListingForAdmin[] = []
 
-  const updateMarketListing = useCallback(async (_listingId: string, _updates: any) => {
-    console.warn('updateMarketListing not yet fully implemented')
+  const updateMarketListing = useCallback(async (listingId: string, updates: any) => {
+    await adminUpdateListing({ listingId: listingId as Id<'earth_marketListings'>, updates })
     return true
-  }, [])
+  }, [adminUpdateListing])
 
-  const deleteMarketListing = useCallback(async (_listingId: string) => {
-    console.warn('deleteMarketListing not yet fully implemented')
+  const deleteMarketListing = useCallback(async (listingId: string) => {
+    await adminDeleteListing({ listingId: listingId as Id<'earth_marketListings'> })
     return true
-  }, [])
+  }, [adminDeleteListing])
 
   const getMarketStats = () => ({
     totalListings: 0,
