@@ -84,22 +84,12 @@ Static Vite frontend. Set under **Site configuration → Environment variables**
 | `VITE_CONVEX_URL` | `https://colorful-nightingale-908.convex.cloud` |
 | `VITE_HELIUS_API_KEY` | Helius API key for wallet token lookups. |
 | `VITE_SOLANA_RPC_ENDPOINT` | RPC endpoint. `https://devnet.helius-rpc.com/?api-key=<key>` |
+| `VITE_WS_URL` | Production WebSocket URL for the unified `server/earth` Railway runtime, e.g. `wss://<railway-domain>`. |
+| `VITE_WS_LABEL` | Optional display label for `VITE_WS_URL`; defaults to `Production`. |
 
-### ASTRDS server list
+### ASTRDS server selection
 
-ASTRDS connects to the game server via WebSocket. The server list is **not an env var** — it's a static file at `apps/astrds/public/servers.json`. Update that file when the Railway domain changes.
-
-```json
-[
-  {
-    "id": "railway-prod",
-    "label": "Production",
-    "url": "wss://earth-server-production.up.railway.app"
-  }
-]
-```
-
-In `DEV` mode, `ws://localhost:3001` is automatically prepended to the list.
+ASTRDS connects to the authoritative game server via WebSocket. Production should use `VITE_WS_URL` so endpoint changes are handled through Netlify env vars and redeploys, not static JSON edits. `apps/astrds/public/servers.json` remains a fallback multi-server list and may be empty. In `DEV` mode, `ws://localhost:3001` is automatically prepended.
 
 ---
 

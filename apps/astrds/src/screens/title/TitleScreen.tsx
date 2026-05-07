@@ -18,6 +18,26 @@ type ServerWithStatus = ServerEntry & {
   online: boolean | null
 }
 
+function getEnvServer(): ServerEntry | null {
+  const url = import.meta.env.VITE_WS_URL?.trim()
+  if (!url) return null
+  return {
+    id: 'env',
+    label: import.meta.env.VITE_WS_LABEL?.trim() || 'Production',
+    url,
+  }
+}
+
+async function loadStaticServers(): Promise<ServerEntry[]> {
+  try {
+    const res = await fetch('/servers.json')
+    if (!res.ok) return []
+    return await res.json()
+  } catch {
+    return []
+  }
+}
+
 async function probeServer(wsUrl: string): Promise<{ online: boolean; ping: number | null }> {
   const httpUrl = wsUrl.startsWith('wss://')
     ? wsUrl.replace('wss://', 'https://')
@@ -53,12 +73,13 @@ const TitleScreen: React.FC = () => {
     let cancelled = false
 
     async function load() {
-      const res = await fetch('/servers.json')
-      const list: ServerEntry[] = await res.json()
+      const envServer = getEnvServer()
+      const staticServers = await loadStaticServers()
+      const productionServers = envServer ? [envServer, ...staticServers] : staticServers
 
       const entries: ServerEntry[] = import.meta.env.DEV
-        ? [{ id: 'local', label: 'Local Dev', url: 'ws://localhost:3001' }, ...list]
-        : list
+        ? [{ id: 'local', label: 'Local Dev', url: 'ws://localhost:3001' }, ...productionServers]
+        : productionServers
 
       if (!cancelled) {
         setServers(entries.map((e) => ({ ...e, ping: null, online: null })))
