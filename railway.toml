@@ -1,0 +1,10 @@
+[build]
+builder = "RAILPACK"
+buildCommand = "pnpm --filter earth-server build"
+
+[deploy]
+startCommand = "pnpm --filter earth-server start"
+healthcheckPath = "/health"
+healthcheckTimeout = 30
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3

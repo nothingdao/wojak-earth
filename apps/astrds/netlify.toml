@@ -1,5 +1,5 @@
 [build]
-command = "pnpm --filter solana-asteroids build"
+command = "pnpm build"
 publish = "dist"
 
 [build.environment]

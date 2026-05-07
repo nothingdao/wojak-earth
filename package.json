@@ -3,6 +3,10 @@
   "private": true,
   "type": "module",
   "packageManager": "pnpm@9.0.0",
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=9.0.0"
+  },
   "scripts": {
     "dev:earth": "pnpm --filter earth-2089 dev",
     "dev:astrds": "pnpm --filter solana-asteroids dev",

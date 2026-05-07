@@ -1,6 +1,6 @@
 [build]
-command = "pnpm build:earth"
-publish = "apps/earth/dist"
+command = "pnpm build"
+publish = "dist"
 
 [build.environment]
 NODE_VERSION = "22"
