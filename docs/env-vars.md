@@ -37,15 +37,15 @@ Set under **Service → Variables** in the Railway dashboard.
 | `VITE_EARTH_MINT_ADDRESS` | EARTH SPL token mint address. `Cqizw9BZPvecsXDwQoP1UBmA3BcyAgdYHGCtApVbkUjc` |
 | `VITE_TREASURY_WALLET_ADDRESS` | Treasury public key (duplicate of above, read by the bridge route). |
 | `PLAYER_COLLECTION_ADDRESS` | Metaplex NFT collection address. `ApxsHPsUqCPQ1rLt11xXmZv8ur5ymCCy14CJd91nh3d8` |
-| `SERVER_URL` | The server's own public URL — used when constructing NFT metadata URIs. e.g. `https://earth-server-production.up.railway.app` |
+| `SERVER_URL` | The server's own public URL — used when constructing NFT metadata URIs. Current Railway URL: `https://astrds-game-server-production.up.railway.app` |
 
 ### Cloudflare R2
 
 | Variable | Description |
 |---|---|
 | `R2_ACCOUNT_ID` | Cloudflare account ID |
-| `R2_ACCESS_KEY_ID` | R2 API token access key |
-| `R2_SECRET_ACCESS_KEY` | R2 API token secret key |
+| `R2_ACCESS_KEY_ID` | R2 S3 access key ID with Object Read & Write access. Do not use the `cfat_...` Cloudflare API token here. |
+| `R2_SECRET_ACCESS_KEY` | R2 S3 secret access key. Rotate if exposed. |
 | `R2_PUBLIC_URL` | Public base URL for the R2 bucket. Custom domain or `https://pub-xxx.r2.dev` |
 
 Buckets: `earth-characters` (character images), `astrds-audio` (audio assets).
@@ -66,7 +66,7 @@ All must be prefixed `VITE_` to be visible at build time.
 | Variable | Description |
 |---|---|
 | `VITE_CONVEX_URL` | `https://colorful-nightingale-908.convex.cloud` |
-| `VITE_SERVER_URL` | Railway server base URL. **Required for production** — without this, bridge/mint/exchange all fail silently. e.g. `https://earth-server-production.up.railway.app` |
+| `VITE_SERVER_URL` | Railway server base URL. **Required for production** — without this, bridge/mint/exchange all fail silently. Current URL: `https://astrds-game-server-production.up.railway.app` |
 | `VITE_EARTH_MINT_ADDRESS` | EARTH SPL token mint address. `Cqizw9BZPvecsXDwQoP1UBmA3BcyAgdYHGCtApVbkUjc` |
 | `VITE_TREASURY_WALLET_ADDRESS` | Treasury public key (displayed in UI). `6cfjMdM6yNJQfZRDx25hLUsR8PFFhh4Xb5bdxHPBtoa4` |
 | `VITE_MAINNET_RPC_URL` | Mainnet RPC endpoint. `https://mainnet.helius-rpc.com/?api-key=<key>` |
@@ -84,7 +84,7 @@ Static Vite frontend. Set under **Site configuration → Environment variables**
 | `VITE_CONVEX_URL` | `https://colorful-nightingale-908.convex.cloud` |
 | `VITE_HELIUS_API_KEY` | Helius API key for wallet token lookups. |
 | `VITE_SOLANA_RPC_ENDPOINT` | RPC endpoint. `https://devnet.helius-rpc.com/?api-key=<key>` |
-| `VITE_WS_URL` | Production WebSocket URL for the unified `server/earth` Railway runtime, e.g. `wss://<railway-domain>`. |
+| `VITE_WS_URL` | Production WebSocket URL for the unified `server/earth` Railway runtime. Current URL: `wss://astrds-game-server-production.up.railway.app`. |
 | `VITE_WS_LABEL` | Optional display label for `VITE_WS_URL`; defaults to `Production`. |
 
 ### ASTRDS server selection
@@ -95,7 +95,7 @@ ASTRDS connects to the authoritative game server via WebSocket. Production shoul
 
 ## Convex
 
-Set under **Settings → Environment Variables** at [dashboard.convex.dev](https://dashboard.convex.dev).
+Earth and ASTRDS currently use the shared dev deployment `dev:colorful-nightingale-908`. Set variables under **Settings → Environment Variables** at [dashboard.convex.dev](https://dashboard.convex.dev). Deploy function changes with `npx convex dev --once`; do not use `npx convex deploy` unless intentionally targeting the separate production deployment.
 
 | Variable | Description |
 |---|---|

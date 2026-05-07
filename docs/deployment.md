@@ -2,20 +2,26 @@
 
 ## Netlify frontends
 
-Each frontend is a static Vite+ app with its own Netlify site and base directory.
+Each frontend is a static Vite+ app with its own Netlify site. Netlify Functions are deprecated and should not be used.
 
-| Site | Netlify base directory | Build command | Publish directory |
-| --- | --- | --- | --- |
-| Earth | `apps/earth` | `pnpm build` | `dist` |
-| ASTRDS | `apps/astrds` | `pnpm build` | `dist` |
+| Site | URL | Package path | Build command | Publish directory |
+| --- | --- | --- | --- | --- |
+| Earth | `https://earth.ndao.computer` | `apps/earth` | `pnpm --filter earth-2089 build` | `apps/earth/dist` |
+| ASTRDS | `https://astrds.ndao.computer` | `apps/astrds` | `pnpm --filter solana-asteroids build` | `apps/astrds/dist` |
 
-Both apps should use pnpm and Node 22. Netlify Functions are deprecated and should not be used.
+Netlify currently runs builds from the repo root while loading app-local `netlify.toml` files, so build commands and publish directories are root-relative. Both apps use pnpm and Node 22.
 
 ## Railway runtime
 
 `server/earth` is the unified Railway runtime for now. It serves Earth privileged HTTP routes and ASTRDS WebSocket/game-session runtime. It may be split later if scale or operations require it.
 
-Package: `earth-server`
+- Railway project: `earth`
+- Railway service: `astrds-game-server`
+- Public runtime URL: `https://astrds-game-server-production.up.railway.app`
+- Package: `earth-server`
+- Build source: GitHub repo `nothingdao/earth`, branch `main`
+- Build config: root `railway.toml` uses the root `Dockerfile`
+- Healthcheck: `/ready`
 
 ```bash
 pnpm --filter earth-server dev
@@ -23,23 +29,32 @@ pnpm --filter earth-server build
 pnpm --filter earth-server start
 ```
 
+Runtime endpoints:
+
+- `/health` — liveness only.
+- `/ready` — readiness; checks required Convex, Solana, Earth minting/bridge, and R2 environment configuration.
+
 ## Convex
 
-Convex is shared by both games.
+Earth and ASTRDS currently use the shared dev Convex deployment:
+
+- Deployment: `dev:colorful-nightingale-908`
+- Cloud URL: `https://colorful-nightingale-908.convex.cloud`
+- Site URL: `https://colorful-nightingale-908.convex.site`
+
+Deploy function changes to the active dev deployment with:
 
 ```bash
-pnpm run convex:dev
-pnpm run convex:deploy
+npx convex dev --once
 ```
 
-Convex deployment currently remains manual unless/until CI is added.
+`npx convex deploy` targets the separate production deployment and should not be used until the project intentionally moves off the shared dev deployment.
 
-## Current stabilization note
-
-Builds should be verified before deployment changes are trusted:
+## Validation commands
 
 ```bash
 pnpm --filter earth-2089 build
 pnpm --filter solana-asteroids build
 pnpm --filter earth-server build
+npx convex dev --once
 ```
