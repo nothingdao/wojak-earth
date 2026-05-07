@@ -1,0 +1,11 @@
+**/.env
+**/.env.*
+**/node_modules
+**/dist
+**/.vite
+**/.netlify
+.git
+.gitignore
+.DS_Store
+target
+programs/**/target

@@ -1,9 +1,9 @@
 [build]
-builder = "RAILPACK"
-buildCommand = "pnpm --filter earth-server build"
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
 
 [deploy]
-startCommand = "pnpm --filter earth-server start"
+startCommand = null
 healthcheckPath = "/health"
 healthcheckTimeout = 30
 restartPolicyType = "ON_FAILURE"
