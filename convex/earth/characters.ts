@@ -164,6 +164,35 @@ export const updateAppearance = mutation({
   },
 });
 
+export const setNftAddress = mutation({
+  args: {
+    characterId: v.id("earth_characters"),
+    walletAddress: v.string(),
+    nftAddress: v.string(),
+    tokenId: v.optional(v.string()),
+  },
+  handler: async (ctx, { characterId, walletAddress, nftAddress, tokenId }) => {
+    const character = await ctx.db.get(characterId);
+    if (!character || character.status !== "ACTIVE") {
+      throw new Error("Character not found");
+    }
+    if (character.walletAddress !== walletAddress) {
+      throw new Error("Wallet mismatch");
+    }
+    if (character.nftAddress && character.nftAddress !== nftAddress) {
+      throw new Error("Character already has a different NFT address");
+    }
+
+    await ctx.db.patch(characterId, {
+      nftAddress,
+      tokenId: tokenId ?? character.tokenId ?? nftAddress,
+      updatedAt: Date.now(),
+    });
+
+    return characterId;
+  },
+});
+
 export const applyConsequenceEffects = mutation({
   args: {
     characterId: v.string(),

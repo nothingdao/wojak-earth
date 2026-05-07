@@ -191,9 +191,13 @@ router.post('/mint-player', async (req, res) => {
       }
     }
 
-    // Store NFT address on character — use updateAppearance to patch
-    // (We'd ideally have a dedicated mutation but this is a safe workaround)
-    // TODO: add setNftAddress mutation to Convex
+    const nftAddress = nft.mintAddress.toBase58()
+    await convexHttp.mutation(api.earth.characters.setNftAddress, {
+      characterId: convexCharId,
+      walletAddress: wallet_address,
+      nftAddress,
+      tokenId: nftAddress,
+    })
 
     // Create starting inventory
     await createStartingInventory(convexCharId.toString(), selectedLayers)
@@ -201,7 +205,7 @@ router.post('/mint-player', async (req, res) => {
     return res.json({
       success: true,
       character: { id: convexCharId, name: characterName, wallet_address },
-      nft_address: nft.mintAddress.toBase58(),
+      nft_address: nftAddress,
       image_url: imageUrl,
       metadataUri,
       paymentVerified: true,
