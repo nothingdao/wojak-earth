@@ -75,6 +75,19 @@ GitHub issues are the canonical work queue. Do not create or expand Markdown TOD
 - Public technical docs were removed/disabled from the Earth app because they described the old Supabase/Netlify architecture. Use root `docs/` instead.
 - `server/earth` is the unified runtime for now. It may split later, but do not split unless explicitly asked.
 
+## Project skills
+
+Project-specific Pi/Agent skills live in `.agents/skills/`. Use them for repeatable workflows:
+
+- `earth-session-pickup` — session start/resume checklist.
+- `earth-issue-workflow` — GitHub issue process and closeout rules.
+- `earth-deployment-verify` — Netlify/Railway/Convex deployment verification.
+- `earth-convex` — Convex schema/functions/deployment rules.
+- `astrds-server-authority` — ASTRDS authoritative gameplay/session/economy rules.
+- `earth-profile-social` — wallet profile, identity, chat, social, and spectating rules.
+- `earth-storage-r2` — Cloudflare R2 media/storage rules.
+- `earth-solana-chain` — Solana/on-chain authority and migration rules.
+
 ## Docs to read first
 
 - `docs/vision.md` — product/identity/economy principles
