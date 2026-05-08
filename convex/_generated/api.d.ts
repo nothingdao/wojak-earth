@@ -30,6 +30,7 @@ import type * as gameSessions from "../gameSessions.js";
 import type * as http from "../http.js";
 import type * as players from "../players.js";
 import type * as prices from "../prices.js";
+import type * as profiles from "../profiles.js";
 import type * as scores from "../scores.js";
 import type * as sessions from "../sessions.js";
 import type * as settlements from "../settlements.js";
@@ -70,6 +71,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   players: typeof players;
   prices: typeof prices;
+  profiles: typeof profiles;
   scores: typeof scores;
   sessions: typeof sessions;
   settlements: typeof settlements;

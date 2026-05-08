@@ -21,6 +21,7 @@ const CopyAddress: React.FC<{ address: string }> = ({ address }) => {
 }
 
 const PlayerProfile: React.FC<{ address: string }> = ({ address }) => {
+  const profile = useQuery(api.profiles.getByWallet, { walletAddress: address })
   const deposits = useQuery(api.spaceDeposits.getDepositsByWallet, { walletAddress: address })
   const claims = useQuery(api.spaceDeposits.getClaimsByWallet, { playerWalletAddress: address })
   const scores = useQuery(api.scores.getScores)
@@ -34,8 +35,11 @@ const PlayerProfile: React.FC<{ address: string }> = ({ address }) => {
 
       {/* Identity */}
       <div className='flex items-center gap-3 pb-4 border-b border-edge-subtle'>
-        <div className='w-10 h-10 rounded-full bg-surface-subtle flex items-center justify-center font-mono text-xs text-muted-foreground'>
-          {address.slice(0, 2)}
+        <div className='w-10 h-10 rounded-full bg-surface-subtle flex items-center justify-center font-mono text-xs text-muted-foreground overflow-hidden'>
+          {profile?.avatarUrl
+            ? <img src={profile.avatarUrl} alt='avatar' className='w-full h-full object-cover' />
+            : address.slice(0, 2)
+          }
         </div>
         <div>
           <CopyAddress address={address} />

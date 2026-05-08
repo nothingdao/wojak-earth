@@ -29,7 +29,7 @@ export const GameHUD: React.FC = () => {
   const wallet = useWallet()
   const walletAddress = wallet.publicKey?.toString() ?? ''
   const avatarUrl = useQuery(
-    api.players.getAvatarUrl,
+    api.profiles.getAvatarUrl,
     walletAddress ? { walletAddress } : 'skip'
   )
 

@@ -57,12 +57,13 @@ const AccountScreen = ({ onClose }: { onClose: () => void }) => {
     wallet.publicKey ? { walletAddress: wallet.publicKey.toString() } : 'skip'
   ) ?? []
 
-  const generateUploadUrl = useMutation(api.players.generateUploadUrl)
-  const saveAvatarMutation = useMutation(api.players.saveAvatar)
-  const avatarUrl = useQuery(
-    api.players.getAvatarUrl,
+  const generateUploadUrl = useMutation(api.profiles.generateUploadUrl)
+  const saveAvatarMutation = useMutation(api.profiles.saveAvatar)
+  const profile = useQuery(
+    api.profiles.getByWallet,
     wallet.publicKey ? { walletAddress: wallet.publicKey.toString() } : 'skip'
   )
+  const avatarUrl = profile?.avatarUrl ?? null
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -202,6 +203,13 @@ const AccountScreen = ({ onClose }: { onClose: () => void }) => {
                 label='ASTRDS'
                 value={loading ? '...' : (tokenBalances[MINT_ADDRESS] ?? 0).toLocaleString()}
                 link={ORB(MINT_ADDRESS)}
+              />
+
+              <SectionLabel>Earth</SectionLabel>
+              <StatRow
+                label='Character'
+                value={profile?.earthCharacter?.name ?? '—'}
+                link={profile?.earthCharacter?.nftAddress ? ORB(profile.earthCharacter.nftAddress) : undefined}
               />
 
               <SectionLabel>Performance</SectionLabel>

@@ -17,7 +17,7 @@ programs/     Solana/Anchor programs
 ## Authority model
 
 - **Solana/on-chain** is canonical for wallet assets, token balances, NFTs, and ownership.
-- **Convex** stores realtime game data, transient/ephemeral accounting, sessions, scores, story/progression state, and cached/indexed convenience data.
+- **Convex** stores wallet profile metadata, realtime game data, transient/ephemeral accounting, sessions, scores, story/progression state, and cached/indexed convenience data.
 - **server/earth** performs privileged operations: Earth minting, R2 writes, payment verification, bridge operations, and ASTRDS authoritative WebSocket gameplay.
 - **Clients** render UI and request actions; they do not decide economy-critical outcomes.
 

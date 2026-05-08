@@ -4,7 +4,7 @@ Earth is the parent world/hub for the nothingdao game universe. ASTRDS remains a
 
 ## Identity model
 
-1. **Wallet profile** — a pragmatic shared profile containing what Earth and ASTRDS currently require. On-chain wallet state remains canonical.
+1. **Wallet profile** — a pragmatic shared profile containing what Earth and ASTRDS currently require. On-chain wallet state remains canonical. See `docs/profile.md`.
 2. **Earth character** — a minted Earth character NFT is required to play Earth. A wallet can exist before it has an Earth character.
 3. **Game activity** — each game records its own sessions, scores, progression, rewards, and transient accounting in Convex.
 

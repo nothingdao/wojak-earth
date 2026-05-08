@@ -13,25 +13,49 @@ export const saveAvatar = mutation({
     storageId: v.id("_storage"),
   },
   handler: async (ctx, { walletAddress, storageId }) => {
+    const now = Date.now();
     const existing = await ctx.db
       .query("players")
       .withIndex("by_wallet", (q) => q.eq("walletAddress", walletAddress))
       .first();
+    const existingProfile = await ctx.db
+      .query("walletProfiles")
+      .withIndex("by_wallet", (q) => q.eq("walletAddress", walletAddress))
+      .first();
+
+    const oldStorageIds = new Set(
+      [existing?.avatarStorageId, existingProfile?.avatarStorageId].filter(
+        (id): id is typeof storageId => !!id && id !== storageId
+      )
+    );
+    for (const oldStorageId of oldStorageIds) {
+      await ctx.storage.delete(oldStorageId);
+    }
 
     if (existing) {
-      // Delete old avatar from storage if present
-      if (existing.avatarStorageId) {
-        await ctx.storage.delete(existing.avatarStorageId);
-      }
       await ctx.db.patch(existing._id, {
         avatarStorageId: storageId,
-        updatedAt: Date.now(),
+        updatedAt: now,
       });
     } else {
       await ctx.db.insert("players", {
         walletAddress,
         avatarStorageId: storageId,
-        updatedAt: Date.now(),
+        updatedAt: now,
+      });
+    }
+
+    if (existingProfile) {
+      await ctx.db.patch(existingProfile._id, {
+        avatarStorageId: storageId,
+        updatedAt: now,
+      });
+    } else {
+      await ctx.db.insert("walletProfiles", {
+        walletAddress,
+        avatarStorageId: storageId,
+        createdAt: now,
+        updatedAt: now,
       });
     }
   },
@@ -44,8 +68,13 @@ export const getAvatarUrl = query({
       .query("players")
       .withIndex("by_wallet", (q) => q.eq("walletAddress", walletAddress))
       .first();
-    if (!player?.avatarStorageId) return null;
-    return await ctx.storage.getUrl(player.avatarStorageId);
+    const profile = await ctx.db
+      .query("walletProfiles")
+      .withIndex("by_wallet", (q) => q.eq("walletAddress", walletAddress))
+      .first();
+    const avatarStorageId = profile?.avatarStorageId ?? player?.avatarStorageId;
+    if (!avatarStorageId) return null;
+    return await ctx.storage.getUrl(avatarStorageId);
   },
 });
 
@@ -60,9 +89,12 @@ export const getAvatarUrls = query({
           .query("players")
           .withIndex("by_wallet", (q) => q.eq("walletAddress", wallet))
           .first();
-        result[wallet] = player?.avatarStorageId
-          ? await ctx.storage.getUrl(player.avatarStorageId)
-          : null;
+        const profile = await ctx.db
+          .query("walletProfiles")
+          .withIndex("by_wallet", (q) => q.eq("walletAddress", wallet))
+          .first();
+        const avatarStorageId = profile?.avatarStorageId ?? player?.avatarStorageId;
+        result[wallet] = avatarStorageId ? await ctx.storage.getUrl(avatarStorageId) : null;
       })
     );
     return result;

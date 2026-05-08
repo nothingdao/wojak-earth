@@ -18,7 +18,6 @@ import {
 } from 'lucide-react'
 import { useChatParticipantCount } from '@/hooks/useChatPresence'
 import type { Character, Player, Location } from '@/types'
-import { LocalRadio } from '../LocalRadio'
 import { convexHttp } from '@/lib/convex-singleton'
 import { api } from '@convex/_generated/api'
 
@@ -443,10 +442,6 @@ export const MainView: React.FC<MainViewProps> = ({
 
   return (
     <div className="space-y-4">
-      {import.meta.env.VITE_ENABLE_LOCAL_RADIO === 'true' && (
-        <LocalRadio location_id={location_id} />
-      )}
-
       <AtmosphericHeader />
       <ActionPreviewButtons />
       <DetailedResourcePreview />

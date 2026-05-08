@@ -104,7 +104,7 @@ const LeaderboardTable: React.FC<LeaderboardTableProps> = ({ scores, loading }) 
     [scores]
   )
   const avatarUrls = useQuery(
-    api.players.getAvatarUrls,
+    api.profiles.getAvatarUrls,
     uniqueWallets.length > 0 ? { walletAddresses: uniqueWallets } : 'skip'
   ) ?? {}
 

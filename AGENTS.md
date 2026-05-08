@@ -61,21 +61,27 @@ pnpm --filter solana-asteroids build
 pnpm --filter earth-server build
 ```
 
+## Work tracking rule
+
+GitHub issues are the canonical work queue. Do not create or expand Markdown TODO lists, roadmaps, or open-issues inventories as a substitute for issues. When new work is discovered, create/update a GitHub issue, then keep docs concise and current by linking to issue numbers. Persistent docs should explain architecture, decisions, and confirmed operating procedures; they should be actively condensed to reduce noise.
+
 ## Current known gaps / do not get confused
 
 - `server/earth-npc-engine` is intentionally legacy-pending-migration. It still contains old Supabase/Netlify assumptions because it was moved mechanically for future Railway deployment. Do not treat it as production-ready.
 - Some Earth admin actions in `apps/earth/src/lib/admin/adminTools.ts` are explicit stubs pending real Convex admin mutations. They exist to keep the build coherent, not because those mutations are complete.
-- Earth reservation confirmation is incomplete: `apps/earth/src/lib/reservations.ts` lacks a proper Convex query/mutation by transaction signature.
-- `apps/earth/src/components/LocalRadio.tsx` calls `/earth/local-radio`, but `server/earth` does not currently expose that route.
+- Earth reservation spots are deprecated and removed from active code. Do not reintroduce the reservation flow unless product direction changes.
+- Local Radio is parked/removed from active Earth UI. Future radio/audio should be designed as a shared cross-game feature, likely R2-backed with server/admin writes through `server/earth`.
 - R2 bucket wiring is still in progress. `earth-characters` upload path exists server-side; `astrds-audio` is planned but static audio assets still exist.
 - Public technical docs were removed/disabled from the Earth app because they described the old Supabase/Netlify architecture. Use root `docs/` instead.
 - `server/earth` is the unified runtime for now. It may split later, but do not split unless explicitly asked.
 
 ## Docs to read first
 
-- `docs/current-status.md` — session handoff and exact refactor status
 - `docs/vision.md` — product/identity/economy principles
 - `docs/architecture.md` — authority model and services
 - `docs/deployment.md` — deployment assumptions
+- `docs/economy.md` — current Earth + ASTRDS economy model
+- `docs/chain.md` — Solana programs, wallets, PDAs, token mints, and on-chain ASTRDS flows
 - `docs/storage.md` — R2 model
-- `docs/open-issues.md` — prioritized remaining work
+- `docs/open-issues.md` — compact issue index; GitHub issues are canonical
+- `docs/harmonization-roadmap.md` — compact issue-priority harmonization order

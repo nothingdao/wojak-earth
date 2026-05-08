@@ -35,7 +35,7 @@ Solana devnet (NFT minting, token bridge)
 
 From repo root:
 ```bash
-pnpm run dev:earth        # Vite dev server → http://localhost:5173
+pnpm run dev:earth        # Vite dev server → https://localhost:5173
 pnpm run convex:dev       # Convex dev server (required)
 pnpm run dev:server       # Railway server → http://localhost:3001
 ```
@@ -57,7 +57,7 @@ src/
 ├── components/          — UI components and views
 │   ├── views/           — Game screen components (MainView, InventoryView, …)
 │   ├── admin/           — StoryEditor, admin tools
-│   └── screens/         — Full-screen flows (CharacterCreation, Reservation)
+│   └── screens/         — Full-screen flows (CharacterCreation, etc.)
 ├── hooks/               — React hooks (usePlayerCharacter, useCharacterVisual, …)
 ├── providers/           — GameProvider (central state + actions)
 ├── lib/                 — convex-singleton, convex-adapters, game-logic

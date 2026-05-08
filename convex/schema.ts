@@ -57,6 +57,14 @@ export default defineSchema({
     updatedAt: v.number(),
   }).index("by_wallet", ["walletAddress"]),
 
+  walletProfiles: defineTable({
+    walletAddress: v.string(),
+    displayName: v.optional(v.string()),
+    avatarStorageId: v.optional(v.id("_storage")),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_wallet", ["walletAddress"]),
+
   spaceDeposits: defineTable({
     walletAddress: v.string(), // depositor
     txSignature: v.string(), // on-chain transfer tx
@@ -455,17 +463,6 @@ export default defineSchema({
   })
     .index("by_character", ["characterId"])
     .index("by_character_flag", ["characterId", "flagName"]),
-
-  earth_reservations: defineTable({
-    walletAddress: v.string(),
-    transactionSignature: v.string(),
-    amountSol: v.number(),
-    status: v.string(),
-    createdAt: v.number(),
-    updatedAt: v.number(),
-  })
-    .index("by_wallet", ["walletAddress"])
-    .index("by_status", ["status"]),
 
   earth_pendingPayments: defineTable({
     walletAddress: v.string(),

@@ -57,4 +57,4 @@ pnpm run build:server
 | Convex | repo root | `pnpm run convex:deploy` |
 | R2 | Cloudflare | buckets `earth-characters`, `astrds-audio` |
 
-See `docs/` for canonical architecture and deployment notes.
+See `docs/` for canonical architecture, deployment, storage, and chain references.
