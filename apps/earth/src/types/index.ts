@@ -109,13 +109,17 @@ export interface InventoryItem {
   quantity: number
   isEquipped: boolean
   equippedSlot?: string | null
+  isPrimary?: boolean | null
+  slotIndex?: number | null
   createdAt?: number
   updatedAt?: number
   // snake_case (legacy UI compat)
   character_id: string
   item_id: string
   is_equipped: boolean
+  equipped_slot?: string | null
   is_primary?: boolean
+  slot_index?: number | null
   created_at?: string
   updated_at?: string
   // Joined

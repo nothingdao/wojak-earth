@@ -83,8 +83,10 @@ export const equip = mutation({
     walletAddress: v.string(),
     inventoryId: v.id("earth_inventory"),
     slotId: v.optional(v.string()),
+    slotIndex: v.optional(v.number()),
+    setPrimary: v.optional(v.boolean()),
   },
-  handler: async (ctx, { walletAddress, inventoryId, slotId }) => {
+  handler: async (ctx, { walletAddress, inventoryId, slotId, slotIndex = 1, setPrimary = false }) => {
     const inv = await ctx.db.get(inventoryId);
     if (!inv) throw new Error("Inventory item not found");
 
@@ -97,11 +99,53 @@ export const equip = mutation({
     if (inv.characterId !== character._id.toString())
       throw new Error("Not your item");
 
+    const equippedSlot = slotId ?? inv.equippedSlot ?? "default";
+    const targetSlotIndex = setPrimary ? (inv.slotIndex ?? slotIndex) : slotIndex;
+    const now = Date.now();
+    const inventory = await ctx.db
+      .query("earth_inventory")
+      .withIndex("by_character", (q) => q.eq("characterId", character._id.toString()))
+      .collect();
+
+    const currentPrimary = inventory.find(
+      (item) => item.isEquipped && item.equippedSlot === equippedSlot && item.isPrimary
+    );
+    const shouldBePrimary = setPrimary || !currentPrimary || currentPrimary._id === inventoryId;
+
+    await Promise.all(
+      inventory
+        .filter((item) => item._id !== inventoryId && item.isEquipped && item.equippedSlot === equippedSlot)
+        .map(async (item) => {
+          const patch: Partial<typeof item> & { updatedAt: number } = { updatedAt: now };
+          if (!setPrimary && (item.slotIndex ?? 1) === targetSlotIndex) {
+            patch.isEquipped = false;
+            patch.equippedSlot = undefined;
+            patch.slotIndex = undefined;
+            patch.isPrimary = false;
+          } else if (setPrimary && item.isPrimary) {
+            patch.isPrimary = false;
+          }
+          await ctx.db.patch(item._id, patch);
+        })
+    );
+
     await ctx.db.patch(inventoryId, {
       isEquipped: true,
-      equippedSlot: slotId ?? "default",
-      updatedAt: Date.now(),
+      equippedSlot,
+      slotIndex: targetSlotIndex,
+      isPrimary: shouldBePrimary,
+      updatedAt: now,
     });
+
+    const item = await ctx.db
+      .query("earth_items")
+      .filter((q) => q.eq(q.field("_id"), inv.itemId))
+      .first();
+    return {
+      success: true,
+      slotInfo: `${equippedSlot}_${targetSlotIndex}`,
+      item: item ?? { rarity: "COMMON" },
+    };
   },
 });
 
@@ -126,7 +170,11 @@ export const unequip = mutation({
     await ctx.db.patch(inventoryId, {
       isEquipped: false,
       equippedSlot: undefined,
+      slotIndex: undefined,
+      isPrimary: false,
       updatedAt: Date.now(),
     });
+
+    return { success: true, item: { rarity: "COMMON" } };
   },
 });

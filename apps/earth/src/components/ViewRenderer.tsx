@@ -117,6 +117,8 @@ export function ViewRenderer({
       await convexHttp.mutation(api.earth.inventory.equip, {
         walletAddress: character.wallet_address,
         inventoryId: inventoryId as any,
+        slotId: category,
+        setPrimary: true,
       })
 
       toast.success('Item equipped!')
@@ -134,7 +136,8 @@ export function ViewRenderer({
       await convexHttp.mutation(api.earth.inventory.equip, {
         walletAddress: character.wallet_address,
         inventoryId: inventoryId as any,
-        slotId: String(slotIndex),
+        slotId: category,
+        slotIndex,
       })
 
       toast.success('Item slot replaced!')
@@ -153,8 +156,8 @@ export function ViewRenderer({
     actions.handlePurchase(item_id, cost, itemName)
   }
 
-  const handleEquipItemAdapter = (inventoryId: string, shouldEquip: boolean, targetSlot?: string) => {
-    actions.handleEquipItem(inventoryId, shouldEquip, targetSlot)
+  const handleEquipItemAdapter = (inventoryId: string, shouldEquip: boolean, targetSlot?: string, slotIndex?: number) => {
+    actions.handleEquipItem(inventoryId, shouldEquip, targetSlot, slotIndex)
   }
 
   const handleUseItemAdapter = (inventoryId: string, itemName: string, energy_effect?: number, health_effect?: number) => {

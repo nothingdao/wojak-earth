@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -48,7 +48,7 @@ interface InventoryViewProps {
   character: Character
   loadingItems: Set<string>
   onUseItem: (inventoryId: string, itemName: string, energy_effect?: number, health_effect?: number, event?: React.MouseEvent) => void
-  onEquipItem: (inventoryId: string, is_equipped: boolean, targetSlot?: string, event?: React.MouseEvent) => void
+  onEquipItem: (inventoryId: string, is_equipped: boolean, targetSlot?: string, slotIndex?: number, event?: React.MouseEvent) => void
   onSetPrimary?: (inventoryId: string, category: string) => void
   onReplaceSlot?: (inventoryId: string, category: string, slotIndex: number) => void
   onCharacterUpdated?: () => Promise<void>
@@ -85,6 +85,76 @@ const getSlotForItem = (item: Character['inventory'][0]['item']) => {
     case 'OUTERWEAR': return 'outerwear'
     case 'ACCESSORY': return 'misc_accessory'
     default: return null
+  }
+}
+
+const getLayerDirectory = (item: Character['inventory'][0]['item']) => {
+  switch (item.layer_type) {
+    case 'HAIR': return '6-hair'
+    case 'HAT': return '8-headwear'
+    case 'FACE_COVERING': return '7-face-accessories'
+    case 'FACE_ACCESSORY': return '7-face-accessories'
+    case 'CLOTHING': return '4-clothing'
+    case 'OUTERWEAR': return '5-outerwear'
+    case 'ACCESSORY': return '9-misc-accessories'
+    default:
+      switch (item.layerOrder) {
+        case 1: return '1-base'
+        case 2: return '2-skin'
+        case 3: return '3-undergarments'
+        case 4: return '4-clothing'
+        case 5: return '5-outerwear'
+        case 6: return '6-hair'
+        case 7: return '7-face-accessories'
+        case 8: return '8-headwear'
+        case 9: return '9-misc-accessories'
+        default: return null
+      }
+  }
+}
+
+const ItemImage = ({ item, className = 'w-10 h-10' }: { item: Character['inventory'][0]['item']; className?: string }) => {
+  const [sourceIndex, setSourceIndex] = useState(0)
+  const layerDir = getLayerDirectory(item)
+  const sources = [
+    item.image_url || item.imageUrl,
+    item.layer_file && layerDir ? `/layers/${layerDir}/${item.layer_file}` : null,
+  ].filter(Boolean) as string[]
+  const IconFallback = () => <>{getCategoryIconStatic(item.category)}</>
+
+  useEffect(() => {
+    setSourceIndex(0)
+  }, [item.id, item.image_url, item.imageUrl, item.layer_file])
+
+  if (sourceIndex >= sources.length) {
+    return (
+      <div className={`${className} bg-muted/50 border border-primary/20 rounded flex items-center justify-center text-primary overflow-hidden flex-shrink-0`}>
+        <IconFallback />
+      </div>
+    )
+  }
+
+  return (
+    <div className={`${className} bg-muted/50 border border-primary/20 rounded flex items-center justify-center overflow-hidden flex-shrink-0`}>
+      <img
+        src={sources[sourceIndex]}
+        alt={item.name}
+        className="w-full h-full object-contain"
+        onError={() => setSourceIndex((i) => i + 1)}
+      />
+    </div>
+  )
+}
+
+const getCategoryIconStatic = (category: string) => {
+  switch (category) {
+    case 'HAT': return <GiTopHat />
+    case 'CLOTHING': return <GiShirt />
+    case 'ACCESSORY': return <GiNecklace />
+    case 'TOOL': return <GiMining />
+    case 'MATERIAL': return <GiRock />
+    case 'CONSUMABLE': return <GiHealthPotion />
+    default: return <GiCube />
   }
 }
 
@@ -128,7 +198,7 @@ export function InventoryView({
   // Enhanced equip handler with multi-slot support
   const handleEquipWithConflictCheck = (item: Character['inventory'][0], event?: React.MouseEvent) => {
     if (item.is_equipped) {
-      onEquipItem(item.id, false, undefined, event)
+      onEquipItem(item.id, false, undefined, undefined, event)
       return
     }
 
@@ -147,7 +217,7 @@ export function InventoryView({
     }
 
     if (availableSlot) {
-      onEquipItem(item.id, true, targetSlot, event)
+      onEquipItem(item.id, true, targetSlot, availableSlot, event)
     } else {
       const conflictingItem = getEquippedBySlot(targetSlot, 1)
       if (conflictingItem) {
@@ -302,7 +372,11 @@ export function InventoryView({
               ${showSlotMenu === slotKey ? 'ring-2 ring-primary/50' : ''}
             `}
           >
-            <IconComponent className="w-3 h-3" />
+            {equipped ? (
+              <ItemImage item={equipped.item} className="w-full h-full border-0 bg-transparent" />
+            ) : (
+              <IconComponent className="w-3 h-3" />
+            )}
             {equipped?.is_primary && <Crown className="w-2 h-2 text-yellow-500 absolute -top-1 -right-1" />}
           </button>
         </TooltipTrigger>
@@ -344,8 +418,11 @@ export function InventoryView({
               <Loader2 className="w-3 h-3 animate-spin" />
             ) : (
               <>
-                {energy_effect > 0 && <Zap className="w-3 h-3" />}
-                {health_effect > 0 && <Heart className="w-3 h-3" />}
+                <ItemImage item={item.item} className="w-full h-full border-0 bg-transparent" />
+                <span className="absolute bottom-0 left-0 flex gap-0.5 bg-background/80 rounded-tr px-0.5">
+                  {energy_effect > 0 && <Zap className="w-2.5 h-2.5" />}
+                  {health_effect > 0 && <Heart className="w-2.5 h-2.5" />}
+                </span>
                 {item.quantity > 1 && (
                   <span className="absolute -top-1 -right-1 bg-background border border-success/50 rounded-full w-4 h-4 flex items-center justify-center text-xs">
                     {item.quantity}
@@ -405,6 +482,7 @@ export function InventoryView({
                 {equippedItems.map(item => (
                   <div key={item.id} className="bg-primary/10 border border-primary/30 rounded-lg p-3">
                     <div className="flex items-center justify-between">
+                      <ItemImage item={item.item} className="w-10 h-10" />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <span className="font-bold text-primary text-sm truncate">
@@ -430,7 +508,7 @@ export function InventoryView({
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={(e) => onEquipItem(item.id, false, undefined, e)}
+                          onClick={(e) => onEquipItem(item.id, false, undefined, undefined, e)}
                           className="h-8 px-2 text-xs"
                         >
                           REMOVE
@@ -444,6 +522,7 @@ export function InventoryView({
                 {compatibleItems.map(item => (
                   <div key={item.id} className="bg-muted/30 border border-muted/50 rounded-lg p-3">
                     <div className="flex items-center justify-between">
+                      <ItemImage item={item.item} className="w-10 h-10" />
                       <div className="flex-1 min-w-0">
                         <div className="font-bold text-primary text-sm truncate">
                           {item.item.name.toUpperCase()}
@@ -519,7 +598,7 @@ export function InventoryView({
                           <Star className="w-3 h-3" />
                         </Button>
                       )}
-                      <Button size="sm" variant="ghost" onClick={(e) => onEquipItem(item.id, false, undefined, e)} className="h-6 w-6 p-0">
+                      <Button size="sm" variant="ghost" onClick={(e) => onEquipItem(item.id, false, undefined, undefined, e)} className="h-6 w-6 p-0">
                         <X className="w-3 h-3" />
                       </Button>
                     </div>
@@ -595,6 +674,7 @@ export function InventoryView({
                 return (
                   <div key={item.id} className="bg-muted/30 border border-muted/50 rounded-lg p-3">
                     <div className="flex items-center justify-between">
+                      <ItemImage item={item.item} className="w-10 h-10" />
                       <div className="flex-1 min-w-0">
                         <div className="font-bold text-primary text-sm">
                           {item.item.name.toUpperCase()}
@@ -672,18 +752,6 @@ export function InventoryView({
       case 'EPIC': return 'text-purple-500 dark:text-purple-400'
       case 'LEGENDARY': return 'text-yellow-500 dark:text-yellow-400'
       default: return 'text-muted-foreground'
-    }
-  }
-
-  const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case 'HAT': return <GiTopHat />
-      case 'CLOTHING': return <GiShirt />
-      case 'ACCESSORY': return <GiNecklace />
-      case 'TOOL': return <GiMining />
-      case 'MATERIAL': return <GiRock />
-      case 'CONSUMABLE': return <GiHealthPotion />
-      default: return <GiCube />
     }
   }
 
@@ -935,10 +1003,8 @@ export function InventoryView({
                       return (
                         <div key={item.id} className="bg-muted/30 border border-primary/20 rounded-lg p-3 font-mono">
                           <div className="flex items-center gap-3">
-                            {/* Icon */}
-                            <div className="w-10 h-10 bg-muted/50 border border-primary/20 rounded flex items-center justify-center text-primary flex-shrink-0">
-                              {getCategoryIcon(item.item.category)}
-                            </div>
+                            {/* Item thumbnail */}
+                            <ItemImage item={item.item} />
 
                             {/* Content */}
                             <div className="flex-1 min-w-0">

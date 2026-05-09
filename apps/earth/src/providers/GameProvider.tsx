@@ -230,7 +230,7 @@ interface GameContextType {
     handleMining: () => Promise<void>
     handleTravel: (location_id: string) => Promise<void>
     handlePurchase: (item_id: string, cost: number, itemName: string) => Promise<void>
-    handleEquipItem: (inventoryId: string, isCurrentlyEquipped: boolean) => Promise<void>
+    handleEquipItem: (inventoryId: string, isCurrentlyEquipped: boolean, targetSlot?: string, slotIndex?: number, setPrimary?: boolean) => Promise<void>
     handleUseItem: (inventoryId: string, itemName: string, energy_effect?: number, health_effect?: number) => Promise<void>
     handleSendMessage: (message: string) => Promise<void>
     handleRetry: () => void
@@ -631,7 +631,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       }
     }, [character, characterActions, refetchCharacter, gameData.actions, isMainnet]),
 
-    handleEquipItem: useCallback(async (inventoryId: string, shouldEquip: boolean) => {
+    handleEquipItem: useCallback(async (inventoryId: string, shouldEquip: boolean, targetSlot?: string, slotIndex?: number, setPrimary = false) => {
       if (!character || isMainnet) return;
 
       try {
@@ -652,7 +652,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           equipmentToast = gameToast.equipmentFlow(action, itemName, itemCategory);
         }
         
-        const result = await characterActions.equipItem(inventoryId, shouldEquip);
+        const result = await characterActions.equipItem(inventoryId, shouldEquip, targetSlot, slotIndex, setPrimary);
 
         if (result.success) {
           // Complete the progressive toast (unless during mining)

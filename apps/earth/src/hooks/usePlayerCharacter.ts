@@ -116,16 +116,19 @@ export function useCharacterActions(shouldLoad: boolean = true) {
     ),
 
     equipItem: useCallback(
-      async (inventoryId: string, equip = true) => {
+      async (inventoryId: string, equip = true, slotId?: string, slotIndex?: number, setPrimary = false) => {
         const walletAddress = requireWallet()
         try {
           if (equip) {
-            await equipMutation({
+            return await equipMutation({
               walletAddress,
               inventoryId: inventoryId as Id<'earth_inventory'>,
+              ...(slotId ? { slotId } : {}),
+              ...(slotIndex ? { slotIndex } : {}),
+              ...(setPrimary ? { setPrimary } : {}),
             })
           } else {
-            await unequipMutation({
+            return await unequipMutation({
               walletAddress,
               inventoryId: inventoryId as Id<'earth_inventory'>,
             })
