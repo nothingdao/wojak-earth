@@ -73,6 +73,7 @@ GitHub issues are the canonical work queue. Do not create or expand Markdown TOD
 - Earth reservation spots are deprecated and removed from active code. Do not reintroduce the reservation flow unless product direction changes.
 - Local Radio is parked/removed from active Earth UI. Future radio/audio should be designed as a shared cross-game feature, likely R2-backed with server/admin writes through `server/earth`.
 - R2 bucket wiring is still in progress. `earth-characters` upload path exists server-side; `astrds-audio` is planned but static audio assets still exist.
+- Earth Vault v1 is the active on-chain economy direction. Legacy `SimplePayment`, `EarthBridge`, `/earth/bridge`, and direct treasury-wallet flows remain in code but should not be expanded; replace them through #39–#43. Legacy pre-vault `character.earth` balances are not mainnet liabilities.
 - Public technical docs were removed/disabled from the Earth app because they described the old Supabase/Netlify architecture. Use root `docs/` instead.
 - `server/earth` is the unified runtime for now. It may split later, but do not split unless explicitly asked.
 

@@ -27,15 +27,15 @@ Set under **Service → Variables** in the Railway dashboard.
 | Variable | Description |
 |---|---|
 | `TREASURY_WALLET_ADDRESS` | Treasury wallet public key. Receives payments, funds NPCs. `6cfjMdM6yNJQfZRDx25hLUsR8PFFhh4Xb5bdxHPBtoa4` |
-| `TREASURY_KEYPAIR_SECRET` | Treasury wallet keypair as a JSON array of bytes `[1,2,3,...]`. Used by the bridge for EARTH token transfers. |
-| `SERVER_KEYPAIR_SECRET` | Server wallet keypair as a JSON array of bytes `[1,2,3,...]`. NFT mint authority (`GKFkHgfSc3WLDLA1jRxZvsjV7rNZUvDdr98wRmLRn9Vz`). Used by `mint-player`. |
+| `TREASURY_KEYPAIR_SECRET` | Legacy bridge treasury keypair as a JSON array of bytes `[1,2,3,...]`. Do not build new flows around this; Earth Vault v1 replaces hot-wallet bridge withdrawals (#39–#43). |
+| `SERVER_KEYPAIR_SECRET` | Server wallet keypair as a JSON array of bytes `[1,2,3,...]`. NFT mint authority (`GKFkHgfSc3WLDLA1jRxZvsjV7rNZUvDdr98wRmLRn9Vz`). Used by `mint-player` while server/earth remains responsible for v1 character NFT/media production after Earth Vault receipt verification. |
 
 ### NFT / Token
 
 | Variable | Description |
 |---|---|
-| `VITE_EARTH_MINT_ADDRESS` | EARTH SPL token mint address. `Cqizw9BZPvecsXDwQoP1UBmA3BcyAgdYHGCtApVbkUjc` |
-| `VITE_TREASURY_WALLET_ADDRESS` | Treasury public key (duplicate of above, read by the bridge route). |
+| `VITE_EARTH_MINT_ADDRESS` | Legacy/current EARTH SPL token mint address. Earth Vault v1 will replace this with the new EARTH Token-2022 mint once #40 lands. `Cqizw9BZPvecsXDwQoP1UBmA3BcyAgdYHGCtApVbkUjc` |
+| `VITE_TREASURY_WALLET_ADDRESS` | Legacy direct-payment/bridge treasury public key. Do not use for new Earth Vault flows except during migration support. |
 | `PLAYER_COLLECTION_ADDRESS` | Metaplex NFT collection address. `ApxsHPsUqCPQ1rLt11xXmZv8ur5ymCCy14CJd91nh3d8` |
 | `SERVER_URL` | The server's own public URL — used when constructing NFT metadata URIs. Current Railway URL: `https://astrds-game-server-production.up.railway.app` |
 
@@ -66,9 +66,9 @@ All must be prefixed `VITE_` to be visible at build time.
 | Variable | Description |
 |---|---|
 | `VITE_CONVEX_URL` | `https://colorful-nightingale-908.convex.cloud` |
-| `VITE_SERVER_URL` | Railway server base URL. **Required for production** — without this, bridge/mint/exchange all fail silently. Current URL: `https://astrds-game-server-production.up.railway.app` |
-| `VITE_EARTH_MINT_ADDRESS` | EARTH SPL token mint address. `Cqizw9BZPvecsXDwQoP1UBmA3BcyAgdYHGCtApVbkUjc` |
-| `VITE_TREASURY_WALLET_ADDRESS` | Treasury public key (displayed in UI). `6cfjMdM6yNJQfZRDx25hLUsR8PFFhh4Xb5bdxHPBtoa4` |
+| `VITE_SERVER_URL` | Railway server base URL. **Required for production** — without this, Earth mint/bridge/exchange server calls fail. Current URL: `https://astrds-game-server-production.up.railway.app` |
+| `VITE_EARTH_MINT_ADDRESS` | Legacy/current EARTH SPL token mint address until #40 creates the Earth Vault Token-2022 mint. `Cqizw9BZPvecsXDwQoP1UBmA3BcyAgdYHGCtApVbkUjc` |
+| `VITE_TREASURY_WALLET_ADDRESS` | Legacy treasury public key used by old `SimplePayment`/`EarthBridge`. Do not use for new #39–#43 Earth Vault flows. `6cfjMdM6yNJQfZRDx25hLUsR8PFFhh4Xb5bdxHPBtoa4` |
 | `VITE_MAINNET_RPC_URL` | Mainnet RPC endpoint. `https://mainnet.helius-rpc.com/?api-key=<key>` |
 | `VITE_DEVNET_RPC_URL` | Devnet RPC endpoint. `https://devnet.helius-rpc.com/?api-key=<key>` |
 | `VITE_SOLANA_RPC_URL` | General RPC fallback used by EarthBridge and GameProvider directly. |
@@ -113,4 +113,4 @@ Earth and ASTRDS currently use the shared dev deployment `dev:colorful-nightinga
 - Netlify `VITE_*` vars are baked into the JS bundle at build time — changing them requires a redeploy.
 - Railway vars take effect on the next deploy or restart.
 - Convex vars take effect immediately for new function invocations.
-- The `VITE_EARTH_MINT_ADDRESS` and `VITE_TREASURY_WALLET_ADDRESS` vars appear on both Railway and Netlify (Earth) because the bridge route on the server reads them directly as `process.env.VITE_*`. This is intentional — same var names, both places.
+- The `VITE_EARTH_MINT_ADDRESS` and `VITE_TREASURY_WALLET_ADDRESS` vars appear on both Railway and Netlify (Earth) because the legacy bridge route on the server reads them directly as `process.env.VITE_*`. This is intentional for the current legacy code only. Earth Vault v1 (#39–#43) should introduce explicit vault/program/mint config and stop routing new payments through direct treasury-wallet flows.

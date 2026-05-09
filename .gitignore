@@ -55,6 +55,7 @@ convex/_generated/
 .cntx
 
 # Misc
+tmp/
 server-keypair.json
 android/app/build/
 android/build/

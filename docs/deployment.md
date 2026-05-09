@@ -32,7 +32,7 @@ pnpm --filter earth-server start
 Runtime endpoints:
 
 - `/health` — liveness only.
-- `/ready` — readiness; checks required Convex, Solana, Earth minting/bridge, and R2 environment configuration.
+- `/ready` — readiness; checks required Convex, Solana, Earth minting/legacy bridge, and R2 environment configuration. Earth Vault v1 (#39–#43) will change the bridge/payment readiness surface once implemented.
 
 ## Convex
 

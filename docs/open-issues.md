@@ -4,20 +4,27 @@ GitHub issues are the canonical work queue. This file is only a compact index so
 
 ## P1
 
+- #39 — Earth Vault Program v1: scaffold accounts, instructions, and tests
+- #40 — EARTH Token-2022 mint and authority model
+- #41 — Earth escrow-backed in-game EARTH ledger and reconciliation
+- #42 — Earth character mint receipts: migrate server mint flow to Earth Vault
+- #43 — Earth frontend vault transactions: mint payment, buy, deposit, withdraw
+- #37 — Earth map: fix SVG path mapping and location hierarchy after migration
 - #35 — Inventory: restore equipment images, loadout controls, and profile image update flow
 - #36 — Earth minting: restore starter inventory for new characters
-- #37 — Earth map: fix SVG path mapping and location hierarchy after migration
 - #27 — Social: design cross-game chat, groups, DMs, permissions, and spectating
 - #28 — ASTRDS economy: reconcile pre-mainnet hardening and fixed-supply vault work
 
 ## P2
 
+- #44 — EARTH/SOL Meteora seed pool and liquidity policy
 - #29 — ASTRDS tests: validate emission vault, claim path, and settlement finalization
 - #30 — Storage: complete R2 wiring for Earth legacy image/item/media assets and plan `astrds-audio`
 - #31 — NPC engine: migrate legacy Supabase/Netlify assumptions to Convex/Railway
 - #32 — ASTRDS audio: finish event coverage/settings UI and align large assets with R2
 - #33 — Solana: phase migration from `@solana/web3.js` to `@anza-xyz/kit`
-- #34 — Earth chain architecture: define Earth Anchor program, media, items, and Space Vault boundaries
+- #34 — Earth chain architecture: Earth Vault v1 design hub; keep open until follow-ups are implemented or superseded
+- #38 — Earth characters: support multiple character NFTs per wallet and entry selection
 
 ## Recently closed / historical
 

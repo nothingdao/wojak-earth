@@ -7,7 +7,8 @@ Canonical on-chain reference for the current Earth monorepo. Addresses are Solan
 | Name | Address | Notes |
 |---|---|---|
 | Space Vault Program | `4bRZK8XfziVhLCgvtRdFJyTgN6tXGSPJT8xfbtt1AxBB` | Anchor program for ASTRDS game payments, emission settlement/claims, space-token deposits/claims, and liquidity crank. |
-| IDL Account | `4SQth9AnyuDe636K91kzBQVCz3mEFrEm6jmdJWJhVFZu` | Program IDL account. |
+| Space Vault IDL Account | `4SQth9AnyuDe636K91kzBQVCz3mEFrEm6jmdJWJhVFZu` | Program IDL account. |
+| Earth Vault Program | TBD | Planned Anchor program for Earth character payment receipts, SOL splits, EARTH Token-2022 issuance, escrow-backed in-game balances, deposits, withdrawals, and liquidity/reserve flows. |
 
 ## Wallets / authorities
 
@@ -23,8 +24,9 @@ The on-chain program verifies Convex-signed authorizations against `VaultConfig.
 | Name | Mint | Standard | Notes |
 |---|---|---|---|
 | ASTRDS | `5sqKSHDKZr4KbNzj972PSfmEhtR9eLeBvv1nBRbeQAnB` | Token-2022 | 9 decimals. Supply cap enforced by the Space Vault Program. |
+| EARTH | TBD | Token-2022 | Transferable wallet token and backing asset for Earth in-game balances. Supply is uncapped but issuance is governed by mint-run capacity, SOL inflows, and configured liquidity/reserve policy. |
 
-ASTRDS mint authority is held by the `VaultConfig` PDA. Direct keypair `mintTo` is not the intended path; gameplay rewards leave the vault/program path through authorized instructions.
+ASTRDS mint authority is held by the `VaultConfig` PDA. Direct keypair `mintTo` is not the intended path; gameplay rewards leave the vault/program path through authorized instructions. EARTH mint authority should be held by the Earth Vault Program once the v1 program is deployed.
 
 ## Meteora DAMM v2 pool
 
@@ -73,25 +75,83 @@ ASTRDS client (apps/astrds)
   - transaction builders in apps/astrds/src/lib/spaceVault.ts
   - renders snapshots from server/earth
 
+Earth client (apps/earth)
+  - wallet adapter
+  - character mint, buy EARTH, deposit, and withdraw transaction builders
+  - normal gameplay spends in-game EARTH without per-action wallet signatures
+
 server/earth
   - authoritative ASTRDS WebSocket game loop
   - verifies active Convex game sessions
   - submits server-owned game results and settlement writes
+  - verifies Earth Vault receipts, mints character NFTs/metadata, writes R2 media, and authorizes EARTH withdrawals
 
 Convex
   - sessions, gameSessions, scores, chat
   - spawn tickets, collections, claims
-  - ed25519 authorization actions for mint/claim/settlement
+  - Earth characters, inventory, market state, and fast in-game EARTH ledger
+  - ed25519 authorization actions for mint/claim/settlement/withdrawal
   - Helius webhook + reconciliation logic
 
 Solana
   - Space Vault Program
+  - Earth Vault Program
   - ASTRDS Token-2022 mint
+  - EARTH Token-2022 mint
+  - Earth escrow vault ATA(s)
   - DepositPool vault ATAs
-  - Meteora DAMM v2 pool / locked position
+  - Meteora DAMM v2 pools
 ```
 
-## Core flows
+## Planned Earth Vault v1
+
+The Earth Vault Program should remain separate from the ASTRDS Space Vault Program. It should own payment, issuance, escrow, and bridge edges for Earth while `server/earth` continues to own character media/NFT production.
+
+### Earth Vault v1 accounts
+
+| Account | Purpose |
+|---|---|
+| `EarthVaultConfig` | Authority/config singleton: EARTH mint, character collection, DAO treasury, operations wallet, liquidity/reserve policy, price config, split bps, pause flags, server/Convex authority. |
+| `CharacterMintReceipt` | Replay-protected receipt proving a wallet paid the SOL character mint fee through the vault. Consumed by `server/earth` before NFT mint finalization. |
+| `EarthEscrow` | Program-owned Token-2022 vault ATA holding EARTH that backs withdrawable in-game balances. |
+| `PurchaseReceipt` | Replay-protected record for SOL -> EARTH buys credited directly to game escrow. |
+| `DepositReceipt` | Record of wallet EARTH deposited into game escrow. |
+| `WithdrawalRecord` | Replay protection for authorized withdrawal from game escrow back to wallet. |
+
+### Character mint payment
+
+```txt
+Player signs Earth Vault character_payment
+  -> SOL split to DAO treasury, operations, and EARTH liquidity/reserve path
+  -> starter EARTH minted/credited into EarthEscrow for the player/game ledger
+  -> CharacterMintReceipt PDA created
+  -> server/earth verifies receipt, uploads character media, creates Convex character, mints NFT to player wallet, and consumes/finalizes the receipt
+```
+
+The Earth Vault should not mint the character NFT in v1. NFT minting depends on server-side rendered images, R2 metadata, selected visual layers, starter inventory, and collection verification. The program should own the financial truth; `server/earth` should own media/NFT production after receipt verification. Receipt consumption should be on-chain or otherwise replay-protected so one payment receipt cannot mint multiple character NFTs.
+
+### Buy EARTH
+
+```txt
+Player signs buy_earth with SOL
+  -> SOL follows configured reserve/liquidity/treasury policy
+  -> EARTH is minted/transferred into EarthEscrow at the configured run price
+  -> PurchaseReceipt PDA/event is created
+  -> Convex/server credits immediately withdrawable in-game EARTH
+```
+
+Purchased EARTH should go directly to game escrow/in-game balance, not wallet first.
+
+### Deposit / withdraw EARTH
+
+```txt
+Deposit: wallet EARTH -> EarthEscrow -> Convex/server credits in-game EARTH
+Withdraw: Convex/server debits in-game EARTH -> signed authorization -> Earth Vault releases EARTH to wallet
+```
+
+The bridge must be clean and non-punitive. Vault-era in-game EARTH is immediately withdrawable and must be backed by escrow. Withdrawals should use a two-phase ledger lifecycle: available balance becomes pending withdrawal before authorization, then finalizes or returns to available on expiry/cancel. Legacy pre-vault `character.earth` balances are not mainnet liabilities and may be reset, ignored, or migrated as non-production data during cutover. Reconciliation invariant for vault-era credits: `EarthEscrow balance >= available in-game EARTH + pending withdrawals`.
+
+## Current Space Vault flows
 
 ### Insert Quarter
 

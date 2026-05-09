@@ -72,9 +72,20 @@ Any supported SPL token can be deposited into the Space Vault Program as gamepla
 
 ## Earth economy
 
-Earth uses Convex for game-state economy data such as character EARTH balances, inventory, market listings, transactions, XP, and progression. Token/NFT ownership remains on-chain where applicable.
+EARTH is intended to be a transferable Token-2022 SPL token and also the fast in-game currency. The target model is program escrow plus a server-authoritative in-game ledger:
 
-Earth privileged operations route through `server/earth`, including character NFT minting, R2 writes, Solana balance reads, bridge/exchange operations, and any future server-owned economy-critical actions.
+```txt
+wallet EARTH -> Earth Vault escrow -> Convex/server credits in-game EARTH
+Convex/server debits in-game EARTH -> Earth Vault releases EARTH -> wallet
+```
+
+In-game EARTH should be immediately withdrawable and must be fully backed by EARTH held in Earth Vault escrow. This backing invariant applies to vault-era credits created through Earth Vault character receipts, purchases, deposits, and withdrawals. Legacy pre-vault `character.earth` balances are dev/test migration data, not mainnet liabilities, and should not block Earth Vault v1. The bridge should be a first-class, clean, encouraged flow rather than a discouraged or lossy conversion. Player-to-player game transactions should initially spend in-game EARTH only so normal gameplay does not require wallet signatures.
+
+Character creation uses SOL. The planned Earth Vault Program should split each character mint payment between DAO treasury, operations/revenue, and EARTH liquidity/reserve. A meaningful portion of the mint fee should return to the player as starter EARTH credited directly into game escrow/in-game balance, so a new player discovers that part of the NFT mint fee remains theirs as a value-backed EARTH asset.
+
+EARTH supply is not fixed-capped. Issuance should be governed by mint-run capacity, SOL inflows, configured run price/liquidity policy, and locked liquidity growth. The initial Meteora EARTH/SOL pool should be seeded primarily to establish price, with later program-managed liquidity growing from mint and purchase flows. Do not use a thin initial pool as the sole buy/starter pricing oracle for v1; use explicit configured run pricing until pool depth/TWAP safeguards exist.
+
+Earth privileged operations route through `server/earth`, including character NFT/media production, R2 writes, receipt verification, bridge authorization, Solana balance reads, and any future server-owned economy-critical actions.
 
 ## References
 

@@ -26,22 +26,29 @@ Completed process setup: #20 established GitHub issues as the canonical work que
 
 ## Current priority order
 
-### P1 — visible Earth restoration + core harmonization
+### P1 — Earth Vault v1 + visible Earth restoration
 
-1. #35 — Inventory: restore equipment images, loadout controls, and profile image update flow
-2. #36 — Earth minting: restore starter inventory for new characters
-3. #37 — Earth map: fix SVG path mapping and location hierarchy after migration
-4. #27 — Social: design cross-game chat, groups, DMs, permissions, and spectating
-5. #28 — ASTRDS economy: reconcile pre-mainnet hardening and fixed-supply vault work
+1. #39 — Earth Vault Program v1: scaffold accounts, instructions, and tests
+2. #40 — EARTH Token-2022 mint and authority model
+3. #41 — Earth escrow-backed in-game EARTH ledger and reconciliation
+4. #42 — Earth character mint receipts: migrate server mint flow to Earth Vault
+5. #43 — Earth frontend vault transactions: mint payment, buy, deposit, withdraw
+6. #37 — Earth map: fix SVG path mapping and location hierarchy after migration
+7. #35 — Inventory: restore equipment images, loadout controls, and profile image update flow
+8. #36 — Earth minting: restore starter inventory for new characters
+9. #27 — Social: design cross-game chat, groups, DMs, permissions, and spectating
+10. #28 — ASTRDS economy: reconcile pre-mainnet hardening and fixed-supply vault work
 
 ### P2 — validation, storage, parked systems, polish
 
-6. #29 — ASTRDS tests: validate emission vault, claim path, and settlement finalization
-7. #30 — Storage: complete R2 wiring for Earth legacy image/item/media assets and plan `astrds-audio`
-8. #31 — NPC engine: migrate legacy Supabase/Netlify assumptions to Convex/Railway
-9. #32 — ASTRDS audio: finish event coverage/settings UI and align large assets with R2
-10. #33 — Solana: phase migration from `@solana/web3.js` to `@anza-xyz/kit`
-11. #34 — Earth chain architecture: define Earth Anchor program, media, items, and Space Vault boundaries
+11. #44 — EARTH/SOL Meteora seed pool and liquidity policy
+12. #29 — ASTRDS tests: validate emission vault, claim path, and settlement finalization
+13. #30 — Storage: complete R2 wiring for Earth legacy image/item/media assets and plan `astrds-audio`
+14. #31 — NPC engine: migrate legacy Supabase/Netlify assumptions to Convex/Railway
+15. #32 — ASTRDS audio: finish event coverage/settings UI and align large assets with R2
+16. #33 — Solana: phase migration from `@solana/web3.js` to `@anza-xyz/kit`
+17. #34 — Earth chain architecture: Earth Vault v1 design hub; keep open until follow-ups are implemented or superseded
+18. #38 — Earth characters: support multiple character NFTs per wallet and entry selection
 
 ## Scope rule
 

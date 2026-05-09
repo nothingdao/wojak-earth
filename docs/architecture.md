@@ -16,9 +16,9 @@ programs/     Solana/Anchor programs
 
 ## Authority model
 
-- **Solana/on-chain** is canonical for wallet assets, token balances, NFTs, and ownership.
-- **Convex** stores wallet profile metadata, realtime game data, transient/ephemeral accounting, sessions, scores, story/progression state, and cached/indexed convenience data.
-- **server/earth** performs privileged operations: Earth minting, R2 writes, payment verification, bridge operations, and ASTRDS authoritative WebSocket gameplay.
+- **Solana/on-chain** is canonical for wallet assets, token balances, NFTs, custody, payment receipts, and ownership.
+- **Convex** stores wallet profile metadata, realtime game data, fast in-game ledgers, sessions, scores, story/progression state, and cached/indexed convenience data. Convex balances that can be withdrawn must be backed by on-chain vault custody.
+- **server/earth** performs privileged operations: Earth NFT/media production, R2 writes, payment/receipt verification, bridge authorization, and ASTRDS authoritative WebSocket gameplay.
 - **Clients** render UI and request actions; they do not decide economy-critical outcomes.
 
 ## ASTRDS
@@ -27,7 +27,9 @@ ASTRDS must remain server-authoritative for anti-cheat/security. The frontend se
 
 ## Earth
 
-Earth gameplay requires a minted Earth character. Earth should be authoritative to the extent needed to prevent cheating: normal game state and progression should be validated through Convex/server-controlled logic, while privileged blockchain/storage/payment operations stay in `server/earth`.
+Earth gameplay requires a minted Earth character NFT. The planned Earth Vault Program is separate from the ASTRDS Space Vault Program and owns Earth payment, issuance, escrow, and bridge edges. `server/earth` should continue to own character image generation, R2 writes, NFT metadata, and initial NFT mint orchestration after verifying Earth Vault receipts.
+
+EARTH is intended to be a transferable Token-2022 wallet token and also the fast in-game balance. To avoid wallet signatures for every travel, market, crafting, or story action, in-game EARTH is tracked by Convex/server logic but must be backed by EARTH held in Earth Vault escrow. Wallet signatures should be required only for character mint payment, buying EARTH, depositing wallet EARTH into game escrow, and withdrawing EARTH back to wallet.
 
 ## NPC engine
 
