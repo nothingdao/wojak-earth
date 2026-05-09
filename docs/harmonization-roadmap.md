@@ -20,24 +20,28 @@ GitHub issues are the canonical work queue. This roadmap is intentionally compac
 - #23 — `server/earth` exposes `/health` liveness and `/ready` readiness; Railway checks `/ready`.
 - #24 — Earth character NFT mint address persists to Convex after mint.
 - #25 — Reachable Earth admin actions are wired to Convex or explicitly disabled.
+- #26 — Minimal shared wallet profile for Earth + ASTRDS implemented and deployed.
 
 Completed process setup: #20 established GitHub issues as the canonical work queue.
 
 ## Current priority order
 
-### P1 — core game-universe harmonization
+### P1 — visible Earth restoration + core harmonization
 
-1. #26 — Profile: define minimal shared wallet profile for Earth + ASTRDS
-2. #27 — Social: design cross-game chat, groups, DMs, permissions, and spectating
-3. #28 — ASTRDS economy: reconcile pre-mainnet hardening and fixed-supply vault work
+1. #35 — Profile/inventory: restore equipment images and equip/unequip UX
+2. #36 — Earth minting: restore starter inventory for new characters
+3. #37 — Earth map: fix SVG path mapping and location hierarchy after migration
+4. #27 — Social: design cross-game chat, groups, DMs, permissions, and spectating
+5. #28 — ASTRDS economy: reconcile pre-mainnet hardening and fixed-supply vault work
 
 ### P2 — validation, storage, parked systems, polish
 
-4. #29 — ASTRDS tests: validate emission vault, claim path, and settlement finalization
-5. #30 — Storage: complete R2 wiring for `earth-characters` and plan `astrds-audio`
-6. #31 — NPC engine: migrate legacy Supabase/Netlify assumptions to Convex/Railway
-7. #32 — ASTRDS audio: finish event coverage/settings UI and align large assets with R2
-8. #33 — Solana: phase migration from `@solana/web3.js` to `@anza-xyz/kit`
+6. #29 — ASTRDS tests: validate emission vault, claim path, and settlement finalization
+7. #30 — Storage: complete R2 wiring for Earth legacy image/item/media assets and plan `astrds-audio`
+8. #31 — NPC engine: migrate legacy Supabase/Netlify assumptions to Convex/Railway
+9. #32 — ASTRDS audio: finish event coverage/settings UI and align large assets with R2
+10. #33 — Solana: phase migration from `@solana/web3.js` to `@anza-xyz/kit`
+11. #34 — Earth chain architecture: define Earth Anchor program, media, items, and Space Vault boundaries
 
 ## Scope rule
 
