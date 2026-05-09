@@ -4,7 +4,7 @@ GitHub issues are the canonical work queue. This file is only a compact index so
 
 ## P1
 
-- #35 — Profile/inventory: restore equipment images and equip/unequip UX
+- #35 — Inventory: restore equipment images, loadout controls, and profile image update flow
 - #36 — Earth minting: restore starter inventory for new characters
 - #37 — Earth map: fix SVG path mapping and location hierarchy after migration
 - #27 — Social: design cross-game chat, groups, DMs, permissions, and spectating

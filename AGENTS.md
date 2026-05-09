@@ -12,6 +12,7 @@ Canonical principles:
 - ASTRDS can be played standalone with a wallet; it does not require an Earth character.
 - ASTRDS gameplay must remain server-authoritative for anti-cheat/security.
 - Earth should be authoritative wherever cheating/economy/progression matters.
+- Respect existing game UI boundaries. Profile is identity/dossier/wallet/current character presentation; Inventory is the loadout/equipment/equip/update-image hub; Map is world/location navigation; Market/Economy is buying/selling/balances/transactions. Finish existing interfaces before inventing new surfaces.
 - Supabase and Netlify Functions are deprecated. Do not add new code depending on either.
 - Netlify is static hosting only.
 - Cloudflare R2 is the object storage layer; R2 writes go through `server/earth`.
