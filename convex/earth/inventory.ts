@@ -53,8 +53,10 @@ export const add = mutation({
     quantity: v.optional(v.number()),
     isEquipped: v.optional(v.boolean()),
     slotId: v.optional(v.string()),
+    slotIndex: v.optional(v.number()),
+    isPrimary: v.optional(v.boolean()),
   },
-  handler: async (ctx, { characterId, itemId, quantity = 1, isEquipped = false, slotId }) => {
+  handler: async (ctx, { characterId, itemId, quantity = 1, isEquipped = false, slotId, slotIndex = 1, isPrimary = false }) => {
     const now = Date.now();
     const existing = await ctx.db
       .query("earth_inventory")
@@ -63,7 +65,18 @@ export const add = mutation({
       .unique();
 
     if (existing) {
-      await ctx.db.patch(existing._id, { quantity: existing.quantity + quantity, updatedAt: now });
+      await ctx.db.patch(existing._id, {
+        quantity: existing.quantity + quantity,
+        ...(isEquipped
+          ? {
+              isEquipped: true,
+              equippedSlot: slotId ?? existing.equippedSlot ?? "default",
+              slotIndex,
+              isPrimary,
+            }
+          : {}),
+        updatedAt: now,
+      });
     } else {
       await ctx.db.insert("earth_inventory", {
         characterId,
@@ -71,6 +84,8 @@ export const add = mutation({
         quantity,
         isEquipped,
         equippedSlot: isEquipped ? (slotId ?? "default") : undefined,
+        slotIndex: isEquipped ? slotIndex : undefined,
+        isPrimary: isEquipped ? isPrimary : undefined,
         createdAt: now,
         updatedAt: now,
       });

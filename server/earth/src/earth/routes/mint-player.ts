@@ -230,30 +230,43 @@ async function createStartingInventory(characterId: string, selectedLayers: Reco
   const items = await convexHttp.query(api.earth.items.getAll, {}) as any[]
 
   const LAYER_SLOTS: Record<string, string> = {
-    '1-base': 'base',
+    '2-skin': 'skin',
+    '3-undergarments': 'undergarments',
     '4-clothing': 'clothing',
     '5-outerwear': 'outerwear',
     '6-hair': 'hair',
+    '7-face-accessories': 'face_accessory',
     '8-headwear': 'headwear',
     '9-misc-accessories': 'misc_accessory',
   }
 
+  const normalizeLayerFile = (value?: string | null) => value?.replace(/^(male-|female-)/, '')
+
   for (const [layerType, fileName] of Object.entries(selectedLayers)) {
     if (!fileName) continue
     const slot = LAYER_SLOTS[layerType]
+    if (!slot) continue
 
+    const normalizedFileName = normalizeLayerFile(fileName)
     const item = items.find((i: any) =>
+      i.layerFile === fileName ||
       i.baseLayerFile === fileName ||
-      i.baseLayerFile === fileName.replace(/^(male-|female-)/, '')
+      normalizeLayerFile(i.layerFile) === normalizedFileName ||
+      normalizeLayerFile(i.baseLayerFile) === normalizedFileName
     )
-    if (!item) continue
+    if (!item) {
+      console.warn(`No starter inventory item matched ${layerType}/${fileName}`)
+      continue
+    }
 
     await convexHttp.mutation(api.earth.inventory.add, {
       characterId,
       itemId: item._id,
       quantity: 1,
-      isEquipped: !!slot,
-      slotId: slot ?? undefined,
+      isEquipped: true,
+      slotId: slot,
+      slotIndex: 1,
+      isPrimary: true,
     })
   }
 }
