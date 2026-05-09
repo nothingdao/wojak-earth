@@ -67,7 +67,7 @@ export const add = mutation({
     if (existing) {
       await ctx.db.patch(existing._id, {
         quantity: existing.quantity + quantity,
-        ...(isEquipped
+        ...((isEquipped || slotId)
           ? {
               isEquipped: true,
               equippedSlot: slotId ?? existing.equippedSlot ?? "default",
@@ -82,10 +82,10 @@ export const add = mutation({
         characterId,
         itemId,
         quantity,
-        isEquipped,
-        equippedSlot: isEquipped ? (slotId ?? "default") : undefined,
-        slotIndex: isEquipped ? slotIndex : undefined,
-        isPrimary: isEquipped ? isPrimary : undefined,
+        isEquipped: isEquipped || Boolean(slotId),
+        equippedSlot: (isEquipped || slotId) ? (slotId ?? "default") : undefined,
+        slotIndex: (isEquipped || slotId) ? slotIndex : undefined,
+        isPrimary: (isEquipped || slotId) ? isPrimary : undefined,
         createdAt: now,
         updatedAt: now,
       });

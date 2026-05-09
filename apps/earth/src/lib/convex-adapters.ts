@@ -84,13 +84,14 @@ export function adaptLocation(l: any): Location {
 
 export function adaptInventoryItem(inv: any): InventoryItem {
   const item = inv.item ? adaptItem(inv.item) : null as any
+  const isEquipped = inv.isEquipped ?? Boolean(inv.equippedSlot)
   return {
     _id: inv._id,
     id: inv._id,
     characterId: inv.characterId,
     itemId: inv.itemId,
     quantity: inv.quantity,
-    isEquipped: inv.isEquipped,
+    isEquipped,
     equippedSlot: inv.equippedSlot ?? null,
     isPrimary: inv.isPrimary ?? false,
     slotIndex: inv.slotIndex ?? 1,
@@ -99,7 +100,7 @@ export function adaptInventoryItem(inv: any): InventoryItem {
     // snake_case
     character_id: inv.characterId,
     item_id: inv.itemId,
-    is_equipped: inv.isEquipped,
+    is_equipped: isEquipped,
     equipped_slot: inv.equippedSlot ?? null,
     is_primary: inv.isPrimary ?? false,
     slot_index: inv.slotIndex ?? 1,
