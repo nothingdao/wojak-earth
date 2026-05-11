@@ -24,20 +24,23 @@ GitHub issues are the canonical work queue. This roadmap is intentionally compac
 
 Completed process setup: #20 established GitHub issues as the canonical work queue.
 
+Completed Earth Vault setup:
+
+- #39 — Earth Vault Program v1 scaffold, accounts, instructions, and tests.
+- #40 — EARTH Token-2022 mint and authority model.
+
 ## Current priority order
 
 ### P1 — Earth Vault v1 + visible Earth restoration
 
-1. #39 — Earth Vault Program v1: scaffold accounts, instructions, and tests
-2. #40 — EARTH Token-2022 mint and authority model
-3. #41 — Earth escrow-backed in-game EARTH ledger and reconciliation
-4. #42 — Earth character mint receipts: migrate server mint flow to Earth Vault
-5. #43 — Earth frontend vault transactions: mint payment, buy, deposit, withdraw
-6. #37 — Earth map: fix SVG path mapping and location hierarchy after migration
-7. #35 — Inventory: restore equipment images, loadout controls, and profile image update flow
-8. #36 — Earth minting: restore starter inventory for new characters
-9. #27 — Social: design cross-game chat, groups, DMs, permissions, and spectating
-10. #28 — ASTRDS economy: reconcile pre-mainnet hardening and fixed-supply vault work
+1. #41 — Earth escrow-backed in-game EARTH ledger and reconciliation
+2. #42 — Earth character mint receipts: migrate server mint flow to Earth Vault
+3. #43 — Earth frontend vault transactions: mint payment, buy, deposit, withdraw
+4. #37 — Earth map: fix SVG path mapping and location hierarchy after migration
+5. #35 — Inventory: restore equipment images, loadout controls, and profile image update flow
+6. #36 — Earth minting: restore starter inventory for new characters
+7. #27 — Social: design cross-game chat, groups, DMs, permissions, and spectating
+8. #28 — ASTRDS economy: reconcile pre-mainnet hardening and fixed-supply vault work
 
 ### P2 — validation, storage, parked systems, polish
 

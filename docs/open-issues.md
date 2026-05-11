@@ -4,8 +4,6 @@ GitHub issues are the canonical work queue. This file is only a compact index so
 
 ## P1
 
-- #39 — Earth Vault Program v1: scaffold accounts, instructions, and tests
-- #40 — EARTH Token-2022 mint and authority model
 - #41 — Earth escrow-backed in-game EARTH ledger and reconciliation
 - #42 — Earth character mint receipts: migrate server mint flow to Earth Vault
 - #43 — Earth frontend vault transactions: mint payment, buy, deposit, withdraw
@@ -28,6 +26,8 @@ GitHub issues are the canonical work queue. This file is only a compact index so
 
 ## Recently closed / historical
 
+- #40 — EARTH Token-2022 mint and authority model implemented; devnet Token-2022 mint documented.
+- #39 — Earth Vault Program v1 scaffold, accounts, instructions, and tests implemented.
 - #26 — Minimal shared wallet profile for Earth + ASTRDS implemented and deployed.
 - #25 — Earth admin mutations no longer return fake success; reachable actions are wired or explicitly disabled.
 - #24 — Earth character NFT mint address persists to Convex after mint.
