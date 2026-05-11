@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "../_generated/server";
+import { debitLedger, displayEarthToRaw } from "./earthLedgerModel";
 
 export const mineAtLocation = mutation({
   args: {
@@ -180,6 +181,16 @@ export const travel = mutation({
       throw new Error("Level too low for this location");
 
     const now = Date.now();
+    const entryCost = destination.entryCost ?? 0;
+    if (entryCost > 0) {
+      await debitLedger(ctx, {
+        character,
+        amountRaw: displayEarthToRaw(entryCost),
+        source: "travel_entry_cost",
+        metadata: { destinationLocationId },
+      });
+    }
+
     await ctx.db.patch(character._id, {
       currentLocationId: destinationLocationId,
       updatedAt: now,
@@ -189,6 +200,7 @@ export const travel = mutation({
       characterId: character._id.toString(),
       type: "TRAVEL",
       description: `Traveled to ${destination.name}`,
+      earthTxn: entryCost > 0 ? entryCost.toString() : undefined,
       createdAt: now,
     });
 

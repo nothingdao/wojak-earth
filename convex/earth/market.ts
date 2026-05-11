@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "../_generated/server";
+import { creditLedger, debitLedger, displayEarthToRaw } from "./earthLedgerModel";
 
 export const getByLocation = query({
   args: { locationId: v.string() },
@@ -102,11 +103,11 @@ export const buy = mutation({
     if (!character) throw new Error("Character not found");
 
     const totalCost = listing.price * quantity;
-    if (character.earth < totalCost) throw new Error("Insufficient EARTH");
-
-    await ctx.db.patch(character._id, {
-      earth: character.earth - totalCost,
-      updatedAt: Date.now(),
+    await debitLedger(ctx, {
+      character,
+      amountRaw: displayEarthToRaw(totalCost),
+      source: "market_buy",
+      metadata: { listingId, itemId: listing.itemId, quantity },
     });
 
     await ctx.db.patch(listingId, {
@@ -176,9 +177,12 @@ export const sell = mutation({
       throw new Error("Not your item");
 
     const revenue = price * quantity;
-    await ctx.db.patch(character._id, {
-      earth: character.earth + revenue,
-      updatedAt: Date.now(),
+    await creditLedger(ctx, {
+      character,
+      amountRaw: displayEarthToRaw(revenue),
+      source: "market_sale",
+      receiptId: `market-sale:${inventoryId}:${Date.now()}`,
+      metadata: { inventoryId, itemId: inv.itemId, quantity, locationId },
     });
 
     if (inv.quantity === quantity) {

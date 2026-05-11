@@ -360,6 +360,72 @@ export default defineSchema({
     .index("by_item", ["itemId"])
     .index("by_location_item", ["locationId", "itemId"]),
 
+  earth_ledgerAccounts: defineTable({
+    characterId: v.string(),
+    walletAddress: v.string(),
+    availableRaw: v.string(),
+    pendingWithdrawalRaw: v.string(),
+    totalCreditedRaw: v.string(),
+    totalDebitedRaw: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_character", ["characterId"])
+    .index("by_wallet", ["walletAddress"]),
+
+  earth_ledgerEntries: defineTable({
+    accountId: v.id("earth_ledgerAccounts"),
+    characterId: v.string(),
+    walletAddress: v.string(),
+    direction: v.union(v.literal("credit"), v.literal("debit")),
+    amountRaw: v.string(),
+    balanceAfterRaw: v.string(),
+    source: v.string(),
+    receiptId: v.optional(v.string()),
+    onChainSignature: v.optional(v.string()),
+    metadata: v.optional(v.any()),
+    createdAt: v.number(),
+  })
+    .index("by_account", ["accountId"])
+    .index("by_character", ["characterId"])
+    .index("by_wallet", ["walletAddress"])
+    .index("by_source_receipt", ["source", "receiptId"]),
+
+  earth_withdrawals: defineTable({
+    accountId: v.id("earth_ledgerAccounts"),
+    characterId: v.string(),
+    walletAddress: v.string(),
+    withdrawalId: v.string(),
+    amountRaw: v.string(),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("authorized"),
+      v.literal("completed"),
+      v.literal("cancelled"),
+      v.literal("expired")
+    ),
+    requestedAt: v.number(),
+    expiresAt: v.number(),
+    completedAt: v.optional(v.number()),
+    onChainSignature: v.optional(v.string()),
+  })
+    .index("by_account_status", ["accountId", "status"])
+    .index("by_wallet_status", ["walletAddress", "status"])
+    .index("by_withdrawal", ["withdrawalId"]),
+
+  earth_escrowReconciliations: defineTable({
+    escrowMint: v.string(),
+    escrowAddress: v.string(),
+    escrowBalanceRaw: v.string(),
+    availableRaw: v.string(),
+    pendingWithdrawalRaw: v.string(),
+    liabilitiesRaw: v.string(),
+    surplusRaw: v.string(),
+    deficitRaw: v.string(),
+    source: v.string(),
+    checkedAt: v.number(),
+  }).index("by_checked_at", ["checkedAt"]),
+
   earth_transactions: defineTable({
     characterId: v.string(),
     type: v.union(

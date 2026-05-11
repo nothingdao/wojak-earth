@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { Id } from "../_generated/dataModel";
 import { mutation, query } from "../_generated/server";
+import { creditLedger, debitLedger, displayEarthToRaw } from "./earthLedgerModel";
 
 export const getFullByWallet = query({
   args: { walletAddress: v.string() },
@@ -286,7 +287,20 @@ export const applyConsequenceEffects = mutation({
       updates.experience = Math.max(0, (character.experience ?? 0) + experience);
     }
     if (earth !== undefined && earth !== 0) {
-      updates.earth = Math.max(0, character.earth + earth);
+      if (earth > 0) {
+        await creditLedger(ctx, {
+          character,
+          amountRaw: displayEarthToRaw(earth),
+          source: "story_reward",
+          receiptId: `story:${characterId}:${Date.now()}`,
+        });
+      } else {
+        await debitLedger(ctx, {
+          character,
+          amountRaw: displayEarthToRaw(Math.abs(earth)),
+          source: "story_spend",
+        });
+      }
     }
     await ctx.db.patch(character._id, updates);
   },
@@ -370,28 +384,34 @@ export const travel = mutation({
       throw new Error("Already at destination");
     }
 
-    const destination = await ctx.db.get(destinationId as any);
+    const destination = await ctx.db.get(destinationId as Id<"earth_locations">);
     if (!destination) throw new Error("Destination not found");
 
     if (destination.isPrivate) throw new Error("Private location — access restricted");
     if (destination.minLevel && character.level < destination.minLevel) {
       throw new Error(`Level ${destination.minLevel} required`);
     }
-    if (destination.entryCost && character.earth < destination.entryCost) {
-      throw new Error(`Insufficient earth — need ${destination.entryCost}`);
-    }
+    const entryCost = destination.entryCost ?? 0;
 
-    const currentLocation = await ctx.db.get(character.currentLocationId as any);
+    const currentLocation = await ctx.db.get(character.currentLocationId as Id<"earth_locations">);
 
     const healthCost = currentLocation
       ? Math.max(1, destination.difficulty - currentLocation.difficulty)
       : 1;
 
     const now = Date.now();
+    if (entryCost > 0) {
+      await debitLedger(ctx, {
+        character,
+        amountRaw: displayEarthToRaw(entryCost),
+        source: "travel_entry_cost",
+        metadata: { destinationId },
+      });
+    }
+
     await ctx.db.patch(character._id, {
       currentLocationId: destinationId,
       health: Math.max(0, character.health - healthCost),
-      earth: destination.entryCost ? character.earth - destination.entryCost : character.earth,
       updatedAt: now,
     });
 
@@ -408,6 +428,7 @@ export const travel = mutation({
       characterId: character._id.toString(),
       type: "TRAVEL",
       description: `Traveled to ${destination.name}`,
+      earthTxn: entryCost > 0 ? entryCost.toString() : undefined,
       createdAt: now,
     });
 
