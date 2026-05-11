@@ -8,7 +8,7 @@ Canonical on-chain reference for the current Earth monorepo. Addresses are Solan
 |---|---|---|
 | Space Vault Program | `4bRZK8XfziVhLCgvtRdFJyTgN6tXGSPJT8xfbtt1AxBB` | Anchor program for ASTRDS game payments, emission settlement/claims, space-token deposits/claims, and liquidity crank. |
 | Space Vault IDL Account | `4SQth9AnyuDe636K91kzBQVCz3mEFrEm6jmdJWJhVFZu` | Program IDL account. |
-| Earth Vault Program | TBD | Planned Anchor program for Earth character payment receipts, SOL splits, EARTH Token-2022 issuance, escrow-backed in-game balances, deposits, withdrawals, and liquidity/reserve flows. |
+| Earth Vault Program | `J3jkrtAqnr7Vs6evka3wdugjdagwUJhGj3Mzae6wdABB` | Anchor program scaffold for Earth character payment receipts, SOL splits, EARTH Token-2022 issuance into escrow, escrow-backed deposits/withdrawals, and reconciliation events. Not yet deployed to devnet. |
 
 ## Wallets / authorities
 
@@ -24,7 +24,7 @@ The on-chain program verifies Convex-signed authorizations against `VaultConfig.
 | Name | Mint | Standard | Notes |
 |---|---|---|---|
 | ASTRDS | `5sqKSHDKZr4KbNzj972PSfmEhtR9eLeBvv1nBRbeQAnB` | Token-2022 | 9 decimals. Supply cap enforced by the Space Vault Program. |
-| EARTH | TBD | Token-2022 | Transferable wallet token and backing asset for Earth in-game balances. Supply is uncapped but issuance is governed by mint-run capacity, SOL inflows, and configured liquidity/reserve policy. |
+| EARTH | TBD | Token-2022 | Transferable wallet token and backing asset for Earth in-game balances. Supply is uncapped but issuance is governed by mint-run capacity, SOL inflows, and configured liquidity/reserve policy. The Earth Vault config PDA is intended to become mint authority when #40 creates the mint. |
 
 ASTRDS mint authority is held by the `VaultConfig` PDA. Direct keypair `mintTo` is not the intended path; gameplay rewards leave the vault/program path through authorized instructions. EARTH mint authority should be held by the Earth Vault Program once the v1 program is deployed.
 
@@ -107,13 +107,23 @@ Solana
 
 The Earth Vault Program should remain separate from the ASTRDS Space Vault Program. It should own payment, issuance, escrow, and bridge edges for Earth while `server/earth` continues to own character media/NFT production.
 
+Current scaffold:
+
+- Program crate: `programs/earth-vault-program`
+- Program ID: `J3jkrtAqnr7Vs6evka3wdugjdagwUJhGj3Mzae6wdABB`
+- Anchor config: `Anchor.toml` includes the program for localnet and devnet.
+- Build/test before deploy: `anchor build` and `cargo test -p earth-vault-program`.
+- Devnet deploy, when ready: `anchor deploy --program-name earth_vault_program --provider.cluster devnet`; then initialize `EarthVaultConfig`, create the Token-2022 EARTH mint under the config PDA authority, and create the config-owned EARTH escrow ATA.
+
+The scaffold is intentionally not coupled to Space Vault accounts.
+
 ### Earth Vault v1 accounts
 
 | Account | Purpose |
 |---|---|
-| `EarthVaultConfig` | Authority/config singleton: EARTH mint, character collection, DAO treasury, operations wallet, liquidity/reserve policy, price config, split bps, pause flags, server/Convex authority. |
+| `EarthVaultConfig` | Authority/config PDA: EARTH mint, DAO treasury, operations wallet, reserve/liquidity wallet, explicit run pricing, split bps, pause flags, server/Convex authority, and config signer bump. |
 | `CharacterMintReceipt` | Replay-protected receipt proving a wallet paid the SOL character mint fee through the vault. Consumed by `server/earth` before NFT mint finalization. |
-| `EarthEscrow` | Program-owned Token-2022 vault ATA holding EARTH that backs withdrawable in-game balances. |
+| `EarthEscrow` | Config-owned Token-2022 vault ATA holding EARTH that backs withdrawable in-game balances. |
 | `PurchaseReceipt` | Replay-protected record for SOL -> EARTH buys credited directly to game escrow. |
 | `DepositReceipt` | Record of wallet EARTH deposited into game escrow. |
 | `WithdrawalRecord` | Replay protection for authorized withdrawal from game escrow back to wallet. |

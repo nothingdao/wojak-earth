@@ -7,9 +7,11 @@ skip-lint = false
 
 [programs.devnet]
 space_vault_program = "4bRZK8XfziVhLCgvtRdFJyTgN6tXGSPJT8xfbtt1AxBB"
+earth_vault_program = "J3jkrtAqnr7Vs6evka3wdugjdagwUJhGj3Mzae6wdABB"
 
 [programs.localnet]
 space_vault_program = "4bRZK8XfziVhLCgvtRdFJyTgN6tXGSPJT8xfbtt1AxBB"
+earth_vault_program = "J3jkrtAqnr7Vs6evka3wdugjdagwUJhGj3Mzae6wdABB"
 
 [registry]
 url = "https://api.apr.dev"
@@ -26,4 +28,4 @@ address = "5sqKSHDKZr4KbNzj972PSfmEhtR9eLeBvv1nBRbeQAnB"
 filename = "tests/fixtures/astrds-mint-account.json"
 
 [scripts]
-test = "npx ts-mocha -p ./tsconfig.json -t 1000000 \"tests/**/*.ts\""
+test = "npx ts-mocha --esm -p ./tsconfig.json -t 1000000 \"tests/**/*.ts\""
