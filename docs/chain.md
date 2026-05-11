@@ -24,9 +24,20 @@ The on-chain program verifies Convex-signed authorizations against `VaultConfig.
 | Name | Mint | Standard | Notes |
 |---|---|---|---|
 | ASTRDS | `5sqKSHDKZr4KbNzj972PSfmEhtR9eLeBvv1nBRbeQAnB` | Token-2022 | 9 decimals. Supply cap enforced by the Space Vault Program. |
-| EARTH | TBD | Token-2022 | Transferable wallet token and backing asset for Earth in-game balances. Supply is uncapped but issuance is governed by mint-run capacity, SOL inflows, and configured liquidity/reserve policy. The Earth Vault config PDA is intended to become mint authority when #40 creates the mint. |
+| EARTH | `Efsr6ojnLaV3SyMmNsXjvZDkyv9CXvMnDBHs5oo5Va1d` | Token-2022 | Devnet mint, 9 decimals, symbol `EARTH`, freeze authority disabled. Transferable wallet token and backing asset for Earth in-game balances. Supply is uncapped but issuance is governed by mint-run capacity, SOL inflows, and configured liquidity/reserve policy. Mint authority is the Earth Vault config PDA `CNmLSq3tNMafpShBQoscMq1XZc9VmExy2e94VRo1Y6Bv`. |
 
-ASTRDS mint authority is held by the `VaultConfig` PDA. Direct keypair `mintTo` is not the intended path; gameplay rewards leave the vault/program path through authorized instructions. EARTH mint authority should be held by the Earth Vault Program once the v1 program is deployed.
+ASTRDS mint authority is held by the `VaultConfig` PDA. Direct keypair `mintTo` is not the intended path; gameplay rewards leave the vault/program path through authorized instructions.
+
+EARTH mint authority is the Earth Vault config PDA derived from `['earth-vault-config', deployer_authority]` for program `J3jkrtAqnr7Vs6evka3wdugjdagwUJhGj3Mzae6wdABB`:
+
+| Field | Value |
+|---|---|
+| Deployer/config authority | `jrXCZwP8bxDnGs7ChD4F77We1K4J89R53SAVk5HsSoE` |
+| Earth Vault config PDA / EARTH mint authority | `CNmLSq3tNMafpShBQoscMq1XZc9VmExy2e94VRo1Y6Bv` |
+| PDA bump | `255` |
+| Devnet mint creation signature | `rrtJmCWQpuMMoVSQyhR6f5DusnSVFJv1WiTuxPmFKkau2zwa52u2KRXWCRTe4dRP1KyouqQNuGMT5rJQGTMcbJm` |
+
+The devnet EARTH mint currently has supply `0`; supply should be created only through Earth Vault instructions that mint directly into the config-owned escrow ATA after config initialization. Freeze authority is unset for v1. No Token-2022 extensions are enabled in v1 until a specific product/security requirement justifies one.
 
 ## Meteora DAMM v2 pool
 
@@ -113,9 +124,28 @@ Current scaffold:
 - Program ID: `J3jkrtAqnr7Vs6evka3wdugjdagwUJhGj3Mzae6wdABB`
 - Anchor config: `Anchor.toml` includes the program for localnet and devnet.
 - Build/test before deploy: `anchor build` and `cargo test -p earth-vault-program`.
-- Devnet deploy, when ready: `anchor deploy --program-name earth_vault_program --provider.cluster devnet`; then initialize `EarthVaultConfig`, create the Token-2022 EARTH mint under the config PDA authority, and create the config-owned EARTH escrow ATA.
+- Devnet deploy, when ready: `anchor deploy --program-name earth_vault_program --provider.cluster devnet`; then initialize `EarthVaultConfig` using the documented deployer/config authority and create the config-owned EARTH escrow ATA. The devnet EARTH Token-2022 mint already exists with the config PDA as mint authority.
 
 The scaffold is intentionally not coupled to Space Vault accounts.
+
+### EARTH Token-2022 authority model
+
+- Token metadata decision: use name `Earth`, symbol `EARTH`, 9 decimals. In v1, token metadata should be published through the standard Solana token metadata path after final art/URI are selected; the initial mint intentionally does not enable Token-2022 metadata pointer or transfer-hook extensions.
+- Extension decision: no transfer fees, no transfer hooks, no confidential transfer, no permanent delegate, and no freeze authority for v1. Keep the token simple and transferable unless a later audited requirement changes this.
+- Mint authority: Earth Vault config PDA `CNmLSq3tNMafpShBQoscMq1XZc9VmExy2e94VRo1Y6Bv`; no hot wallet should mint EARTH directly.
+- Escrow custody: the config-owned EARTH escrow ATA backs vault-era in-game EARTH balances. Reconciliation invariant remains `escrow balance >= available in-game EARTH + pending withdrawals`.
+- Emergency controls: use Earth Vault pause flags to halt character payments, buys, deposits, or withdrawals independently. Authority rotation should be a deliberate config update by the deployer/config authority until a DAO/multisig authority is installed.
+
+Mainnet launch checklist:
+
+1. Deploy/audit the Earth Vault Program and confirm the mainnet program ID.
+2. Choose the final config authority, preferably a DAO/multisig rather than a single deployer wallet.
+3. Derive and record the mainnet Earth Vault config PDA.
+4. Create the mainnet EARTH Token-2022 mint with 9 decimals, no freeze authority, and mint authority set to the config PDA.
+5. Publish final token metadata for name `Earth`, symbol `EARTH`, and canonical URI/art.
+6. Initialize `EarthVaultConfig` with production split bps, run pricing, wallets, and server/Convex authority.
+7. Create the config-owned EARTH escrow ATA and verify the backing reconciliation path before enabling production credits.
+8. Keep all pause flags enabled until server, Convex ledger, frontend transactions, and withdrawal authorization paths are smoke-tested.
 
 ### Earth Vault v1 accounts
 

@@ -34,7 +34,10 @@ Set under **Service → Variables** in the Railway dashboard.
 
 | Variable | Description |
 |---|---|
-| `VITE_EARTH_MINT_ADDRESS` | Legacy/current EARTH SPL token mint address. Earth Vault v1 will replace this with the new EARTH Token-2022 mint once #40 lands. `Cqizw9BZPvecsXDwQoP1UBmA3BcyAgdYHGCtApVbkUjc` |
+| `VITE_EARTH_MINT_ADDRESS` | Legacy/current EARTH SPL token mint address used by old flows. Do not use for new Earth Vault flows. `Cqizw9BZPvecsXDwQoP1UBmA3BcyAgdYHGCtApVbkUjc` |
+| `EARTH_VAULT_PROGRAM_ID` | Earth Vault Program ID for server-side receipt/config verification. Devnet scaffold: `J3jkrtAqnr7Vs6evka3wdugjdagwUJhGj3Mzae6wdABB` |
+| `EARTH_VAULT_CONFIG_ADDRESS` | Earth Vault config PDA / EARTH mint authority. Devnet scaffold: `CNmLSq3tNMafpShBQoscMq1XZc9VmExy2e94VRo1Y6Bv` |
+| `EARTH_TOKEN_2022_MINT` | Vault-era EARTH Token-2022 mint. Devnet: `Efsr6ojnLaV3SyMmNsXjvZDkyv9CXvMnDBHs5oo5Va1d` |
 | `VITE_TREASURY_WALLET_ADDRESS` | Legacy direct-payment/bridge treasury public key. Do not use for new Earth Vault flows except during migration support. |
 | `PLAYER_COLLECTION_ADDRESS` | Metaplex NFT collection address. `ApxsHPsUqCPQ1rLt11xXmZv8ur5ymCCy14CJd91nh3d8` |
 | `SERVER_URL` | The server's own public URL — used when constructing NFT metadata URIs. Current Railway URL: `https://astrds-game-server-production.up.railway.app` |
@@ -67,7 +70,10 @@ All must be prefixed `VITE_` to be visible at build time.
 |---|---|
 | `VITE_CONVEX_URL` | `https://colorful-nightingale-908.convex.cloud` |
 | `VITE_SERVER_URL` | Railway server base URL. **Required for production** — without this, Earth mint/bridge/exchange server calls fail. Current URL: `https://astrds-game-server-production.up.railway.app` |
-| `VITE_EARTH_MINT_ADDRESS` | Legacy/current EARTH SPL token mint address until #40 creates the Earth Vault Token-2022 mint. `Cqizw9BZPvecsXDwQoP1UBmA3BcyAgdYHGCtApVbkUjc` |
+| `VITE_EARTH_MINT_ADDRESS` | Legacy/current EARTH SPL token mint address used by old flows. Do not use for new Earth Vault flows. `Cqizw9BZPvecsXDwQoP1UBmA3BcyAgdYHGCtApVbkUjc` |
+| `VITE_EARTH_VAULT_PROGRAM_ID` | Public Earth Vault Program ID for frontend transaction builders. Devnet scaffold: `J3jkrtAqnr7Vs6evka3wdugjdagwUJhGj3Mzae6wdABB` |
+| `VITE_EARTH_VAULT_CONFIG_ADDRESS` | Public Earth Vault config PDA / EARTH mint authority. Devnet scaffold: `CNmLSq3tNMafpShBQoscMq1XZc9VmExy2e94VRo1Y6Bv` |
+| `VITE_EARTH_TOKEN_2022_MINT` | Public vault-era EARTH Token-2022 mint. Devnet: `Efsr6ojnLaV3SyMmNsXjvZDkyv9CXvMnDBHs5oo5Va1d` |
 | `VITE_TREASURY_WALLET_ADDRESS` | Legacy treasury public key used by old `SimplePayment`/`EarthBridge`. Do not use for new #39–#43 Earth Vault flows. `6cfjMdM6yNJQfZRDx25hLUsR8PFFhh4Xb5bdxHPBtoa4` |
 | `VITE_MAINNET_RPC_URL` | Mainnet RPC endpoint. `https://mainnet.helius-rpc.com/?api-key=<key>` |
 | `VITE_DEVNET_RPC_URL` | Devnet RPC endpoint. `https://devnet.helius-rpc.com/?api-key=<key>` |
@@ -113,4 +119,4 @@ Earth and ASTRDS currently use the shared dev deployment `dev:colorful-nightinga
 - Netlify `VITE_*` vars are baked into the JS bundle at build time — changing them requires a redeploy.
 - Railway vars take effect on the next deploy or restart.
 - Convex vars take effect immediately for new function invocations.
-- The `VITE_EARTH_MINT_ADDRESS` and `VITE_TREASURY_WALLET_ADDRESS` vars appear on both Railway and Netlify (Earth) because the legacy bridge route on the server reads them directly as `process.env.VITE_*`. This is intentional for the current legacy code only. Earth Vault v1 (#39–#43) should introduce explicit vault/program/mint config and stop routing new payments through direct treasury-wallet flows.
+- The `VITE_EARTH_MINT_ADDRESS` and `VITE_TREASURY_WALLET_ADDRESS` vars appear on both Railway and Netlify (Earth) because the legacy bridge route on the server reads them directly as `process.env.VITE_*`. This is intentional for the current legacy code only. Earth Vault v1 (#39–#43) uses explicit vault/program/mint config and should stop routing new payments through direct treasury-wallet flows.
