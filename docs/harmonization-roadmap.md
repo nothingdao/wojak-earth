@@ -28,19 +28,19 @@ Completed Earth Vault setup:
 
 - #39 — Earth Vault Program v1 scaffold, accounts, instructions, and tests.
 - #40 — EARTH Token-2022 mint and authority model.
+- #41 — Escrow-backed in-game EARTH ledger and reconciliation.
+- #42 — Earth character mint receipt verification in `server/earth`.
 
 ## Current priority order
 
 ### P1 — Earth Vault v1 + visible Earth restoration
 
-1. #41 — Earth escrow-backed in-game EARTH ledger and reconciliation
-2. #42 — Earth character mint receipts: migrate server mint flow to Earth Vault
-3. #43 — Earth frontend vault transactions: mint payment, buy, deposit, withdraw
-4. #37 — Earth map: fix SVG path mapping and location hierarchy after migration
-5. #35 — Inventory: restore equipment images, loadout controls, and profile image update flow
-6. #36 — Earth minting: restore starter inventory for new characters
-7. #27 — Social: design cross-game chat, groups, DMs, permissions, and spectating
-8. #28 — ASTRDS economy: reconcile pre-mainnet hardening and fixed-supply vault work
+1. #43 — Earth frontend vault transactions: mint payment, buy, deposit, withdraw
+2. #37 — Earth map: fix SVG path mapping and location hierarchy after migration
+3. #35 — Inventory: restore equipment images, loadout controls, and profile image update flow
+4. #36 — Earth minting: restore starter inventory for new characters
+5. #27 — Social: design cross-game chat, groups, DMs, permissions, and spectating
+6. #28 — ASTRDS economy: reconcile pre-mainnet hardening and fixed-supply vault work
 
 ### P2 — validation, storage, parked systems, polish
 

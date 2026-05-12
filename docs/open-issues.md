@@ -4,8 +4,6 @@ GitHub issues are the canonical work queue. This file is only a compact index so
 
 ## P1
 
-- #41 — Earth escrow-backed in-game EARTH ledger and reconciliation
-- #42 — Earth character mint receipts: migrate server mint flow to Earth Vault
 - #43 — Earth frontend vault transactions: mint payment, buy, deposit, withdraw
 - #37 — Earth map: fix SVG path mapping and location hierarchy after migration
 - #35 — Inventory: restore equipment images, loadout controls, and profile image update flow
@@ -26,6 +24,8 @@ GitHub issues are the canonical work queue. This file is only a compact index so
 
 ## Recently closed / historical
 
+- #42 — Earth character mint receipts migrated to Earth Vault receipt verification.
+- #41 — Escrow-backed in-game EARTH ledger and reconciliation implemented.
 - #40 — EARTH Token-2022 mint and authority model implemented; devnet Token-2022 mint documented.
 - #39 — Earth Vault Program v1 scaffold, accounts, instructions, and tests implemented.
 - #26 — Minimal shared wallet profile for Earth + ASTRDS implemented and deployed.
