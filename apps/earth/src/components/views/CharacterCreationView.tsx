@@ -15,7 +15,7 @@ import {
 import { useWalletInfo } from '@/hooks/useWalletInfo'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { toast } from '@/components/ui/use-toast'
-import SimplePayment from '@/components/SimplePayment'
+import SimplePayment, { type EarthVaultCharacterPaymentResult } from '@/components/SimplePayment'
 import type { Character, Enums } from '@/types'
 import { SERVER_URL } from '@/config/functionsBase'
 // ✅ NEW: Import the clean asset loader API
@@ -78,6 +78,7 @@ export const CharacterCreationView: React.FC<CharacterCreationViewProps> = ({ ch
   const [showPayment, setShowPayment] = useState(false)
   const [creatingCharacter, setCreatingCharacter] = useState(false)
   const [paidSignature, setPaidSignature] = useState<string | null>(null)
+  const [paidVaultReceipt, setPaidVaultReceipt] = useState<EarthVaultCharacterPaymentResult | null>(null)
   const [creationError, setCreationError] = useState<string | null>(null)
 
   // ✅ SIMPLIFIED: Generate character image with asset loader
@@ -246,12 +247,13 @@ export const CharacterCreationView: React.FC<CharacterCreationViewProps> = ({ ch
   }
 
   // Handle payment success
-  const handlePaymentSuccess = (paymentSignature: string) => {
-    setPaidSignature(paymentSignature)
+  const handlePaymentSuccess = (payment: EarthVaultCharacterPaymentResult) => {
+    setPaidSignature(payment.signature)
+    setPaidVaultReceipt(payment)
     setCreationError(null)
     setShowPayment(false)
     setCreatingCharacter(true)
-    createCharacterWithPayment(paymentSignature)
+    createCharacterWithPayment(payment)
   }
 
   // Handle payment cancelled
@@ -286,7 +288,7 @@ export const CharacterCreationView: React.FC<CharacterCreationViewProps> = ({ ch
   }
 
   // Create character with payment
-  const createCharacterWithPayment = async (paymentSignature: string) => {
+  const createCharacterWithPayment = async (payment: EarthVaultCharacterPaymentResult) => {
     if (!wallet.publicKey || !generatedImage || !selectedLayers) {
       toast.error('Missing required data for character creation')
       return
@@ -297,7 +299,8 @@ export const CharacterCreationView: React.FC<CharacterCreationViewProps> = ({ ch
         wallet: wallet.publicKey.toString(),
         gender: currentGender,
         layersCount: Object.values(selectedLayers).filter(Boolean).length,
-        paymentSignature
+        paymentSignature: payment.signature,
+        earthVaultReceipt: payment.receiptAddress
       })
 
       const response = await fetch(`${SERVER_URL}/earth/mint-player`, {
@@ -310,7 +313,9 @@ export const CharacterCreationView: React.FC<CharacterCreationViewProps> = ({ ch
           gender: currentGender,
           imageBlob: generatedImage,
           selectedLayers: selectedLayers,
-          paymentSignature: paymentSignature,
+          paymentSignature: payment.signature,
+          earthVaultReceiptId: payment.receiptId,
+          earthVaultReceiptAddress: payment.receiptAddress,
           isNPC: false
         })
       })
@@ -331,6 +336,7 @@ export const CharacterCreationView: React.FC<CharacterCreationViewProps> = ({ ch
         setShowPayment(false)
         setCreatingCharacter(false)
         setPaidSignature(null)
+        setPaidVaultReceipt(null)
         setCreationError(null)
 
         // Navigate to main app
@@ -419,13 +425,17 @@ export const CharacterCreationView: React.FC<CharacterCreationViewProps> = ({ ch
             variant="outline"
             size="sm"
             onClick={() => {
+              if (!paidVaultReceipt) {
+                toast.error('No Earth Vault receipt available for retry')
+                return
+              }
               setCreationError(null)
               setCreatingCharacter(true)
-              createCharacterWithPayment(paidSignature)
+              createCharacterWithPayment(paidVaultReceipt)
             }}
             className="mt-2 h-7 text-xs font-mono"
           >
-            RETRY_WITH_SAME_PAYMENT
+            RETRY_WITH_SAME_RECEIPT
           </Button>
         </div>
       )}

@@ -1,491 +1,195 @@
-// src/components/SimplePayment.tsx
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { AlertTriangle, CheckCircle, Loader2, Shield, X } from 'lucide-react'
+import { useConnection, useWallet } from '@solana/wallet-adapter-react'
+import { PublicKey, SystemProgram, Transaction, TransactionInstruction } from '@solana/web3.js'
 import {
-  Loader2,
-  Zap,
-  CheckCircle,
-  AlertTriangle,
-  Database,
-  Activity,
-  Shield,
-  Coins,
-  Terminal,
-  RefreshCw,
-  WifiOff
-} from 'lucide-react'
-import { useWallet, useConnection } from '@solana/wallet-adapter-react'
-import { Transaction, SystemProgram, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js'
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+  getAssociatedTokenAddressSync,
+  TOKEN_2022_PROGRAM_ID,
+} from '@solana/spl-token'
 import { toast } from '@/components/ui/use-toast'
 import { useNetwork } from '@/contexts/NetworkContext'
+
+export interface EarthVaultCharacterPaymentResult {
+  signature: string
+  receiptId: number[]
+  receiptIdHex: string
+  receiptAddress: string
+}
 
 interface SimplePaymentProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   characterData: any
-  onPaymentSuccess: (signature: string) => void
+  onPaymentSuccess: (result: EarthVaultCharacterPaymentResult) => void
   onCancel: () => void
 }
 
-// Network-specific treasury wallets
-const TREASURY_WALLETS = {
-  devnet: import.meta.env.VITE_TREASURY_WALLET_ADDRESS || '6cfjMdM6yNJQfZRDx25hLUsR8PFFhh4Xb5bdxHPBtoa4',
-  mainnet: import.meta.env.VITE_TREASURY_WALLET_ADDRESS || '6cfjMdM6yNJQfZRDx25hLUsR8PFFhh4Xb5bdxHPBtoa4'
+const EARTH_VAULT_PROGRAM_ID = import.meta.env.VITE_EARTH_VAULT_PROGRAM_ID || 'J3jkrtAqnr7Vs6evka3wdugjdagwUJhGj3Mzae6wdABB'
+const EARTH_VAULT_CONFIG_ADDRESS = import.meta.env.VITE_EARTH_VAULT_CONFIG_ADDRESS || 'CNmLSq3tNMafpShBQoscMq1XZc9VmExy2e94VRo1Y6Bv'
+const CHARACTER_PAYMENT_DISCRIMINATOR = [0x21, 0x62, 0xa3, 0xba, 0x1c, 0x58, 0xad, 0xee]
+const CHARACTER_RECEIPT_SEED = new TextEncoder().encode('character-mint-receipt')
+const NFT_PRICE_SOL = 0.05
+
+function publicKeyFromConfig(data: Uint8Array, offset: number): PublicKey {
+  return new PublicKey(data.slice(offset, offset + 32))
 }
 
-const NFT_PRICE = 0.05 // SOL - Match backend expectation
-
-// Validate and create treasury pubkey ONCE
-let treasuryPubkey: PublicKey
-let treasuryValidationError: string | null = null
-
-try {
-  // We'll initialize this in the component based on network
-  treasuryPubkey = new PublicKey(TREASURY_WALLETS.devnet)
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-} catch (error) {
-  console.error('❌ Invalid treasury wallet address:', TREASURY_WALLETS.devnet)
-  treasuryValidationError = 'Invalid treasury wallet configuration'
+function u64FromConfig(data: Uint8Array, offset: number): bigint {
+  return new DataView(data.buffer, data.byteOffset + offset, 8).getBigUint64(0, true)
 }
 
-export const SimplePayment: React.FC<SimplePaymentProps> = ({
-  onPaymentSuccess,
-  onCancel
-}) => {
-  const { publicKey, sendTransaction, wallet } = useWallet()
+function writeU64LE(target: Uint8Array, offset: number, value: bigint) {
+  new DataView(target.buffer, target.byteOffset + offset, 8).setBigUint64(0, value, true)
+}
+
+function toHex(bytes: Uint8Array): string {
+  return Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join('')
+}
+
+async function loadEarthVaultConfig(connection: ReturnType<typeof useConnection>['connection']) {
+  const config = new PublicKey(EARTH_VAULT_CONFIG_ADDRESS)
+  const account = await connection.getAccountInfo(config, 'confirmed')
+  if (!account) {
+    throw new Error('Earth Vault config is not initialized on this network')
+  }
+
+  const data = new Uint8Array(account.data)
+  if (data.length < 235) throw new Error('Earth Vault config account is invalid')
+
+  return {
+    config,
+    earthMint: publicKeyFromConfig(data, 40),
+    daoTreasury: publicKeyFromConfig(data, 72),
+    operationsWallet: publicKeyFromConfig(data, 104),
+    reserveWallet: publicKeyFromConfig(data, 136),
+    characterPriceLamports: u64FromConfig(data, 206),
+  }
+}
+
+export const SimplePayment: React.FC<SimplePaymentProps> = ({ onPaymentSuccess, onCancel }) => {
+  const { publicKey, sendTransaction, connected } = useWallet()
   const { connection } = useConnection()
   const { isDevnet } = useNetwork()
   const [paying, setPaying] = useState(false)
-  const [verifying, setVerifying] = useState(false)
-  const [signature, setSignature] = useState<string | null>(null)
-  const [configError, setConfigError] = useState<string | null>(null)
-
-  // Initialize treasury pubkey based on network
-  useEffect(() => {
-    try {
-      const treasuryAddress = isDevnet ? TREASURY_WALLETS.devnet : TREASURY_WALLETS.mainnet
-      treasuryPubkey = new PublicKey(treasuryAddress)
-      setConfigError(null)
-    } catch (error) {
-      console.error('❌ Invalid treasury wallet address:', error)
-      setConfigError('Invalid treasury wallet configuration')
-    }
-  }, [isDevnet])
-
-  // Check for configuration issues when wallet connects
-  useEffect(() => {
-    if (publicKey && treasuryPubkey) {
-      if (publicKey.toString() === treasuryPubkey.toString()) {
-        setConfigError('🚨 Dev Error: Cannot test payments with the treasury wallet')
-      } else {
-        setConfigError(null)
-      }
-    }
-  }, [publicKey])
+  const [result, setResult] = useState<EarthVaultCharacterPaymentResult | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   const handlePayment = async () => {
     if (!publicKey || !sendTransaction) {
-      toast.error('Wallet not connected')
+      toast.error('Connect wallet first')
       return
     }
 
-    // Check for treasury validation error
-    if (treasuryValidationError) {
-      setConfigError(treasuryValidationError)
-      toast.error(treasuryValidationError)
-      return
-    }
-
-    // CRITICAL: Check that we're not sending to ourselves
-    if (publicKey.toString() === treasuryPubkey.toString()) {
-      const errorMsg = '🚨 Dev Error: Cannot test payments with the treasury wallet'
-      setConfigError(errorMsg)
-      toast.error(errorMsg)
-      console.error('❌ Treasury wallet same as sender wallet:', {
-        sender: publicKey.toString(),
-        treasury: treasuryPubkey.toString()
-      })
-      return
-    }
-
-    console.log('🔍 Payment Debug Info:', {
-      senderWallet: publicKey.toString(),
-      treasuryWallet: treasuryPubkey.toString(),
-      nftPrice: NFT_PRICE,
-      walletAdapter: wallet?.adapter?.name,
-      connection: connection.rpcEndpoint,
-      network: isDevnet ? 'devnet' : 'mainnet'
-    })
-
-    // Check wallet balance first with detailed logging
-    try {
-      console.log('💰 Checking wallet balance...')
-      const balance = await connection.getBalance(publicKey)
-      const balanceSOL = balance / LAMPORTS_PER_SOL
-      const requiredLamports = Math.floor(NFT_PRICE * LAMPORTS_PER_SOL)
-      const requiredSOL = requiredLamports / LAMPORTS_PER_SOL
-      const estimatedFee = 5000 // Rough estimate for transaction fee
-      const estimatedFeeSOL = estimatedFee / LAMPORTS_PER_SOL
-
-      console.log('💰 Balance Check:', {
-        currentBalance: balanceSOL,
-        requiredAmount: requiredSOL,
-        estimatedFee: estimatedFeeSOL,
-        totalNeeded: requiredSOL + estimatedFeeSOL,
-        hasSufficientFunds: balance >= requiredLamports + estimatedFee
-      })
-
-      if (balance < requiredLamports + estimatedFee) {
-        const errorMsg = `Insufficient SOL. Need ${NFT_PRICE} SOL + fees (${estimatedFeeSOL.toFixed(4)}), have ${balanceSOL.toFixed(4)} SOL`
-        toast.error(errorMsg)
-        console.error('❌ Insufficient balance:', errorMsg)
-        return
-      }
-
-      console.log('✅ Balance check passed')
-    } catch (error) {
-      console.error('❌ Failed to check balance:', error)
-      toast.error('Failed to check wallet balance')
-      return
-    }
-
-    console.log('💰 Starting payment transaction...')
     setPaying(true)
+    setError(null)
 
     try {
-      // Validate accounts before creating transaction
-      console.log('🔍 Validating accounts...')
+      const programId = new PublicKey(EARTH_VAULT_PROGRAM_ID)
+      const config = await loadEarthVaultConfig(connection)
+      const receiptId = crypto.getRandomValues(new Uint8Array(32))
+      const [receiptAddress] = PublicKey.findProgramAddressSync(
+        [CHARACTER_RECEIPT_SEED, publicKey.toBuffer(), receiptId],
+        programId
+      )
+      const earthEscrow = getAssociatedTokenAddressSync(
+        config.earthMint,
+        config.config,
+        true,
+        TOKEN_2022_PROGRAM_ID,
+        ASSOCIATED_TOKEN_PROGRAM_ID
+      )
 
-      // Check if accounts exist on the network
-      const [senderInfo, treasuryInfo] = await Promise.all([
-        connection.getAccountInfo(publicKey),
-        connection.getAccountInfo(treasuryPubkey)
-      ])
+      const data = new Uint8Array(8 + 32 + 8)
+      data.set(CHARACTER_PAYMENT_DISCRIMINATOR, 0)
+      data.set(receiptId, 8)
+      writeU64LE(data, 40, config.characterPriceLamports)
 
-      console.log('📊 Account Info:', {
-        senderExists: !!senderInfo,
-        senderOwner: senderInfo?.owner?.toString(),
-        treasuryExists: !!treasuryInfo,
-        treasuryOwner: treasuryInfo?.owner?.toString()
-      })
+      const transaction = new Transaction().add(new TransactionInstruction({
+        programId,
+        keys: [
+          { pubkey: publicKey, isSigner: true, isWritable: true },
+          { pubkey: config.config, isSigner: false, isWritable: true },
+          { pubkey: config.earthMint, isSigner: false, isWritable: true },
+          { pubkey: earthEscrow, isSigner: false, isWritable: true },
+          { pubkey: config.daoTreasury, isSigner: false, isWritable: true },
+          { pubkey: config.operationsWallet, isSigner: false, isWritable: true },
+          { pubkey: config.reserveWallet, isSigner: false, isWritable: true },
+          { pubkey: receiptAddress, isSigner: false, isWritable: true },
+          { pubkey: TOKEN_2022_PROGRAM_ID, isSigner: false, isWritable: false },
+          { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+        ],
+        data,
+      }))
 
-      // Get fresh blockhash first
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized')
-
-      // Create transaction with validation
-      console.log('📝 Creating transaction...')
-      const transaction = new Transaction()
-
-      transaction.recentBlockhash = blockhash
       transaction.feePayer = publicKey
+      const latest = await connection.getLatestBlockhash('confirmed')
+      transaction.recentBlockhash = latest.blockhash
 
-      const transferInstruction = SystemProgram.transfer({
-        fromPubkey: publicKey,
-        toPubkey: treasuryPubkey,
-        lamports: Math.floor(NFT_PRICE * LAMPORTS_PER_SOL)
-      })
-
-      transaction.add(transferInstruction)
-
-      console.log('📝 Transaction Details:', {
-        instructions: transaction.instructions.length,
-        lamports: Math.floor(NFT_PRICE * LAMPORTS_PER_SOL),
-        feePayer: transaction.feePayer?.toString(),
-        recentBlockhash: transaction.recentBlockhash,
-        fromPubkey: transferInstruction.keys[0].pubkey.toString(),
-        toPubkey: transferInstruction.keys[1].pubkey.toString()
-      })
-
-      // Simulate transaction first
-      console.log('🧪 Simulating transaction...')
-      try {
-        const simulation = await connection.simulateTransaction(transaction)
-        console.log('🧪 Simulation Result:', {
-          err: simulation.value.err,
-          logs: simulation.value.logs?.slice(0, 3) // First 3 logs
-        })
-
-        if (simulation.value.err) {
-          throw new Error(`Transaction simulation failed: ${JSON.stringify(simulation.value.err)}`)
-        }
-      } catch (simError) {
-        console.error('❌ Transaction simulation failed:', simError)
-        // Continue anyway, sometimes simulation fails but transaction works
-      }
-
-      // Send transaction with enhanced error handling
-      console.log('🚀 Sending transaction...')
-      const txSignature = await sendTransaction(transaction, connection)
-
-      console.log('✅ Transaction sent successfully:', {
-        signature: txSignature,
-        explorer: `https://explorer.solana.com/tx/${txSignature}?cluster=${isDevnet ? 'devnet' : 'mainnet'}`
-      })
-
-      setSignature(txSignature)
-      toast.success(`Payment sent! TX: ${txSignature.slice(0, 8)}...`)
-
-      // Wait for confirmation
-      console.log('⏳ Waiting for confirmation...')
-      setVerifying(true)
-
-      const confirmation = await connection.confirmTransaction({
-        signature: txSignature,
-        blockhash,
-        lastValidBlockHeight
-      }, 'confirmed')
-
+      const signature = await sendTransaction(transaction, connection)
+      const confirmation = await connection.confirmTransaction({ signature, ...latest }, 'confirmed')
       if (confirmation.value.err) {
-        throw new Error(`Transaction failed: ${JSON.stringify(confirmation.value.err)}`)
+        throw new Error(`Earth Vault payment failed: ${JSON.stringify(confirmation.value.err)}`)
       }
 
-      console.log('✅ Transaction confirmed:', {
-        signature: txSignature,
-        slot: confirmation.context.slot
-      })
-
-      // Small delay to ensure backend can verify
-      setTimeout(() => {
-        setVerifying(false)
-        onPaymentSuccess(txSignature)
-      }, 1000)
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      console.error('❌ Payment failed with detailed error:', {
-        error,
-        errorMessage: error.message,
-        errorCode: error.code,
-        errorName: error.name,
-        stack: error.stack?.split('\n').slice(0, 3) // First 3 stack lines
-      })
-
+      const paymentResult = {
+        signature,
+        receiptId: Array.from(receiptId),
+        receiptIdHex: toHex(receiptId),
+        receiptAddress: receiptAddress.toBase58(),
+      }
+      setResult(paymentResult)
+      toast.success(`Earth Vault receipt created: ${receiptAddress.toBase58().slice(0, 8)}…`)
+      onPaymentSuccess(paymentResult)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Earth Vault payment failed'
+      setError(message)
+      toast.error(message)
+    } finally {
       setPaying(false)
-      setVerifying(false)
-
-      // Handle specific error cases
-      if (error.name === 'WalletSendTransactionError') {
-        if (error.message.includes('Invalid account')) {
-          toast.error('Treasury wallet not initialized on this network')
-        } else {
-          toast.error('Transaction failed: ' + error.message)
-        }
-      } else {
-        toast.error('Payment failed: ' + error.message)
-      }
     }
-  }
-
-  const retryVerification = () => {
-    if (signature) {
-      setVerifying(true)
-      setTimeout(() => {
-        setVerifying(false)
-        onPaymentSuccess(signature)
-      }, 1000)
-    }
-  }
-
-  // If there's a configuration error, show it prominently
-  if (configError || treasuryValidationError) {
-    return (
-      <div className="w-full max-w-md mx-auto bg-background border border-error/50 rounded-lg p-4 font-mono">
-        {/* Terminal Header */}
-        <div className="flex items-center justify-between mb-3 border-b border-error/30 pb-2">
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 text-error" />
-            <span className="text-error font-bold text-sm">CONFIG_ERROR v2.089</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <WifiOff className="w-3 h-3 text-error" />
-            <span className="text-error text-xs">BLOCKED</span>
-          </div>
-        </div>
-
-        {/* Error Display */}
-        <div className="bg-red-950/20 border border-error/30 rounded p-3 mb-3">
-          <div className="text-center">
-            <div className="text-error text-2xl mb-2">🚨</div>
-            <div className="text-error font-bold mb-1">TREASURY_WALLET_CONFLICT</div>
-            <div className="text-red-400 text-xs">
-              CONNECTED_WALLET_MATCHES_TREASURY
-            </div>
-          </div>
-        </div>
-
-        {/* Debug Info */}
-        {publicKey && treasuryPubkey && (
-          <div className="bg-muted/20 border border-error/10 rounded p-2 mb-3">
-            <div className="text-xs text-red-400 font-mono">
-              <div className="text-error text-xs font-bold mb-1">[WALLET_ANALYSIS]</div>
-              <div className="text-muted-foreground">SENDER:</div>
-              <div className="text-red-400 break-all text-xs">{publicKey.toString()}</div>
-              <div className="text-muted-foreground mt-1">TREASURY:</div>
-              <div className="text-red-400 break-all text-xs">{treasuryPubkey.toString()}</div>
-              <div className="text-center text-error font-bold mt-2">CONFLICT_DETECTED</div>
-            </div>
-          </div>
-        )}
-
-        {/* Actions */}
-        <Button
-          variant="outline"
-          onClick={onCancel}
-          className="w-full font-mono text-xs h-7"
-        >
-          <Terminal className="w-3 h-3 mr-1" />
-          CANCEL_AND_SWITCH_WALLET
-        </Button>
-
-        {/* Footer */}
-        <div className="text-xs text-red-400/60 font-mono text-center border-t border-error/20 pt-2 mt-3">
-          PAYMENT_SYSTEM_v2089 | DEV_ERROR_DETECTED
-        </div>
-      </div>
-    )
   }
 
   return (
-    <div className="w-full max-w-md mx-auto bg-background border border-primary/30 rounded-lg p-4 font-mono">
-      {/* Terminal Header */}
-      <div className="flex items-center justify-between mb-3 border-b border-primary/20 pb-2">
+    <div className="w-full max-w-md mx-auto bg-background border border-primary/30 rounded-lg p-4 font-mono shadow-xl">
+      <div className="flex items-center justify-between mb-4 border-b border-primary/20 pb-2">
         <div className="flex items-center gap-2">
-          <Database className="w-4 h-4" />
-          <span className="text-primary font-bold text-sm">PAYMENT_PROCESSOR v2.089</span>
+          <Shield className="w-4 h-4 text-primary" />
+          <span className="text-primary font-bold text-sm">EARTH_VAULT_PAYMENT</span>
         </div>
-        <div className="flex items-center gap-2">
-          <Activity className="w-3 h-3 animate-pulse" />
-          <span className="text-primary text-xs">READY</span>
-        </div>
-      </div>
-
-      {/* Payment Header */}
-      <div className="bg-muted/30 border border-primary/20 rounded p-3 mb-3">
-        <div className="text-center">
-          <div className="text-primary font-bold mb-1">PLAYER_NFT_MINTING</div>
-          <div className="text-muted-foreground text-xs">
-            ONE_TIME_PAYMENT_REQUIRED
-          </div>
-        </div>
-      </div>
-
-      {/* Price Display */}
-      <div className="bg-muted/20 border border-primary/10 rounded p-3 mb-3">
-        <div className="text-center">
-          <div className="flex items-center justify-center gap-2 mb-1">
-            <Zap className="w-5 h-5 text-primary" />
-            <span className="text-primary font-bold text-xl">{NFT_PRICE}_SOL</span>
-          </div>
-          <div className="text-muted-foreground text-xs font-mono">
-            MINTING_COST_FIXED_RATE
-          </div>
-        </div>
-      </div>
-
-      {/* Wallet Info */}
-      <div className="bg-muted/20 border border-primary/10 rounded p-2 mb-3">
-        <div className="text-xs text-muted-foreground font-mono">
-          <div className="text-primary text-xs font-bold mb-1">[TRANSACTION_DETAILS]</div>
-          <div>WALLET: {wallet?.adapter?.name?.toUpperCase()}</div>
-          <div>DESTINATION: {treasuryPubkey?.toString().slice(0, 8)}...{treasuryPubkey?.toString().slice(-8)}</div>
-          <div>NETWORK: {isDevnet ? 'devnet' : 'mainnet'}</div>
-        </div>
-      </div>
-
-      {/* Payment Status */}
-      {signature && (
-        <div className="bg-muted/30 border border-primary/20 rounded p-3 mb-3">
-          <div className="text-center">
-            <div className="flex items-center justify-center gap-2 mb-2">
-              {verifying ? (
-                <Loader2 className="w-4 h-4 animate-spin text-primary" />
-              ) : (
-                <CheckCircle className="w-4 h-4 text-success" />
-              )}
-              <span className="text-primary font-bold text-sm">
-                {verifying ? 'CONFIRMING_PAYMENT...' : 'PAYMENT_CONFIRMED'}
-              </span>
-            </div>
-            <div className="text-xs text-muted-foreground font-mono bg-muted/20 border border-primary/10 rounded p-1">
-              TX: {signature.slice(0, 8)}...{signature.slice(-8)}
-            </div>
-
-            {/* Retry button if verification failed */}
-            {!verifying && signature && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={retryVerification}
-                className="mt-2 text-xs font-mono h-6"
-              >
-                <RefreshCw className="w-3 h-3 mr-1" />
-                RETRY_CREATION
-              </Button>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Main Action Button */}
-      <div className="space-y-2 mb-3">
-        <Button
-          onClick={handlePayment}
-          disabled={paying || verifying || !!signature}
-          className="w-full font-mono text-xs h-8"
-          size="lg"
-        >
-          {paying ? (
-            <>
-              <Loader2 className="w-3 h-3 mr-2 animate-spin" />
-              PROCESSING_PAYMENT...
-            </>
-          ) : verifying ? (
-            <>
-              <Loader2 className="w-3 h-3 mr-2 animate-spin" />
-              CONFIRMING_TRANSACTION...
-            </>
-          ) : signature ? (
-            <>
-              <CheckCircle className="w-3 h-3 mr-2" />
-              PAYMENT_COMPLETE
-            </>
-          ) : (
-            <>
-              <Coins className="w-3 h-3 mr-2" />
-              PAY_{NFT_PRICE}_SOL_&_CREATE_PLAYER
-            </>
-          )}
+        <Button variant="ghost" size="sm" onClick={onCancel} disabled={paying} className="h-7 w-7 p-0">
+          <X className="w-4 h-4" />
         </Button>
-
-        {/* Cancel Button */}
-        {!signature && (
-          <Button
-            variant="outline"
-            onClick={onCancel}
-            disabled={paying || verifying}
-            className="w-full font-mono text-xs h-7"
-          >
-            <Terminal className="w-3 h-3 mr-1" />
-            CANCEL_OPERATION
-          </Button>
-        )}
       </div>
 
-      {/* Success Message */}
-      {signature && !verifying && (
-        <div className="bg-green-950/20 border border-success/30 rounded p-2 mb-3">
-          <div className="text-center text-green-400 text-xs font-mono">
-            <div className="flex items-center justify-center gap-2">
-              <Shield className="w-3 h-3" />
-              <span>PAYMENT_VERIFIED_SUCCESSFULLY</span>
-            </div>
-            <div className="text-success/80 mt-1">CREATING_PLAYER_PROFILE...</div>
-          </div>
+      <div className="bg-muted/20 border border-primary/10 rounded p-3 mb-4 text-xs space-y-2">
+        <div className="flex justify-between"><span>NETWORK</span><span>{isDevnet ? 'DEVNET' : 'MAINNET'}</span></div>
+        <div className="flex justify-between"><span>PRICE</span><span>{NFT_PRICE_SOL} SOL</span></div>
+        <div className="flex justify-between"><span>PROGRAM</span><span>{EARTH_VAULT_PROGRAM_ID.slice(0, 8)}…</span></div>
+        <div className="text-muted-foreground">Payment creates a replay-protected Earth Vault receipt. The server verifies and finalizes it after minting your character NFT.</div>
+      </div>
+
+      {error && (
+        <div className="bg-red-950/20 border border-error/30 rounded p-3 mb-4 text-xs text-error flex gap-2">
+          <AlertTriangle className="w-4 h-4 shrink-0" />
+          <span>{error}</span>
         </div>
       )}
 
-      {/* Footer */}
-      <div className="text-xs text-muted-foreground/60 font-mono text-center border-t border-primary/20 pt-2">
-        PAYMENT_SYSTEM_v2089 | SECURE_BLOCKCHAIN_TRANSACTION
+      {result && (
+        <div className="bg-green-950/20 border border-success/30 rounded p-3 mb-4 text-xs text-success space-y-1">
+          <div className="flex items-center gap-2"><CheckCircle className="w-4 h-4" /> RECEIPT_CREATED</div>
+          <div className="break-all text-muted-foreground">{result.receiptAddress}</div>
+        </div>
+      )}
+
+      <div className="flex gap-2">
+        <Button variant="outline" onClick={onCancel} disabled={paying} className="flex-1 font-mono">
+          CANCEL
+        </Button>
+        <Button onClick={handlePayment} disabled={!connected || paying} className="flex-1 font-mono">
+          {paying ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> SIGNING</> : 'PAY_VAULT'}
+        </Button>
       </div>
     </div>
   )
