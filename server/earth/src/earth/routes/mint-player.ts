@@ -5,6 +5,12 @@ import { randomUUID } from 'crypto'
 import { api } from '../lib/api.js'
 import { convexHttp } from '../lib/convex.js'
 import { uploadImage } from '../lib/r2.js'
+import {
+  finalizeCharacterMintReceipt,
+  parseReceiptId,
+  verifyCharacterMintReceipt,
+  type VerifiedCharacterMintReceipt,
+} from '../lib/earthVault.js'
 
 const router = Router()
 
@@ -15,10 +21,19 @@ router.post('/mint-player', async (req, res) => {
   const characterId = randomUUID()
 
   try {
-    const { wallet_address, gender, imageBlob, selectedLayers, paymentSignature, isNPC = false } = req.body
+    const {
+      wallet_address,
+      gender,
+      imageBlob,
+      selectedLayers,
+      paymentSignature,
+      earthVaultReceiptId,
+      earthVaultReceiptAddress,
+      isNPC = false,
+    } = req.body
 
-    if (!wallet_address || !gender || !imageBlob || !paymentSignature) {
-      return res.status(400).json({ error: 'Missing required fields: wallet_address, gender, imageBlob, paymentSignature' })
+    if (!wallet_address || !gender || !imageBlob) {
+      return res.status(400).json({ error: 'Missing required fields: wallet_address, gender, imageBlob' })
     }
 
     const connection = new Connection(
@@ -26,75 +41,60 @@ router.post('/mint-player', async (req, res) => {
       'confirmed'
     )
 
+    let paymentReference = paymentSignature as string | undefined
+    let verifiedVaultReceipt: VerifiedCharacterMintReceipt | null = null
+
     if (isNPC) {
-      // NPC: just check signature uniqueness via Convex
-      const existing = await convexHttp.query(api.earth.characters.getByPaymentSignature, { paymentSignature })
+      paymentReference = paymentReference ?? `npc:${characterId}`
+      const existing = await convexHttp.query(api.earth.characters.getByPaymentSignature, { paymentSignature: paymentReference })
       if (existing) {
-        return res.status(400).json({ error: 'Payment signature already used', code: 'PAYMENT_ALREADY_USED' })
+        return res.status(400).json({ error: 'Payment reference already used', code: 'PAYMENT_ALREADY_USED' })
       }
     } else {
-      // Real player: verify on-chain payment
-      const transaction = await connection.getTransaction(paymentSignature, {
-        commitment: 'confirmed',
-        maxSupportedTransactionVersion: 0,
-      }).catch(() => null)
-
-      if (!transaction) {
-        return res.status(400).json({ error: 'Payment transaction not found', code: 'PAYMENT_NOT_FOUND' })
-      }
-      const meta = transaction.meta
-      if (!meta) {
-        return res.status(400).json({ error: 'Payment transaction metadata missing', code: 'PAYMENT_META_MISSING' })
-      }
-      if (meta.err) {
-        return res.status(400).json({ error: 'Payment transaction failed', code: 'PAYMENT_FAILED' })
+      const receiptInput = earthVaultReceiptId ?? req.body.receiptId
+      if (!receiptInput) {
+        return res.status(400).json({
+          error: 'Earth Vault character mint receipt is required for new character creation',
+          code: 'EARTH_VAULT_RECEIPT_REQUIRED',
+        })
       }
 
-      const TREASURY_WALLET = process.env.TREASURY_WALLET_ADDRESS || process.env.VITE_TREASURY_WALLET_ADDRESS
-      if (!TREASURY_WALLET) {
-        return res.status(500).json({ error: 'Treasury wallet is not configured on the server', code: 'TREASURY_NOT_CONFIGURED' })
+      const receiptId = parseReceiptId(receiptInput)
+      const expectedLamports = BigInt(process.env.EARTH_CHARACTER_MINT_PRICE_LAMPORTS ?? Math.round(NFT_PRICE_SOL * 1e9))
+      try {
+        verifiedVaultReceipt = await verifyCharacterMintReceipt({
+          connection,
+          walletAddress: wallet_address,
+          receiptId,
+          receiptAddress: earthVaultReceiptAddress,
+          expectedLamports,
+        })
+      } catch (error: any) {
+        return res.status(400).json({
+          error: error.message || 'Invalid Earth Vault receipt',
+          code: 'INVALID_EARTH_VAULT_RECEIPT',
+        })
       }
 
-      const message: any = transaction.transaction.message
-      const messageKeys = typeof message.getAccountKeys === 'function'
-        ? message.getAccountKeys({ accountKeysFromLookups: meta.loadedAddresses })
-        : { staticAccountKeys: message.accountKeys ?? [] }
-      const accountKeys = (typeof messageKeys.keySegments === 'function'
-        ? messageKeys.keySegments().flat()
-        : messageKeys.staticAccountKeys ?? messageKeys.accountKeys ?? []
-      ).map((k: any) => typeof k === 'string' ? k : k.toString())
-      const treasuryIndex = accountKeys.findIndex((k: string) => k === TREASURY_WALLET)
-      if (treasuryIndex === -1) {
-        return res.status(400).json({ error: 'Payment did not go to treasury', code: 'INVALID_RECIPIENT' })
-      }
-
-      const balanceChange = meta.postBalances[treasuryIndex] - meta.preBalances[treasuryIndex]
-      if (balanceChange < NFT_PRICE_SOL * 1e9 * 0.95) {
-        return res.status(400).json({ error: `Insufficient payment. Expected ${NFT_PRICE_SOL} SOL`, code: 'INSUFFICIENT_PAYMENT' })
-      }
-
-      if (accountKeys[0] !== wallet_address) {
-        return res.status(400).json({ error: 'Payment sender mismatch', code: 'WALLET_MISMATCH' })
-      }
-
-      const existingBySignature = await convexHttp.query(api.earth.characters.getByPaymentSignature, { paymentSignature }) as any
-      if (existingBySignature) {
-        if (existingBySignature.walletAddress === wallet_address) {
+      paymentReference = `earth-vault:${verifiedVaultReceipt.receiptAddress.toBase58()}`
+      const existingByReceipt = await convexHttp.query(api.earth.characters.getByPaymentSignature, { paymentSignature: paymentReference }) as any
+      if (existingByReceipt) {
+        if (existingByReceipt.walletAddress === wallet_address) {
           return res.json({
             success: true,
             character: {
-              id: existingBySignature._id,
-              name: existingBySignature.name,
+              id: existingByReceipt._id,
+              name: existingByReceipt.name,
               wallet_address,
             },
-            nft_address: existingBySignature.nftAddress ?? null,
-            image_url: existingBySignature.currentImageUrl ?? existingBySignature.birthImageUrl ?? null,
+            nft_address: existingByReceipt.nftAddress ?? null,
+            image_url: existingByReceipt.currentImageUrl ?? existingByReceipt.birthImageUrl ?? null,
             metadataUri: null,
             paymentVerified: true,
             alreadyCreated: true,
           })
         }
-        return res.status(400).json({ error: 'Payment signature already used', code: 'PAYMENT_ALREADY_USED' })
+        return res.status(400).json({ error: 'Earth Vault receipt already used', code: 'PAYMENT_ALREADY_USED' })
       }
     }
 
@@ -141,10 +141,19 @@ router.post('/mint-player', async (req, res) => {
       characterType: isNPC ? 'NPC' : 'HUMAN',
       gender: gender.toUpperCase() as 'MALE' | 'FEMALE',
       currentLocationId: startingLocation._id,
-      paymentSignature,
+      paymentSignature: paymentReference,
       baseLayerFile: selectedLayers?.['1-base'] ?? undefined,
       baseGender: gender.toLowerCase(),
     })
+
+    if (verifiedVaultReceipt && verifiedVaultReceipt.earthCredited > 0n) {
+      await convexHttp.mutation(api.earth.earthLedger.creditFromVaultReceipt, {
+        characterId: convexCharId,
+        amountRaw: verifiedVaultReceipt.earthCredited.toString(),
+        source: 'starter_credit',
+        receiptId: verifiedVaultReceipt.receiptAddress.toBase58(),
+      })
+    }
 
     // Update character with image URL
     await convexHttp.mutation(api.earth.characters.updateAppearance, {
@@ -202,6 +211,15 @@ router.post('/mint-player', async (req, res) => {
     // Create starting inventory
     await createStartingInventory(convexCharId.toString(), selectedLayers)
 
+    let receiptFinalizationSignature: string | null = null
+    if (verifiedVaultReceipt) {
+      receiptFinalizationSignature = await finalizeCharacterMintReceipt({
+        connection,
+        receiptAddress: verifiedVaultReceipt.receiptAddress,
+        serverKeypair,
+      })
+    }
+
     return res.json({
       success: true,
       character: { id: convexCharId, name: characterName, wallet_address },
@@ -209,6 +227,12 @@ router.post('/mint-player', async (req, res) => {
       image_url: imageUrl,
       metadataUri,
       paymentVerified: true,
+      earthVaultReceipt: verifiedVaultReceipt ? {
+        receipt_address: verifiedVaultReceipt.receiptAddress.toBase58(),
+        lamports_paid: verifiedVaultReceipt.lamportsPaid.toString(),
+        earth_credited: verifiedVaultReceipt.earthCredited.toString(),
+        finalized_signature: receiptFinalizationSignature,
+      } : null,
     })
 
   } catch (error: any) {

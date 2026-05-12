@@ -38,6 +38,7 @@ Set under **Service → Variables** in the Railway dashboard.
 | `EARTH_VAULT_PROGRAM_ID` | Earth Vault Program ID for server-side receipt/config verification. Devnet scaffold: `J3jkrtAqnr7Vs6evka3wdugjdagwUJhGj3Mzae6wdABB` |
 | `EARTH_VAULT_CONFIG_ADDRESS` | Earth Vault config PDA / EARTH mint authority. Devnet scaffold: `CNmLSq3tNMafpShBQoscMq1XZc9VmExy2e94VRo1Y6Bv` |
 | `EARTH_TOKEN_2022_MINT` | Vault-era EARTH Token-2022 mint. Devnet: `Efsr6ojnLaV3SyMmNsXjvZDkyv9CXvMnDBHs5oo5Va1d` |
+| `EARTH_CHARACTER_MINT_PRICE_LAMPORTS` | Expected lamports paid in an Earth Vault `CharacterMintReceipt`; defaults to `50000000` for the current 0.05 SOL mint price. |
 | `VITE_TREASURY_WALLET_ADDRESS` | Legacy direct-payment/bridge treasury public key. Do not use for new Earth Vault flows except during migration support. |
 | `PLAYER_COLLECTION_ADDRESS` | Metaplex NFT collection address. `ApxsHPsUqCPQ1rLt11xXmZv8ur5ymCCy14CJd91nh3d8` |
 | `SERVER_URL` | The server's own public URL — used when constructing NFT metadata URIs. Current Railway URL: `https://astrds-game-server-production.up.railway.app` |

@@ -165,7 +165,8 @@ Player signs Earth Vault character_payment
   -> SOL split to DAO treasury, operations, and EARTH liquidity/reserve path
   -> starter EARTH minted/credited into EarthEscrow for the player/game ledger
   -> CharacterMintReceipt PDA created
-  -> server/earth verifies receipt, uploads character media, creates Convex character, mints NFT to player wallet, and consumes/finalizes the receipt
+  -> server/earth verifies receipt owner/program, PDA derivation, payer, amount, and unused status
+  -> server/earth uploads character media, creates Convex character, credits starter EARTH in the Convex ledger, mints NFT to player wallet, and finalizes the receipt on-chain
 ```
 
 The Earth Vault should not mint the character NFT in v1. NFT minting depends on server-side rendered images, R2 metadata, selected visual layers, starter inventory, and collection verification. The program should own the financial truth; `server/earth` should own media/NFT production after receipt verification. Receipt consumption should be on-chain or otherwise replay-protected so one payment receipt cannot mint multiple character NFTs.
