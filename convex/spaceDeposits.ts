@@ -348,7 +348,7 @@ export const requestSpawnTicket = mutation({
 
     // Validate pool: must have tokens left to give.
     const deposit = await ctx.db.get(depositId);
-    if (!canPoolSpawnOrCollect(deposit)) return { spawnId: null };
+    if (!deposit || !canPoolSpawnOrCollect(deposit)) return { spawnId: null };
 
     const now = Date.now();
     const last = await ctx.db
@@ -414,6 +414,7 @@ export const collectFromDeposit = mutation({
     // Validate ticket: must be unused, not expired, and belong to this player+session.
     const ticket = await ctx.db.get(spawnId);
     if (
+      !ticket ||
       !canUseSpawnTicket(ticket, {
         playerWalletAddress,
         gameSessionId,
@@ -428,7 +429,7 @@ export const collectFromDeposit = mutation({
 
     // Decrement pool.
     const deposit = await ctx.db.get(ticket.depositId);
-    if (!canPoolSpawnOrCollect(deposit)) return { success: false };
+    if (!deposit || !canPoolSpawnOrCollect(deposit)) return { success: false };
 
     const nextPoolState = remainingAfterCollection(deposit);
     await ctx.db.patch(ticket.depositId, nextPoolState);

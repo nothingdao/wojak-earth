@@ -14,6 +14,8 @@ import type * as crons from "../crons.js";
 import type * as devTools from "../devTools.js";
 import type * as earth_characters from "../earth/characters.js";
 import type * as earth_chat from "../earth/chat.js";
+import type * as earth_earthLedger from "../earth/earthLedger.js";
+import type * as earth_earthLedgerModel from "../earth/earthLedgerModel.js";
 import type * as earth_economy from "../earth/economy.js";
 import type * as earth_inventory from "../earth/inventory.js";
 import type * as earth_items from "../earth/items.js";
@@ -55,6 +57,8 @@ declare const fullApi: ApiFromModules<{
   devTools: typeof devTools;
   "earth/characters": typeof earth_characters;
   "earth/chat": typeof earth_chat;
+  "earth/earthLedger": typeof earth_earthLedger;
+  "earth/earthLedgerModel": typeof earth_earthLedgerModel;
   "earth/economy": typeof earth_economy;
   "earth/inventory": typeof earth_inventory;
   "earth/items": typeof earth_items;

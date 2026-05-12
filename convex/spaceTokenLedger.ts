@@ -137,7 +137,9 @@ export function canRevertClaimingCollection(status: CollectionStatus): boolean {
 }
 
 export interface ClaimableCollectionLike {
+  _id: unknown;
   depositId: unknown;
+  mintAddress: string;
   amount: number;
 }
 

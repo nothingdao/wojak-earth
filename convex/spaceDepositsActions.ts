@@ -38,12 +38,12 @@ const getConnection = (): Connection => {
 // Server-side verification of a deposit. Reads the vault ATA balance directly
 // from chain using the poolAddress set by confirmDepositFromChain. Called after
 // the client-side confirmDepositFromChain as an independent cross-check.
-export const verifyAndConfirmDeposit = action({
+export const verifyAndConfirmDeposit: any = action({
   args: {
     depositId: v.id("spaceDeposits"),
   },
-  handler: async (ctx, { depositId }) => {
-    const deposit = await ctx.runQuery(internal.spaceDeposits.getDeposit, {
+  handler: async (ctx, { depositId }): Promise<{ success: boolean; totalAmount: number }> => {
+    const deposit: any = await ctx.runQuery(internal.spaceDeposits.getDeposit, {
       depositId,
     });
     if (!deposit) throw new Error("Deposit not found");

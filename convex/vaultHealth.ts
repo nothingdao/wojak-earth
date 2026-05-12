@@ -54,9 +54,14 @@ async function getTokenMetadata(mintAddress: string, rpcEndpoint: string) {
 
 // ── vaultHealthCheck ──────────────────────────────────────────────────────────
 // Read-only: returns a report comparing on-chain pools to Convex records.
-export const vaultHealthCheck = action({
+export const vaultHealthCheck: any = action({
   args: {},
-  handler: async (ctx) => {
+  handler: async (ctx): Promise<{
+    missing: ReturnType<typeof parseDepositPool>[];
+    mismatched: { onChain: ReturnType<typeof parseDepositPool>; convexRemaining: number; convexStatus: string }[];
+    healthy: ReturnType<typeof parseDepositPool>[];
+    orphaned: { id: unknown; walletAddress: string; mintAddress: string; symbol: string; status: string }[];
+  }> => {
     const rpcEndpoint = process.env.SOLANA_RPC_ENDPOINT;
     if (!rpcEndpoint) throw new Error("SOLANA_RPC_ENDPOINT not set");
 
@@ -71,13 +76,13 @@ export const vaultHealthCheck = action({
       parseDepositPool(pubkey, Buffer.from(account.data as Buffer))
     );
 
-    const convexDeposits = await ctx.runQuery(
+    const convexDeposits: any[] = await ctx.runQuery(
       internal.spaceDeposits.getAllDeposits,
       {}
     );
 
     const convexByKey = new Map(
-      convexDeposits.map((d) => [`${d.walletAddress}:${d.mintAddress}`, d])
+      convexDeposits.map((d: any) => [`${d.walletAddress}:${d.mintAddress}`, d])
     );
     const onChainByKey = new Map(
       onChainPools.map((p) => [`${p.depositor}:${p.mint}`, p])
@@ -107,8 +112,8 @@ export const vaultHealthCheck = action({
       }
     }
 
-    const orphaned = (convexDeposits as any[])
-      .filter((d) => {
+    const orphaned: { id: unknown; walletAddress: string; mintAddress: string; symbol: string; status: string }[] = convexDeposits
+      .filter((d: any) => {
         const key = `${d.walletAddress}:${d.mintAddress}`;
         return !onChainByKey.has(key);
       })

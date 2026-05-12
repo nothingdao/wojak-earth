@@ -34,6 +34,18 @@ export const getByCategory = query({
   },
 });
 
+const layerTypeValidator = v.union(
+  v.literal("BACKGROUND"),
+  v.literal("BASE"),
+  v.literal("CLOTHING"),
+  v.literal("HAT"),
+  v.literal("FACE_COVERING"),
+  v.literal("ACCESSORY"),
+  v.literal("OUTERWEAR"),
+  v.literal("FACE_ACCESSORY"),
+  v.literal("HAIR")
+);
+
 const itemPatchValidator = v.object({
   name: v.optional(v.string()),
   description: v.optional(v.string()),
@@ -53,7 +65,7 @@ const itemPatchValidator = v.object({
     v.literal("LEGENDARY")
   )),
   layerFile: v.optional(v.string()),
-  layerType: v.optional(v.string()),
+  layerType: v.optional(layerTypeValidator),
   layerGender: v.optional(v.string()),
   layerOrder: v.optional(v.number()),
   baseLayerFile: v.optional(v.string()),
@@ -86,7 +98,7 @@ export const upsert = mutation({
       v.literal("LEGENDARY")
     ),
     layerFile: v.optional(v.string()),
-    layerType: v.optional(v.string()),
+    layerType: v.optional(layerTypeValidator),
     imageUrl: v.optional(v.string()),
     isVisual: v.optional(v.boolean()),
     healthEffect: v.optional(v.number()),
