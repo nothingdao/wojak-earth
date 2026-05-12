@@ -5,7 +5,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from '@/components/ui/use-toast'
 import {
   Users,
-  MapPin,
   Package,
   Pickaxe,
   TrendingUp,
@@ -19,7 +18,6 @@ import {
 import { AdminFooter } from './AdminFooter'
 import { OverviewTab } from './tabs/OverviewTab'
 import { CharactersTab } from './tabs/CharactersTab'
-import { LocationsTab } from './tabs/LocationsTab'
 import { ItemsTab } from './tabs/ItemsTab'
 import { EconomyTab } from './tabs/EconomyTab'
 import { SettingsTab } from './tabs/SettingsTab'
@@ -27,9 +25,7 @@ import { StoryEditor } from './StoryEditor'
 
 // Import modal components
 import { EditCharacterModal } from './modals/EditCharacterModal'
-import { CreateLocationModal } from './modals/CreateLocationModal'
 import { CreateItemModal } from './modals/CreateItemModal'
-import { EditLocationModal } from './modals/EditLocationModal'
 import { EditItemModal } from './modals/EditItemModal'
 import { EditMarketListingModal } from './modals/EditMarketListingModal'
 import { CreateMarketListingModal } from './modals/CreateMarketListingModal'
@@ -49,14 +45,11 @@ import {
 import {
   updateCharacterStats,
   banCharacter,
-  createLocation,
   createItem,
-  updateLocation,
   updateItem,
   updateMarketListing,
   createMarketListing,
   deleteItem,
-  deleteLocation,
   deleteMarketListing,
   validateWorldData,
   resetWorldDay
@@ -78,10 +71,8 @@ export default function AdminDashboard({ className, character, onClose }: AdminD
   const [isProcessing, setIsProcessing] = useState<boolean>(false)
 
   // Modal states
-  const [showCreateLocationModal, setShowCreateLocationModal] = useState<boolean>(false)
   const [showCreateItemModal, setShowCreateItemModal] = useState<boolean>(false)
   const [showEditCharacterModal, setShowEditCharacterModal] = useState<boolean>(false)
-  const [showEditLocationModal, setShowEditLocationModal] = useState<boolean>(false)
   const [showEditItemModal, setShowEditItemModal] = useState<boolean>(false)
   const [showEditMarketListingModal, setShowEditMarketListingModal] = useState<boolean>(false)
   const [showCreateMarketListingModal, setShowCreateMarketListingModal] = useState<boolean>(false)
@@ -94,7 +85,7 @@ export default function AdminDashboard({ className, character, onClose }: AdminD
   // Data hooks
   const { stats, loading: statsLoading, error: statsError, refetch: refetchStats } = useAdminStats()
   const { characters, loading: charactersLoading, error: charactersError, refetch: refetchCharacters } = useAdminCharacters()
-  const { locations, loading: locationsLoading, error: locationsError, refetch: refetchLocations } = useAdminLocations()
+  const { locations } = useAdminLocations()
   const { items, loading: itemsLoading, error: itemsError, refetch: refetchItems } = useAdminItems()
   const { marketListings, loading: marketLoading, error: marketError, getMarketStats } = useAdminMarket()
   const { activity, loading: activityLoading } = useAdminActivity()
@@ -103,7 +94,6 @@ export default function AdminDashboard({ className, character, onClose }: AdminD
   const tabs = [
     { id: 'overview', label: 'OVERVIEW', icon: Activity },
     { id: 'characters', label: 'PLAYERS', icon: Users },
-    { id: 'locations', label: 'LOCATIONS', icon: MapPin },
     { id: 'items', label: 'ITEMS', icon: Package },
     { id: 'stories', label: 'STORIES', icon: BookOpen },
     { id: 'mining', label: 'MINING', icon: Pickaxe },
@@ -205,37 +195,6 @@ export default function AdminDashboard({ className, character, onClose }: AdminD
     setShowEditCharacterModal(true)
   }, [])
 
-  const handleEditLocation = useCallback((location: Location) => {
-    setSelectedLocation(location)
-    setShowEditLocationModal(true)
-  }, [])
-
-  const handleDeleteLocation = useCallback(async (locationId: string, locationName: string) => {
-    if (!confirm(`Delete location ${locationName}? This cannot be undone.`)) return
-
-    setIsProcessing(true)
-    try {
-      await deleteLocation(locationId)
-      toast({
-        message: `${locationName} deleted`,
-        variant: 'success'
-      })
-    } catch (err) {
-      console.error('Failed to delete location:', err)
-      const message = err instanceof Error ? err.message : 'Failed to delete location'
-      toast({
-        message,
-        variant: 'error'
-      })
-    } finally {
-      setIsProcessing(false)
-    }
-  }, [])
-
-  const handleCreateLocation = useCallback(() => {
-    setShowCreateLocationModal(true)
-  }, [])
-
   const handleCreateItem = useCallback(() => {
     setShowCreateItemModal(true)
   }, [])
@@ -333,27 +292,6 @@ export default function AdminDashboard({ className, character, onClose }: AdminD
     }
   }, [refetchCharacters])
 
-  const handleCreateLocationSubmit = useCallback(async (locationData: any) => {
-    setIsProcessing(true)
-    try {
-      await createLocation(locationData)
-      toast({
-        message: 'Location created successfully!',
-        variant: 'success'
-      })
-      await refetchLocations()
-      setShowCreateLocationModal(false)
-    } catch (err) {
-      console.error('Failed to create location:', err)
-      toast({
-        message: 'Failed to create location',
-        variant: 'error'
-      })
-    } finally {
-      setIsProcessing(false)
-    }
-  }, [refetchLocations])
-
   const handleCreateItemSubmit = useCallback(async (itemData: any) => {
     setIsProcessing(true)
     try {
@@ -374,28 +312,6 @@ export default function AdminDashboard({ className, character, onClose }: AdminD
       setIsProcessing(false)
     }
   }, [refetchItems])
-
-  const handleSaveLocation = useCallback(async (locationId: string, updates: any) => {
-    setIsProcessing(true)
-    try {
-      await updateLocation(locationId, updates)
-      toast({
-        message: 'Location updated successfully!',
-        variant: 'success'
-      })
-      await refetchLocations()
-      setShowEditLocationModal(false)
-      setSelectedLocation(null)
-    } catch (err) {
-      console.error('Failed to update location:', err)
-      toast({
-        message: 'Failed to update location',
-        variant: 'error'
-      })
-    } finally {
-      setIsProcessing(false)
-    }
-  }, [refetchLocations])
 
   const handleSaveItem = useCallback(async (itemId: string, updates: any) => {
     setIsProcessing(true)
@@ -472,7 +388,6 @@ export default function AdminDashboard({ className, character, onClose }: AdminD
             activityLoading={activityLoading}
             statsError={statsError}
             isProcessing={isProcessing}
-            onCreateLocation={handleCreateLocation}
             onCreateItem={handleCreateItem}
             onRefreshData={handleRefreshData}
             onValidateWorld={handleValidateWorld}
@@ -491,21 +406,6 @@ export default function AdminDashboard({ className, character, onClose }: AdminD
             isProcessing={isProcessing}
             onEditCharacter={handleEditCharacter}
             onBanCharacter={handleBanCharacter}
-          />
-        )
-
-      case 'locations':
-        return (
-          <LocationsTab
-            locations={locations}
-            searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
-            loading={locationsLoading}
-            error={locationsError}
-            isProcessing={isProcessing}
-            onCreateLocation={handleCreateLocation}
-            onEditLocation={handleEditLocation}
-            onDeleteLocation={handleDeleteLocation}
           />
         )
 
@@ -635,23 +535,6 @@ export default function AdminDashboard({ className, character, onClose }: AdminD
         onOpenChange={setShowEditCharacterModal}
         character={selectedCharacter}
         onSave={handleSaveCharacter}
-        isProcessing={isProcessing}
-      />
-
-      {/* Create Location Modal */}
-      <CreateLocationModal
-        open={showCreateLocationModal}
-        onOpenChange={setShowCreateLocationModal}
-        onCreate={handleCreateLocationSubmit}
-        isProcessing={isProcessing}
-      />
-
-      {/* Edit Location Modal */}
-      <EditLocationModal
-        open={showEditLocationModal}
-        onOpenChange={setShowEditLocationModal}
-        location={selectedLocation}
-        onSave={handleSaveLocation}
         isProcessing={isProcessing}
       />
 

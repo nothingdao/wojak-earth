@@ -11,7 +11,6 @@ interface OverviewTabProps {
   activityLoading: boolean
   statsError: string | null
   isProcessing: boolean
-  onCreateLocation: () => void
   onCreateItem: () => void
   onRefreshData: () => void
   onValidateWorld: () => void

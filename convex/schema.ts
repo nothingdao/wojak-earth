@@ -296,6 +296,8 @@ export default defineSchema({
     .index("by_character_equipped", ["characterId", "isEquipped"]),
 
   earth_locations: defineTable({
+    // slug is Earth's stable world/content id. legacyId is retained only as migration glue.
+    slug: v.optional(v.string()),
     legacyId: v.optional(v.string()),
     name: v.string(),
     description: v.string(),
@@ -319,6 +321,9 @@ export default defineSchema({
     theme: v.optional(v.string()),
     lore: v.optional(v.string()),
     imageUrl: v.optional(v.string()),
+    // mapRegionId binds this location to a region in the static Earth map manifest.
+    // svgPathId is legacy migration glue and should not be used for new code.
+    mapRegionId: v.optional(v.string()),
     svgPathId: v.optional(v.string()),
     mapX: v.optional(v.number()),
     mapY: v.optional(v.number()),
@@ -332,7 +337,9 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_type", ["locationType"])
-    .index("by_parent", ["parentLocationId"]),
+    .index("by_parent", ["parentLocationId"])
+    .index("by_slug", ["slug"])
+    .index("by_map_region", ["mapRegionId"]),
 
   earth_locationResources: defineTable({
     legacyId: v.optional(v.string()),

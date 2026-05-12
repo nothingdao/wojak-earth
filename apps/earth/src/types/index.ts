@@ -61,6 +61,7 @@ export interface Item {
 export interface Location {
   _id: string
   id: string
+  slug?: string | null
   name: string
   description: string
   // camelCase (Convex)
@@ -74,9 +75,17 @@ export interface Location {
   hasExchange: boolean
   isPrivate: boolean
   playerCount: number
+  mapRegionId?: string | null
   svgPathId?: string | null
+  legacyId?: string | null
   biome?: string | null
+  territory?: string | null
+  theme?: string | null
+  lore?: string | null
+  imageUrl?: string | null
+  isExplored?: boolean | null
   minLevel?: number | null
+  entryCost?: number | null
   mapX?: number | null
   mapY?: number | null
   parentLocationId?: string | null
@@ -90,11 +99,17 @@ export interface Location {
   has_exchange?: boolean
   is_private: boolean
   player_count: number
+  map_region_id?: string | null
   svg_path_id?: string | null
+  legacy_id?: string | null
+  parent_location_id?: string | null
+  image_url?: string | null
   min_level?: number | null
+  entry_cost?: number | null
   map_x?: number | null
   map_y?: number | null
   welcome_message?: string | null
+  is_explored?: boolean | null
   status?: string | null
   created_at?: string
   updated_at?: string

@@ -109,8 +109,37 @@ export function useAdminLocations() {
 
   const locations: Location[] = (raw ?? []).map(adaptLocation)
 
+  const normalizeLocationUpdates = (updates: any) => {
+    const fieldMap: Record<string, string> = {
+      location_type: 'locationType',
+      chat_scope: 'chatScope',
+      has_chat: 'hasChat',
+      has_market: 'hasMarket',
+      has_mining: 'hasMining',
+      has_travel: 'hasTravel',
+      has_exchange: 'hasExchange',
+      is_private: 'isPrivate',
+      parent_location_id: 'parentLocationId',
+      map_region_id: 'mapRegionId',
+      svg_path_id: 'svgPathId',
+      map_x: 'mapX',
+      map_y: 'mapY',
+      min_level: 'minLevel',
+      entry_cost: 'entryCost',
+      image_url: 'imageUrl',
+      welcome_message: 'welcomeMessage',
+      is_explored: 'isExplored',
+    }
+
+    return Object.fromEntries(
+      Object.entries(updates)
+        .filter(([key]) => key !== 'id' && key !== '_id' && key !== 'legacy_id' && key !== 'svg_path_id')
+        .map(([key, value]) => [fieldMap[key] ?? key, value === null ? undefined : value])
+    )
+  }
+
   const updateLocation = useCallback(async (locationId: string, updates: any) => {
-    await adminUpdateLocation({ locationId: locationId as Id<'earth_locations'>, updates })
+    await adminUpdateLocation({ locationId: locationId as Id<'earth_locations'>, updates: normalizeLocationUpdates(updates) })
     return true
   }, [adminUpdateLocation])
 

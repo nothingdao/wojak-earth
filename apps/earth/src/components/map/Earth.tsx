@@ -1,8 +1,8 @@
 // src/components/map/Earth.tsx
-import { useState, useCallback, useRef, useEffect } from "react"
+import { useState, useCallback, useRef, useEffect, useMemo } from "react"
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { baseSVGData } from "../../data/baseMapSVG"
+import { earthMapManifest } from "@/data/earthMapManifest"
 import {
   Plus,
   Minus,
@@ -98,7 +98,45 @@ export default function Earth({
     }
   }, [character?.current_location_id, isTravelingOnMap])
 
-  const getLocationCoords = (pathId: string): { x: number, y: number } | null => {
+  const mapRegionIds = useMemo(() => new Set(earthMapManifest.regions.map(region => region.id)), [])
+
+  const findLocationByReference = useCallback((reference: string | null | undefined) => {
+    if (!reference) return null
+
+    return locations.find(loc =>
+      loc.id === reference ||
+      loc._id === reference ||
+      loc.mapRegionId === reference ||
+      loc.map_region_id === reference ||
+      loc.slug === reference ||
+      loc.svgPathId === reference ||
+      loc.svg_path_id === reference ||
+      loc.legacyId === reference ||
+      loc.legacy_id === reference
+    ) ?? null
+  }, [locations])
+
+  const getMapPathIdForLocation = useCallback((location: Location | null | undefined, seen = new Set<string>()): string | null => {
+    if (!location) return null
+
+    const ownPathId = location.mapRegionId || location.map_region_id || location.svgPathId || location.svg_path_id
+    if (ownPathId && mapRegionIds.has(ownPathId)) return ownPathId
+
+    const fallbackIds = [location.slug, location.legacyId, location.legacy_id, location.id, location._id].filter(Boolean) as string[]
+    const matchingFallback = fallbackIds.find(id => mapRegionIds.has(id))
+    if (matchingFallback) return matchingFallback
+
+    const parentReference = location.parentLocationId || location.parent_location_id
+    if (parentReference && !seen.has(parentReference)) {
+      seen.add(parentReference)
+      return getMapPathIdForLocation(findLocationByReference(parentReference), seen)
+    }
+
+    return ownPathId ?? null
+  }, [findLocationByReference, mapRegionIds])
+
+  const getLocationCoords = (pathId: string | null | undefined): { x: number, y: number } | null => {
+    if (!pathId) return null
     const path = document.getElementById(pathId) as SVGPathElement | null
     if (!path) return null
 
@@ -109,22 +147,19 @@ export default function Earth({
     }
   }
 
-  // Create lookup map for quick location finding
-  // Now using location.id as the key (SVG elements should have matching IDs)
-  const locationMap = useCallback(() => {
+  // Create lookup map for quick location finding using SVG path ids, not Convex document ids.
+  const locationLookup = useMemo(() => {
     const map = new Map<string, Location>()
     locations.forEach(loc => {
-      // Use the location's ID as the key for SVG path matching
-      map.set(loc.id, loc)
+      const pathId = getMapPathIdForLocation(loc)
+      if (pathId) map.set(pathId, loc)
     })
     return map
-  }, [locations])
-
-  const locationLookup = locationMap()
+  }, [locations, getMapPathIdForLocation])
 
   const getLocation = useCallback((pathId: string | undefined) => {
     if (!pathId) return null
-    return locationLookup.get(pathId)
+    return locationLookup.get(pathId) ?? null
   }, [locationLookup])
 
   // Calculate pan boundaries
@@ -579,7 +614,7 @@ export default function Earth({
             <div className="w-2 h-2 bg-chart-3 rounded-full animate-pulse" />
             <span className="text-chart-3 font-bold">TRAVELING...</span>
             {mapTravelDestination && (() => {
-              const dest = locations.find(loc => loc.id === mapTravelDestination)
+              const dest = findLocationByReference(mapTravelDestination)
               return dest ? <span className="text-muted-foreground">TO_{dest.name.toUpperCase()}</span> : null
             })()}
           </div>
@@ -658,7 +693,7 @@ export default function Earth({
       >
         <svg
           ref={svgRef}
-          viewBox={baseSVGData.viewBox}
+          viewBox={earthMapManifest.viewBox}
           className="w-full h-full"
           xmlns="http://www.w3.org/2000/svg"
         >
@@ -684,7 +719,7 @@ export default function Earth({
           <rect width="100%" height="100%" fill="url(#grid)" opacity="0.3" />
 
           {/* MAP PATHS */}
-          {baseSVGData.paths.map((path) => {
+          {earthMapManifest.regions.map((path) => {
             const style = getPathStyle(path.id)
             const location = getLocation(path.id)
             const isTravelingFromHere = location && visualLocationId === location.id && isTravelingOnMap
@@ -720,10 +755,11 @@ export default function Earth({
 
           {/* LOCATION INDICATORS */}
           {visualLocationId && !isTravelingOnMap && (() => {
-            const currentLocation = locations.find(loc => loc.id === visualLocationId)
-            if (!currentLocation?.id) return null
+            const currentLocation = findLocationByReference(visualLocationId)
+            const currentPathId = getMapPathIdForLocation(currentLocation)
+            if (!currentPathId) return null
 
-            const coords = getLocationCoords(currentLocation.id)
+            const coords = getLocationCoords(currentPathId)
             if (!coords) return null
 
             return (
@@ -757,10 +793,11 @@ export default function Earth({
 
           {/* TRAVEL DESTINATION INDICATOR */}
           {isTravelingOnMap && mapTravelDestination && (() => {
-            const destLocation = locations.find(loc => loc.id === mapTravelDestination)
-            if (!destLocation?.id) return null
+            const destLocation = findLocationByReference(mapTravelDestination)
+            const destPathId = getMapPathIdForLocation(destLocation)
+            if (!destPathId) return null
 
-            const coords = getLocationCoords(destLocation.id)
+            const coords = getLocationCoords(destPathId)
             if (!coords) return null
 
             return (
@@ -800,13 +837,13 @@ export default function Earth({
 
           {/* TRAVEL LINE */}
           {mapTravelDestination && visualLocationId && (() => {
-            const originLocation = locations.find(loc => loc.id === visualLocationId)
-            const destLocation = locations.find(loc => loc.id === mapTravelDestination)
+            const originLocation = findLocationByReference(visualLocationId)
+            const destLocation = findLocationByReference(mapTravelDestination)
+            const originPathId = getMapPathIdForLocation(originLocation)
+            const destPathId = getMapPathIdForLocation(destLocation)
 
-            if (!originLocation?.id || !destLocation?.id) return null
-
-            const originCoords = getLocationCoords(originLocation.id)
-            const destCoords = getLocationCoords(destLocation.id)
+            const originCoords = getLocationCoords(originPathId)
+            const destCoords = getLocationCoords(destPathId)
 
             if (!originCoords || !destCoords) return null
 
@@ -936,7 +973,7 @@ export default function Earth({
       <div className="absolute bottom-12 left-4 bg-background border border-border px-2 py-1 rounded text-xs font-mono space-y-1">
         <div className="flex items-center gap-2 text-muted-foreground">
           <Database className="w-3 h-3" />
-          <span>MAPPED: {locationLookup.size}/{baseSVGData.paths.length}</span>
+          <span>MAPPED: {locationLookup.size}/{earthMapManifest.regions.length}</span>
           {selectedPath && <span>• SELECTED: {selectedPath}</span>}
         </div>
 

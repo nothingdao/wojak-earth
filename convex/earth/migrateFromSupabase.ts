@@ -48,6 +48,7 @@ export const importCore = mutation({
         continue;
       }
       const id = await ctx.db.insert("earth_locations", clean({
+        slug: legacyId,
         legacyId,
         name: String(loc.name ?? legacyId),
         description: String(loc.description ?? ""),
@@ -67,6 +68,7 @@ export const importCore = mutation({
         theme: loc.theme ? String(loc.theme) : undefined,
         lore: loc.lore ? String(loc.lore) : undefined,
         imageUrl: loc.image_url ? String(loc.image_url) : undefined,
+        mapRegionId: loc.svg_path_id ? String(loc.svg_path_id) : legacyId,
         svgPathId: loc.svg_path_id ? String(loc.svg_path_id) : undefined,
         mapX: loc.map_x == null ? undefined : Number(loc.map_x),
         mapY: loc.map_y == null ? undefined : Number(loc.map_y),

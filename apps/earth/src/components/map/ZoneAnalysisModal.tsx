@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { isAdmin } from '@/config/admins'
 import type { Location } from '@/types'
+import { earthMapManifest } from '@/data/earthMapManifest'
 
 import {
   X,
@@ -21,7 +22,8 @@ import {
   Check,
   TreePine,
   Info,
-  BarChart3
+  BarChart3,
+  Activity
 } from 'lucide-react'
 
 interface Character {
@@ -70,14 +72,30 @@ const isUserAdmin = walletAddress ? isAdmin(walletAddress) : false
   const uniqueTerritories = [...new Set(locations.map(loc => loc.territory).filter(Boolean))].sort()
   const uniqueLocationTypes = [...new Set(locations.map(loc => loc.location_type).filter(Boolean))].sort()
 
-  // Find child locations
-  const childLocations = locations.filter(loc => loc.parent_location_id === location.id).sort((a, b) => a.name.localeCompare(b.name))
+  const locationReferences = [
+    location.id,
+    location._id,
+    location.mapRegionId,
+    location.map_region_id,
+    location.slug,
+    location.svgPathId,
+    location.svg_path_id,
+    location.legacyId,
+    location.legacy_id,
+  ].filter(Boolean)
+
+  // Find child locations. Parent links may still reference legacy/svg ids after migration.
+  const childLocations = locations
+    .filter(loc => {
+      const parentReference = loc.parentLocationId || loc.parent_location_id
+      return !!parentReference && locationReferences.includes(parentReference)
+    })
+    .sort((a, b) => a.name.localeCompare(b.name))
 
   // Check for dependencies that would break if ID changes
   const hasDependencies = childLocations.length > 0
 
-  // Get unique SVG paths from all locations
-  const uniqueSvgPaths = [...new Set(locations.map(loc => loc.svg_path_id).filter(Boolean))].sort()
+  const mapRegionIds = earthMapManifest.regions.map(region => region.id).sort()
 
   // Helper function to enforce SCREAMING_SNAKE_CASE
   const enforceScreamingSnakeCase = (input: string): string => {
@@ -225,6 +243,18 @@ const isUserAdmin = walletAddress ? isAdmin(walletAddress) : false
                     className="w-full bg-muted border border-border rounded px-2 py-1 text-sm font-bold text-primary"
                     placeholder="Location name"
                   />
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground">SLUG (stable world id):</label>
+                    <input
+                      value={editedLocation.slug ?? location.slug ?? location.legacy_id ?? ''}
+                      onChange={(e) => {
+                        const slug = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
+                        setEditedLocation(prev => ({ ...prev, slug }))
+                      }}
+                      className="w-full bg-muted border border-border rounded px-2 py-1 text-xs font-mono"
+                      placeholder="location-slug"
+                    />
+                  </div>
                   <div className="space-y-1">
                     <label className="text-xs text-muted-foreground">ID (permanent identifier):</label>
                     <input
@@ -374,6 +404,27 @@ const isUserAdmin = walletAddress ? isAdmin(walletAddress) : false
                         ))}
                       </select>
                     </div>
+                    <div className="flex items-center gap-1">
+                      <MessageSquare className="w-3 h-3" />
+                      <select
+                        value={editedLocation.chat_scope ?? location.chat_scope ?? 'LOCAL'}
+                        onChange={(e) => setEditedLocation(prev => ({ ...prev, chat_scope: e.target.value }))}
+                        className="bg-muted border border-border rounded px-2 py-1 text-xs w-full"
+                      >
+                        <option value="LOCAL">LOCAL</option>
+                        <option value="REGIONAL">REGIONAL</option>
+                        <option value="GLOBAL">GLOBAL</option>
+                      </select>
+                    </div>
+                    <div className="flex items-center gap-1 col-span-2">
+                      <Activity className="w-3 h-3" />
+                      <input
+                        value={editedLocation.status ?? location.status ?? ''}
+                        onChange={(e) => setEditedLocation(prev => ({ ...prev, status: e.target.value }))}
+                        className="bg-muted border border-border rounded px-2 py-1 text-xs w-full"
+                        placeholder="STATUS"
+                      />
+                    </div>
                   </>
                 ) : (
                   <>
@@ -399,10 +450,25 @@ const isUserAdmin = walletAddress ? isAdmin(walletAddress) : false
                       <Database className="w-3 h-3" />
                       <span>TYPE: {location.location_type}</span>
                     </div>
+                    <div className="flex items-center gap-1 text-chart-4">
+                      <MessageSquare className="w-3 h-3" />
+                      <span>CHAT: {location.chat_scope || 'LOCAL'}</span>
+                    </div>
 
                     {/* Parent Location Section */}
                     {location.parent_location_id && (() => {
-                      const parentLocation = locations.find(loc => loc.id === location.parent_location_id)
+                      const parentLocation = locations.find(loc => {
+                        const parentReference = location.parentLocationId || location.parent_location_id
+                        return loc.id === parentReference ||
+                          loc._id === parentReference ||
+                          loc.mapRegionId === parentReference ||
+                          loc.map_region_id === parentReference ||
+                          loc.slug === parentReference ||
+                          loc.svgPathId === parentReference ||
+                          loc.svg_path_id === parentReference ||
+                          loc.legacyId === parentReference ||
+                          loc.legacy_id === parentReference
+                      })
                       return parentLocation ? (
                         <div className="flex items-center gap-1 text-chart-4 col-span-2">
                           <MapPin className="w-3 h-3" />
@@ -411,16 +477,21 @@ const isUserAdmin = walletAddress ? isAdmin(walletAddress) : false
                       ) : null
                     })()}
 
+                    <div className="flex items-center gap-1 text-chart-3 col-span-2">
+                      <Database className="w-3 h-3" />
+                      <span>SLUG: {location.slug || location.legacy_id || 'UNSET'}</span>
+                    </div>
+
                     {/* ID Section */}
                     <div className="flex items-center gap-1 text-chart-3 col-span-2">
                       <Database className="w-3 h-3" />
                       <span>ID: {location.id}</span>
                     </div>
 
-                    {/* SVG Path Section */}
+                    {/* Map Region Section */}
                     <div className="flex items-center gap-1 text-chart-5 col-span-2">
                       <MapPin className="w-3 h-3" />
-                      <span>SVG_PATH: {location.svg_path_id || 'NOT_ON_MAP'}</span>
+                      <span>MAP_REGION: {location.map_region_id || location.svg_path_id || 'NOT_ON_MAP'}</span>
                     </div>
                   </>
                 )}
@@ -471,16 +542,56 @@ const isUserAdmin = walletAddress ? isAdmin(walletAddress) : false
                     <div className="flex items-center gap-1 col-span-2">
                       <MapPin className="w-3 h-3" />
                       <select
-                        value={editedLocation.svg_path_id !== undefined ? editedLocation.svg_path_id || '' : location.svg_path_id || ''}
-                        onChange={(e) => setEditedLocation(prev => ({ ...prev, svg_path_id: e.target.value === '' ? null : e.target.value }))}
+                        value={editedLocation.map_region_id !== undefined ? editedLocation.map_region_id || '' : location.map_region_id || location.svg_path_id || ''}
+                        onChange={(e) => setEditedLocation(prev => ({ ...prev, map_region_id: e.target.value === '' ? null : e.target.value }))}
                         className="bg-muted border border-border rounded px-2 py-1 text-xs w-full"
                       >
                         <option value="">REMOVE_FROM_MAP</option>
-                        {uniqueSvgPaths.map(pathId => (
-                          <option key={pathId} value={pathId}>{pathId}</option>
+                        {mapRegionIds.map(regionId => (
+                          <option key={regionId} value={regionId}>{regionId}</option>
                         ))}
                       </select>
-                      <span className="text-muted-foreground text-xs">SVG_PATH</span>
+                      <span className="text-muted-foreground text-xs">MAP_REGION</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <MapPin className="w-3 h-3" />
+                      <input
+                        type="number"
+                        value={editedLocation.map_x ?? location.map_x ?? ''}
+                        onChange={(e) => setEditedLocation(prev => ({ ...prev, map_x: e.target.value === '' ? null : Number(e.target.value) }))}
+                        className="bg-muted border border-border rounded px-2 py-1 text-xs w-full"
+                        placeholder="MAP_X"
+                      />
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <MapPin className="w-3 h-3" />
+                      <input
+                        type="number"
+                        value={editedLocation.map_y ?? location.map_y ?? ''}
+                        onChange={(e) => setEditedLocation(prev => ({ ...prev, map_y: e.target.value === '' ? null : Number(e.target.value) }))}
+                        className="bg-muted border border-border rounded px-2 py-1 text-xs w-full"
+                        placeholder="MAP_Y"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2 col-span-2">
+                      <input
+                        type="checkbox"
+                        checked={editedLocation.is_private ?? location.is_private}
+                        onChange={(e) => setEditedLocation(prev => ({ ...prev, is_private: e.target.checked }))}
+                        className="w-3 h-3"
+                      />
+                      <Shield className="w-3 h-3" />
+                      <span className="text-xs">PRIVATE_LOCATION</span>
+                    </div>
+                    <div className="flex items-center gap-2 col-span-2">
+                      <input
+                        type="checkbox"
+                        checked={editedLocation.is_explored ?? location.is_explored ?? false}
+                        onChange={(e) => setEditedLocation(prev => ({ ...prev, is_explored: e.target.checked }))}
+                        className="w-3 h-3"
+                      />
+                      <Eye className="w-3 h-3" />
+                      <span className="text-xs">EXPLORED</span>
                     </div>
                   </>
                 ) : (
@@ -546,6 +657,16 @@ const isUserAdmin = walletAddress ? isAdmin(walletAddress) : false
                   <div className="flex items-center gap-2">
                     <input
                       type="checkbox"
+                      checked={editedLocation.has_travel ?? location.has_travel}
+                      onChange={(e) => setEditedLocation(prev => ({ ...prev, has_travel: e.target.checked }))}
+                      className="w-3 h-3"
+                    />
+                    <Navigation className="w-3 h-3" />
+                    <span>TRAVEL</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
                       checked={editedLocation.has_exchange ?? location.has_exchange}
                       onChange={(e) => setEditedLocation(prev => ({ ...prev, has_exchange: e.target.checked }))}
                       className="w-3 h-3"
@@ -580,9 +701,57 @@ const isUserAdmin = walletAddress ? isAdmin(walletAddress) : false
                       EXCHANGE
                     </Badge>
                   )}
-                  {!location.has_market && !location.has_mining && !location.has_chat && !location.has_exchange && (
+                  {location.has_travel && (
+                    <Badge variant="secondary" className="text-xs font-mono flex items-center gap-1">
+                      <Navigation className="w-3 h-3" />
+                      TRAVEL
+                    </Badge>
+                  )}
+                  {!location.has_market && !location.has_mining && !location.has_chat && !location.has_exchange && !location.has_travel && (
                     <span className="text-xs text-muted-foreground">NO_SERVICES_AVAILABLE</span>
                   )}
+                </div>
+              )}
+            </div>
+
+            {/* Narrative + Media */}
+            <div className="bg-muted/30 border border-border rounded p-2">
+              <div className="text-xs text-muted-foreground mb-2">NARRATIVE_MEDIA</div>
+              {isEditing ? (
+                <div className="space-y-2 text-xs">
+                  <input
+                    value={editedLocation.theme ?? location.theme ?? ''}
+                    onChange={(e) => setEditedLocation(prev => ({ ...prev, theme: e.target.value }))}
+                    className="w-full bg-muted border border-border rounded px-2 py-1"
+                    placeholder="THEME"
+                  />
+                  <input
+                    value={editedLocation.image_url ?? location.image_url ?? ''}
+                    onChange={(e) => setEditedLocation(prev => ({ ...prev, image_url: e.target.value }))}
+                    className="w-full bg-muted border border-border rounded px-2 py-1"
+                    placeholder="IMAGE_URL"
+                  />
+                  <textarea
+                    value={editedLocation.welcome_message ?? location.welcome_message ?? ''}
+                    onChange={(e) => setEditedLocation(prev => ({ ...prev, welcome_message: e.target.value }))}
+                    className="w-full bg-muted border border-border rounded px-2 py-1 resize-none"
+                    rows={2}
+                    placeholder="WELCOME_MESSAGE"
+                  />
+                  <textarea
+                    value={editedLocation.lore ?? location.lore ?? ''}
+                    onChange={(e) => setEditedLocation(prev => ({ ...prev, lore: e.target.value }))}
+                    className="w-full bg-muted border border-border rounded px-2 py-1 resize-none"
+                    rows={3}
+                    placeholder="LORE"
+                  />
+                </div>
+              ) : (
+                <div className="space-y-1 text-xs">
+                  <div><span className="text-muted-foreground">THEME:</span> {location.theme || 'NONE'}</div>
+                  <div><span className="text-muted-foreground">IMAGE:</span> {location.image_url || 'NONE'}</div>
+                  {location.welcome_message && <div><span className="text-muted-foreground">WELCOME:</span> {location.welcome_message}</div>}
+                  {location.lore && <div><span className="text-muted-foreground">LORE:</span> {location.lore}</div>}
                 </div>
               )}
             </div>
@@ -596,7 +765,8 @@ const isUserAdmin = walletAddress ? isAdmin(walletAddress) : false
                   character.current_location_id === location.id ||
                   (!!location.min_level && character.level < location.min_level) ||
                   (!!location.entry_cost && location.entry_cost > (character.earth || 0)) ||
-                  !!location.is_private
+                  !!location.is_private ||
+                  !location.has_travel
                 }
                 className={`w-full h-8 text-xs font-mono ${character.current_location_id === location.id
                   ? 'bg-muted text-muted-foreground cursor-not-allowed'
@@ -615,7 +785,9 @@ const isUserAdmin = walletAddress ? isAdmin(walletAddress) : false
                       ? `REQ_LVL_${location.min_level}`
                       : (!!location.entry_cost && location.entry_cost > (character.earth || 0))
                         ? `INSUFFICIENT_EARTH`
-                        : `TRAVEL_TO_${location.name.toUpperCase()}`}
+                        : !location.has_travel
+                          ? 'TRAVEL_DISABLED'
+                          : `TRAVEL_TO_${location.name.toUpperCase()}`}
               </Button>
             )}
           </>
@@ -669,7 +841,8 @@ const isUserAdmin = walletAddress ? isAdmin(walletAddress) : false
                             character.current_location_id === child.id ||
                             (!!child.min_level && character.level < child.min_level) ||
                             (!!child.entry_cost && child.entry_cost > (character.earth || 0)) ||
-                            !!child.is_private
+                            !!child.is_private ||
+                            !child.has_travel
                           }
                           className="h-6 w-6 p-0"
                           title={`Travel to ${child.name}`}

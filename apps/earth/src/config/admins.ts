@@ -10,6 +10,7 @@ export const ADMIN_WALLETS = [
   '7dJDToTRDi7kcvo5VNkziwG9f1BUvmaMxbgXM4twfdmw', // Earth Admin Solfare Chrome
   'F3JPQ3TzzkSDSZBSueY9FpVdNjK3vq5pTLvxnVxHhazw', // Earth Admin Phantom Mobile
   '48zHWqhPEeTUis4J6v9tfuaEkKKybybGhUphTBjLWYLT', // Earth Admin Solflare Chrome 2019 Macbook Pro
+  '58xmARPwM4vNW77DQBRvFQH3PBUjwRKxmBtdZSnF1LYj', // Earth player 2 Solflare Chrome 2019 Macbook Pro
 ]
 
 export function isAdmin(wallet_address: string): boolean {
