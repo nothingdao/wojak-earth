@@ -5,7 +5,6 @@ GitHub issues are the canonical work queue. This file is only a compact index so
 ## P1
 
 - #43 — Earth frontend vault transactions: mint payment, buy, deposit, withdraw
-- #37 — Earth map: fix SVG path mapping and location hierarchy after migration
 - #35 — Inventory: restore equipment images, loadout controls, and profile image update flow
 - #36 — Earth minting: restore starter inventory for new characters
 - #27 — Social: design cross-game chat, groups, DMs, permissions, and spectating
@@ -24,6 +23,7 @@ GitHub issues are the canonical work queue. This file is only a compact index so
 
 ## Recently closed / historical
 
+- #37 — Earth map location model repaired; static map manifest and Zone Analysis admin editing are active.
 - #42 — Earth character mint receipts migrated to Earth Vault receipt verification.
 - #41 — Escrow-backed in-game EARTH ledger and reconciliation implemented.
 - #40 — EARTH Token-2022 mint and authority model implemented; devnet Token-2022 mint documented.
